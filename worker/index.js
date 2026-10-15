@@ -96,10 +96,16 @@ export default {
           }
         }
 
+        const cleanUsername = String(userData.username || '').trim().toLowerCase();
+        const kickIdNum = Number(userData.id) || 0;
+        const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || kickIdNum === 88254585);
+
         return new Response(JSON.stringify({
           success: true,
           username: userData.username,
           avatarUrl: userData.avatarUrl || '',
+          kick_id: userData.id,
+          isAdmin,
           verified: true
         }), { headers: corsHeaders });
 
@@ -179,7 +185,93 @@ export default {
       }
     }
 
-    // 5. Default 404 for unknown API routes
+    // 5. Discord Unlink Endpoint
+    if (url.pathname === '/api/auth/discord/unlink' && request.method === 'POST') {
+      return new Response(JSON.stringify({ success: true, unlinked: true }), { headers: corsHeaders });
+    }
+
+    // 6. Stake Limbo Target Multiplier Endpoint (OTP 10000 - 999999, valid 600s)
+    if (url.pathname === '/api/stake/target' && request.method === 'GET') {
+      const target = Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000;
+      const validForSeconds = 600;
+      return new Response(JSON.stringify({
+        target,
+        validForSeconds,
+        expiresAt: Date.now() + validForSeconds * 1000
+      }), { headers: corsHeaders });
+    }
+
+    // 7. Stake Verification Request Endpoint (Universal Bet Parser)
+    if (url.pathname === '/api/stake/verify-request' && request.method === 'POST') {
+      try {
+        const { kickUsername, stakeUsername, targetMultiplier, rawBetInput } = await request.json();
+        if (!stakeUsername || !rawBetInput) {
+          return new Response(JSON.stringify({ error: 'Missing stakeUsername or rawBetInput' }), {
+            status: 400,
+            headers: corsHeaders
+          });
+        }
+
+        const input = decodeURIComponent(String(rawBetInput).trim());
+        let betId = null;
+
+        // Try extracting from URL
+        try {
+          if (input.startsWith('http://') || input.startsWith('https://')) {
+            const u = new URL(input);
+            const iid = u.searchParams.get('iid');
+            if (iid) betId = iid.trim();
+          }
+        } catch (e) {}
+
+        if (!betId) {
+          const prefixMatch = input.match(/^(casino|house):(\w+)/i);
+          if (prefixMatch) {
+            betId = `${prefixMatch[1].toLowerCase()}:${prefixMatch[2]}`;
+          } else {
+            const numMatch = input.match(/^[a-zA-Z0-9_\-]+$/);
+            if (numMatch && input.length >= 5) {
+              betId = `house:${input}`;
+            }
+          }
+        }
+
+        if (!betId) {
+          return new Response(JSON.stringify({ error: 'Invalid bet ID format. Enter a valid Stake bet ID or share link.' }), {
+            status: 400,
+            headers: corsHeaders
+          });
+        }
+
+        const shareUrl = `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(betId)}&modal=bet`;
+
+        return new Response(JSON.stringify({
+          success: true,
+          parsedBet: { betId, shareUrl },
+          message: 'Verification request recorded. Streamer can audit bet link in 1 click (+250 $DIG).'
+        }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 400,
+          headers: corsHeaders
+        });
+      }
+    }
+
+    // 8. Profile Update Endpoint
+    if (url.pathname === '/api/profile/update' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        return new Response(JSON.stringify({ success: true, user: body }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 400,
+          headers: corsHeaders
+        });
+      }
+    }
+
+    // 9. Default 404 for unknown API routes
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
       headers: corsHeaders

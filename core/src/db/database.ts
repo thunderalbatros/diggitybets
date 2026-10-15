@@ -22,6 +22,28 @@ export interface UserRow {
   kick_created_at: number | null;
   first_seen_at: number;
   last_seen_at: number;
+  discord_id?: string | null;
+  discord_username?: string | null;
+  discord_avatar?: string | null;
+  crypto_ltc?: string | null;
+  crypto_btc?: string | null;
+  crypto_eth?: string | null;
+  crypto_usdc?: string | null;
+  crypto_sol?: string | null;
+  x_handle?: string | null;
+  ig_handle?: string | null;
+}
+
+export interface StakeVerificationRequestRow {
+  id: string;
+  user_id: string;
+  kick_username: string;
+  stake_username: string;
+  target_multiplier: number;
+  bet_id: string;
+  share_url: string;
+  status: string;
+  created_at: number;
 }
 
 export interface PointTransactionRow {
@@ -128,7 +150,41 @@ export class HuntHubDatabase {
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_redemptions_user ON redemptions(user_id);
+
+      CREATE TABLE IF NOT EXISTS stake_verification_requests (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kick_username TEXT NOT NULL,
+        stake_username TEXT NOT NULL,
+        target_multiplier INTEGER NOT NULL,
+        bet_id TEXT UNIQUE NOT NULL,
+        share_url TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_stake_req_user ON stake_verification_requests(user_id);
+      CREATE INDEX IF NOT EXISTS idx_stake_req_status ON stake_verification_requests(status);
     `);
+
+    // Dynamic schema migrations for existing database instances
+    const safeAddColumn = (column: string, typeDef: string) => {
+      try {
+        this.db.exec(`ALTER TABLE users ADD COLUMN ${column} ${typeDef};`);
+      } catch (e) {
+        // Column already exists, safe to ignore
+      }
+    };
+
+    safeAddColumn('discord_id', 'TEXT');
+    safeAddColumn('discord_username', 'TEXT');
+    safeAddColumn('discord_avatar', 'TEXT');
+    safeAddColumn('crypto_ltc', 'TEXT');
+    safeAddColumn('crypto_btc', 'TEXT');
+    safeAddColumn('crypto_eth', 'TEXT');
+    safeAddColumn('crypto_usdc', 'TEXT');
+    safeAddColumn('crypto_sol', 'TEXT');
+    safeAddColumn('x_handle', 'TEXT');
+    safeAddColumn('ig_handle', 'TEXT');
   }
 
   // --- User Operations ---
@@ -349,6 +405,163 @@ export class HuntHubDatabase {
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  }
+
+  // --- Profile, Discord & Crypto Persistence ---
+
+  public updateUserProfile(
+    userId: string,
+    data: {
+      avatar?: string;
+      stake_username?: string;
+      crypto_ltc?: string;
+      crypto_btc?: string;
+      crypto_eth?: string;
+      crypto_usdc?: string;
+      crypto_sol?: string;
+      x_handle?: string;
+      ig_handle?: string;
+    }
+  ): UserRow {
+    const user = this.getUserById(userId);
+    if (!user) throw new Error(`User ${userId} not found`);
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (data.avatar !== undefined) { fields.push('avatar = ?'); values.push(data.avatar); }
+    if (data.stake_username !== undefined) { fields.push('stake_username = ?'); values.push(data.stake_username); }
+    if (data.crypto_ltc !== undefined) { fields.push('crypto_ltc = ?'); values.push(data.crypto_ltc); }
+    if (data.crypto_btc !== undefined) { fields.push('crypto_btc = ?'); values.push(data.crypto_btc); }
+    if (data.crypto_eth !== undefined) { fields.push('crypto_eth = ?'); values.push(data.crypto_eth); }
+    if (data.crypto_usdc !== undefined) { fields.push('crypto_usdc = ?'); values.push(data.crypto_usdc); }
+    if (data.crypto_sol !== undefined) { fields.push('crypto_sol = ?'); values.push(data.crypto_sol); }
+    if (data.x_handle !== undefined) { fields.push('x_handle = ?'); values.push(data.x_handle); }
+    if (data.ig_handle !== undefined) { fields.push('ig_handle = ?'); values.push(data.ig_handle); }
+
+    if (fields.length > 0) {
+      values.push(userId);
+      this.db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    }
+
+    return this.getUserById(userId)!;
+  }
+
+  public linkDiscordAccount(
+    userId: string,
+    discordId: string,
+    discordUsername: string,
+    discordAvatar?: string
+  ): UserRow {
+    const user = this.getUserById(userId);
+    if (!user) throw new Error(`User ${userId} not found`);
+
+    this.db.prepare(`
+      UPDATE users 
+      SET discord_id = ?, discord_username = ?, discord_avatar = ?
+      WHERE id = ?
+    `).run(discordId, discordUsername, discordAvatar || null, userId);
+
+    return this.getUserById(userId)!;
+  }
+
+  public unlinkDiscordAccount(userId: string): UserRow {
+    const user = this.getUserById(userId);
+    if (!user) throw new Error(`User ${userId} not found`);
+
+    this.db.prepare(`
+      UPDATE users 
+      SET discord_id = NULL, discord_username = NULL, discord_avatar = NULL
+      WHERE id = ?
+    `).run(userId);
+
+    return this.getUserById(userId)!;
+  }
+
+  // --- Stake Verification Requests ---
+
+  public createStakeVerificationRequest(
+    userId: string,
+    kickUsername: string,
+    stakeUsername: string,
+    targetMultiplier: number,
+    betId: string,
+    shareUrl: string
+  ): { success: boolean; request?: StakeVerificationRequestRow; error?: string } {
+    // 1. Anti-Sybil: verify Stake username is not already linked to another user
+    const linkCheck = this.linkStakeUsername(userId, stakeUsername);
+    if (!linkCheck.success) {
+      return { success: false, error: linkCheck.error };
+    }
+
+    // 2. Check if bet_id was already submitted by anyone
+    const cleanBetId = betId.trim().toLowerCase();
+    const existingBet = this.db.prepare('SELECT id FROM stake_verification_requests WHERE LOWER(bet_id) = ?').get(cleanBetId);
+    if (existingBet) {
+      return { success: false, error: 'This bet ID has already been submitted for verification.' };
+    }
+
+    const id = crypto.randomUUID();
+    const now = Math.floor(Date.now() / 1000);
+
+    try {
+      this.db.prepare(`
+        INSERT INTO stake_verification_requests 
+        (id, user_id, kick_username, stake_username, target_multiplier, bet_id, share_url, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+      `).run(id, userId, kickUsername, stakeUsername, targetMultiplier, cleanBetId, shareUrl, now);
+
+      const request = this.db.prepare('SELECT * FROM stake_verification_requests WHERE id = ?').get(id) as StakeVerificationRequestRow;
+      return { success: true, request };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  public getStakeVerificationRequests(status?: string): StakeVerificationRequestRow[] {
+    if (status) {
+      return this.db.prepare('SELECT * FROM stake_verification_requests WHERE status = ? ORDER BY created_at DESC').all(status) as StakeVerificationRequestRow[];
+    }
+    return this.db.prepare('SELECT * FROM stake_verification_requests ORDER BY created_at DESC').all() as StakeVerificationRequestRow[];
+  }
+
+  public approveStakeVerification(requestId: string): { success: boolean; user?: UserRow; credited: boolean; error?: string } {
+    const req = this.db.prepare('SELECT * FROM stake_verification_requests WHERE id = ?').get(requestId) as StakeVerificationRequestRow | undefined;
+    if (!req) return { success: false, credited: false, error: 'Verification request not found' };
+
+    const user = this.getUserById(req.user_id);
+    if (!user) return { success: false, credited: false, error: 'User not found' };
+
+    let credited = false;
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      this.db.prepare('UPDATE stake_verification_requests SET status = \'APPROVED\' WHERE id = ?').run(requestId);
+      
+      // If not previously verified, mark verified and credit +250 $DIG
+      if (user.stake_verified === 0) {
+        this.db.prepare('UPDATE users SET stake_verified = 1, stake_username = ? WHERE id = ?').run(req.stake_username, req.user_id);
+        
+        // Credit 250 points
+        const newBalance = user.points_balance + 250;
+        const txId = crypto.randomUUID();
+        const now = Math.floor(Date.now() / 1000);
+
+        this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, user.id);
+        this.db.prepare(`
+          INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
+          VALUES (?, ?, 250, ?, 'STAKE_AFFILIATE_VERIFICATION_BONUS', ?, ?, ?)
+        `).run(txId, user.id, newBalance, requestId, JSON.stringify({ stake_username: req.stake_username, bet_id: req.bet_id }), now);
+        
+        credited = true;
+      }
+
+      this.db.exec('COMMIT;');
+      return { success: true, user: this.getUserById(user.id)!, credited };
+    } catch (err: any) {
+      this.db.exec('ROLLBACK;');
+      return { success: false, credited: false, error: err.message };
     }
   }
 

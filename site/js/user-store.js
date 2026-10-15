@@ -33,9 +33,9 @@ class UserStoreController {
     // Rewards & Store
     this.raffleTickets = parseInt(localStorage.getItem('hunthub_raffle_tickets') || '0', 10);
 
-    // Dynamic TOTP Multiplier Challenge (expires every 180s)
-    this.totpDuration = 180; // 3 minutes
-    this.totpMultiplier = 3.42;
+    // Dynamic Stake Limbo Target Multiplier Challenge (10 minutes = 600s, Integer OTP 10000 - 999999)
+    this.totpDuration = 600;
+    this.totpMultiplier = 994932;
     this.totpExpiresAt = 0;
     this.totpInterval = null;
 
@@ -159,24 +159,6 @@ class UserStoreController {
       loginBtn.addEventListener('click', () => {
         if (window.oauthEngine) {
           window.oauthEngine.loginKick();
-        } else {
-          const username = prompt('Enter your Kick.com username to link your account:', 'DiggityFan_99');
-          if (username && username.trim()) {
-            this.username = username.trim().startsWith('@') ? username.trim() : `@${username.trim()}`;
-            this.isLoggedIn = true;
-            this.isSub = confirm('Are you subscribed to kick.com/diggitybets? (Grants 2x $DIG Points)');
-            
-            localStorage.setItem('hunthub_kick_username', this.username);
-            localStorage.setItem('hunthub_is_sub', this.isSub ? 'true' : 'false');
-            
-            if (!localStorage.getItem('hunthub_balance')) {
-              localStorage.setItem('hunthub_balance', '0');
-              if (window.houseGames) window.houseGames.balance = 0;
-            }
-
-            this.updateUserUI();
-            if (window.soundEngine) window.soundEngine.playWin();
-          }
         }
       });
     }
@@ -271,7 +253,7 @@ class UserStoreController {
     // 3. Save Profile Changes
     const saveBtn = document.getElementById('profile-save-btn');
     if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
+      saveBtn.addEventListener('click', async () => {
         this.stakeUsername = (document.getElementById('prof-input-stake-user')?.value || '').trim();
         this.discordTag = (document.getElementById('prof-input-discord')?.value || '').trim();
         this.xHandle = (document.getElementById('prof-input-x')?.value || '').trim();
@@ -292,18 +274,46 @@ class UserStoreController {
         localStorage.setItem('hunthub_crypto_usdc', this.cryptoUSDC);
         localStorage.setItem('hunthub_crypto_sol', this.cryptoSOL);
 
+        // Persist to Server Database
+        try {
+          await fetch('/api/profile/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: this.username || 'Viewer',
+              avatar: this.avatar,
+              stake_username: this.stakeUsername,
+              crypto_ltc: this.cryptoLTC,
+              crypto_btc: this.cryptoBTC,
+              crypto_eth: this.cryptoETH,
+              crypto_usdc: this.cryptoUSDC,
+              crypto_sol: this.cryptoSOL,
+              x_handle: this.xHandle,
+              ig_handle: this.igHandle
+            })
+          });
+        } catch (e) {
+          console.warn('[UserStore] Profile remote update notice:', e);
+        }
+
         if (window.soundEngine) window.soundEngine.playCard();
-        alert('Profile, social handles, and crypto payout addresses saved successfully!');
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Profile Saved! 💾',
+            message: 'Crypto payout addresses and social profiles saved to database.',
+            type: 'green'
+          });
+        }
       });
     }
   }
 
   /**
-   * Stake 0.00 Bet Verification with Dynamic TOTP Multiplier
-   * Generates a random multiplier between 1.50x and 9.99x that expires every 3 minutes.
+   * Stake 0.00 Bet Verification with Dynamic Integer Target (Outlaw Rewards Style)
+   * Generates a random integer target multiplier between 10000 and 999999 that expires every 10 minutes (600s).
    */
-  startTotpTimer() {
-    this.generateNewMultiplier();
+  async startTotpTimer() {
+    await this.generateNewMultiplier();
 
     if (this.totpInterval) clearInterval(this.totpInterval);
     this.totpInterval = setInterval(() => {
@@ -316,7 +326,7 @@ class UserStoreController {
       if (timerEl) {
         const mins = Math.floor(remainingSec / 60);
         const secs = remainingSec % 60;
-        timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} remaining`;
       }
 
       if (progressEl) {
@@ -330,26 +340,57 @@ class UserStoreController {
     }, 1000);
   }
 
-  generateNewMultiplier() {
-    // Generate a clean target multiplier with 2 decimals e.g. 2.45x, 3.82x, 5.17x
-    const randomMult = (Math.random() * 6.5 + 1.5).toFixed(2);
-    this.totpMultiplier = parseFloat(randomMult);
-    this.totpExpiresAt = Date.now() + (this.totpDuration * 1000);
+  async generateNewMultiplier() {
+    try {
+      const res = await fetch('/api/stake/target');
+      if (res.ok) {
+        const data = await res.json();
+        this.totpMultiplier = Number(data.target) || Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000;
+        this.totpDuration = Number(data.validForSeconds) || 600;
+        this.totpExpiresAt = Number(data.expiresAt) || (Date.now() + this.totpDuration * 1000);
+      } else {
+        throw new Error('API returned ' + res.status);
+      }
+    } catch (_) {
+      this.totpMultiplier = Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000;
+      this.totpDuration = 600;
+      this.totpExpiresAt = Date.now() + (this.totpDuration * 1000);
+    }
 
     const multDisplay = document.getElementById('totp-mult-val');
-    if (multDisplay) {
-      multDisplay.textContent = `${this.totpMultiplier.toFixed(2)}x`;
-    }
+    if (multDisplay) multDisplay.textContent = this.totpMultiplier;
+
+    const stepTarget = document.getElementById('totp-step-target');
+    if (stepTarget) stepTarget.textContent = this.totpMultiplier;
   }
 
   /**
    * Stake Affiliate & Partner Verification Integration
-   * Verifies account under streamer referral code "diggitybets" (stake.com/?offer=diggity&c=i2mVktNM)
+   * Verifies account under streamer referral code "diggitybets" (stake.com/?offer=diggity&c=diggitybets)
    */
   bindStakeTotpVerification() {
+    const copyBtn = document.getElementById('btn-copy-target');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(String(this.totpMultiplier)).then(() => {
+            if (window.soundEngine) window.soundEngine.playTick();
+            if (window.sonner) {
+              window.sonner.toast({
+                title: 'Target Multiplier Copied! 📋',
+                message: `Target ${this.totpMultiplier} copied. Paste into Limbo target on Stake.`,
+                type: 'green'
+              });
+            }
+          }).catch(() => {});
+        }
+      });
+    }
+
     const refreshBtn = document.getElementById('btn-refresh-totp');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
+      refreshBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         this.generateNewMultiplier();
         if (window.soundEngine) window.soundEngine.playTick();
       });
@@ -372,7 +413,7 @@ class UserStoreController {
           statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
           statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
           statusBox.style.color = '#fef08a';
-          statusBox.innerHTML = `<strong>⏳ PENDING:</strong> Username <strong>@${this.stakeUsername}</strong> registered. Awaiting Bet ID match or affiliate sync.`;
+          statusBox.innerHTML = `<strong>⏳ PENDING AUDIT:</strong> Stake user <strong>@${this.stakeUsername}</strong> submitted for verification. Streamer will audit bet link in Admin Deck (+250 $DIG).`;
         } else {
           statusBox.style.display = 'none';
         }
@@ -381,46 +422,102 @@ class UserStoreController {
     updateStakeStatusBox();
 
     if (verifyBtn) {
-      verifyBtn.addEventListener('click', () => {
+      verifyBtn.addEventListener('click', async () => {
         const stakeUser = (document.getElementById('prof-input-stake-user')?.value || '').trim();
         const betId = (document.getElementById('prof-input-bet-id')?.value || '').trim();
 
         if (!stakeUser) {
-          alert('Please enter your Stake.com username first.');
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Stake Username Required',
+              message: 'Please enter your Stake.com username first.',
+              type: 'danger'
+            });
+          }
+          return;
+        }
+
+        if (!betId) {
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Bet ID Required',
+              message: 'Please paste your zero-value Limbo bet ID or share link.',
+              type: 'danger'
+            });
+          }
           return;
         }
 
         if (window.soundEngine) window.soundEngine.playTick();
-        verifyBtn.textContent = 'Verifying with Stake...';
+        verifyBtn.textContent = 'Verifying bet format...';
         verifyBtn.disabled = true;
 
-        setTimeout(() => {
-          this.stakeVerified = true;
+        try {
+          const res = await fetch('/api/stake/verify-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              kickUsername: this.username || 'Viewer',
+              stakeUsername: stakeUser,
+              targetMultiplier: this.totpMultiplier,
+              rawBetInput: betId
+            })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            verifyBtn.textContent = 'Verify and link Stake (+250 $DIG) ⚡';
+            verifyBtn.disabled = false;
+            if (statusBox) {
+              statusBox.style.display = 'block';
+              statusBox.style.background = 'rgba(255, 42, 95, 0.12)';
+              statusBox.style.border = '1px solid rgba(255, 42, 95, 0.35)';
+              statusBox.style.color = '#ff6b8b';
+              statusBox.innerHTML = `<strong>❌ VERIFICATION ERROR:</strong> ${data.error || 'Invalid bet submission'}`;
+            }
+            return;
+          }
+
           this.stakeUsername = stakeUser;
           localStorage.setItem('hunthub_stake_user', this.stakeUsername);
-          localStorage.setItem('hunthub_stake_verified', 'true');
 
-          // Award 250 $DIG welcome points for verified affiliate link
-          if (!localStorage.getItem('hunthub_affiliate_bonus_claimed')) {
-            localStorage.setItem('hunthub_affiliate_bonus_claimed', 'true');
-            if (window.houseGames) window.houseGames.adjustBalance(250);
-            alert(`✓ STAKE ACCOUNT VERIFIED! Welcome, ${stakeUser}. Account registered under code "diggitybets" (+250 $DIG Welcome Bonus)!`);
-          } else {
-            alert(`✓ STAKE ACCOUNT VERIFIED! Account linked to Stake user ${stakeUser}.`);
+          verifyBtn.textContent = '⏳ Verification Pending Audit';
+          verifyBtn.disabled = false;
+
+          if (statusBox) {
+            statusBox.style.display = 'block';
+            statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
+            statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
+            statusBox.style.color = '#fef08a';
+            statusBox.innerHTML = `<strong>✓ REQUEST SUBMITTED:</strong> Bet [<strong>${data.parsedBet?.betId || betId}</strong>] recorded for @${stakeUser}. The streamer can audit your bet link in 1 click from the Admin Control Deck (+250 $DIG reward).`;
           }
 
-          verifyBtn.textContent = '✓ Verified VIP Affiliate';
-          verifyBtn.disabled = false;
-          this.updateUserUI();
-          updateStakeStatusBox();
-          this.renderLeaderboard();
           if (window.soundEngine) window.soundEngine.playWin();
 
-          // Sync with Admin Hub BroadcastChannel
-          if (window.adminHub && window.adminHub.channel) {
-            window.adminHub.channel.postMessage({ type: 'STAKE_AFFILIATE_ADDED', username: stakeUser });
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Verification Request Recorded! 🎰',
+              message: `Bet ID ${data.parsedBet?.betId || betId} submitted for streamer audit (+250 $DIG upon confirmation).`,
+              type: 'green'
+            });
           }
-        }, 1000);
+
+          // Broadcast to Admin Deck
+          if (window.adminHub && window.adminHub.channel) {
+            window.adminHub.channel.postMessage({ type: 'STAKE_VERIFICATION_REQUESTED', username: stakeUser, betId });
+          }
+        } catch (err) {
+          verifyBtn.textContent = 'Verify and link Stake (+250 $DIG) ⚡';
+          verifyBtn.disabled = false;
+          if (statusBox) {
+            statusBox.style.display = 'block';
+            statusBox.style.background = 'rgba(255, 42, 95, 0.12)';
+            statusBox.style.border = '1px solid rgba(255, 42, 95, 0.35)';
+            statusBox.style.color = '#ff6b8b';
+            statusBox.innerHTML = `<strong>❌ NETWORK ERROR:</strong> Could not connect to verification server.`;
+          }
+        }
       });
     }
 
@@ -428,90 +525,27 @@ class UserStoreController {
       checkBtn.addEventListener('click', () => {
         updateStakeStatusBox();
         if (window.soundEngine) window.soundEngine.playTick();
-        alert(this.stakeVerified
-          ? `✓ Account @${this.stakeUsername} is verified under Stake referral code "diggitybets".`
-          : (this.stakeUsername
-              ? `⏳ Account @${this.stakeUsername} is registered under code "diggitybets". Awaiting streamer affiliate confirmation.`
-              : 'Enter your Stake username and click "Verify Stake Affiliate" to claim your status.'));
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Stake Status',
+            message: this.stakeVerified
+              ? `Account @${this.stakeUsername} is verified under Stake referral code diggitybets.`
+              : (this.stakeUsername
+                  ? `Account @${this.stakeUsername} is registered. Awaiting streamer audit.`
+                  : 'Enter your Stake username and place a Limbo $0 bet to verify.'),
+            type: this.stakeVerified ? 'green' : 'default'
+          });
+        }
       });
     }
   }
 
   /**
-   * Discord Account Linking Integration
+   * Discord Account Linking Integration (Synchronized with OAuthEngine)
    */
   bindDiscordLinking() {
-    const linkBtn = document.getElementById('btn-link-discord');
-    const unlinkBtn = document.getElementById('btn-unlink-discord');
-    const discordBadge = document.getElementById('discord-status-badge');
-    const discordTagDisplay = document.getElementById('discord-tag-display');
-
-    const updateDiscordUI = () => {
-      if (this.discordLinked) {
-        if (linkBtn) linkBtn.style.display = 'none';
-        if (unlinkBtn) unlinkBtn.style.display = 'inline-block';
-        if (discordBadge) {
-          discordBadge.textContent = 'LINKED ✓';
-          discordBadge.style.background = 'rgba(88, 101, 242, 0.25)';
-          discordBadge.style.color = '#5865f2';
-          discordBadge.style.borderColor = '#5865f2';
-        }
-        if (discordTagDisplay) {
-          discordTagDisplay.textContent = this.discordTag || '@DiscordUser#0001';
-          discordTagDisplay.style.display = 'block';
-        }
-      } else {
-        if (linkBtn) linkBtn.style.display = 'inline-flex';
-        if (unlinkBtn) unlinkBtn.style.display = 'none';
-        if (discordBadge) {
-          discordBadge.textContent = 'NOT LINKED';
-          discordBadge.style.background = 'rgba(255, 255, 255, 0.05)';
-          discordBadge.style.color = 'var(--text-dim)';
-          discordBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-        }
-        if (discordTagDisplay) {
-          discordTagDisplay.style.display = 'none';
-        }
-      }
-    };
-
-    updateDiscordUI();
-
-    if (linkBtn) {
-      linkBtn.addEventListener('click', () => {
-        if (window.oauthEngine) {
-          window.oauthEngine.loginDiscord();
-        } else {
-          const discordTag = prompt('Enter your Discord username or tag to link (e.g. diggityfan or Diggity#1337):', 'DiggityFan#1337');
-          if (discordTag && discordTag.trim()) {
-            this.discordLinked = true;
-            this.discordTag = discordTag.trim();
-            localStorage.setItem('hunthub_discord_linked', 'true');
-            localStorage.setItem('hunthub_discord_tag', this.discordTag);
-            updateDiscordUI();
-            if (window.soundEngine) window.soundEngine.playWin();
-            alert(`Discord account [${this.discordTag}] successfully linked! VIP stream perks enabled.`);
-          }
-        }
-      });
-    }
-
-    if (unlinkBtn) {
-      unlinkBtn.addEventListener('click', () => {
-        this.discordLinked = false;
-        this.discordTag = '';
-        localStorage.removeItem('hunthub_discord_linked');
-        localStorage.removeItem('hunthub_discord_tag');
-        updateDiscordUI();
-        if (window.soundEngine) window.soundEngine.playChip();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Discord Unlinked',
-            message: 'Your Discord account has been disconnected.',
-            type: 'default'
-          });
-        }
-      });
+    if (window.oauthEngine) {
+      window.oauthEngine.syncDiscordUI();
     }
   }
 

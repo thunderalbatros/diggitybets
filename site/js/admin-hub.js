@@ -33,6 +33,12 @@ class AdminHubController {
     if (btnSyncStake) btnSyncStake.addEventListener('click', () => this.syncStakeAffiliates());
     if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleStakeBulkSync());
 
+    // Bind Stake Verifications Queue Refresh
+    const btnRefreshStakeQueue = document.getElementById('btn-refresh-stake-admin-queue');
+    if (btnRefreshStakeQueue) {
+      btnRefreshStakeQueue.addEventListener('click', () => this.renderStakeVerificationsQueue());
+    }
+
     // Check on startup
     this.checkAdminAccess();
   }
@@ -40,28 +46,29 @@ class AdminHubController {
   isStreamerUser(username) {
     if (!username) return false;
     const clean = username.trim().toLowerCase().replace('@', '');
-    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tomas' || clean === 'admin';
+    return clean === 'diggitybets' || clean === 'diggity_bets';
   }
 
   checkAdminAccess() {
     const currentKickUser = localStorage.getItem('hunthub_kick_username') || '';
-    const isUnlocked = localStorage.getItem(this.storageKeyAdminUnlock) === 'true';
-    const isStreamer = this.isStreamerUser(currentKickUser) || isUnlocked;
+    const isAdmin = this.isStreamerUser(currentKickUser) || localStorage.getItem('hunthub_is_admin') === 'true';
 
     const navTab = document.getElementById('nav-tab-admin');
     const adminBadge = document.getElementById('auth-admin-badge');
     const adminSection = document.getElementById('admin-hub');
 
     if (navTab) {
-      navTab.style.display = isStreamer ? 'inline-flex' : 'none';
+      navTab.style.display = isAdmin ? 'inline-flex' : 'none';
     }
     if (adminBadge) {
-      adminBadge.style.display = isStreamer ? 'inline-flex' : 'none';
+      adminBadge.style.display = isAdmin ? 'inline-block' : 'none';
     }
 
-    if (isStreamer) {
+    if (isAdmin) {
       this.renderAllDecks();
       this.bindAdminControls();
+    } else if (adminSection) {
+      adminSection.style.display = 'none';
     }
   }
 
@@ -185,9 +192,9 @@ class AdminHubController {
 
   handleBroadcast(data) {
     if (!data) return;
-    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'STAKE_AFFILIATE_ADDED') {
+    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'STAKE_AFFILIATE_ADDED' || data.type === 'STAKE_VERIFICATION_REQUESTED') {
       this.renderAllDecks();
-      if (window.soundEngine && (data.type === 'NEW_CLAIM' || data.type === 'STAKE_AFFILIATE_ADDED')) {
+      if (window.soundEngine && (data.type === 'NEW_CLAIM' || data.type === 'STAKE_AFFILIATE_ADDED' || data.type === 'STAKE_VERIFICATION_REQUESTED')) {
         window.soundEngine.playCoinDispenser();
       }
     }
@@ -195,10 +202,109 @@ class AdminHubController {
 
   renderAllDecks() {
     this.renderKPIs();
+    this.renderStakeVerificationsQueue();
     this.renderClaimsQueue();
     this.renderSundayRaffleLedger();
     this.renderSecurityRadar();
     this.renderStakeReferrals();
+  }
+
+  async renderStakeVerificationsQueue() {
+    const tbody = document.getElementById('admin-stake-verifications-tbody');
+    if (!tbody) return;
+
+    try {
+      const res = await fetch('/api/admin/stake-verifications?adminUser=diggitybets', {
+        headers: { 'x-admin-user': 'diggitybets' }
+      });
+      if (!res.ok) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--crimson); padding: 20px;">Access Restricted (403): Master @diggitybets credentials required.</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      const requests = data.requests || [];
+
+      if (requests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">No Stake verification requests found. Spectators can verify via Limbo $0 bet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = requests.map(req => {
+        const timeStr = new Date(req.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = new Date(req.created_at * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' });
+        const isPending = req.status === 'PENDING';
+        const auditUrl = req.share_url || `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(req.bet_id)}&modal=bet`;
+
+        return `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${dateStr} ${timeStr}</td>
+            <td style="font-weight: 700; color: #ffffff;">@${req.kick_username}</td>
+            <td style="color: var(--gold); font-weight: 700;">@${req.stake_username}</td>
+            <td style="font-family: var(--font-display); font-weight: 900; color: #53fc18; font-variant-numeric: tabular-nums;">${req.target_multiplier}</td>
+            <td style="font-family: monospace; font-size: 11px; color: var(--cyan);">${req.bet_id}</td>
+            <td>
+              <a href="${auditUrl}" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                Open Bet on Stake ↗
+              </a>
+            </td>
+            <td>
+              <span class="reward-badge-pill" style="font-size: 10px; background: ${isPending ? 'rgba(255, 215, 0, 0.15)' : 'rgba(83, 252, 24, 0.15)'}; border-color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'}; color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'};">
+                ${req.status}
+              </span>
+            </td>
+            <td>
+              ${isPending
+                ? `<button type="button" class="btn-game-action primary btn-approve-stake-req" data-req-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800; cursor: pointer;">Approve (+250 $DIG) ✓</button>`
+                : `<span style="color: var(--kick-green); font-size: 11px; font-weight: 700;">VERIFIED ✓</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Bind approve buttons
+      tbody.querySelectorAll('.btn-approve-stake-req').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const reqId = btn.getAttribute('data-req-id');
+          const kickUser = btn.getAttribute('data-user');
+          btn.textContent = 'Approving...';
+          btn.disabled = true;
+
+          try {
+            const approveRes = await fetch('/api/admin/approve-stake-verification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+              body: JSON.stringify({ requestId: reqId, adminUser: 'diggitybets' })
+            });
+
+            if (approveRes.ok) {
+              if (window.soundEngine) window.soundEngine.playWin();
+              if (window.sonner) {
+                window.sonner.toast({
+                  title: 'Stake Verification Approved! 🎰',
+                  message: `User @${kickUser} confirmed under code diggitybets. +250 $DIG points credited!`,
+                  type: 'green'
+                });
+              }
+              await this.renderStakeVerificationsQueue();
+              if (this.channel) {
+                this.channel.postMessage({ type: 'STAKE_VERIFICATION_APPROVED', requestId: reqId });
+              }
+            } else {
+              const errData = await approveRes.json();
+              alert('Error approving verification: ' + (errData.error || 'Server error'));
+              btn.textContent = 'Approve (+250 $DIG) ✓';
+              btn.disabled = false;
+            }
+          } catch (err) {
+            btn.textContent = 'Approve (+250 $DIG) ✓';
+            btn.disabled = false;
+          }
+        });
+      });
+
+    } catch (e) {
+      console.warn('[AdminHub] Could not load stake verifications:', e);
+    }
   }
 
   renderKPIs() {

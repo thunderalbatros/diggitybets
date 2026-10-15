@@ -66,9 +66,10 @@
           <span class="nav-item-text">Leaderboard</span>
           <span class="badge-soon">SOON</span>
         </a>
-        <a href="#admin-hub" class="nav-link-btn admin-nav-tab" id="nav-tab-admin" style="display: none;" data-target="#admin-hub" title="Streamer Admin">
+        <a href="#admin" class="nav-link-btn admin-nav-tab" id="nav-tab-admin" style="display: none;" data-target="#admin" title="Admin Control Deck">
           <span class="nav-item-icon">👑</span>
-          <span class="nav-item-text">Streamer Admin</span>
+          <span class="nav-item-text">Admin Control Deck</span>
+          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; border-radius: 4px; letter-spacing: 0.5px;">MASTER</span>
         </a>
       </nav>
 
@@ -1511,11 +1512,111 @@
       </div>
 
       <div class="profile-layout-grid">
-        <!-- Card 1: Identity & Profile Image -->
+        <!-- Card 1: Stake Account & Affiliate Verification (Outlaw Rewards Style - Primary) -->
+        <div class="profile-glass-card" id="stake-verification-card" style="grid-column: 1 / -1; border-color: rgba(83, 252, 24, 0.4); box-shadow: 0 0 24px rgba(83, 252, 24, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 32px; width: auto; object-fit: contain;">
+              <div>
+                <h3 class="profile-card-title" style="margin: 0; font-size: 18px; color: #ffffff;">Link your Stake account (Code: diggitybets)</h3>
+                <p style="font-size: 12px; color: #cbd5e1; margin: 4px 0 0 0;">
+                  Place a free Limbo bet with an amount of 0 to verify your Stake account under referral code diggitybets. Each Stake account can be linked to only one Kick account.
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge-soon" style="background: rgba(83, 252, 24, 0.15); color: var(--kick-green); border-color: var(--kick-green); font-size: 11px;">CODE: DIGGITYBETS</span>
+              <span id="prof-stake-status-badge" class="reward-badge-pill" style="border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">UNVERIFIED AFFILIATE</span>
+            </div>
+          </div>
+
+          <!-- Outlaw Rewards Limbo OTP Card -->
+          <div style="background: linear-gradient(135deg, rgba(83, 252, 24, 0.06) 0%, rgba(14, 20, 32, 0.9) 100%); border: 1px solid rgba(83, 252, 24, 0.35); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+              <div>
+                <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;">
+                  TARGET MULTIPLIER (OTP)
+                </div>
+                <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 4px;">
+                  <span id="totp-mult-val" style="font-size: 38px; font-family: var(--font-display); font-weight: 900; color: #53fc18; letter-spacing: 2px; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px rgba(83, 252, 24, 0.6);">994932</span>
+                  <button type="button" class="btn-stake-secondary" id="btn-copy-target" style="padding: 5px 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📋</span> Copy target
+                  </button>
+                </div>
+                <div style="margin-top: 6px;">
+                  <a href="#" id="btn-refresh-totp" style="color: var(--text-dim); font-size: 11px; text-decoration: underline;">Start again with a new target</a>
+                </div>
+              </div>
+
+              <!-- Timer countdown -->
+              <div style="text-align: right;">
+                <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display);">EXPIRES IN</div>
+                <div id="totp-timer" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--cyan); margin-top: 2px; font-variant-numeric: tabular-nums;">09:58 remaining</div>
+                <div style="width: 140px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; margin-left: auto;">
+                  <div id="totp-progress-bar" style="width: 100%; height: 100%; background: #53fc18; transition: width 1s linear;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3 Clear Steps -->
+            <div style="background: rgba(0,0,0,0.4); border-radius: 10px; padding: 14px 18px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 16px;">
+              <div style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">
+                VERIFICATION STEPS:
+              </div>
+              <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: #cbd5e1; line-height: 1.6;">
+                <li>Open Limbo on Stake while signed in to your account.</li>
+                <li>Set Bet Amount to <strong>0</strong> and Target Multiplier to <strong id="totp-step-target" style="color: #53fc18;">994932</strong>, then place the bet.</li>
+                <li>Open that bet in your history and copy its ID or share link.</li>
+              </ol>
+            </div>
+
+            <!-- Direct Action Links -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <a href="https://stake.com/casino/games/limbo" target="_blank" rel="noopener noreferrer" class="btn-game-action primary" style="padding: 8px 16px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                Open Limbo on Stake ↗
+              </a>
+              <a href="https://stake.com/?offer=diggity&c=diggitybets" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 8px 14px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Sign up with code diggitybets ↗
+              </a>
+            </div>
+          </div>
+
+          <!-- Input Fields & Verification Trigger -->
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <label for="prof-input-stake-user" style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">
+                STAKE USERNAME:
+              </label>
+              <input type="text" id="prof-input-stake-user" class="slots-search-input" placeholder="e.g. StakeWinner77" style="font-family: var(--font-display); font-size: 13px;">
+            </div>
+
+            <div>
+              <label for="prof-input-bet-id" style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">
+                BET ID OR SHARE LINK:
+              </label>
+              <input type="text" id="prof-input-bet-id" class="slots-search-input" placeholder="Paste your zero-value bet ID or share link here" style="font-family: var(--font-display); font-size: 13px;">
+            </div>
+          </div>
+
+          <div id="stake-verification-status-box" style="display: none; padding: 12px 16px; border-radius: 8px; font-size: 12px; margin-bottom: 14px;">
+            <!-- Populated dynamically -->
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn-game-action primary" id="btn-verify-stake-bet" style="padding: 12px 24px; font-size: 13px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800; flex: 1;">
+              Verify and link Stake (+250 $DIG) ⚡
+            </button>
+            <button type="button" class="btn-stake-secondary" id="btn-check-stake-status" style="padding: 12px 16px; font-size: 12px;" title="Refresh Verification Status">
+              🔄 Check Status
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2: Identity & Profile Image (Deterministic Vector Avatars) -->
         <div class="profile-glass-card">
           <h3 class="profile-card-title"><span>🖼️</span> PROFILE IMAGE</h3>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-            Choose a stylized slot character avatar or upload your custom profile picture from your computer:
+            Choose a deterministic vector avatar preset or upload your custom profile picture from your device:
           </p>
 
           <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
@@ -1544,16 +1645,16 @@
           </div>
 
           <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-muted); display: block; margin-bottom: 6px;">
-            OR SELECT CASINO CHARACTER PRESET:
+            DETERMINISTIC VECTOR AVATAR PRESETS:
           </label>
-          <div class="avatar-presets-row">
-            <button type="button" class="avatar-preset-btn" data-avatar="🤠" title="Wanted Cowboy">🤠</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="⚡" title="Zeus 1000">⚡</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="🦝" title="Le Bandit">🦝</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="🍭" title="Sweet Bonanza">🍭</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="💀" title="Tombstone Outlaw">💀</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="👑" title="Slot King">👑</button>
-            <button type="button" class="avatar-preset-btn" data-avatar="🪙" title="Diggity Gold">🪙</button>
+          <div class="avatar-presets-row" id="avatar-presets-container">
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="WantedKing" title="Slot King"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="ZeusSpark" title="Zeus Spark"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="LeBandit" title="Bandit Core"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="SweetDiamond" title="Diamond Ace"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="TombstoneVisor" title="Outlaw Visor"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="CyberDice" title="Cyber Dice"></button>
+            <button type="button" class="avatar-preset-btn" data-avatar-seed="DiggityGold" title="Diggity Gold"></button>
           </div>
 
           <div style="margin-top: 16px;">
@@ -1565,96 +1666,50 @@
               <button type="button" class="btn-game-action primary" id="btn-apply-avatar-url" style="padding: 6px 12px; font-size: 12px;">Apply</button>
             </div>
           </div>
-
-          <!-- Discord Integration Box -->
-          <div class="discord-card-box" style="margin-top: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">💬</span>
-                <strong style="font-family: var(--font-display); color: #5865f2; font-size: 14px;">DISCORD LINKING</strong>
-              </div>
-              <span id="discord-status-badge" class="reward-badge-pill">NOT LINKED</span>
-            </div>
-            <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">
-              Link your Discord account to receive stream giveaway pings and claim your VIP role in our official server <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" style="color: #7289da; font-weight: 600; text-decoration: underline;">discord.gg/uHKTcPY7eD ↗</a>.
-            </p>
-            <div id="discord-tag-display" style="display: none; font-family: var(--font-display); font-size: 13px; color: #ffffff; margin-bottom: 10px;"></div>
-            <div style="display: flex; gap: 8px;">
-              <button type="button" class="btn-discord-action" id="btn-link-discord">
-                <span>💬</span> Link Discord Account
-              </button>
-              <button type="button" class="btn-chat-toggle" id="btn-unlink-discord" style="display: none; color: var(--crimson);">
-                Unlink
-              </button>
-            </div>
-          </div>
         </div>
 
-        <!-- Card 2: Stake Account & Affiliate Verification -->
-        <div class="profile-glass-card" id="stake-verification-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 28px; width: auto; object-fit: contain;">
-              <h3 class="profile-card-title" style="margin: 0;">STAKE AFFILIATE VERIFICATION</h3>
-            </div>
-            <span class="badge-soon" style="background: rgba(83, 252, 24, 0.15); color: var(--kick-green); border-color: var(--kick-green);">CODE: DIGGITYBETS</span>
-          </div>
-          
-          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px;">
-            Link your Stake.com account registered under referral code <strong>diggitybets</strong> to earn the <strong>VERIFIED VIP</strong> badge, 2x giveaway tickets, and monthly wager race rewards.
-          </p>
-
-          <!-- Step 1: Referral Link Banner -->
-          <div style="background: linear-gradient(135deg, rgba(83, 252, 24, 0.08) 0%, rgba(14, 20, 32, 0.8) 100%); border: 1px solid rgba(83, 252, 24, 0.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <div>
-              <div style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--kick-green);">
-                STEP 1: PLAY WITH OUR OFFICIAL CODE
+        <!-- Card 3: Discord Integration Box (Real OAuth2 & Vector SVG) -->
+        <div class="profile-glass-card">
+          <div class="discord-card-box" id="discord-card-box" style="padding: 16px; border-radius: 12px; border: 1px solid rgba(88, 101, 242, 0.25); background: rgba(88, 101, 242, 0.08);">
+            <!-- State: Disconnected -->
+            <div id="discord-disconnected-state">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#5865f2" style="flex-shrink: 0;">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                  </svg>
+                  <strong style="font-family: var(--font-display); color: #5865f2; font-size: 14px;">DISCORD LINKING</strong>
+                </div>
+                <span id="discord-status-badge" class="reward-badge-pill" style="font-size: 10px; background: rgba(255,255,255,0.05); color: var(--text-dim); border-color: rgba(255,255,255,0.15);">NOT LINKED</span>
               </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Code: <strong style="color: #ffffff; letter-spacing: 0.5px;">diggitybets</strong> · Link: stake.com/?offer=diggity&c=i2mVktNM
-              </div>
-            </div>
-            <a href="https://stake.com/?offer=diggity&c=i2mVktNM" target="_blank" rel="noopener noreferrer" class="btn-stake-primary" style="padding: 7px 14px; font-size: 11px; text-decoration: none; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
-              Open Stake & Claim ↗
-            </a>
-          </div>
-
-          <!-- Step 2: Configure Stake Username & Bet ID / Verify -->
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div>
-              <label for="prof-input-stake-user" style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">
-                STEP 2: ENTER YOUR STAKE USERNAME:
-              </label>
-              <input type="text" id="prof-input-stake-user" class="slots-search-input" placeholder="e.g. StakeWinner77" style="font-family: var(--font-display); font-size: 13px;">
-            </div>
-
-            <!-- TOTP Multiplier Verification Challenge -->
-            <div class="totp-challenge-card" style="padding: 10px 14px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-              <div>
-                <div style="font-size: 11px; color: var(--text-muted);">Optional Challenge: Place a $0.00 bet on Dice or Limbo with target: <strong id="totp-mult-val" style="color: var(--gold);">3.42x</strong></div>
-                <div style="font-size: 10px; color: var(--text-dim);"><span id="totp-instruction-mult">Current multiplier</span> · Timer: <span id="totp-timer" style="font-family: var(--font-display); font-weight: 700; color: var(--cyan);">02:45</span></div>
-                <div class="totp-progress-bar" id="totp-progress-bar" style="height: 2px; background: var(--kick-green); margin-top: 4px; width: 100%;"></div>
-              </div>
-              <button type="button" class="btn-chat-toggle" id="btn-refresh-totp" style="font-size: 11px; padding: 4px 8px;">🔄 Refresh Target</button>
-            </div>
-
-            <div>
-              <label for="prof-input-bet-id" style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">
-                STAKE BET ID (e.g. casino:198273645 or 12345678910):
-              </label>
-              <input type="text" id="prof-input-bet-id" class="slots-search-input" placeholder="Paste Bet ID from Stake" style="font-family: var(--font-display); font-size: 13px;">
-            </div>
-
-            <div id="stake-verification-status-box" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 4px;">
-              <!-- Populated dynamically by user-store.js -->
-            </div>
-
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button type="button" class="btn-game-action primary" id="btn-verify-stake-bet" style="padding: 10px 18px; font-size: 13px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800; flex: 1;">
-                Verify Stake Affiliate & Claim VIP ⚡ (+250 $DIG)
+              <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">
+                Link your Discord account via official OAuth2 to receive stream giveaway pings and claim your VIP role in our official server <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" style="color: #7289da; font-weight: 600; text-decoration: underline;">discord.gg/uHKTcPY7eD ↗</a>.
+              </p>
+              <button type="button" class="btn-discord-action" id="btn-link-discord" style="display: inline-flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+                <span>Link Discord Account</span>
               </button>
-              <button type="button" class="btn-stake-secondary" id="btn-check-stake-status" style="padding: 10px 14px; font-size: 12px;" title="Refresh Verification Status">
-                🔄 Check Status
+            </div>
+
+            <!-- State: Connected -->
+            <div id="discord-connected-state" style="display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: #5865f2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 14px rgba(88,101,242,0.4);">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div id="discord-username-display" style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff;">@DiscordUser</div>
+                  <div style="font-size: 12px; color: var(--kick-green); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 10px;">🟢</span> Discord account connected
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-stake-secondary" id="btn-unlink-discord" style="padding: 6px 14px; font-size: 12px; border-color: rgba(255, 42, 95, 0.4); color: #ff6b8b;" title="Unlink Discord account">
+                Unlink
               </button>
             </div>
           </div>
@@ -1744,6 +1799,47 @@
         <div class="bh-metric-card" style="border-color: var(--magenta);">
           <div class="bh-metric-label">ALT ACCOUNTS FLAGGED</div>
           <div class="bh-metric-value" id="admin-kpi-flagged-alts" style="color: var(--magenta);">0</div>
+        </div>
+      <!-- DECK 0: STAKE AFFILIATE VERIFICATIONS AUDIT QUEUE -->
+      <div class="bh-table-card" style="margin-bottom: 28px; border-color: rgba(83, 252, 24, 0.4); box-shadow: 0 0 20px rgba(83, 252, 24, 0.06);">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+              <span>🎰</span> STAKE AFFILIATE VERIFICATIONS QUEUE (Code: diggitybets)
+            </h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Audit $0 Limbo bets placed by viewers with their unique Target Multipliers. Verify in 1 click to award +250 $DIG and VIP status.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-stake-secondary" id="btn-refresh-stake-admin-queue" style="padding: 6px 12px; font-size: 12px;">
+              🔄 Refresh Queue
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <th>KICK USER</th>
+                <th>STAKE USERNAME</th>
+                <th>TARGET MULTIPLIER</th>
+                <th>BET ID</th>
+                <th>AUDIT LINK</th>
+                <th>STATUS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="admin-stake-verifications-tbody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">
+                  No pending Stake verification requests.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

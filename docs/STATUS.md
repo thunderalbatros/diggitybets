@@ -275,6 +275,25 @@
   - **Context Compactor (`tools/intelligence/context_compactor.mjs`):** 60%-75% history token compaction preserving file diffs, Stake refer code, and invariants.
 - [x] **Kick Events & Store Master Plan V2.0:** Documented in [docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md).
 - [x] **Guía de Uso Streamer:** Documented in [docs/INSTRUCCIONES_SUITE_COMPLETA.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/INSTRUCCIONES_SUITE_COMPLETA.md).
+- [x] **Phase 1 Production Release (Auth, Admin Unlock, Profile DB & Stake Limbo OTP):** COMPLETED & TESTED.
+  - **Kick OAuth 2.1 PKCE & Exclusive Admin Deck for `diggitybets`:**
+    - Streamer ID `88254585` / `username === 'diggitybets'` auto-promoted to `isAdmin: true` in session.
+    - Dynamic sidebar unlock of "Admin Control Deck" (`#admin`) with golden "MASTER" badge.
+    - Edge Worker and Node hub protect `#admin` and admin API endpoints (`/api/admin/*`) returning HTTP 403 Forbidden for non-admin viewers.
+  - **Discord OAuth2 Official Flow (`identify guilds.join`):**
+    - Removed `window.prompt()` completely.
+    - Added connected state card with official vector SVG logo, `@discord_username`, green connected indicator, and `[ Unlink ]` endpoint (`POST /api/auth/discord/unlink`).
+    - Stored `discord_id`, `discord_username`, `discord_avatar` in SQLite `users` table.
+  - **Stake Affiliate Verification via Limbo $0 Bet (Outlaw Rewards Style):**
+    - Primary card in `#profile` styled after `lawrewards.co/profile`.
+    - Secure integer OTP target multiplier (10,000 to 999,999) with 600-second (10-minute) countdown timer, progress bar, `[ Copy target ]`, and rotation link.
+    - Universal bet ID parser accepting `casino:123`, `house:123`, raw IDs, and full Stake URLs (`?iid=house%3A...`).
+    - SQLite `stake_verification_requests` table with 1:1 anti-Sybil enforcement.
+    - Admin verification queue in `#admin` with 1-click audit link (`[ Open Bet on Stake ↗ ]`) and atomic approval crediting `+250 $DIG` welcome bonus.
+  - **Profile Persistence & Vector Avatars:**
+    - Saved crypto addresses (LTC, BTC, ETH, USDC, SOL) and socials to SQLite via `POST /api/profile/update`.
+    - Replaced emoji presets with deterministic SVG avatars generated via `site/js/avatar-generator.js`.
+    - Full automated test suite in `core/test/phase1-stake-auth.test.ts` (100% passing across all 6 test suites).
 
 ---
 
