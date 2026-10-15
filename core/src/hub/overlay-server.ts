@@ -227,8 +227,31 @@ export class OverlayServer {
         return;
       }
 
+      // Kick OAuth 2.1 GET Redirect Handler
+      if (url.pathname === '/api/auth/kick/callback' && req.method === 'GET') {
+        const code = url.searchParams.get('code') || '';
+        const state = url.searchParams.get('state') || '';
+        const host = req.headers.host || '';
+        const targetOrigin = host.includes('3001') ? 'http://127.0.0.1:3000' : '';
+        res.writeHead(302, { 'Location': `${targetOrigin}/?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=kick#profile` });
+        res.end();
+        return;
+      }
+
+      // Discord OAuth2 GET Redirect Handler
+      if (url.pathname === '/api/auth/discord/callback' && req.method === 'GET') {
+        const code = url.searchParams.get('code') || '';
+        const state = url.searchParams.get('state') || '';
+        const host = req.headers.host || '';
+        const targetOrigin = host.includes('3001') ? 'http://127.0.0.1:3000' : '';
+        res.writeHead(302, { 'Location': `${targetOrigin}/?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=discord#profile` });
+        res.end();
+        return;
+      }
+
       // Kick OAuth 2.1 PKCE Token Exchange Endpoint
       if (url.pathname === '/api/auth/kick/callback' && req.method === 'POST') {
+
         let body = '';
         req.on('data', (c) => (body += c));
         req.on('end', async () => {
@@ -564,6 +587,265 @@ export class OverlayServer {
         });
         return;
       }
+
+      // Admin Reject Stake Verification (Gated for diggitybets)
+      if (url.pathname === '/api/admin/reject-stake-verification' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { requestId, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            if (this.db) {
+              this.db.rejectStakeVerification(requestId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Store Redeem Voucher (User or Client)
+      if (url.pathname === '/api/store/redeem' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { userId, username, voucherTitle, costPoints } = JSON.parse(body);
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true }));
+              return;
+            }
+            let u = userId ? this.db.getUserById(userId) : null;
+            if (!u && username) u = this.db.getUserByUsername(username);
+            if (!u) {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'User not found' }));
+              return;
+            }
+            const resRedeem = this.db.createStoreRedemption(u.id, u.username, voucherTitle, Number(costPoints) || 100);
+            if (!resRedeem.success) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: resRedeem.error }));
+              return;
+            }
+            this.broadcast({ type: 'NEW_CLAIM', claim: resRedeem.redemption });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, redemption: resRedeem.redemption }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Admin Store Redemptions Queue (Gated for diggitybets)
+      if (url.pathname === '/api/admin/store-redemptions' && req.method === 'GET') {
+        const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
+        const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
+        if (cleanAdmin !== 'diggitybets') {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+          return;
+        }
+        const status = url.searchParams.get('status') || undefined;
+        const claims = this.db ? this.db.getStoreRedemptions(status) : [];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ claims }));
+        return;
+      }
+
+      // Admin Approve Store Redemption (Gated for diggitybets)
+      if (url.pathname === '/api/admin/approve-store-redemption' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { redemptionId, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            if (this.db) {
+              this.db.approveStoreRedemption(redemptionId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Admin Reject Store Redemption (Gated for diggitybets)
+      if (url.pathname === '/api/admin/reject-store-redemption' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { redemptionId, refund, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            let result = { success: true, refunded: false };
+            if (this.db) {
+              result = this.db.rejectStoreRedemption(redemptionId, refund !== false);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Admin Raffle Ledger (Gated for diggitybets)
+      if (url.pathname === '/api/admin/raffle-ledger' && req.method === 'GET') {
+        const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
+        const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
+        if (cleanAdmin !== 'diggitybets') {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+          return;
+        }
+        const weekNum = url.searchParams.get('week') ? Number(url.searchParams.get('week')) : undefined;
+        const ledger = this.db ? this.db.getRaffleLedger(weekNum) : { totalTickets: 0, weekNumber: 1, participants: [] };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(ledger));
+        return;
+      }
+
+      // Admin Roll Raffle Winner (Gated for diggitybets)
+      if (url.pathname === '/api/admin/roll-raffle' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { weekNumber, clientSeed, serverSeed, adminUser } = JSON.parse(body || '{}');
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            if (!this.db) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Database not initialized' }));
+              return;
+            }
+            const result = this.db.rollProvablyFairRaffle(weekNumber, serverSeed, clientSeed);
+            if (this.chatClient && result.winner && result.winner !== 'No Tickets Sold') {
+              try {
+                await this.chatClient.sendMessage(`🎉 [RAFFLE WINNER] Congrats ${result.winner}! You won the weekly raffle with ticket #${result.ticketNumber}/${result.totalTickets}! 🎟️💎`);
+              } catch (_) {}
+            }
+            this.broadcast({ type: 'RAFFLE_WINNER_ROLLED', result });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, result }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Admin Anti-Sybil Security Alerts (Gated for diggitybets)
+      if (url.pathname === '/api/admin/security-alerts' && req.method === 'GET') {
+        const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
+        const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
+        if (cleanAdmin !== 'diggitybets') {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+          return;
+        }
+        const alerts = this.db ? this.db.getSecurityAlerts() : [];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ alerts }));
+        return;
+      }
+
+      // Admin Security Action (Shadowban / Freeze / Whitelist) (Gated for diggitybets)
+      if (url.pathname === '/api/admin/security-action' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { action, username, clusterId, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true }));
+              return;
+            }
+            if (action === 'shadowban' && username) {
+              this.db.shadowbanUser(username);
+            } else if (action === 'freeze' && username) {
+              this.db.freezeUserBalance(username);
+            } else if (action === 'whitelist' && clusterId) {
+              this.db.whitelistCluster(clusterId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, action }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Cloudflare D1 Synchronization Endpoints
+      if (url.pathname === '/api/sync/state') {
+        if (req.method === 'GET') {
+          const state = this.db ? this.db.exportStateJson() : {};
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(state));
+          return;
+        }
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (c) => (body += c));
+          req.on('end', () => {
+            try {
+              const state = JSON.parse(body);
+              const result = this.db ? this.db.importStateJson(state) : { success: true, count: 0 };
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(result));
+            } catch (err: any) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+      }
+
 
       // Discord Unlink endpoint
       if (url.pathname === '/api/auth/discord/unlink' && req.method === 'POST') {

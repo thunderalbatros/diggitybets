@@ -15,6 +15,8 @@ export interface AppConfig {
   serverPort: number;
   pusherKey: string;
   pusherCluster: string;
+  kickRedirectUri: string;
+  discordRedirectUri: string;
 }
 
 function loadDevVars(): Record<string, string> {
@@ -37,6 +39,7 @@ function loadDevVars(): Record<string, string> {
 }
 
 const devVars = loadDevVars();
+const isProd = process.env.NODE_ENV === 'production';
 
 export const config: AppConfig = {
   channelSlug: process.env.KICK_CHANNEL_SLUG || 'diggitybets',
@@ -47,4 +50,7 @@ export const config: AppConfig = {
   serverPort: Number(process.env.PORT) || 3001,
   pusherKey: '34bf7a0ff419a2a775b9',
   pusherCluster: 'us2',
+  kickRedirectUri: process.env.KICK_REDIRECT_URI || (isProd ? 'https://diggitybets.vip/api/auth/kick/callback' : 'http://127.0.0.1:3000/api/auth/kick/callback'),
+  discordRedirectUri: process.env.DISCORD_REDIRECT_URI || (isProd ? 'https://diggitybets.vip/api/auth/discord/callback' : 'http://127.0.0.1:3000/api/auth/discord/callback'),
 };
+

@@ -6,11 +6,13 @@
   "scripts": {
     "start": "node --experimental-strip-types src/index.ts",
     "dev": "node --watch --experimental-strip-types src/index.ts",
-    "test": "node --experimental-strip-types test/stage1.test.ts && node --experimental-strip-types test/stage2.test.ts && node --experimental-strip-types test/stage2-e2e.test.ts && node --experimental-strip-types test/stage3.test.ts && node --experimental-strip-types test/stage4-tiers.test.ts && node --experimental-strip-types test/phase1-stake-auth.test.ts",
+    "test": "node --experimental-strip-types test/stage1.test.ts && node --experimental-strip-types test/stage2.test.ts && node --experimental-strip-types test/stage2-e2e.test.ts && node --experimental-strip-types test/stage3.test.ts && node --experimental-strip-types test/stage4-tiers.test.ts && node --experimental-strip-types test/phase1-stake-auth.test.ts && node --experimental-strip-types test/phase2-admin-d1.test.ts",
     "test:stage1": "node --experimental-strip-types test/stage1.test.ts",
     "test:stage2": "node --experimental-strip-types test/stage2.test.ts && node --experimental-strip-types test/stage2-e2e.test.ts",
     "test:stage3": "node --experimental-strip-types test/stage3.test.ts",
     "test:stage4": "node --experimental-strip-types test/stage4-tiers.test.ts",
+    "test:phase1": "node --experimental-strip-types test/phase1-stake-auth.test.ts",
+    "test:phase2": "node --experimental-strip-types test/phase2-admin-d1.test.ts",
     "sim": "node --experimental-strip-types src/simulator/chat-sim.ts"
   },
   "keywords": [

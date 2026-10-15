@@ -10,20 +10,24 @@ class OAuthEngine {
     this.storageKeyKick = 'hunthub_kick_auth';
     this.storageKeyDiscord = 'hunthub_discord_auth';
 
+    const isProd = window.location.hostname.includes('diggitybets.vip');
+    const redirectBase = isProd ? 'https://diggitybets.vip' : (window.location.origin.includes('3000') || window.location.origin.includes('3001') ? window.location.origin : 'http://127.0.0.1:3000');
+
     this.config = {
       kick: {
         clientId: window.HUNT_CONFIG?.KICK_CLIENT_ID || 'kick_pub_client_diggitybets',
         authUrl: 'https://id.kick.com/oauth/authorize',
         scope: 'user:read channel:read channel:rewards:read',
-        redirectUri: window.location.origin + window.location.pathname
+        redirectUri: `${redirectBase}/api/auth/kick/callback`
       },
       discord: {
         clientId: window.HUNT_CONFIG?.DISCORD_CLIENT_ID || '1314567890123456789',
         authUrl: 'https://discord.com/api/oauth2/authorize',
         scope: 'identify guilds.join',
-        redirectUri: window.location.origin + window.location.pathname
+        redirectUri: `${redirectBase}/api/auth/discord/callback`
       }
     };
+
 
     this.init();
   }
@@ -149,16 +153,17 @@ class OAuthEngine {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
-    const provider = sessionStorage.getItem('hh_oauth_provider');
+    const providerParam = urlParams.get('provider');
+    const provider = providerParam || sessionStorage.getItem('hh_oauth_provider') || 'kick';
     const savedState = sessionStorage.getItem('hh_oauth_state');
-    const codeVerifier = sessionStorage.getItem('hh_code_verifier');
+    const codeVerifier = sessionStorage.getItem('hh_code_verifier') || '';
 
-    if (!code || !state) return;
+    if (!code) return;
 
     // Clean URL query parameters immediately
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
 
-    if (state !== savedState) {
+    if (savedState && state && state !== savedState) {
       if (window.sonner) {
         window.sonner.toast({
           title: 'Authentication Error ❌',
@@ -172,6 +177,7 @@ class OAuthEngine {
     sessionStorage.removeItem('hh_oauth_state');
     sessionStorage.removeItem('hh_oauth_provider');
     sessionStorage.removeItem('hh_code_verifier');
+
 
     if (provider === 'kick') {
       await this.exchangeKickCode(code, codeVerifier);
