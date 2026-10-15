@@ -246,7 +246,7 @@
   // ========================================================
   function init3DTouchTilt() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const cards = document.querySelectorAll('.podium-card, .store-voucher-card, .leaderboard-prize-card, .profile-glass-card');
+    const cards = document.querySelectorAll('.podium-card, .store-voucher-card, .leaderboard-prize-card');
     
     cards.forEach(card => {
       // Create glare overlay if not present
