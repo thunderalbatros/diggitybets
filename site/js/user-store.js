@@ -15,11 +15,6 @@ class UserStoreController {
     this.stakeUsername = localStorage.getItem('hunthub_stake_user') || '';
     this.stakeVerified = localStorage.getItem('hunthub_stake_verified') === 'true';
 
-    // Rainbet Referral & Partner Program (Official: rainbet.com/en?r=diggitybets)
-    this.rainbetUsername = localStorage.getItem('hunthub_rainbet_user') || '';
-    this.rainbetVerified = localStorage.getItem('hunthub_rainbet_verified') === 'true';
-    this.rainbetReferralCode = 'diggitybets';
-
     // Discord Linking
     this.discordLinked = localStorage.getItem('hunthub_discord_linked') === 'true';
     this.discordTag = localStorage.getItem('hunthub_discord_tag') || '';
@@ -44,16 +39,16 @@ class UserStoreController {
     this.totpExpiresAt = 0;
     this.totpInterval = null;
 
-    // Leaderboard Participants Data
+    // Leaderboard Participants Data (100% Stake Affiliates under code diggitybets)
     this.leaderboardData = [
-      { rank: 1, casinoUser: 'GS8***', kickUser: '@GamerStake88', wager: 68450.00, prize: 1200, avatar: '👑', verified: true, isRainbet: false },
-      { rank: 2, casinoUser: 'RainNacho', kickUser: '@NachoGamer', wager: 34120.50, prize: 500, avatar: '🦝', verified: true, isRainbet: true },
-      { rank: 3, casinoUser: 'ZeusMax', kickUser: '@SlotKing21', wager: 22890.00, prize: 300, avatar: '⚡', verified: true, isRainbet: false },
-      { rank: 4, casinoUser: 'RainValen', kickUser: '@Valen99', wager: 14750.25, prize: 0, avatar: '🍭', verified: true, isRainbet: true },
-      { rank: 5, casinoUser: 'HunterPro', kickUser: '@StakeHunter', wager: 9810.00, prize: 0, avatar: '🤠', verified: true, isRainbet: false },
-      { rank: 6, casinoUser: 'CryptoAce', kickUser: '@CryptoSpin', wager: 6420.00, prize: 0, avatar: '💀', verified: true, isRainbet: false },
-      { rank: 7, casinoUser: 'RainAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 0, avatar: '🪙', verified: true, isRainbet: true },
-      { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 0, avatar: '🤠', verified: true, isRainbet: true }
+      { rank: 1, casinoUser: 'GS8***', kickUser: '@GamerStake88', wager: 68450.00, prize: 1200, avatar: '👑', verified: true },
+      { rank: 2, casinoUser: 'StakeNacho', kickUser: '@NachoGamer', wager: 34120.50, prize: 500, avatar: '🦝', verified: true },
+      { rank: 3, casinoUser: 'ZeusMax', kickUser: '@SlotKing21', wager: 22890.00, prize: 300, avatar: '⚡', verified: true },
+      { rank: 4, casinoUser: 'StakeValen', kickUser: '@Valen99', wager: 14750.25, prize: 0, avatar: '🍭', verified: true },
+      { rank: 5, casinoUser: 'HunterPro', kickUser: '@StakeHunter', wager: 9810.00, prize: 0, avatar: '🤠', verified: true },
+      { rank: 6, casinoUser: 'CryptoAce', kickUser: '@CryptoSpin', wager: 6420.00, prize: 0, avatar: '💀', verified: true },
+      { rank: 7, casinoUser: 'StakeAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 0, avatar: '🪙', verified: true },
+      { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 0, avatar: '🤠', verified: true }
     ];
   }
 
@@ -61,7 +56,6 @@ class UserStoreController {
     this.updateUserUI();
     this.bindAuthButtons();
     this.bindProfileControls();
-    this.bindRainbetReferralVerification();
     this.bindStakeTotpVerification();
     this.bindDiscordLinking();
     this.bindStoreRedemptions();
@@ -92,9 +86,8 @@ class UserStoreController {
     this.updateAvatarUI();
 
     // Populate profile inputs
-    const elRainbetUser = document.getElementById('prof-input-rainbet-user');
-    const badgeRainbet = document.getElementById('prof-rainbet-status-badge');
     const elStakeUser = document.getElementById('prof-input-stake-user');
+    const badgeStake = document.getElementById('prof-stake-status-badge');
     const elDiscord = document.getElementById('prof-input-discord');
     const elX = document.getElementById('prof-input-x');
     const elIg = document.getElementById('prof-input-ig');
@@ -103,30 +96,6 @@ class UserStoreController {
     const elETH = document.getElementById('prof-input-eth');
     const elUSDC = document.getElementById('prof-input-usdc');
     const elSOL = document.getElementById('prof-input-sol');
-    const badgeStake = document.getElementById('prof-stake-status-badge');
-
-    if (elRainbetUser && this.rainbetUsername) elRainbetUser.value = this.rainbetUsername;
-    if (badgeRainbet) {
-      if (this.rainbetVerified) {
-        badgeRainbet.textContent = '✓ REFERRED VIP (diggitybets)';
-        badgeRainbet.className = 'reward-badge-pill verified';
-        badgeRainbet.style.background = 'rgba(56, 189, 248, 0.2)';
-        badgeRainbet.style.borderColor = '#38bdf8';
-        badgeRainbet.style.color = '#38bdf8';
-      } else if (this.rainbetUsername) {
-        badgeRainbet.textContent = 'PENDING VERIFICATION';
-        badgeRainbet.className = 'reward-badge-pill pending';
-        badgeRainbet.style.background = 'rgba(255, 215, 0, 0.2)';
-        badgeRainbet.style.borderColor = 'var(--gold)';
-        badgeRainbet.style.color = 'var(--gold)';
-      } else {
-        badgeRainbet.textContent = 'UNVERIFIED REFERRAL';
-        badgeRainbet.className = 'reward-badge-pill unverified';
-        badgeRainbet.style.background = 'rgba(255, 42, 95, 0.2)';
-        badgeRainbet.style.borderColor = 'var(--crimson)';
-        badgeRainbet.style.color = '#ff6b8b';
-      }
-    }
 
     if (elStakeUser) elStakeUser.value = this.stakeUsername;
     if (elDiscord) elDiscord.value = this.discordTag;
@@ -260,7 +229,7 @@ class UserStoreController {
 
         // Max 2MB limit validation
         if (file.size > 2 * 1024 * 1024) {
-          alert('⚠️ El archivo seleccionado supera el límite de 2MB. Por favor subí una imagen más liviana.');
+          alert('⚠️ The selected file exceeds the 2MB limit. Please upload an image under 2MB.');
           return;
         }
 
@@ -275,7 +244,7 @@ class UserStoreController {
           localStorage.setItem('hunthub_avatar_type', 'img');
           this.updateAvatarUI();
           if (window.soundEngine) window.soundEngine.playWin();
-          alert('✅ Foto de perfil cargada y guardada correctamente!');
+          alert('✅ Profile image uploaded and saved successfully!');
         };
         reader.readAsDataURL(file);
       });
@@ -374,138 +343,9 @@ class UserStoreController {
   }
 
   /**
-   * Rainbet Referral & Partner Verification Integration
-   * Verifies account under streamer referral code "diggitybets" (rainbet.com/en?r=diggitybets)
+   * Stake Affiliate & Partner Verification Integration
+   * Verifies account under streamer referral code "diggitybets" (stake.com/?offer=diggity&c=i2mVktNM)
    */
-  bindRainbetReferralVerification() {
-    const elRainbetUser = document.getElementById('prof-input-rainbet-user');
-    const badgeRainbet = document.getElementById('prof-rainbet-status-badge');
-    const verifyBtn = document.getElementById('btn-verify-rainbet-referral');
-    const checkBtn = document.getElementById('btn-check-rainbet-status');
-    const statusBox = document.getElementById('rainbet-verification-status-box');
-
-    const updateRainbetUI = () => {
-      if (elRainbetUser && this.rainbetUsername) {
-        elRainbetUser.value = this.rainbetUsername;
-      }
-      if (badgeRainbet) {
-        if (this.rainbetVerified) {
-          badgeRainbet.textContent = '✓ REFERRED VIP (diggitybets)';
-          badgeRainbet.className = 'reward-badge-pill verified';
-          badgeRainbet.style.background = 'rgba(56, 189, 248, 0.2)';
-          badgeRainbet.style.borderColor = '#38bdf8';
-          badgeRainbet.style.color = '#38bdf8';
-        } else if (this.rainbetUsername) {
-          badgeRainbet.textContent = 'PENDING VERIFICATION';
-          badgeRainbet.className = 'reward-badge-pill pending';
-          badgeRainbet.style.background = 'rgba(255, 215, 0, 0.2)';
-          badgeRainbet.style.borderColor = 'var(--gold)';
-          badgeRainbet.style.color = 'var(--gold)';
-        } else {
-          badgeRainbet.textContent = 'UNVERIFIED REFERRAL';
-          badgeRainbet.className = 'reward-badge-pill unverified';
-          badgeRainbet.style.background = 'rgba(255, 42, 95, 0.2)';
-          badgeRainbet.style.borderColor = 'var(--crimson)';
-          badgeRainbet.style.color = '#ff6b8b';
-        }
-      }
-
-      if (statusBox) {
-        if (this.rainbetVerified) {
-          statusBox.style.display = 'block';
-          statusBox.style.background = 'rgba(56, 189, 248, 0.15)';
-          statusBox.style.border = '1px solid rgba(56, 189, 248, 0.4)';
-          statusBox.style.color = '#e0f2fe';
-          statusBox.innerHTML = `<strong>✓ VERIFIED:</strong> Account <strong>@${this.rainbetUsername}</strong> is confirmed under code <strong>diggitybets</strong>. You receive 2x giveaway tickets & rain eligibility!`;
-        } else if (this.rainbetUsername) {
-          statusBox.style.display = 'block';
-          statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
-          statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
-          statusBox.style.color = '#fef08a';
-          statusBox.innerHTML = `<strong>⏳ PENDING:</strong> Username <strong>@${this.rainbetUsername}</strong> registered. Submitted to streamer affiliate sync queue.`;
-        } else {
-          statusBox.style.display = 'none';
-        }
-      }
-
-      if (verifyBtn && this.rainbetVerified) {
-        verifyBtn.textContent = '✓ Verified Referral (diggitybets)';
-        verifyBtn.style.opacity = '0.9';
-      }
-    };
-
-    updateRainbetUI();
-
-    if (verifyBtn) {
-      verifyBtn.addEventListener('click', () => {
-        const inputVal = (document.getElementById('prof-input-rainbet-user')?.value || '').trim();
-        if (!inputVal || inputVal.length < 3) {
-          alert('Please enter your valid Rainbet.com username (at least 3 characters).');
-          return;
-        }
-
-        const cleanUser = inputVal.replace(/^@/, '');
-        if (window.soundEngine) window.soundEngine.playTick();
-        verifyBtn.textContent = 'Verifying with Rainbet Partners...';
-        verifyBtn.disabled = true;
-
-        setTimeout(() => {
-          this.rainbetUsername = cleanUser;
-          this.rainbetVerified = true;
-          localStorage.setItem('hunthub_rainbet_user', cleanUser);
-          localStorage.setItem('hunthub_rainbet_verified', 'true');
-
-          // Add to local list of verified referrals for streamer admin sync
-          try {
-            const list = JSON.parse(localStorage.getItem('hunthub_verified_rainbet_list') || '[]');
-            if (!list.some(item => item.username.toLowerCase() === cleanUser.toLowerCase())) {
-              list.push({
-                username: cleanUser,
-                kickUser: this.username || '@Viewer',
-                code: 'diggitybets',
-                verifiedAt: new Date().toISOString(),
-                status: 'verified'
-              });
-              localStorage.setItem('hunthub_verified_rainbet_list', JSON.stringify(list));
-            }
-          } catch(e) {}
-
-          // Award 350 $DIG welcome points for verified referral link
-          if (!localStorage.getItem('hunthub_rainbet_bonus_claimed')) {
-            localStorage.setItem('hunthub_rainbet_bonus_claimed', 'true');
-            if (window.houseGames) window.houseGames.adjustBalance(350);
-            alert(`✓ RAINBET ACCOUNT VERIFIED! Welcome, ${cleanUser}. You registered under code "diggitybets" and earned +350 $DIG Welcome Bonus!`);
-          } else {
-            alert(`✓ RAINBET ACCOUNT VERIFIED! Account linked to Rainbet user ${cleanUser} under referral code "diggitybets".`);
-          }
-
-          verifyBtn.textContent = '✓ Verified Referral (diggitybets)';
-          verifyBtn.disabled = false;
-          updateRainbetUI();
-          this.renderLeaderboard();
-          if (window.soundEngine) window.soundEngine.playWin();
-
-          // Sync with Admin Hub BroadcastChannel
-          if (window.adminHub && window.adminHub.channel) {
-            window.adminHub.channel.postMessage({ type: 'RAINBET_REFERRAL_ADDED', username: cleanUser });
-          }
-        }, 1000);
-      });
-    }
-
-    if (checkBtn) {
-      checkBtn.addEventListener('click', () => {
-        updateRainbetUI();
-        if (window.soundEngine) window.soundEngine.playTick();
-        alert(this.rainbetVerified 
-          ? `✓ Account @${this.rainbetUsername} is verified under referral code "diggitybets".` 
-          : (this.rainbetUsername 
-              ? `⏳ Account @${this.rainbetUsername} is registered. Awaiting streamer affiliate confirmation.` 
-              : 'Enter your Rainbet username and click "Verify Referral" to claim your status.'));
-      });
-    }
-  }
-
   bindStakeTotpVerification() {
     const refreshBtn = document.getElementById('btn-refresh-totp');
     if (refreshBtn) {
@@ -516,48 +356,85 @@ class UserStoreController {
     }
 
     const verifyBtn = document.getElementById('btn-verify-stake-bet');
-    if (!verifyBtn) return;
+    const checkBtn = document.getElementById('btn-check-stake-status');
+    const statusBox = document.getElementById('stake-verification-status-box');
 
-    verifyBtn.addEventListener('click', () => {
-      const stakeUser = (document.getElementById('prof-input-stake-user')?.value || '').trim();
-      const betId = (document.getElementById('prof-input-bet-id')?.value || '').trim();
-
-      if (!stakeUser) {
-        alert('Please enter your Stake.com username first.');
-        return;
-      }
-
-      if (!betId || betId.length < 6) {
-        alert('Please enter a valid Stake Bet ID (e.g., casino:198273645 or 12345678910). Place a $0.00 bet on Dice or Limbo with target ' + this.totpMultiplier.toFixed(2) + 'x and copy its Bet ID.');
-        return;
-      }
-
-      if (window.soundEngine) window.soundEngine.playTick();
-      verifyBtn.textContent = 'Verifying Bet ID on Stake...';
-      verifyBtn.disabled = true;
-
-      setTimeout(() => {
-        this.stakeVerified = true;
-        this.stakeUsername = stakeUser;
-        localStorage.setItem('hunthub_stake_user', this.stakeUsername);
-        localStorage.setItem('hunthub_stake_verified', 'true');
-
-        // Award 250 $DIG welcome points for verified affiliate link
-        if (!localStorage.getItem('hunthub_affiliate_bonus_claimed')) {
-          localStorage.setItem('hunthub_affiliate_bonus_claimed', 'true');
-          if (window.houseGames) window.houseGames.adjustBalance(250);
-          alert(`✓ STAKE ACCOUNT VERIFIED! Welcome, ${stakeUser}. You matched target ${this.totpMultiplier.toFixed(2)}x and earned +250 $DIG Welcome Bonus!`);
+    const updateStakeStatusBox = () => {
+      if (statusBox) {
+        if (this.stakeVerified) {
+          statusBox.style.display = 'block';
+          statusBox.style.background = 'rgba(83, 252, 24, 0.12)';
+          statusBox.style.border = '1px solid rgba(83, 252, 24, 0.35)';
+          statusBox.style.color = '#86efac';
+          statusBox.innerHTML = `<strong>✓ VERIFIED VIP:</strong> Account <strong>@${this.stakeUsername}</strong> is confirmed under code <strong>diggitybets</strong>. You receive 2x giveaway tickets & leaderboard race eligibility!`;
+        } else if (this.stakeUsername) {
+          statusBox.style.display = 'block';
+          statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
+          statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
+          statusBox.style.color = '#fef08a';
+          statusBox.innerHTML = `<strong>⏳ PENDING:</strong> Username <strong>@${this.stakeUsername}</strong> registered. Awaiting Bet ID match or affiliate sync.`;
         } else {
-          alert(`✓ STAKE ACCOUNT VERIFIED! Account linked to Stake user ${stakeUser}.`);
+          statusBox.style.display = 'none';
+        }
+      }
+    };
+    updateStakeStatusBox();
+
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', () => {
+        const stakeUser = (document.getElementById('prof-input-stake-user')?.value || '').trim();
+        const betId = (document.getElementById('prof-input-bet-id')?.value || '').trim();
+
+        if (!stakeUser) {
+          alert('Please enter your Stake.com username first.');
+          return;
         }
 
-        verifyBtn.textContent = '✓ Verified VIP Affiliate';
-        verifyBtn.disabled = false;
-        this.updateUserUI();
-        this.renderLeaderboard();
-        if (window.soundEngine) window.soundEngine.playWin();
-      }, 1200);
-    });
+        if (window.soundEngine) window.soundEngine.playTick();
+        verifyBtn.textContent = 'Verifying with Stake...';
+        verifyBtn.disabled = true;
+
+        setTimeout(() => {
+          this.stakeVerified = true;
+          this.stakeUsername = stakeUser;
+          localStorage.setItem('hunthub_stake_user', this.stakeUsername);
+          localStorage.setItem('hunthub_stake_verified', 'true');
+
+          // Award 250 $DIG welcome points for verified affiliate link
+          if (!localStorage.getItem('hunthub_affiliate_bonus_claimed')) {
+            localStorage.setItem('hunthub_affiliate_bonus_claimed', 'true');
+            if (window.houseGames) window.houseGames.adjustBalance(250);
+            alert(`✓ STAKE ACCOUNT VERIFIED! Welcome, ${stakeUser}. Account registered under code "diggitybets" (+250 $DIG Welcome Bonus)!`);
+          } else {
+            alert(`✓ STAKE ACCOUNT VERIFIED! Account linked to Stake user ${stakeUser}.`);
+          }
+
+          verifyBtn.textContent = '✓ Verified VIP Affiliate';
+          verifyBtn.disabled = false;
+          this.updateUserUI();
+          updateStakeStatusBox();
+          this.renderLeaderboard();
+          if (window.soundEngine) window.soundEngine.playWin();
+
+          // Sync with Admin Hub BroadcastChannel
+          if (window.adminHub && window.adminHub.channel) {
+            window.adminHub.channel.postMessage({ type: 'STAKE_AFFILIATE_ADDED', username: stakeUser });
+          }
+        }, 1000);
+      });
+    }
+
+    if (checkBtn) {
+      checkBtn.addEventListener('click', () => {
+        updateStakeStatusBox();
+        if (window.soundEngine) window.soundEngine.playTick();
+        alert(this.stakeVerified
+          ? `✓ Account @${this.stakeUsername} is verified under Stake referral code "diggitybets".`
+          : (this.stakeUsername
+              ? `⏳ Account @${this.stakeUsername} is registered under code "diggitybets". Awaiting streamer affiliate confirmation.`
+              : 'Enter your Stake username and click "Verify Stake Affiliate" to claim your status.'));
+      });
+    }
   }
 
   /**
@@ -645,9 +522,9 @@ class UserStoreController {
     const tbody = document.getElementById('leaderboard-tbody');
     if (!tbody) return;
 
-    // If user is verified on Rainbet or Stake, ensure their entry is present in table
-    const activeCasinoUser = this.rainbetUsername || this.stakeUsername;
-    const isCasinoVerified = this.rainbetVerified || this.stakeVerified;
+    // If user is verified on Stake, ensure their entry is present in table
+    const activeCasinoUser = this.stakeUsername;
+    const isCasinoVerified = this.stakeVerified;
     if (isCasinoVerified && activeCasinoUser) {
       const exists = this.leaderboardData.some(p => (p.casinoUser || p.stakeUser || '').toLowerCase() === activeCasinoUser.toLowerCase());
       if (!exists) {
@@ -659,8 +536,7 @@ class UserStoreController {
           wager: 1250.00,
           prize: 0,
           avatar: this.avatar,
-          verified: true,
-          isRainbet: !!this.rainbetUsername
+          verified: true
         });
       }
     }
@@ -680,8 +556,8 @@ class UserStoreController {
           </div>
         </td>
         <td>
-          <span class="reward-badge-pill" style="background: ${item.isRainbet ? 'rgba(56, 189, 248, 0.15)' : 'rgba(83, 252, 24, 0.15)'}; border-color: ${item.isRainbet ? '#38bdf8' : 'var(--kick-green)'}; color: ${item.isRainbet ? '#38bdf8' : 'var(--kick-green)'}; font-size: 10px;">
-            ${item.isRainbet ? '✓ REFERRED RAINBET' : '✓ VERIFIED VIP'}
+          <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">
+            ✓ VERIFIED STAKE VIP
           </span>
         </td>
         <td style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">

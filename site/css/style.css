@@ -644,10 +644,10 @@ body {
   filter: drop-shadow(0 0 12px rgba(225, 48, 108, 0.5));
 }
 
-.social-logo-rainbet {
-  height: 34px;
-  max-width: 125px;
-  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.5));
+.social-logo-stake {
+  height: 36px;
+  max-width: 130px;
+  filter: drop-shadow(0 0 12px rgba(83, 252, 24, 0.4));
 }
 
 .module-card {
@@ -701,12 +701,12 @@ body {
   filter: drop-shadow(0 0 18px rgba(225, 48, 108, 0.85));
 }
 
-.module-card.social-card-rainbet:hover {
-  border-color: #38bdf8;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.4);
+.module-card.social-card-stake:hover {
+  border-color: var(--gold);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.4);
 }
-.module-card.social-card-rainbet:hover .social-logo-rainbet {
-  filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.9));
+.module-card.social-card-stake:hover .social-logo-stake {
+  filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.9));
 }
 
 .module-icon {
@@ -4386,12 +4386,42 @@ footer.site-footer {
 }
 
 .profile-glass-card {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid var(--border-subtle);
+  background: rgba(13, 20, 34, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+}
+
+.profile-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 0%, rgba(83, 252, 24, 0.12), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+
+.profile-glass-card:hover::before {
+  opacity: 1;
+}
+
+.profile-glass-card:hover {
+  border-color: rgba(83, 252, 24, 0.45);
+  box-shadow: 0 0 32px rgba(83, 252, 24, 0.16), 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+.profile-glass-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .profile-card-title {
@@ -4554,7 +4584,7 @@ footer.site-footer {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  margin-top: 16px;
+  margin-top: 36px;
 }
 
 /* Arena Tab Switcher Bar */
@@ -4915,8 +4945,10 @@ footer.site-footer {
 }
 
 .stake-game-canvas {
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 0;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
   max-width: 100%;
   height: auto;
 }
@@ -6053,7 +6085,6 @@ footer.site-footer {
 
 /* 4. Hardware Isolated Hover Lift for Cards (Without Layout Reflow) */
 .module-card,
-.profile-glass-card,
 .bh-stat-card {
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
   contain: layout style paint;

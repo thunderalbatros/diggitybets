@@ -314,7 +314,7 @@ function initProvablyFairAuditHub() {
       }
 
       if (window.soundEngine) window.soundEngine.playWin();
-      alert('🔄 Par de semillas rotado con éxito!\nLa semilla del servidor anterior ha sido revelada en texto plano para que puedas auditarla de forma independiente.');
+      alert('🔄 Seed pair rotated successfully!\nThe previous server seed has been revealed in plaintext so you can independently audit past game rounds.');
     });
   }
 

@@ -258,11 +258,20 @@ class BonusHuntController {
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const valEl = document.getElementById('bh-guess-input-val');
+      const valEl = document.getElementById('bh-input-guess') || document.getElementById('bh-guess-input-val');
       const guessVal = valEl ? parseFloat(valEl.value) : 0;
 
-      if (!guessVal || guessVal <= 0) {
-        alert('Please enter a valid predicted payout amount in USD.');
+      if (!guessVal || isNaN(guessVal) || guessVal <= 0) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Prediction Required',
+            message: 'Please enter a valid predicted final payout amount in USD (e.g. 1750).',
+            type: 'gold'
+          });
+        } else {
+          alert('Please enter a valid predicted final payout amount in USD (e.g. 1750).');
+        }
+        if (valEl) valEl.focus();
         return;
       }
 

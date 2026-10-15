@@ -27,11 +27,11 @@ class AdminHubController {
     // Listen for auth changes to grant admin privileges to @diggitybets
     window.addEventListener('hunthub:auth-updated', () => this.checkAdminAccess());
 
-    // Bind Rainbet Referrals Sync controls
-    const btnSyncRainbet = document.getElementById('btn-admin-sync-rainbet');
-    const btnBulkVerify = document.getElementById('btn-admin-bulk-verify-rainbet');
-    if (btnSyncRainbet) btnSyncRainbet.addEventListener('click', () => this.syncRainbetAffiliates());
-    if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleRainbetBulkSync());
+    // Bind Stake Affiliates Sync controls
+    const btnSyncStake = document.getElementById('btn-admin-sync-stake');
+    const btnBulkVerify = document.getElementById('btn-admin-bulk-verify-stake');
+    if (btnSyncStake) btnSyncStake.addEventListener('click', () => this.syncStakeAffiliates());
+    if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleStakeBulkSync());
 
     // Check on startup
     this.checkAdminAccess();
@@ -185,9 +185,9 @@ class AdminHubController {
 
   handleBroadcast(data) {
     if (!data) return;
-    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'RAINBET_REFERRAL_ADDED') {
+    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'STAKE_AFFILIATE_ADDED') {
       this.renderAllDecks();
-      if (window.soundEngine && (data.type === 'NEW_CLAIM' || data.type === 'RAINBET_REFERRAL_ADDED')) {
+      if (window.soundEngine && (data.type === 'NEW_CLAIM' || data.type === 'STAKE_AFFILIATE_ADDED')) {
         window.soundEngine.playCoinDispenser();
       }
     }
@@ -198,7 +198,7 @@ class AdminHubController {
     this.renderClaimsQueue();
     this.renderSundayRaffleLedger();
     this.renderSecurityRadar();
-    this.renderRainbetReferrals();
+    this.renderStakeReferrals();
   }
 
   renderKPIs() {
@@ -536,49 +536,49 @@ class AdminHubController {
   }
 
   /**
-   * Render Rainbet Partners Referral Ledger Deck
+   * Render Stake Partners Affiliate Ledger Deck
    */
-  renderRainbetReferrals() {
-    const tbody = document.getElementById('admin-rainbet-referrals-tbody');
+  renderStakeReferrals() {
+    const tbody = document.getElementById('admin-stake-referrals-tbody');
     if (!tbody) return;
 
     let referrals = [];
     try {
-      referrals = JSON.parse(localStorage.getItem('hunthub_verified_rainbet_list') || '[]');
+      referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
     } catch(e) { referrals = []; }
 
     // Seed default verified referrals if empty
     if (referrals.length === 0) {
       referrals = [
-        { username: 'RainNacho', kickUser: '@NachoGamer', code: 'diggitybets', verifiedAt: '2026-10-14 14:20', status: 'verified' },
-        { username: 'RainValen', kickUser: '@Valen99', code: 'diggitybets', verifiedAt: '2026-10-14 15:05', status: 'verified' },
-        { username: 'RainAgus', kickUser: '@AgusKick', code: 'diggitybets', verifiedAt: '2026-10-14 16:30', status: 'verified' },
+        { username: 'StakeNacho', kickUser: '@NachoGamer', code: 'diggitybets', verifiedAt: '2026-10-14 14:20', status: 'verified' },
+        { username: 'StakeValen', kickUser: '@Valen99', code: 'diggitybets', verifiedAt: '2026-10-14 15:05', status: 'verified' },
+        { username: 'StakeAgus', kickUser: '@AgusKick', code: 'diggitybets', verifiedAt: '2026-10-14 16:30', status: 'verified' },
         { username: 'DiggityFan01', kickUser: '@DiggityFan', code: 'diggitybets', verifiedAt: '2026-10-14 17:10', status: 'verified' },
         { username: 'NewPlayer99', kickUser: '@Viewer', code: 'diggitybets', verifiedAt: '2026-10-14 18:45', status: 'pending' }
       ];
-      localStorage.setItem('hunthub_verified_rainbet_list', JSON.stringify(referrals));
+      localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
     }
 
     tbody.innerHTML = referrals.map(ref => `
       <tr>
         <td>
-          <a href="https://rainbet.com" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-family: var(--font-display); font-weight: 800; text-decoration: none;">
+          <a href="https://stake.com/?offer=diggity&c=i2mVktNM" target="_blank" rel="noopener noreferrer" style="color: var(--kick-green); font-family: var(--font-display); font-weight: 800; text-decoration: none;">
             @${ref.username} ↗
           </a>
         </td>
         <td style="color: #ffffff; font-size: 13px;">${ref.kickUser || '@Viewer'}</td>
         <td>
-          <span class="reward-badge-pill" style="background: ${ref.status === 'verified' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 215, 0, 0.2)'}; border-color: ${ref.status === 'verified' ? '#38bdf8' : 'var(--gold)'}; color: ${ref.status === 'verified' ? '#38bdf8' : 'var(--gold)'}; font-size: 11px;">
+          <span class="reward-badge-pill" style="background: ${ref.status === 'verified' ? 'rgba(83, 252, 24, 0.2)' : 'rgba(255, 215, 0, 0.2)'}; border-color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; font-size: 11px;">
             ${ref.status === 'verified' ? '✓ VERIFIED (diggitybets)' : '⏳ PENDING CONFIRMATION'}
           </span>
         </td>
         <td style="font-size: 12px; color: var(--text-dim);">${ref.verifiedAt || 'Recent'}</td>
         <td>
           <div style="display: flex; gap: 6px;">
-            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.toggleRainbetVerify('${ref.username}')" style="color: ${ref.status === 'verified' ? 'var(--gold)' : 'var(--kick-green)'}; padding: 4px 8px; font-size: 11px;">
+            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.toggleStakeVerify('${ref.username}')" style="color: ${ref.status === 'verified' ? 'var(--gold)' : 'var(--kick-green)'}; padding: 4px 8px; font-size: 11px;">
               ${ref.status === 'verified' ? 'Mark Pending' : '✓ Approve'}
             </button>
-            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.removeRainbetReferral('${ref.username}')" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
+            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.removeStakeReferral('${ref.username}')" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
               ✕
             </button>
           </div>
@@ -587,42 +587,42 @@ class AdminHubController {
     `).join('');
   }
 
-  toggleRainbetVerify(username) {
+  toggleStakeVerify(username) {
     let referrals = [];
-    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_rainbet_list') || '[]'); } catch(e) {}
+    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
     const item = referrals.find(r => r.username.toLowerCase() === username.toLowerCase());
     if (item) {
       item.status = item.status === 'verified' ? 'pending' : 'verified';
-      localStorage.setItem('hunthub_verified_rainbet_list', JSON.stringify(referrals));
+      localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
 
       // If active user is this user, sync their profile
-      const activeUser = localStorage.getItem('hunthub_rainbet_user');
+      const activeUser = localStorage.getItem('hunthub_stake_user');
       if (activeUser && activeUser.toLowerCase() === username.toLowerCase()) {
-        localStorage.setItem('hunthub_rainbet_verified', item.status === 'verified' ? 'true' : 'false');
+        localStorage.setItem('hunthub_stake_verified', item.status === 'verified' ? 'true' : 'false');
       }
 
-      this.renderRainbetReferrals();
+      this.renderStakeReferrals();
       if (window.userStore) window.userStore.renderLeaderboard();
       if (window.soundEngine) window.soundEngine.playTick();
     }
   }
 
-  removeRainbetReferral(username) {
-    if (!confirm(`Remove Rainbet user @${username} from referrals list?`)) return;
+  removeStakeReferral(username) {
+    if (!confirm(`Remove Stake user @${username} from affiliate list?`)) return;
     let referrals = [];
-    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_rainbet_list') || '[]'); } catch(e) {}
+    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
     referrals = referrals.filter(r => r.username.toLowerCase() !== username.toLowerCase());
-    localStorage.setItem('hunthub_verified_rainbet_list', JSON.stringify(referrals));
-    this.renderRainbetReferrals();
+    localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
+    this.renderStakeReferrals();
     if (window.soundEngine) window.soundEngine.playTick();
   }
 
-  handleRainbetBulkSync() {
-    const textarea = document.getElementById('admin-rainbet-sync-input');
+  handleStakeBulkSync() {
+    const textarea = document.getElementById('admin-stake-sync-input');
     if (!textarea) return;
     const raw = textarea.value.trim();
     if (!raw) {
-      alert('Please paste one or more Rainbet usernames (separated by commas or newlines).');
+      alert('Please paste one or more Stake usernames (separated by commas or newlines).');
       return;
     }
 
@@ -630,7 +630,7 @@ class AdminHubController {
     if (names.length === 0) return;
 
     let referrals = [];
-    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_rainbet_list') || '[]'); } catch(e) {}
+    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
 
     let addedCount = 0;
     names.forEach(name => {
@@ -649,19 +649,19 @@ class AdminHubController {
       }
     });
 
-    localStorage.setItem('hunthub_verified_rainbet_list', JSON.stringify(referrals));
+    localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
     textarea.value = '';
-    this.renderRainbetReferrals();
+    this.renderStakeReferrals();
     if (window.userStore) window.userStore.renderLeaderboard();
     if (window.soundEngine) window.soundEngine.playWin();
 
-    alert(`✓ RAINBET AFFILIATE SYNC COMPLETE!\n${names.length} player(s) synchronized and verified under referral code "diggitybets".`);
+    alert(`✓ STAKE AFFILIATE SYNC COMPLETE!\n${names.length} player(s) synchronized and verified under code "diggitybets".`);
   }
 
-  syncRainbetAffiliates() {
+  syncStakeAffiliates() {
     if (window.soundEngine) window.soundEngine.playTick();
-    alert('⚡ Rainbet Affilka API Sync: Connected to Rainbet Partners network under code "diggitybets". All registered spectators validated.');
-    this.renderRainbetReferrals();
+    alert('⚡ Stake Campaign Sync: Connected to Stake Partners network under code "diggitybets". All registered spectators validated.');
+    this.renderStakeReferrals();
   }
 }
 
