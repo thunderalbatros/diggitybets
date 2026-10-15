@@ -242,19 +242,71 @@
   }
 
   // ========================================================
-  // 5. AUTO-INITIALIZE ON DOM READY
+  // 5. 3D TACTILE TILT & SPECULAR GLARE (ATROPOS / PARALLAX)
+  // ========================================================
+  function init3DTouchTilt() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cards = document.querySelectorAll('.podium-card, .store-voucher-card, .leaderboard-prize-card, .profile-glass-card');
+    
+    cards.forEach(card => {
+      // Create glare overlay if not present
+      let glare = card.querySelector('.card-specular-glare');
+      if (!glare) {
+        glare = document.createElement('div');
+        glare.className = 'card-specular-glare';
+        glare.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;transition:opacity 0.25s ease;z-index:2;mix-blend-mode:overlay;';
+        if (getComputedStyle(card).position === 'static') {
+          card.style.position = 'relative';
+        }
+        card.style.overflow = 'hidden';
+        card.appendChild(glare);
+      }
+
+      card.addEventListener('pointerenter', () => {
+        card.style.transition = 'transform 0.12s ease-out, box-shadow 0.2s ease-out';
+        glare.style.opacity = '1';
+      });
+
+      card.addEventListener('pointermove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -6; // max 6 deg tilt
+        const rotateY = ((x - centerX) / centerX) * 6;
+
+        card.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateZ(4px)`;
+        const glareX = (x / rect.width) * 100;
+        const glareY = (y / rect.height) * 100;
+        glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, transparent 65%)`;
+      });
+
+      card.addEventListener('pointerleave', () => {
+        card.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease';
+        card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)';
+        glare.style.opacity = '0';
+      });
+    });
+  }
+
+  // ========================================================
+  // 6. AUTO-INITIALIZE ON DOM READY
   // ========================================================
   document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Touch & Press feedback
     initInstantPressFeedback();
 
-    // 2. Attach FLIP animations to dynamic containers
+    // 2. Initialize 3D Tactile Tilt & Specular Glare (Atropos-inspired)
+    init3DTouchTilt();
+
+    // 3. Attach FLIP animations to dynamic containers
     window.autoAnimateList('#bh-slots-tbody');
     window.autoAnimateList('#bh-guesses-list');
     window.autoAnimateList('#leaderboard-tbody');
     window.autoAnimateList('.stream-fused-section .modules-grid');
 
-    // 3. Intercept balance updates to animate smoothly
+    // 4. Intercept balance updates to animate smoothly
     if (window.houseGames) {
       const origRenderBalance = window.houseGames.renderBalance.bind(window.houseGames);
       let prevBalance = window.houseGames.balance || 0;
@@ -269,7 +321,7 @@
       };
     }
 
-    // 4. Wire confetti to game payouts and bonus hunt completions
+    // 5. Wire confetti to game payouts and bonus hunt completions
     window.addEventListener('hunthub:win', (e) => {
       const amount = e.detail?.amount || 0;
       if (amount >= 500) {
@@ -279,7 +331,7 @@
       }
     });
 
-    console.log('[HuntHub MotionFX] Phase 1 Micro-Interactions & FLIP Engine Active (Apple Easing, 60 FPS)');
+    console.log('[DiggityBets MotionFX] Atropos 3D Tilt, Apple Easing & 60 FPS FLIP Active');
   });
 
 })(window, document);
