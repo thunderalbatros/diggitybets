@@ -294,6 +294,29 @@
     - Saved crypto addresses (LTC, BTC, ETH, USDC, SOL) and socials to SQLite via `POST /api/profile/update`.
     - Replaced emoji presets with deterministic SVG avatars generated via `site/js/avatar-generator.js`.
     - Full automated test suite in `core/test/phase1-stake-auth.test.ts` (100% passing across all 6 test suites).
+- [x] **Stage 8 (Fase 2 — Panel de Admin Integrado `#admin`, Persistencia Cloudflare D1 & Control Maestro):** COMPLETED & TESTED.
+  - **Micro-Ajuste de Puertos OAuth & Persistencia D1:**
+    - Unificación de Redirect URIs en `core/src/config.ts`, `core/src/hub/overlay-server.ts`, `site/js/auth-oauth.js` y `worker/index.js` usando `http://127.0.0.1:3000` / `http://127.0.0.1:3001` en local (eliminadas referencias obsoletas a `:3456`) y `https://diggitybets.vip/api/auth/kick/callback` / `https://diggitybets.vip/api/auth/discord/callback` en producción.
+    - Configurada base de datos serverless Cloudflare D1 en `wrangler.toml` (`[[d1_databases]] binding = "DB"`) con auto-inicialización de esquema (`users`, `user_devices`, `alt_clusters`, `point_transactions`, `stake_verification_requests`, `store_redemptions`, `raffle_tickets`) y sincronización bidireccional `/api/sync/state`.
+  - **Pestaña 1 `#admin`: Vouchers Pendientes, Raffles Semanales y Cola de Stake:**
+    - Cola de Vouchers en vivo con unión en tiempo real a billeteras cripto (`LTC`, `BTC`, `ETH`, `USDC`, `SOL`) con botones de copiado en 1 clic (`📋 LTC`, etc.), verificación de afiliados de Stake y acciones `[ Approve / Mark Paid ✓ ]` y `[ Reject & Refund $DIG ✕ ]`.
+    - Monitor de Raffles semanal con total de tickets vendidos, desglose porcentual por usuario y botón provably fair con HMAC-SHA256 (`[ 🎲 Roll Provably Fair Raffle Winner ]`).
+    - Cola de Verificación de Stake con multiplicador Limbo asignado de 5-6 dígitos, botón directo `[ Open Bet on Stake ↗ ]`, y aprobación `+250 $DIG` / rechazo atómico.
+  - **Pestaña 2 `#admin`: Alertas de Seguridad Anti-Sybil (1 PC / 1 Usuario):**
+    - Radar en tiempo real conectado a `/api/admin/security-alerts` detectando cuentas duplicadas por hardware hash (ThumbmarkJS), subred IP (`ip_subnet`) o misma cuenta de Stake.
+    - Acciones de mitigación inmediata por cluster: `[ Shadowban Alts ]`, `[ Freeze $DIG Balance ]` y `[ Whitelist / Ignore ]`.
+  - **Pestaña 3 `#admin`: Control Maestro de Juegos Interactivos:**
+    - Community Bonus Hunt: Buscador con autocompletado en tiempo real desde el catálogo de slots (`window.HUNTHUB_CURATED_SLOTS`), miniatura visual, asignación de `@caller`, carga de pagos (`payout`) en vivo con cálculo automático de multiplicadores y resolución de ganador de *Guess The Balance* (`!guess`).
+    - Torneo 8-Bracket: Gestión de rondas (Cuartos, Semis, Final) con avance interactivo de ganadores y sincronización con `window.tournamentPrediction`.
+    - Batallas 1v1: Enfrentamiento de Player A vs Player B con pagos y proclamación de ganador con fanfarria y confeti.
+  - **Pestaña 4 `#admin`: Control de Wheels en Vivo (`wheel-duo`, `wheel-csgo`, `wheel-slots`):**
+    - Duo-Wheel: Switch interactivo de modo (`⚔️ Mode: 1v1 Battle` vs `🏆 Mode: Tourney`), cola de participantes en vivo con botones de agregar/restaurar, y botón de giro que auto-asigna al ganador a la batalla o torneo.
+    - CS:GO Active Chatter Wheel: Lista de espectadores orgánicos activos en los últimos 90 segundos y botón para seleccionar al *Spotlight Recommender*.
+    - Random Slot Wheel: Selector de proveedor/categoría y ruleta ponderada con TIERS (Stake 6.25x, Pragmatic/Hacksaw 4.5x).
+  - **Auditoría y Pruebas Unitarias:**
+    - Suite automatizada `core/test/phase2-admin-d1.test.ts` (100% aprobada).
+    - Suite integral `tools/test_site.mjs` (100% aprobada con los 71 IDs).
+    - Compilación de producción en `dist/` completada con éxito.
 
 ---
 
