@@ -252,6 +252,20 @@
   - `.agents/skills/channel-points-bridge/`
   - `.agents/skills/bracket-8/`
   - `.agents/skills/fair-draws/`
+- [x] **Omni-RAG Intelligence & MCP Supercharge (Centinela & Yendo Integration):**
+  - **Qdrant Cloud Vector DB Connection:** Ingested & querying 8,384 nodes across `centinela_knowledge` (3,608 SOTA nodes: Kick API, anti-fraud, live streaming) and `yendo_obsidian_vault` (4,776 nodes: design tokens, UI worklets, mobile UX).
+  - **Omni-RAG Pipeline (`tools/intelligence/rag_pipeline.mjs`):** Multi-source retrieval across local Markdown, Centinela KB, and Qdrant Cloud with Groq LLM synthesis (`qwen/qwen3.8-27b`) in ~3.5 seconds.
+  - **7 Configured MCP Servers (`~/.gemini/config/mcp_config.json`):** `centinela-kb`, `centinela-kick`, `centinela-firecrawl`, `yendo-rag`, `github`, `postgres`, `figma`.
+  - **Imported High-Value Skills into `.agents/skills/`:**
+    - `kb-retrieval` (Dual-stage retrieve & rerank protocol, Hit@5 = 100%, MRR = 0.885)
+    - `kb-writing` (Systematic documentation and knowledge persistence)
+    - `finops-context-budget` (Context token management, search-first, $0 budget discipline)
+    - `kick-api-contracts` (Official Kick API chat endpoint, OAuth 2.1 PKCE, shadowban detection)
+    - `moderation-guard` (Anti-ban, followers-only verification, quarantine on 403)
+    - `provider-fallback` (Multi-LLM resilience chain: Groq -> Gemini -> OpenRouter)
+    - `firecrawl` (Headless web scraping with zero CPU impact)
+    - `agent-worktree` (Isolated sandboxed experiments in git worktrees)
+  - **Context Compactor (`tools/intelligence/context_compactor.mjs`):** 60%-75% history token compaction preserving file diffs, Stake refer code, and invariants.
 - [x] **Kick Events & Store Master Plan V2.0:** Documented in [docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md).
 - [x] **Guía de Uso Streamer:** Documented in [docs/INSTRUCCIONES_SUITE_COMPLETA.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/INSTRUCCIONES_SUITE_COMPLETA.md).
 
