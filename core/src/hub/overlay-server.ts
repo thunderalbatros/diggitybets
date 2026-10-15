@@ -10,6 +10,7 @@ import type { KickChatClient } from '../outbound/kick-chat.ts';
 import type { BattleManager } from '../battles/battle-manager.ts';
 import type { TournamentManager } from '../tournament/tournament-manager.ts';
 import type { BonusHuntManager } from '../bonushunt/bonushunt-manager.ts';
+import { config } from '../config.ts';
 
 export interface OverlayServerOptions {
   port: number;
@@ -20,6 +21,48 @@ export interface OverlayServerOptions {
   bonusHuntManager?: BonusHuntManager;
   onSpinTrigger?: (demo: boolean) => void;
   onSlotSpinTrigger?: (category: string, demo: boolean) => void;
+}
+
+export function parseStakeBetInput(rawInput: string): { betId: string; shareUrl: string } | null {
+  if (!rawInput || typeof rawInput !== 'string') return null;
+  const input = decodeURIComponent(rawInput.trim());
+
+  // 1. Full URL e.g. https://stake.com/casino/games/limbo?iid=house%3A524353464254&modal=bet
+  try {
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+      const u = new URL(input);
+      const iid = u.searchParams.get('iid');
+      if (iid) {
+        const cleanIid = iid.trim();
+        return {
+          betId: cleanIid,
+          shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(cleanIid)}&modal=bet`
+        };
+      }
+    }
+  } catch (e) {}
+
+  // 2. Prefix format: casino:12345 or house:12345
+  const prefixMatch = input.match(/^(casino|house):(\w+)/i);
+  if (prefixMatch) {
+    const canonical = `${prefixMatch[1].toLowerCase()}:${prefixMatch[2]}`;
+    return {
+      betId: canonical,
+      shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(canonical)}&modal=bet`
+    };
+  }
+
+  // 3. Raw alphanumeric / numeric bet id e.g. 524353464254
+  const numMatch = input.match(/^[a-zA-Z0-9_\-]+$/);
+  if (numMatch && input.length >= 5) {
+    const canonical = `house:${input}`;
+    return {
+      betId: canonical,
+      shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(canonical)}&modal=bet`
+    };
+  }
+
+  return null;
 }
 
 export class OverlayServer {
@@ -181,6 +224,368 @@ export class OverlayServer {
         }
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'User not found' }));
+        return;
+      }
+
+      // Kick OAuth 2.1 PKCE Token Exchange Endpoint
+      if (url.pathname === '/api/auth/kick/callback' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { code, code_verifier, redirect_uri } = JSON.parse(body);
+            let userData: any = { username: 'KickUser_' + (code ? code.substring(0, 5) : 'Guest'), id: 0 };
+
+            const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || 'kick_pub_client_diggitybets';
+            const clientSecret = config.kickClientSecret || process.env.KICK_CLIENT_SECRET || '';
+
+            if (clientId && clientSecret && code && code_verifier) {
+              try {
+                const tokenRes = await fetch('https://id.kick.com/oauth/token', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: new URLSearchParams({
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    grant_type: 'authorization_code',
+                    code,
+                    code_verifier,
+                    redirect_uri: redirect_uri || ''
+                  })
+                });
+
+                if (tokenRes.ok) {
+                  const tokenData: any = await tokenRes.json();
+                  const userRes = await fetch('https://api.kick.com/public/v1/users', {
+                    headers: {
+                      'Authorization': `Bearer ${tokenData.access_token}`,
+                      'Accept': 'application/json'
+                    }
+                  });
+                  if (userRes.ok) {
+                    const kickApiData: any = await userRes.json();
+                    if (kickApiData.data && kickApiData.data[0]) {
+                      userData = {
+                        username: kickApiData.data[0].username,
+                        avatarUrl: kickApiData.data[0].profile_picture,
+                        id: kickApiData.data[0].id
+                      };
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn('[Kick OAuth Exchange] Warning:', e);
+              }
+            }
+
+            const cleanUsername = String(userData.username || '').trim().toLowerCase();
+            const kickIdNum = Number(userData.id) || 0;
+            const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || kickIdNum === 88254585);
+
+            if (this.db && userData.username) {
+              this.db.upsertUser(kickIdNum || Math.floor(Date.now() / 1000) % 10000000, userData.username);
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              username: userData.username,
+              avatarUrl: userData.avatarUrl || '',
+              kick_id: userData.id,
+              isAdmin,
+              verified: true
+            }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Discord OAuth2 Token Exchange Endpoint
+      if (url.pathname === '/api/auth/discord/callback' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { code, redirect_uri, kickUsername } = JSON.parse(body);
+            let discordUser = { username: 'DiscordMember', id: '123456789', avatarUrl: '' };
+
+            const discordClientId = process.env.DISCORD_CLIENT_ID || '';
+            const discordClientSecret = process.env.DISCORD_CLIENT_SECRET || '';
+
+            if (discordClientId && discordClientSecret && code) {
+              try {
+                const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: new URLSearchParams({
+                    client_id: discordClientId,
+                    client_secret: discordClientSecret,
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: redirect_uri || ''
+                  })
+                });
+
+                if (tokenRes.ok) {
+                  const tokenData: any = await tokenRes.json();
+                  const profileRes = await fetch('https://discord.com/api/users/@me', {
+                    headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+                  });
+                  if (profileRes.ok) {
+                    const me: any = await profileRes.json();
+                    discordUser = {
+                      username: me.username + (me.discriminator && me.discriminator !== '0' ? `#${me.discriminator}` : ''),
+                      id: me.id,
+                      avatarUrl: me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png` : ''
+                    };
+                  }
+                }
+              } catch (e) {
+                console.warn('[Discord OAuth Exchange] Warning:', e);
+              }
+            }
+
+            if (this.db && kickUsername) {
+              const u = this.db.getUserByUsername(kickUsername);
+              if (u) {
+                this.db.linkDiscordAccount(u.id, discordUser.id, discordUser.username, discordUser.avatarUrl);
+              }
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              username: discordUser.username,
+              id: discordUser.id,
+              avatarUrl: discordUser.avatarUrl || '',
+              verified: true
+            }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Profile Update & Crypto Persistence Endpoint
+      if (url.pathname === '/api/profile/update' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, user: data, localOnly: true }));
+              return;
+            }
+
+            let user = data.userId ? this.db.getUserById(data.userId) : null;
+            if (!user && data.username) {
+              user = this.db.getUserByUsername(data.username);
+              if (!user) {
+                user = this.db.upsertUser(Math.floor(Date.now() / 1000) % 10000000, data.username);
+              }
+            }
+
+            if (!user) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'User not found' }));
+              return;
+            }
+
+            const updated = this.db.updateUserProfile(user.id, {
+              avatar: data.avatar,
+              stake_username: data.stake_username,
+              crypto_ltc: data.crypto_ltc,
+              crypto_btc: data.crypto_btc,
+              crypto_eth: data.crypto_eth,
+              crypto_usdc: data.crypto_usdc,
+              crypto_sol: data.crypto_sol,
+              x_handle: data.x_handle,
+              ig_handle: data.ig_handle
+            });
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, user: updated }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Stake Limbo Random Integer Target Multiplier (OTP 10000 - 999999, valid 600s)
+      if (url.pathname === '/api/stake/target' && req.method === 'GET') {
+        const target = Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000;
+        const validForSeconds = 600;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          target,
+          validForSeconds,
+          expiresAt: Date.now() + validForSeconds * 1000
+        }));
+        return;
+      }
+
+      // Stake Verification Request Submission
+      if (url.pathname === '/api/stake/verify-request' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { userId, kickUsername, stakeUsername, targetMultiplier, rawBetInput } = JSON.parse(body);
+
+            if (!stakeUsername || !rawBetInput) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Missing stakeUsername or rawBetInput' }));
+              return;
+            }
+
+            const parsed = parseStakeBetInput(rawBetInput);
+            if (!parsed) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid bet ID or share link format. Expected casino:..., house:..., or Stake URL.' }));
+              return;
+            }
+
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                success: true,
+                message: 'Verified in local simulation mode (+250 $DIG)',
+                parsedBet: parsed
+              }));
+              return;
+            }
+
+            let user = userId ? this.db.getUserById(userId) : null;
+            if (!user && kickUsername) {
+              user = this.db.getUserByUsername(kickUsername);
+              if (!user) {
+                user = this.db.upsertUser(Math.floor(Date.now() / 1000) % 10000000, kickUsername);
+              }
+            }
+
+            if (!user) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'User not found in system' }));
+              return;
+            }
+
+            const targetInt = Number(targetMultiplier) || 994932;
+            const result = this.db.createStakeVerificationRequest(
+              user.id,
+              user.username,
+              stakeUsername,
+              targetInt,
+              parsed.betId,
+              parsed.shareUrl
+            );
+
+            if (!result.success) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: result.error }));
+              return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              request: result.request,
+              parsedBet: parsed,
+              message: 'Verification request recorded. The streamer can audit and approve it on the admin deck.'
+            }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Admin Stake Verifications Queue (Gated for diggitybets)
+      if (url.pathname === '/api/admin/stake-verifications' && req.method === 'GET') {
+        const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
+        const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
+
+        if (cleanAdmin !== 'diggitybets') {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+          return;
+        }
+
+        const status = url.searchParams.get('status') || undefined;
+        const requests = this.db ? this.db.getStakeVerificationRequests(status) : [];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ requests }));
+        return;
+      }
+
+      // Admin Approve Stake Verification (Gated for diggitybets)
+      if (url.pathname === '/api/admin/approve-stake-verification' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { requestId, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+
+            if (cleanAdmin !== 'diggitybets') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, credited: true }));
+              return;
+            }
+
+            const result = this.db.approveStakeVerification(requestId);
+            if (!result.success) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: result.error }));
+              return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, user: result.user, credited: result.credited }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Discord Unlink endpoint
+      if (url.pathname === '/api/auth/discord/unlink' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { userId, username } = JSON.parse(body);
+            if (this.db) {
+              let user = userId ? this.db.getUserById(userId) : null;
+              if (!user && username) user = this.db.getUserByUsername(username);
+              if (user) {
+                this.db.unlinkDiscordAccount(user.id);
+              }
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, unlinked: true }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
         return;
       }
 

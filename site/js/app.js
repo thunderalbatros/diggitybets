@@ -9,6 +9,24 @@ window.switchView = function(targetId) {
   if (!targetId || targetId === '#' || targetId === '#top') targetId = '#watch';
   if (!targetId.startsWith('#')) targetId = '#' + targetId;
 
+  // Admin Route Protection & Alias (#admin -> #admin-hub)
+  if (targetId === '#admin' || targetId === '#admin-hub') {
+    const currentKickUser = (localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace('@', '');
+    const isAdmin = currentKickUser === 'diggitybets' || currentKickUser === 'diggity_bets' || localStorage.getItem('hunthub_is_admin') === 'true';
+    if (!isAdmin) {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Access Denied 🔒',
+          message: 'Admin Control Deck is restricted exclusively to streamer @diggitybets.',
+          type: 'danger'
+        });
+      }
+      targetId = '#watch';
+    } else {
+      targetId = '#admin-hub';
+    }
+  }
+
   const validViews = ['#watch', '#house-games', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
@@ -38,7 +56,7 @@ window.switchView = function(targetId) {
   const navLinks = document.querySelectorAll('.nav-link-btn');
   navLinks.forEach(link => {
     const href = link.getAttribute('data-target') || link.getAttribute('href');
-    if (href === targetId) {
+    if (href === targetId || (targetId === '#admin-hub' && (href === '#admin' || href === '#admin-hub'))) {
       link.classList.add('active');
     } else {
       link.classList.remove('active');

@@ -106,10 +106,8 @@ assert.equal(eligible[0].id, user1.id); // user2 is silently excluded!
 db.close();
 
 // Cleanup test db
-if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
-const wal = testDbPath + '-wal';
-if (fs.existsSync(wal)) fs.unlinkSync(wal);
-const shm = testDbPath + '-shm';
-if (fs.existsSync(shm)) fs.unlinkSync(shm);
+try { if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath); } catch {}
+try { const wal = testDbPath + '-wal'; if (fs.existsSync(wal)) fs.unlinkSync(wal); } catch {}
+try { const shm = testDbPath + '-shm'; if (fs.existsSync(shm)) fs.unlinkSync(shm); } catch {}
 
 console.log('✅ All Stage 1 Core Database & Security Tests Passed Successfully!');
