@@ -59,42 +59,75 @@ export async function queryKnowledge(query, limit = 8) {
   const qLower = query.toLowerCase().trim();
   const qTerms = qLower.split(/\s+/).filter(t => t.length > 2);
 
-  // 1. Local Workspace Search (knowledge/, docs/, research/)
-  const searchDirs = [
-    path.join(ROOT, 'knowledge'),
-    path.join(ROOT, 'docs'),
-    path.join(ROOT, 'research'),
-    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/knowledge/docs'
-  ];
-
-  for (const dir of searchDirs) {
-    if (!fs.existsSync(dir)) continue;
+  // Helper to scan directory tree recursively for markdown files
+  function scanMarkdownFiles(dir, maxDepth = 4, depth = 0) {
+    let files = [];
+    if (depth > maxDepth || !fs.existsSync(dir)) return files;
     try {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        if (file.endsWith('.md')) {
-          const filePath = path.join(dir, file);
-          const text = fs.readFileSync(filePath, 'utf8');
-          const lower = text.toLowerCase();
-          
-          let matches = 0;
-          for (const term of qTerms) {
-            if (lower.includes(term)) matches++;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const ent of entries) {
+        const fp = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          if (!ent.name.startsWith('.') && ent.name !== 'node_modules') {
+            files = files.concat(scanMarkdownFiles(fp, maxDepth, depth + 1));
           }
-
-          if (matches > 0 || lower.includes(qLower)) {
-            const lines = text.split('\n');
-            const snippet = lines.filter(l => qTerms.some(t => l.toLowerCase().includes(t))).slice(0, 3).join(' ... ');
-            results.push({
-              source: `local://${file}`,
-              title: file.replace('.md', ''),
-              snippet: snippet.slice(0, 350) || text.slice(0, 350),
-              score: 0.90 + (matches / Math.max(qTerms.length, 1)) * 0.08
-            });
-          }
+        } else if (ent.isFile() && ent.name.endsWith('.md')) {
+          files.push(fp);
         }
       }
     } catch (e) {}
+    return files;
+  }
+
+  // 1. Local Workspace Search (knowledge/, docs/, research/, canons)
+  const searchDirs = [
+    path.join(ROOT, 'knowledge'),
+    path.join(ROOT, 'docs'),
+    path.join(ROOT, 'research')
+  ];
+
+  for (const dir of searchDirs) {
+    const mdFiles = scanMarkdownFiles(dir);
+    for (const filePath of mdFiles) {
+      try {
+        const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
+        const file = path.basename(filePath);
+        const text = fs.readFileSync(filePath, 'utf8');
+        // Strip YAML frontmatter for cleaner semantic matches
+        const cleanText = text.replace(/^---[\s\S]*?---\s*/, '');
+        const lower = cleanText.toLowerCase();
+        
+        let matches = 0;
+        for (const term of qTerms) {
+          if (lower.includes(term)) matches++;
+        }
+
+        if (matches > 0 || lower.includes(qLower)) {
+          const lines = cleanText.split('\n');
+          const snippetParts = [];
+          for (let i = 0; i < lines.length && snippetParts.length < 3; i++) {
+            const lineLower = lines[i].toLowerCase();
+            if (qTerms.some(t => lineLower.includes(t)) || lineLower.includes(qLower)) {
+              const startIdx = Math.max(0, i - 1);
+              const endIdx = Math.min(i + 16, lines.length);
+              const block = lines.slice(startIdx, endIdx).join('\n').trim();
+              if (block && !snippetParts.includes(block)) {
+                snippetParts.push(block);
+              }
+              i = endIdx;
+            }
+          }
+
+          const snippet = (snippetParts.join('\n\n...\n\n') || cleanText).slice(0, 1400);
+          results.push({
+            source: `local://${rel}`,
+            title: file.replace('.md', ''),
+            snippet: snippet,
+            score: 0.90 + (matches / Math.max(qTerms.length, 1)) * 0.08
+          });
+        }
+      } catch (e) {}
+    }
   }
 
   // 2. Qdrant Vector Cloud Search across both collections
@@ -164,40 +197,55 @@ export async function synthesizeAnswer(question, knowledgeList = []) {
 
   const contextText = knowledgeList.map((k, idx) => `[Source ${idx + 1}: ${k.title} (${k.source})]\n${k.snippet}`).join('\n\n');
 
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: env.GROQ_MODEL || 'qwen/qwen3.8-27b',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are the Antigravity Lead Architect for HuntHub/DiggityBets. Answer the user question concisely based strictly on the provided Centinela and Yendo RAG knowledge sources. Cite the sources used.'
-          },
-          {
-            role: 'user',
-            content: `KNOWLEDGE CONTEXT:\n${contextText}\n\nQUESTION: ${question}`
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 800
-      })
-    });
+  const candidateModels = [
+    env.GROQ_MODEL,
+    'qwen/qwen3.8-27b',
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b'
+  ].filter(Boolean);
 
-    if (res.ok) {
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || 'No response from model.';
-    } else {
-      const err = await res.text();
-      return `Groq Error (${res.status}): ${err}`;
+  for (const model of candidateModels) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are the Antigravity Lead Architect for HuntHub/DiggityBets. Answer the user question concisely in Argentine Spanish based strictly on the provided Centinela and Yendo RAG knowledge sources. Do not invoke tools or JSON function calls. Output pure markdown text and cite the specific sources used.'
+            },
+            {
+              role: 'user',
+              content: `KNOWLEDGE CONTEXT:\n${contextText}\n\nQUESTION: ${question}`
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 500
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) return content;
+      } else if (res.status === 429) {
+        // Fallback to next model if rate limit hit
+        continue;
+      } else {
+        const err = await res.text();
+        return `Groq Error (${res.status}): ${err}`;
+      }
+    } catch (e) {
+      // Continue to next candidate on network error
     }
-  } catch (e) {
-    return `Synthesis Error: ${e.message}`;
   }
+
+  return 'All Groq models currently busy or rate-limited. Context retrieved successfully from local & Qdrant RAG.';
 }
 
 /**
