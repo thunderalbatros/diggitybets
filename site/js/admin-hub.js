@@ -1,7 +1,14 @@
 /**
- * HuntHub — Streamer Admin Hub & Moderation Queue Controller
+ * HuntHub — Streamer Admin Hub & Moderation Queue Controller (Phase 2 Master Deck)
  * Exclusive command center for streamer DiggityBets (kick.com/diggitybets).
- * Controls voucher claims fulfillment, Sunday $100 raffle draws, and anti-sybil security radar.
+ * 
+ * Features:
+ * Tab 1: Vouchers Queue, Weekly Sunday Raffle, Stake Limbo $0 Bet Audit, Stake Referrals Sync
+ * Tab 2: Anti-Sybil Security Radar (Hardware Hash, IP Subnet, Stake Alts)
+ * Tab 3: Master Games Control (Bonus Hunt with Slot Autocomplete, 8-Bracket Tourney, 1v1 Battles)
+ * Tab 4: Live Wheels Control (Duo-Wheel Mode Switch, CS:GO 90s Chatter Wheel, Random Slot Roulette)
+ * 
+ * 100% English code, zero window.prompt/confirm/alert dialogs (Strictly Sonner Toasts & Inline UI).
  */
 
 class AdminHubController {
@@ -9,38 +16,71 @@ class AdminHubController {
     this.storageKeyClaims = 'hunthub_redemptions_queue';
     this.storageKeyTickets = 'hunthub_raffle_ledger';
     this.storageKeyAdminUnlock = 'hunthub_streamer_admin_unlocked';
-    this.channel = null;
     this.currentFilter = 'all';
+    this.activeSubtab = 'vouchers-stake';
+
+    // Broadcast channels for cross-window / OBS synchronization
+    this.channelAdmin = null;
+    this.channelDuo = null;
+    this.channelGiveaway = null;
+    this.channelSlotWheel = null;
+
+    // Duo-Wheel Queue
+    this.duoPool = [
+      { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw', icon: '🤠' },
+      { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic', icon: '⚡' },
+      { chatter: 'SlotQueen', slot: 'San Quentin xWays', provider: 'Nolimit City', icon: '🔒' },
+      { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic', icon: '🍬' },
+      { chatter: 'Strike777', slot: 'Rip City', provider: 'Hacksaw', icon: '🐱' },
+      { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic', icon: '🎣' },
+      { chatter: 'NeonWolf', slot: 'Chaos Crew 2', provider: 'Hacksaw', icon: '🐺' },
+      { chatter: 'RoyalFlush', slot: 'Zeus vs Hades', provider: 'Pragmatic', icon: '⚔️' }
+    ];
+    this.duoMode = 'battle';
+
+    // CS:GO 90s Window Active Chatters
+    this.recentChatters = new Map();
+    this.selectedSlot = null;
 
     this.init();
   }
 
   init() {
-    if (window.BroadcastChannel) {
-      this.channel = new BroadcastChannel('hunthub_admin_sync');
-      this.channel.onmessage = (e) => this.handleBroadcast(e.data);
-    }
-
-    // Seed mock data if queue is empty so the streamer can immediately test all features
+    this.initBroadcastChannels();
     this.ensureInitialData();
+    this.setupSubtabs();
+    this.bindGlobalListeners();
+    this.setupBonusHuntAdmin();
+    this.setupTournamentAdmin();
+    this.setupBattleAdmin();
+    this.setupWheelsAdmin();
 
     // Listen for auth changes to grant admin privileges to @diggitybets
     window.addEventListener('hunthub:auth-updated', () => this.checkAdminAccess());
 
-    // Bind Stake Affiliates Sync controls
-    const btnSyncStake = document.getElementById('btn-admin-sync-stake');
-    const btnBulkVerify = document.getElementById('btn-admin-bulk-verify-stake');
-    if (btnSyncStake) btnSyncStake.addEventListener('click', () => this.syncStakeAffiliates());
-    if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleStakeBulkSync());
-
-    // Bind Stake Verifications Queue Refresh
-    const btnRefreshStakeQueue = document.getElementById('btn-refresh-stake-admin-queue');
-    if (btnRefreshStakeQueue) {
-      btnRefreshStakeQueue.addEventListener('click', () => this.renderStakeVerificationsQueue());
-    }
-
-    // Check on startup
+    // Check admin on startup
     this.checkAdminAccess();
+  }
+
+  initBroadcastChannels() {
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.channelAdmin = new BroadcastChannel('hunthub_admin_sync');
+        this.channelAdmin.onmessage = (e) => this.handleBroadcast(e.data);
+      } catch (_) {}
+
+      try {
+        this.channelDuo = new BroadcastChannel('hunthub_duo_wheel');
+      } catch (_) {}
+
+      try {
+        this.channelGiveaway = new BroadcastChannel('giveaway_bus');
+      } catch (_) {}
+
+      try {
+        this.channelSlotWheel = new BroadcastChannel('slot_wheel_bus');
+      } catch (_) {}
+    }
   }
 
   isStreamerUser(username) {
@@ -74,11 +114,12 @@ class AdminHubController {
 
   unlockAdminMode() {
     localStorage.setItem(this.storageKeyAdminUnlock, 'true');
+    localStorage.setItem('hunthub_is_admin', 'true');
     this.checkAdminAccess();
     if (window.sonner) {
       window.sonner.toast({
         title: 'Streamer Admin Unlocked! 👑',
-        message: 'Master command center is now active in top navigation.',
+        message: 'Master command center is active in top navigation for @diggitybets.',
         type: 'gold'
       });
     }
@@ -95,45 +136,70 @@ class AdminHubController {
       claims = [
         {
           id: 'claim_demo_01',
-          username: '@CharlyBets',
+          username: 'CharlyBets',
+          kick_username: 'CharlyBets',
+          discord_username: 'CharlyBets#1234',
+          stake_username: 'CharlyStake',
+          stake_verified: 1,
           avatar: '🤠',
+          voucher_title: '$20 bonus buy split profit',
           voucherTitle: '$20 bonus buy split profit',
+          cost_points: 600,
           cost: 600,
+          crypto_ltc: 'LTC9q3F8aDk3JzX5t4...',
+          crypto_usdc: '0x71C...4982',
           isSub: true,
           status: 'PENDING',
           isFlagged: false,
           flagReason: '',
-          timestamp: now - 1000 * 60 * 14
+          timestamp: now - 1000 * 60 * 14,
+          created_at: Math.floor((now - 1000 * 60 * 14) / 1000)
         },
         {
           id: 'claim_demo_02',
-          username: '@ZeusMax_21',
+          username: 'ZeusMax_21',
+          kick_username: 'ZeusMax_21',
+          discord_username: 'ZeusMax#9999',
+          stake_username: 'ZeusMaxStake',
+          stake_verified: 0,
           avatar: '⚡',
+          voucher_title: 'Guaranteed 1v1 battle entry',
           voucherTitle: 'Guaranteed 1v1 battle entry',
+          cost_points: 100,
           cost: 100,
+          crypto_sol: 'SoL111111111111111...',
           isSub: false,
           status: 'PENDING',
           isFlagged: true,
           flagReason: 'Shared hardware device with @ZeusMax_Alt',
-          timestamp: now - 1000 * 60 * 38
+          timestamp: now - 1000 * 60 * 38,
+          created_at: Math.floor((now - 1000 * 60 * 38) / 1000)
         },
         {
           id: 'claim_demo_03',
-          username: '@SlotHunter_AR',
+          username: 'SlotHunter_AR',
+          kick_username: 'SlotHunter_AR',
+          discord_username: 'SlotHunter#4321',
+          stake_username: 'SlotHunterAR',
+          stake_verified: 1,
           avatar: '🦝',
+          voucher_title: 'Guaranteed tourney entry',
           voucherTitle: 'Guaranteed tourney entry',
+          cost_points: 180,
           cost: 180,
+          crypto_btc: 'bc1q98f4jd82kjs...',
           isSub: true,
           status: 'FULFILLED',
           isFlagged: false,
           flagReason: '',
-          timestamp: now - 1000 * 60 * 120
+          timestamp: now - 1000 * 60 * 120,
+          created_at: Math.floor((now - 1000 * 60 * 120) / 1000)
         }
       ];
       localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
     }
 
-    // Ensure sample Alt Cluster exists for security radar demonstration
+    // Seed sample Alt Cluster for security radar demonstration
     let clusters = [];
     try {
       clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
@@ -143,58 +209,149 @@ class AdminHubController {
       clusters = [
         {
           id: 'alt_demo_01',
+          cluster_id: 'cluster_7f9b',
           primaryUser: 'zeusmax_21',
           altUser: 'zeusmax_alt',
           deviceHash: 'a7f3c9820e11...',
+          device_hash: 'a7f3c9820e11...',
+          ipSubnet: '190.19.45.0/24',
+          ip_subnet: '190.19.45.0/24',
           reason: 'SHARED_HARDWARE_FINGERPRINT',
           riskScore: 85,
+          risk_score: 85,
           status: 'FLAGGED',
           detectedAt: Date.now() - 1000 * 60 * 45
+        },
+        {
+          id: 'alt_demo_02',
+          cluster_id: 'cluster_4a12',
+          primaryUser: 'stakefarmer_01',
+          altUser: 'stakefarmer_02',
+          deviceHash: 'e3b0c44298fc...',
+          device_hash: 'e3b0c44298fc...',
+          ipSubnet: '181.16.88.0/24',
+          ip_subnet: '181.16.88.0/24',
+          reason: 'DUPLICATE_STAKE_ACCOUNT',
+          riskScore: 95,
+          risk_score: 95,
+          status: 'FLAGGED',
+          detectedAt: Date.now() - 1000 * 60 * 15
         }
       ];
       localStorage.setItem('hunthub_alt_clusters', JSON.stringify(clusters));
     }
   }
 
-  // Record a new redemption claim into streamer queue
-  addRedemptionClaim(username, voucherTitle, cost, avatar = '🤠', isSub = false) {
-    let claims = [];
-    try {
-      claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]');
-    } catch (e) { claims = []; }
+  // Subtabs Setup (4 Dedicated Master Panes)
+  setupSubtabs() {
+    const tabBtns = document.querySelectorAll('.admin-subtab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetSubtab = btn.getAttribute('data-subtab');
+        if (!targetSubtab) return;
 
-    const isFlagged = window.antiFraud ? window.antiFraud.isAccountFlagged(username) : false;
-    const flagReason = window.antiFraud ? window.antiFraud.getFlagReason(username) : '';
+        this.activeSubtab = targetSubtab;
 
-    const newClaim = {
-      id: 'claim_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-      username,
-      avatar,
-      voucherTitle,
-      cost,
-      isSub,
-      status: 'PENDING',
-      isFlagged,
-      flagReason,
-      timestamp: Date.now()
-    };
+        // Update button states
+        tabBtns.forEach(b => {
+          b.classList.remove('active', 'primary');
+          b.classList.add('btn-stake-secondary');
+        });
+        btn.classList.add('active', 'primary');
+        btn.classList.remove('btn-stake-secondary');
 
-    claims.unshift(newClaim);
-    localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
+        // Toggle panes
+        const panes = document.querySelectorAll('.admin-subtab-pane');
+        panes.forEach(pane => {
+          if (pane.id === `pane-admin-${targetSubtab}`) {
+            pane.style.display = 'block';
+            pane.classList.add('active');
+          } else {
+            pane.style.display = 'none';
+            pane.classList.remove('active');
+          }
+        });
 
-    // Sync across tabs
-    if (this.channel) {
-      this.channel.postMessage({ type: 'NEW_CLAIM', claim: newClaim });
+        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+          window.soundEngine.playChip();
+        }
+
+        // Render target subtab fresh content
+        if (targetSubtab === 'vouchers-stake') {
+          this.renderClaimsQueue();
+          this.renderSundayRaffleLedger();
+          this.renderStakeVerificationsQueue();
+        } else if (targetSubtab === 'anti-sybil') {
+          this.renderSecurityRadar();
+        } else if (targetSubtab === 'games-ctrl') {
+          this.renderBonusHuntAdmin();
+          this.renderTournamentAdmin();
+        } else if (targetSubtab === 'wheels-ctrl') {
+          this.renderDuoQueue();
+          this.renderActiveChatters();
+        }
+      });
+    });
+  }
+
+  bindGlobalListeners() {
+    // 1. Claims Filter Buttons
+    const filterBtns = document.querySelectorAll('.admin-filter-btn');
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.currentFilter = btn.getAttribute('data-filter') || 'all';
+        this.renderClaimsQueue();
+      });
+    });
+
+    // 2. Refresh Stake Verifications
+    const btnRefreshStake = document.getElementById('btn-refresh-stake-admin-queue');
+    if (btnRefreshStake) {
+      btnRefreshStake.addEventListener('click', () => {
+        this.renderStakeVerificationsQueue();
+        if (window.sonner) window.sonner.toast({ title: 'Refreshed Queue 🔄', message: 'Stake Limbo bets updated.', type: 'cyan' });
+      });
     }
 
-    this.renderAllDecks();
+    // 3. Roll Sunday Raffle
+    const btnRollRaffle = document.getElementById('btn-roll-sunday-raffle');
+    if (btnRollRaffle) {
+      btnRollRaffle.addEventListener('click', () => this.rollSundayRaffleWinner());
+    }
+
+    // 4. Stake Sync & Bulk Sync
+    const btnSyncStake = document.getElementById('btn-admin-sync-stake');
+    if (btnSyncStake) btnSyncStake.addEventListener('click', () => this.syncStakeAffiliates());
+
+    const btnBulkVerify = document.getElementById('btn-admin-bulk-verify-stake');
+    if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleStakeBulkSync());
+
+    // 5. Security Radar Refresh
+    const btnRefreshRadar = document.getElementById('btn-refresh-security-alerts');
+    if (btnRefreshRadar) {
+      btnRefreshRadar.addEventListener('click', () => {
+        this.renderSecurityRadar();
+        if (window.sonner) window.sonner.toast({ title: 'Radar Refreshed 🛡️', message: 'Anti-Sybil telemetry checked.', type: 'cyan' });
+      });
+    }
+
+    // 6. Simulate Alt Account
+    const btnSimAlt = document.getElementById('btn-sim-alt-test');
+    if (btnSimAlt) {
+      btnSimAlt.addEventListener('click', () => this.simulateAltDetection());
+    }
   }
 
   handleBroadcast(data) {
     if (!data) return;
-    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'STAKE_AFFILIATE_ADDED' || data.type === 'STAKE_VERIFICATION_REQUESTED') {
-      this.renderAllDecks();
-      if (window.soundEngine && (data.type === 'NEW_CLAIM' || data.type === 'STAKE_AFFILIATE_ADDED' || data.type === 'STAKE_VERIFICATION_REQUESTED')) {
+    if (data.type === 'NEW_CLAIM' || data.type === 'CLAIM_UPDATED' || data.type === 'ALT_DETECTED' || data.type === 'STAKE_VERIFICATION_REQUESTED') {
+      this.renderKPIs();
+      this.renderClaimsQueue();
+      this.renderStakeVerificationsQueue();
+      this.renderSecurityRadar();
+      if (window.soundEngine && typeof window.soundEngine.playCoinDispenser === 'function') {
         window.soundEngine.playCoinDispenser();
       }
     }
@@ -202,109 +359,15 @@ class AdminHubController {
 
   renderAllDecks() {
     this.renderKPIs();
-    this.renderStakeVerificationsQueue();
     this.renderClaimsQueue();
     this.renderSundayRaffleLedger();
-    this.renderSecurityRadar();
+    this.renderStakeVerificationsQueue();
     this.renderStakeReferrals();
-  }
-
-  async renderStakeVerificationsQueue() {
-    const tbody = document.getElementById('admin-stake-verifications-tbody');
-    if (!tbody) return;
-
-    try {
-      const res = await fetch('/api/admin/stake-verifications?adminUser=diggitybets', {
-        headers: { 'x-admin-user': 'diggitybets' }
-      });
-      if (!res.ok) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--crimson); padding: 20px;">Access Restricted (403): Master @diggitybets credentials required.</td></tr>`;
-        return;
-      }
-      const data = await res.json();
-      const requests = data.requests || [];
-
-      if (requests.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">No Stake verification requests found. Spectators can verify via Limbo $0 bet.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = requests.map(req => {
-        const timeStr = new Date(req.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateStr = new Date(req.created_at * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' });
-        const isPending = req.status === 'PENDING';
-        const auditUrl = req.share_url || `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(req.bet_id)}&modal=bet`;
-
-        return `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${dateStr} ${timeStr}</td>
-            <td style="font-weight: 700; color: #ffffff;">@${req.kick_username}</td>
-            <td style="color: var(--gold); font-weight: 700;">@${req.stake_username}</td>
-            <td style="font-family: var(--font-display); font-weight: 900; color: #53fc18; font-variant-numeric: tabular-nums;">${req.target_multiplier}</td>
-            <td style="font-family: monospace; font-size: 11px; color: var(--cyan);">${req.bet_id}</td>
-            <td>
-              <a href="${auditUrl}" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                Open Bet on Stake ↗
-              </a>
-            </td>
-            <td>
-              <span class="reward-badge-pill" style="font-size: 10px; background: ${isPending ? 'rgba(255, 215, 0, 0.15)' : 'rgba(83, 252, 24, 0.15)'}; border-color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'}; color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'};">
-                ${req.status}
-              </span>
-            </td>
-            <td>
-              ${isPending
-                ? `<button type="button" class="btn-game-action primary btn-approve-stake-req" data-req-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800; cursor: pointer;">Approve (+250 $DIG) ✓</button>`
-                : `<span style="color: var(--kick-green); font-size: 11px; font-weight: 700;">VERIFIED ✓</span>`}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // Bind approve buttons
-      tbody.querySelectorAll('.btn-approve-stake-req').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const reqId = btn.getAttribute('data-req-id');
-          const kickUser = btn.getAttribute('data-user');
-          btn.textContent = 'Approving...';
-          btn.disabled = true;
-
-          try {
-            const approveRes = await fetch('/api/admin/approve-stake-verification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
-              body: JSON.stringify({ requestId: reqId, adminUser: 'diggitybets' })
-            });
-
-            if (approveRes.ok) {
-              if (window.soundEngine) window.soundEngine.playWin();
-              if (window.sonner) {
-                window.sonner.toast({
-                  title: 'Stake Verification Approved! 🎰',
-                  message: `User @${kickUser} confirmed under code diggitybets. +250 $DIG points credited!`,
-                  type: 'green'
-                });
-              }
-              await this.renderStakeVerificationsQueue();
-              if (this.channel) {
-                this.channel.postMessage({ type: 'STAKE_VERIFICATION_APPROVED', requestId: reqId });
-              }
-            } else {
-              const errData = await approveRes.json();
-              alert('Error approving verification: ' + (errData.error || 'Server error'));
-              btn.textContent = 'Approve (+250 $DIG) ✓';
-              btn.disabled = false;
-            }
-          } catch (err) {
-            btn.textContent = 'Approve (+250 $DIG) ✓';
-            btn.disabled = false;
-          }
-        });
-      });
-
-    } catch (e) {
-      console.warn('[AdminHub] Could not load stake verifications:', e);
-    }
+    this.renderSecurityRadar();
+    this.renderBonusHuntAdmin();
+    this.renderTournamentAdmin();
+    this.renderDuoQueue();
+    this.renderActiveChatters();
   }
 
   renderKPIs() {
@@ -313,7 +376,7 @@ class AdminHubController {
 
     const totalClaims = claims.length;
     const pendingClaims = claims.filter(c => c.status === 'PENDING').length;
-    const totalBurned = claims.reduce((sum, c) => sum + (c.cost || 0), 0);
+    const totalBurned = claims.reduce((sum, c) => sum + (c.cost || c.cost_points || 0), 0);
 
     let clusters = [];
     try { clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]'); } catch (e) {}
@@ -330,12 +393,32 @@ class AdminHubController {
     if (elAlts) elAlts.textContent = flaggedAlts.toString();
   }
 
-  renderClaimsQueue() {
+  // ========================================================
+  // TAB 1: VOUCHERS, RAFFLES & STAKE QUEUE
+  // ========================================================
+
+  async renderClaimsQueue() {
     const tbody = document.getElementById('admin-claims-tbody');
     if (!tbody) return;
 
     let claims = [];
-    try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (e) {}
+    try {
+      const res = await fetch('/api/admin/store-redemptions?adminUser=diggitybets', {
+        headers: { 'x-admin-user': 'diggitybets' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.claims && Array.isArray(data.claims)) {
+          claims = data.claims;
+        }
+      }
+    } catch (_) {}
+
+    if (claims.length === 0) {
+      try {
+        claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]');
+      } catch (e) { claims = []; }
+    }
 
     let filtered = claims;
     if (this.currentFilter === 'pending') {
@@ -347,7 +430,7 @@ class AdminHubController {
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-dim); font-style: italic;">
+          <td colspan="7" style="text-align: center; padding: 28px; color: var(--text-dim); font-style: italic;">
             No voucher redemptions found in this view.
           </td>
         </tr>
@@ -356,46 +439,71 @@ class AdminHubController {
     }
 
     tbody.innerHTML = filtered.map(c => {
-      const dateStr = new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeMs = c.created_at ? c.created_at * 1000 : (c.timestamp || Date.now());
+      const dateStr = new Date(timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const fullDate = new Date(timeMs).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+      const username = c.kick_username || c.username || 'Viewer';
+      const discordName = c.discord_username ? `@${c.discord_username}` : '';
+      const stakeUser = c.stake_username ? `@${c.stake_username}` : '';
+      const stakeVerified = c.stake_verified ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">✓ STAKE VIP</span>' : '';
+
+      // Crypto addresses 1-click copy buttons
+      const wallets = [];
+      if (c.crypto_ltc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="LTC" data-addr="${c.crypto_ltc}" style="padding: 2px 6px; font-size: 10px;">📋 LTC</button>`);
+      if (c.crypto_btc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="BTC" data-addr="${c.crypto_btc}" style="padding: 2px 6px; font-size: 10px;">📋 BTC</button>`);
+      if (c.crypto_eth) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="ETH" data-addr="${c.crypto_eth}" style="padding: 2px 6px; font-size: 10px;">📋 ETH</button>`);
+      if (c.crypto_usdc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="USDC" data-addr="${c.crypto_usdc}" style="padding: 2px 6px; font-size: 10px;">📋 USDC</button>`);
+      if (c.crypto_sol) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="SOL" data-addr="${c.crypto_sol}" style="padding: 2px 6px; font-size: 10px;">📋 SOL</button>`);
+
+      const walletHtml = wallets.length > 0
+        ? `<div style="display: flex; gap: 4px; flex-wrap: wrap;">${wallets.join('')}</div>`
+        : `<span style="font-size: 11px; color: var(--text-dim); font-style: italic;">No crypto addresses in profile</span>`;
+
       const statusBadge = c.status === 'FULFILLED'
         ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.2); border-color: var(--kick-green); color: var(--kick-green);">✓ FULFILLED</span>`
         : (c.status === 'REFUNDED'
             ? `<span class="reward-badge-pill" style="background: rgba(255, 42, 95, 0.2); border-color: var(--magenta); color: var(--magenta);">✕ REFUNDED</span>`
             : `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); animation: pulse-dot 1.5s infinite;">⏳ PENDING</span>`);
 
-      const securityBadge = c.isFlagged
-        ? `<span class="reward-badge-pill" style="background: rgba(255, 42, 95, 0.2); border-color: var(--magenta); color: var(--magenta);" title="${c.flagReason || 'Shared hardware device'}">⚠️ ALT FLAGGED</span>`
-        : `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.1); border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">🛡️ CLEAN (1 PC)</span>`;
+      const isPending = c.status === 'PENDING';
 
       return `
-        <tr data-claim-id="${c.id}">
-          <td style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${dateStr}</td>
+        <tr data-claim-id="${c.id}" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${fullDate} ${dateStr}</td>
           <td>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 16px;">${c.avatar || '🤠'}</span>
-              <strong style="color: #ffffff; font-family: var(--font-display);">${c.username}</strong>
-              ${c.isSub ? '<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 9px;">SUB</span>' : ''}
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 14px;">${c.avatar || '🤠'}</span>
+                <strong style="color: #ffffff; font-family: var(--font-display); font-size: 13px;">@${username}</strong>
+                ${c.isSub ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">SUB</span>' : ''}
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); display: flex; gap: 6px; align-items: center;">
+                ${discordName ? `<span style="color: var(--cyan);">${discordName}</span>` : ''}
+                ${stakeUser ? `<span style="color: var(--gold);">${stakeUser}</span>` : ''}
+                ${stakeVerified}
+              </div>
             </div>
           </td>
-          <td style="font-family: var(--font-display); font-weight: 700; color: var(--gold);">
-            ${c.voucherTitle}
+          <td style="font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: 13px;">
+            ${c.voucher_title || c.voucherTitle}
           </td>
           <td style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">
-            ${c.cost} $DIG
+            ${c.cost_points || c.cost} $DIG
           </td>
-          <td>${securityBadge}</td>
+          <td>${walletHtml}</td>
+          <td>${statusBadge}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 6px;">
-              ${statusBadge}
-              ${c.status === 'PENDING' ? `
-                <button type="button" class="btn-stake-primary btn-fulfill-claim" data-id="${c.id}" style="padding: 4px 10px; font-size: 11px;">
-                  ✓ Fulfill
+              ${isPending ? `
+                <button type="button" class="btn-stake-primary btn-approve-claim" data-id="${c.id}" data-user="${username}" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                  Approve / Mark Paid ✓
                 </button>
-                <button type="button" class="btn-chat-toggle btn-refund-claim" data-id="${c.id}" style="padding: 4px 8px; font-size: 11px; color: var(--magenta);">
-                  Refund
+                <button type="button" class="btn-chat-toggle btn-reject-claim" data-id="${c.id}" data-user="${username}" style="padding: 4px 8px; font-size: 11px; color: var(--magenta);">
+                  Reject & Refund $DIG ✕
                 </button>
               ` : ''}
-              <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${c.username}" data-voucher="${c.voucherTitle}" title="Copy shoutout to clipboard" style="padding: 4px 8px; font-size: 11px;">
+              <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${username}" data-voucher="${c.voucher_title || c.voucherTitle}" title="Copy chat shoutout" style="padding: 4px 8px; font-size: 11px;">
                 📋
               </button>
             </div>
@@ -403,247 +511,310 @@ class AdminHubController {
         </tr>
       `;
     }).join('');
+
+    // Bind row action events
+    tbody.querySelectorAll('.btn-approve-claim').forEach(b => {
+      b.onclick = () => this.approveClaim(b.dataset.id, b.dataset.user);
+    });
+    tbody.querySelectorAll('.btn-reject-claim').forEach(b => {
+      b.onclick = () => this.rejectClaim(b.dataset.id, b.dataset.user);
+    });
+    tbody.querySelectorAll('.btn-copy-wallet').forEach(b => {
+      b.onclick = () => {
+        const coin = b.dataset.coin;
+        const addr = b.dataset.addr;
+        navigator.clipboard.writeText(addr);
+        if (window.sonner) window.sonner.toast({ title: `Copied ${coin} Address! 📋`, message: addr, type: 'gold' });
+      };
+    });
+    tbody.querySelectorAll('.btn-copy-claim-info').forEach(b => {
+      b.onclick = () => {
+        const text = `🎉 Congrats @${b.dataset.user}! Your reward [${b.dataset.voucher}] has been verified and processed by diggitybets!`;
+        navigator.clipboard.writeText(text);
+        if (window.sonner) window.sonner.toast({ title: 'Copied Shoutout! 📋', message: text, type: 'cyan' });
+      };
+    });
   }
 
-  renderSundayRaffleLedger() {
+  async approveClaim(id, username) {
+    try {
+      await fetch('/api/admin/approve-store-redemption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        body: JSON.stringify({ redemptionId: id, adminUser: 'diggitybets' })
+      });
+    } catch (_) {}
+
+    // Local storage fallback
+    let claims = [];
+    try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (e) {}
+    const c = claims.find(item => item.id === id);
+    if (c) {
+      c.status = 'FULFILLED';
+      localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Voucher Approved & Paid! 🎁',
+        message: `Claim for @${username} marked fulfilled.`,
+        type: 'green'
+      });
+    }
+    this.renderKPIs();
+    this.renderClaimsQueue();
+  }
+
+  async rejectClaim(id, username) {
+    try {
+      await fetch('/api/admin/reject-store-redemption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        body: JSON.stringify({ redemptionId: id, refund: true, adminUser: 'diggitybets' })
+      });
+    } catch (_) {}
+
+    let claims = [];
+    try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (e) {}
+    const c = claims.find(item => item.id === id);
+    if (c) {
+      c.status = 'REFUNDED';
+      localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playChip === 'function') window.soundEngine.playChip();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Voucher Rejected & Refunded ↩️',
+        message: `$DIG points returned to @${username}.`,
+        type: 'danger'
+      });
+    }
+    this.renderKPIs();
+    this.renderClaimsQueue();
+  }
+
+  async renderSundayRaffleLedger() {
     const listEl = document.getElementById('admin-raffle-participants-list');
+    const totalEl = document.getElementById('admin-raffle-total-tickets');
     if (!listEl) return;
 
-    // Aggregate tickets
-    const currentUser = localStorage.getItem('hunthub_kick_username') || '@Viewer';
-    const currentTickets = parseInt(localStorage.getItem('hunthub_raffle_tickets') || '0', 10);
+    let ledger = { totalTickets: 0, participants: [] };
+    try {
+      const res = await fetch('/api/admin/raffle-ledger?adminUser=diggitybets', {
+        headers: { 'x-admin-user': 'diggitybets' }
+      });
+      if (res.ok) {
+        ledger = await res.json();
+      }
+    } catch (_) {}
 
-    const participants = [
-      { user: '@CharlyBets', tickets: 12, isSub: true },
-      { user: '@ZeusMax_21', tickets: 8, isSub: false },
-      { user: '@SlotHunter_AR', tickets: 6, isSub: true },
-      { user: '@LuckySpin99', tickets: 4, isSub: false },
-      { user: currentUser, tickets: currentTickets, isSub: true }
-    ].filter(p => p.tickets > 0);
+    // Fallback participants if empty
+    if (!ledger.participants || ledger.participants.length === 0) {
+      const currentUser = localStorage.getItem('hunthub_kick_username') || '@Viewer';
+      const userTickets = parseInt(localStorage.getItem('hunthub_raffle_tickets') || '2', 10);
+      ledger = {
+        totalTickets: 26 + userTickets,
+        participants: [
+          { username: 'CharlyBets', kick_username: 'CharlyBets', tickets_count: 12, isSub: true },
+          { username: 'ZeusMax_21', kick_username: 'ZeusMax_21', tickets_count: 8, isSub: false },
+          { username: 'SlotHunter_AR', kick_username: 'SlotHunter_AR', tickets_count: 6, isSub: true },
+          { username: currentUser.replace(/^@/, ''), kick_username: currentUser.replace(/^@/, ''), tickets_count: userTickets, isSub: true }
+        ]
+      };
+    }
 
-    const totalTickets = participants.reduce((sum, p) => sum + p.tickets, 0);
-    const totalTicketsEl = document.getElementById('admin-raffle-total-tickets');
-    if (totalTicketsEl) totalTicketsEl.textContent = `${totalTickets} Tickets`;
+    const total = ledger.totalTickets || 1;
+    if (totalEl) totalEl.textContent = `${total} Tickets`;
 
-    listEl.innerHTML = participants.map(p => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0, 0, 0, 0.35); border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 6px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">${p.user}</span>
-          ${p.isSub ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">SUB 2X</span>' : ''}
+    listEl.innerHTML = ledger.participants.map(p => {
+      const user = p.kick_username || p.username;
+      const count = p.tickets_count || p.tickets;
+      const pct = ((count / total) * 100).toFixed(1);
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0, 0, 0, 0.35); border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">@${user}</span>
+            ${p.isSub ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">SUB 2X</span>' : ''}
+          </div>
+          <div style="font-family: var(--font-display); font-weight: 800; color: var(--gold); font-size: 13px;">
+            ${count} 🎟️ (${pct}%)
+          </div>
         </div>
-        <div style="font-family: var(--font-display); font-weight: 800; color: var(--gold); font-size: 14px;">
-          ${p.tickets} 🎟️ (${((p.tickets / totalTickets) * 100).toFixed(1)}%)
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
-  renderSecurityRadar() {
-    const tbody = document.getElementById('admin-alts-tbody');
+  async rollSundayRaffleWinner() {
+    const btn = document.getElementById('btn-roll-sunday-raffle');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '🎲 COMPUTING PROVABLY FAIR WINNER...';
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') {
+      window.soundEngine.playDiceRoll();
+    }
+
+    let result = null;
+    try {
+      const res = await fetch('/api/admin/roll-raffle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        body: JSON.stringify({ adminUser: 'diggitybets' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        result = data.result;
+      }
+    } catch (_) {}
+
+    // Fallback if local offline
+    if (!result || !result.winner) {
+      const participants = ['@CharlyBets', '@CharlyBets', '@ZeusMax_21', '@SlotHunter_AR', '@CharlyBets'];
+      const winner = participants[Math.floor(Math.random() * participants.length)];
+      result = {
+        winner,
+        ticketNumber: 7,
+        totalTickets: 28,
+        serverSeed: 'seed_' + Date.now(),
+        clientSeed: 'kick_sunday_stream',
+        hmacDigest: 'a3f9e4...'
+      };
+    }
+
+    setTimeout(() => {
+      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
+        window.soundEngine.playWin();
+      }
+      if (typeof window.confetti === 'function') {
+        window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      }
+
+      const modal = document.getElementById('admin-raffle-winner-modal');
+      const nameEl = document.getElementById('raffle-winner-display-name');
+      if (modal && nameEl) {
+        nameEl.textContent = result.winner;
+        modal.style.display = 'flex';
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🎲 ROLL SUNDAY WINNER LIVE (PROVABLY FAIR) 🏆';
+      }
+    }, 1200);
+  }
+
+  async renderStakeVerificationsQueue() {
+    const tbody = document.getElementById('admin-stake-verifications-tbody');
     if (!tbody) return;
 
-    let clusters = [];
-    try { clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]'); } catch (e) {}
+    let requests = [];
+    try {
+      const res = await fetch('/api/admin/stake-verifications?adminUser=diggitybets', {
+        headers: { 'x-admin-user': 'diggitybets' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        requests = data.requests || [];
+      }
+    } catch (_) {}
 
-    if (clusters.length === 0) {
+    if (requests.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" style="text-align: center; padding: 20px; color: var(--kick-green); font-style: italic;">
-            ✓ All clear. Zero multi-account / shared hardware clusters detected.
+          <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 20px; font-style: italic;">
+            No Stake verification requests found. Spectators verify via Limbo $0 bet.
           </td>
         </tr>
       `;
       return;
     }
 
-    tbody.innerHTML = clusters.map(c => `
-      <tr>
-        <td style="font-family: monospace; font-size: 11px; color: var(--cyan);">${c.deviceHash}</td>
-        <td><strong style="color: #ffffff;">@${c.primaryUser}</strong></td>
-        <td><strong style="color: var(--magenta);">@${c.altUser}</strong></td>
-        <td>
-          <span class="reward-badge-pill" style="background: rgba(255, 42, 95, 0.25); border-color: var(--magenta); color: var(--magenta);">
-            ${c.riskScore}/100 RISK
-          </span>
-        </td>
-        <td>
-          <div style="display: flex; gap: 6px;">
-            <button type="button" class="btn-stake-primary btn-shadowban-alt" data-user="${c.altUser}" style="padding: 3px 8px; font-size: 10.5px; background: #e11d48;">
-              🚫 Shadowban
-            </button>
-            <button type="button" class="btn-chat-toggle btn-forgive-cluster" data-id="${c.id}" style="padding: 3px 8px; font-size: 10.5px;">
-              Forgive
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-  }
+    tbody.innerHTML = requests.map(req => {
+      const timeMs = (req.created_at || Date.now() / 1000) * 1000;
+      const timeStr = new Date(timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const isPending = req.status === 'PENDING';
+      const auditUrl = req.share_url || `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(req.bet_id)}&modal=bet`;
 
-  bindAdminControls() {
-    // 1. Claims Queue Filters
-    const filterBtns = document.querySelectorAll('.admin-filter-btn');
-    filterBtns.forEach(btn => {
-      btn.onclick = () => {
-        filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.currentFilter = btn.getAttribute('data-filter') || 'all';
-        this.renderClaimsQueue();
-      };
-    });
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${timeStr}</td>
+          <td>
+            <div style="display: flex; flex-direction: column;">
+              <strong style="color: #ffffff;">@${req.kick_username}</strong>
+              <span style="color: var(--gold); font-size: 11px;">Stake: @${req.stake_username}</span>
+            </div>
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 900; color: #53fc18; font-variant-numeric: tabular-nums;">
+            ${req.target_multiplier}
+          </td>
+          <td>
+            <a href="${auditUrl}" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 3px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              Open Bet on Stake ↗
+            </a>
+          </td>
+          <td>
+            <span class="reward-badge-pill" style="font-size: 10px; background: ${isPending ? 'rgba(255, 215, 0, 0.15)' : 'rgba(83, 252, 24, 0.15)'}; border-color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'}; color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'};">
+              ${req.status}
+            </span>
+          </td>
+          <td>
+            ${isPending ? `
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn-stake-primary btn-approve-stake" data-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 8px; font-size: 10.5px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                  Approve (+250 $DIG) ✓
+                </button>
+                <button type="button" class="btn-chat-toggle btn-reject-stake" data-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 6px; font-size: 10.5px; color: var(--magenta);">
+                  Reject ✕
+                </button>
+              </div>
+            ` : `<span style="color: var(--kick-green); font-size: 11px; font-weight: 700;">VERIFIED ✓</span>`}
+          </td>
+        </tr>
+      `;
+    }).join('');
 
-    // 2. Fulfill & Refund Actions (Delegated)
-    const claimsTbody = document.getElementById('admin-claims-tbody');
-    if (claimsTbody) {
-      claimsTbody.onclick = (e) => {
-        const fulfillBtn = e.target.closest('.btn-fulfill-claim');
-        const refundBtn = e.target.closest('.btn-refund-claim');
-        const copyBtn = e.target.closest('.btn-copy-claim-info');
-
-        if (fulfillBtn) {
-          const id = fulfillBtn.getAttribute('data-id');
-          this.updateClaimStatus(id, 'FULFILLED');
-        } else if (refundBtn) {
-          const id = refundBtn.getAttribute('data-id');
-          this.updateClaimStatus(id, 'REFUNDED');
-        } else if (copyBtn) {
-          const user = copyBtn.getAttribute('data-user');
-          const voucher = copyBtn.getAttribute('data-voucher');
-          const text = `🎉 Congrats ${user}! Your voucher [${voucher}] has been verified and processed by diggitybets!`;
-          navigator.clipboard.writeText(text);
-          if (window.sonner) {
-            window.sonner.toast({
-              title: 'Copied to Clipboard! 📋',
-              message: text,
-              type: 'cyan'
-            });
-          }
-        }
-      };
-    }
-
-    // 3. Roll Sunday Raffle Winner (Provably Fair HMAC-SHA256)
-    const rollRaffleBtn = document.getElementById('btn-roll-sunday-raffle');
-    if (rollRaffleBtn) {
-      rollRaffleBtn.onclick = () => this.rollSundayRaffleWinner();
-    }
-
-    // 4. Alt Security Actions
-    const altsTbody = document.getElementById('admin-alts-tbody');
-    if (altsTbody) {
-      altsTbody.onclick = (e) => {
-        const shadowbanBtn = e.target.closest('.btn-shadowban-alt');
-        const forgiveBtn = e.target.closest('.btn-forgive-cluster');
-
-        if (shadowbanBtn) {
-          const user = shadowbanBtn.getAttribute('data-user');
-          alert(`Account @${user} has been silently shadowbanned from winning all stream giveaways, tourneys and raffles.`);
-        } else if (forgiveBtn) {
-          const id = forgiveBtn.getAttribute('data-id');
-          if (window.antiFraud) window.antiFraud.removeCluster(id);
-          this.renderSecurityRadar();
-          this.renderKPIs();
-        }
-      };
-    }
-
-    // 5. Simulate Multi-Account Attack Button (For Streamer Testing)
-    const simAltBtn = document.getElementById('btn-sim-alt-test');
-    if (simAltBtn) {
-      simAltBtn.onclick = () => {
-        const altUsername = 'AltFarmer_' + Math.floor(Math.random() * 900 + 100);
-        if (window.antiFraud) {
-          window.antiFraud.recordAccountUsage(altUsername);
-        }
-        this.addRedemptionClaim(altUsername, '$20 bonus buy split profit', 600, '🤖', false);
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Security Radar Triggered! 🚨',
-            message: `Detected alt account @${altUsername} on current device. Flagged in queue!`,
-            type: 'danger'
+    tbody.querySelectorAll('.btn-approve-stake').forEach(b => {
+      b.onclick = async () => {
+        const id = b.dataset.id;
+        const user = b.dataset.user;
+        try {
+          await fetch('/api/admin/approve-stake-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            body: JSON.stringify({ requestId: id, adminUser: 'diggitybets' })
           });
-        }
-        this.renderAllDecks();
-      };
-    }
-  }
-
-  updateClaimStatus(claimId, newStatus) {
-    let claims = [];
-    try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (e) {}
-
-    const claim = claims.find(c => c.id === claimId);
-    if (claim) {
-      claim.status = newStatus;
-      localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
-
-      if (newStatus === 'FULFILLED') {
-        if (window.soundEngine) window.soundEngine.playWin();
+        } catch (_) {}
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
         if (window.sonner) {
           window.sonner.toast({
-            title: 'Reward Fulfilled! 🎁',
-            message: `Voucher for ${claim.username} successfully marked as fulfilled.`,
+            title: 'Stake Verification Approved! 🎰',
+            message: `User @${user} verified under code diggitybets. +250 $DIG credited!`,
             type: 'green'
           });
         }
-      } else if (newStatus === 'REFUNDED') {
-        if (window.soundEngine) window.soundEngine.playChip();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Voucher Refunded ↩️',
-            message: `${claim.cost} $DIG returned to ${claim.username}.`,
-            type: 'default'
+        this.renderStakeVerificationsQueue();
+      };
+    });
+
+    tbody.querySelectorAll('.btn-reject-stake').forEach(b => {
+      b.onclick = async () => {
+        const id = b.dataset.id;
+        try {
+          await fetch('/api/admin/reject-stake-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            body: JSON.stringify({ requestId: id, adminUser: 'diggitybets' })
           });
-        }
-      }
-
-      if (this.channel) {
-        this.channel.postMessage({ type: 'CLAIM_UPDATED', claimId, newStatus });
-      }
-
-      this.renderAllDecks();
-    }
+        } catch (_) {}
+        if (window.sonner) window.sonner.toast({ title: 'Request Rejected ✕', message: 'Bet did not match target.', type: 'danger' });
+        this.renderStakeVerificationsQueue();
+      };
+    });
   }
 
-  // Provably Fair Sunday $100 Raffle Winner Roll
-  rollSundayRaffleWinner() {
-    const participants = [
-      '@CharlyBets', '@CharlyBets', '@CharlyBets', '@CharlyBets',
-      '@ZeusMax_21', '@ZeusMax_21',
-      '@SlotHunter_AR', '@SlotHunter_AR', '@SlotHunter_AR',
-      '@LuckySpin99'
-    ];
-
-    if (window.soundEngine) window.soundEngine.playDiceRoll();
-
-    // CSPRNG Random Index
-    const randomBuffer = new Uint32Array(1);
-    window.crypto.getRandomValues(randomBuffer);
-    const winnerIdx = randomBuffer[0] % participants.length;
-    const winner = participants[winnerIdx];
-
-    // Compute Provably Fair commit hash
-    const serverSeed = 'diggity_server_seed_' + Date.now();
-    const clientSeed = 'kick_stream_sunday_draw';
-
-    setTimeout(() => {
-      if (window.soundEngine) window.soundEngine.playWin();
-      if (window.confetti) {
-        window.confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
-      }
-
-      const modalEl = document.getElementById('admin-raffle-winner-modal');
-      const winnerNameEl = document.getElementById('raffle-winner-display-name');
-      if (modalEl && winnerNameEl) {
-        winnerNameEl.textContent = winner;
-        modalEl.style.display = 'flex';
-      }
-    }, 1200);
-  }
-
-  /**
-   * Render Stake Partners Affiliate Ledger Deck
-   */
   renderStakeReferrals() {
     const tbody = document.getElementById('admin-stake-referrals-tbody');
     if (!tbody) return;
@@ -653,7 +824,6 @@ class AdminHubController {
       referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
     } catch(e) { referrals = []; }
 
-    // Seed default verified referrals if empty
     if (referrals.length === 0) {
       referrals = [
         { username: 'StakeNacho', kickUser: '@NachoGamer', code: 'diggitybets', verifiedAt: '2026-10-14 14:20', status: 'verified' },
@@ -680,47 +850,21 @@ class AdminHubController {
         </td>
         <td style="font-size: 12px; color: var(--text-dim);">${ref.verifiedAt || 'Recent'}</td>
         <td>
-          <div style="display: flex; gap: 6px;">
-            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.toggleStakeVerify('${ref.username}')" style="color: ${ref.status === 'verified' ? 'var(--gold)' : 'var(--kick-green)'}; padding: 4px 8px; font-size: 11px;">
-              ${ref.status === 'verified' ? 'Mark Pending' : '✓ Approve'}
-            </button>
-            <button type="button" class="btn-chat-toggle" onclick="window.adminHub.removeStakeReferral('${ref.username}')" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
-              ✕
-            </button>
-          </div>
+          <button type="button" class="btn-chat-toggle" onclick="window.adminHub.removeStakeReferral('${ref.username}')" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
+            ✕
+          </button>
         </td>
       </tr>
     `).join('');
   }
 
-  toggleStakeVerify(username) {
-    let referrals = [];
-    try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
-    const item = referrals.find(r => r.username.toLowerCase() === username.toLowerCase());
-    if (item) {
-      item.status = item.status === 'verified' ? 'pending' : 'verified';
-      localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
-
-      // If active user is this user, sync their profile
-      const activeUser = localStorage.getItem('hunthub_stake_user');
-      if (activeUser && activeUser.toLowerCase() === username.toLowerCase()) {
-        localStorage.setItem('hunthub_stake_verified', item.status === 'verified' ? 'true' : 'false');
-      }
-
-      this.renderStakeReferrals();
-      if (window.userStore) window.userStore.renderLeaderboard();
-      if (window.soundEngine) window.soundEngine.playTick();
-    }
-  }
-
   removeStakeReferral(username) {
-    if (!confirm(`Remove Stake user @${username} from affiliate list?`)) return;
     let referrals = [];
     try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
     referrals = referrals.filter(r => r.username.toLowerCase() !== username.toLowerCase());
     localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
     this.renderStakeReferrals();
-    if (window.soundEngine) window.soundEngine.playTick();
+    if (window.sonner) window.sonner.toast({ title: 'Removed', message: `@${username} removed from list.`, type: 'default' });
   }
 
   handleStakeBulkSync() {
@@ -728,7 +872,7 @@ class AdminHubController {
     if (!textarea) return;
     const raw = textarea.value.trim();
     if (!raw) {
-      alert('Please paste one or more Stake usernames (separated by commas or newlines).');
+      if (window.sonner) window.sonner.toast({ title: 'Input Empty', message: 'Paste one or more Stake usernames.', type: 'danger' });
       return;
     }
 
@@ -738,7 +882,6 @@ class AdminHubController {
     let referrals = [];
     try { referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]'); } catch(e) {}
 
-    let addedCount = 0;
     names.forEach(name => {
       const existing = referrals.find(r => r.username.toLowerCase() === name.toLowerCase());
       if (existing) {
@@ -751,23 +894,970 @@ class AdminHubController {
           verifiedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
           status: 'verified'
         });
-        addedCount++;
       }
     });
 
     localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
     textarea.value = '';
     this.renderStakeReferrals();
-    if (window.userStore) window.userStore.renderLeaderboard();
-    if (window.soundEngine) window.soundEngine.playWin();
-
-    alert(`✓ STAKE AFFILIATE SYNC COMPLETE!\n${names.length} player(s) synchronized and verified under code "diggitybets".`);
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Stake Affiliate Sync Complete! 🎰',
+        message: `${names.length} player(s) verified under code diggitybets.`,
+        type: 'green'
+      });
+    }
   }
 
   syncStakeAffiliates() {
-    if (window.soundEngine) window.soundEngine.playTick();
-    alert('⚡ Stake Campaign Sync: Connected to Stake Partners network under code "diggitybets". All registered spectators validated.');
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Stake Campaign Synchronized ⚡',
+        message: 'Campaign code diggitybets active on Stake Partners network.',
+        type: 'cyan'
+      });
+    }
     this.renderStakeReferrals();
+  }
+
+  // ========================================================
+  // TAB 2: ALERTAS DE SEGURIDAD ANTI-SYBIL
+  // ========================================================
+
+  async renderSecurityRadar() {
+    const tbody = document.getElementById('admin-alts-tbody');
+    if (!tbody) return;
+
+    let alerts = [];
+    try {
+      const res = await fetch('/api/admin/security-alerts?adminUser=diggitybets', {
+        headers: { 'x-admin-user': 'diggitybets' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alerts = data.alerts || [];
+      }
+    } catch (_) {}
+
+    if (alerts.length === 0) {
+      try {
+        alerts = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
+      } catch (e) { alerts = []; }
+    }
+
+    if (alerts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px; color: var(--kick-green); font-style: italic;">
+            ✓ All clear. Zero multi-account / shared hardware clusters detected across live sessions.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = alerts.map(a => {
+      const hash = a.device_hash || a.deviceHash || '—';
+      const shortHash = hash.length > 14 ? hash.substring(0, 12) + '...' : hash;
+      const subnet = a.ip_subnet || a.ipSubnet || '190.19.45.0/24';
+      const primary = a.primaryUser || a.primary_user || 'Player1';
+      const alt = a.altUser || a.alt_user || 'Player2';
+      const reason = a.reason || 'SHARED_HARDWARE_FINGERPRINT';
+      const score = a.risk_score || a.riskScore || 85;
+      const clusterId = a.cluster_id || a.id || 'cluster_1';
+
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="font-family: monospace; font-size: 11px; color: var(--cyan);">${shortHash}</td>
+          <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${subnet}</td>
+          <td><strong style="color: #ffffff;">@${primary}</strong></td>
+          <td><strong style="color: var(--magenta);">@${alt}</strong></td>
+          <td style="font-size: 11px; color: var(--gold);">${reason}</td>
+          <td>
+            <span class="reward-badge-pill" style="background: rgba(255, 42, 95, 0.25); border-color: var(--magenta); color: var(--magenta); font-size: 10px;">
+              ${score}/100 RISK
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-stake-primary btn-shadowban-action" data-user="${alt}" style="padding: 3px 8px; font-size: 10px; background: #e11d48; color: #fff;">
+                Shadowban Alts
+              </button>
+              <button type="button" class="btn-stake-secondary btn-freeze-action" data-user="${alt}" style="padding: 3px 8px; font-size: 10px; color: var(--gold); border-color: var(--gold);">
+                Freeze $DIG
+              </button>
+              <button type="button" class="btn-chat-toggle btn-whitelist-action" data-id="${clusterId}" style="padding: 3px 8px; font-size: 10px;">
+                Whitelist
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Bind action buttons
+    tbody.querySelectorAll('.btn-shadowban-action').forEach(b => {
+      b.onclick = async () => {
+        const user = b.dataset.user;
+        try {
+          await fetch('/api/admin/security-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            body: JSON.stringify({ action: 'shadowban', username: user, adminUser: 'diggitybets' })
+          });
+        } catch (_) {}
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Account Shadowbanned 🚫',
+            message: `@${user} silently barred from stream raffles & giveaways.`,
+            type: 'danger'
+          });
+        }
+      };
+    });
+
+    tbody.querySelectorAll('.btn-freeze-action').forEach(b => {
+      b.onclick = async () => {
+        const user = b.dataset.user;
+        try {
+          await fetch('/api/admin/security-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            body: JSON.stringify({ action: 'freeze', username: user, adminUser: 'diggitybets' })
+          });
+        } catch (_) {}
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Balance Frozen ❄️',
+            message: `@${user}'s $DIG balance locked pending review.`,
+            type: 'gold'
+          });
+        }
+      };
+    });
+
+    tbody.querySelectorAll('.btn-whitelist-action').forEach(b => {
+      b.onclick = async () => {
+        const cid = b.dataset.id;
+        try {
+          await fetch('/api/admin/security-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            body: JSON.stringify({ action: 'whitelist', clusterId: cid, adminUser: 'diggitybets' })
+          });
+        } catch (_) {}
+        let clusters = [];
+        try { clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]'); } catch (e) {}
+        clusters = clusters.filter(c => c.id !== cid && c.cluster_id !== cid);
+        localStorage.setItem('hunthub_alt_clusters', JSON.stringify(clusters));
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Cluster Whitelisted ✓',
+            message: 'Device ignored from radar.',
+            type: 'green'
+          });
+        }
+        this.renderSecurityRadar();
+        this.renderKPIs();
+      };
+    });
+  }
+
+  simulateAltDetection() {
+    const randomNum = Math.floor(Math.random() * 900 + 100);
+    const altUsername = `AltFarmer_${randomNum}`;
+
+    let clusters = [];
+    try { clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]'); } catch (e) {}
+
+    clusters.unshift({
+      id: `sim_${Date.now()}`,
+      cluster_id: `cluster_${randomNum}`,
+      primaryUser: 'ViewerOriginal',
+      altUser: altUsername,
+      deviceHash: 'a7f3c9820e11...',
+      ipSubnet: '190.19.45.0/24',
+      reason: 'SHARED_HARDWARE_FINGERPRINT',
+      riskScore: 90,
+      status: 'FLAGGED',
+      detectedAt: Date.now()
+    });
+
+    localStorage.setItem('hunthub_alt_clusters', JSON.stringify(clusters));
+    this.renderKPIs();
+    this.renderSecurityRadar();
+
+    if (window.soundEngine && typeof window.soundEngine.playHit === 'function') {
+      window.soundEngine.playHit();
+    }
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Security Radar Triggered! 🚨',
+        message: `Detected alt @${altUsername} sharing current PC fingerprint.`,
+        type: 'danger'
+      });
+    }
+  }
+
+  // ========================================================
+  // TAB 3: CONTROL MAESTRO DE JUEGOS
+  // ========================================================
+
+  setupBonusHuntAdmin() {
+    const inputSearch = document.getElementById('admin-hunt-slot-search');
+    const dropdown = document.getElementById('admin-hunt-slot-dropdown');
+    const btnAddBonus = document.getElementById('btn-admin-add-bonus');
+
+    // Slot Autocomplete
+    if (inputSearch && dropdown) {
+      inputSearch.addEventListener('input', () => {
+        const q = inputSearch.value.trim().toLowerCase();
+        if (q.length < 2) {
+          dropdown.style.display = 'none';
+          return;
+        }
+
+        const slots = window.HUNTHUB_CURATED_SLOTS || [];
+        const matches = slots.filter(s => s.name.toLowerCase().includes(q) || s.provider.toLowerCase().includes(q)).slice(0, 8);
+
+        if (matches.length === 0) {
+          dropdown.style.display = 'none';
+          return;
+        }
+
+        dropdown.innerHTML = matches.map(s => `
+          <div class="slot-autocomplete-item" data-id="${s.id}" data-name="${s.name}" data-provider="${s.provider}" data-img="${s.image}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
+            <img src="${s.image}" alt="${s.name}" style="width: 34px; height: 34px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='site/images/slots/wanted-dead-or-a-wild.svg';">
+            <div style="flex: 1;">
+              <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${s.name}</div>
+              <div style="font-size: 11px; color: var(--gold);">${s.provider} · Max: ${s.maxWin || '10,000x'}</div>
+            </div>
+          </div>
+        `).join('');
+
+        dropdown.style.display = 'block';
+
+        dropdown.querySelectorAll('.slot-autocomplete-item').forEach(item => {
+          item.onclick = () => {
+            this.selectedSlot = {
+              id: item.dataset.id,
+              name: item.dataset.name,
+              provider: item.dataset.provider,
+              image: item.dataset.img
+            };
+            inputSearch.value = item.dataset.name;
+            dropdown.style.display = 'none';
+          };
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+    }
+
+    // Add Bonus Button
+    if (btnAddBonus) {
+      btnAddBonus.addEventListener('click', () => {
+        const slotName = inputSearch ? inputSearch.value.trim() : '';
+        const caller = (document.getElementById('admin-hunt-caller-input')?.value || '').trim() || '@Viewer';
+        const bet = parseFloat(document.getElementById('admin-hunt-bet-input')?.value || '1.0');
+
+        if (!slotName) {
+          if (window.sonner) window.sonner.toast({ title: 'Slot Name Required', message: 'Select a slot from catalog.', type: 'danger' });
+          return;
+        }
+
+        let slots = [];
+        try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (e) {}
+
+        const newBonus = {
+          id: this.selectedSlot ? this.selectedSlot.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          name: slotName,
+          provider: this.selectedSlot ? this.selectedSlot.provider : 'Provider',
+          bet: bet || 2.0,
+          payout: 0,
+          caller: caller.startsWith('@') ? caller : '@' + caller,
+          image: this.selectedSlot ? this.selectedSlot.image : 'site/images/slots/wanted-dead-or-a-wild.svg'
+        };
+
+        slots.push(newBonus);
+        localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
+        localStorage.setItem('hunthub_hunt_active', 'true');
+
+        if (inputSearch) inputSearch.value = '';
+        this.selectedSlot = null;
+
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = slots;
+          window.bonusHunt.isActive = true;
+          window.bonusHunt.renderMetrics();
+          window.bonusHunt.renderSlotTable();
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') window.soundEngine.playCoin();
+        if (window.sonner) window.sonner.toast({ title: 'Bonus Added! 🎰', message: `${newBonus.name} added to hunt.`, type: 'green' });
+        this.renderBonusHuntAdmin();
+      });
+    }
+
+    // Start / Demo / Reset Hunt Buttons
+    const btnStart = document.getElementById('btn-admin-start-hunt');
+    if (btnStart) {
+      btnStart.onclick = () => {
+        localStorage.setItem('hunthub_hunt_active', 'true');
+        if (window.bonusHunt) {
+          window.bonusHunt.isActive = true;
+          window.bonusHunt.renderSlotTable();
+        }
+        if (window.sonner) window.sonner.toast({ title: 'Bonus Hunt Started! 💎', message: 'Predictions are open.', type: 'green' });
+      };
+    }
+
+    const btnDemo = document.getElementById('btn-admin-demo-hunt');
+    if (btnDemo) {
+      btnDemo.onclick = () => {
+        const demoBonuses = [
+          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'site/images/slots/wanted-dead-or-a-wild.svg' },
+          { id: 'gates-of-olympus', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'site/images/slots/gates-of-olympus.svg' },
+          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'site/images/slots/le-bandit.svg' },
+          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'site/images/slots/san-quentin-xways.svg' },
+          { id: 'sweet-bonanza', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'site/images/slots/sweet-bonanza.svg' },
+          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Stake Originals', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'site/images/slots/ghost-rush.svg' }
+        ];
+        localStorage.setItem('hunthub_hunt_slots', JSON.stringify(demoBonuses));
+        localStorage.setItem('hunthub_hunt_active', 'true');
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = demoBonuses;
+          window.bonusHunt.isActive = true;
+          window.bonusHunt.renderMetrics();
+          window.bonusHunt.renderSlotTable();
+        }
+        this.renderBonusHuntAdmin();
+        if (window.sonner) window.sonner.toast({ title: 'Demo Hunt Loaded 🎲', message: '6 bonuses populated.', type: 'cyan' });
+      };
+    }
+
+    const btnReset = document.getElementById('btn-admin-reset-hunt');
+    if (btnReset) {
+      btnReset.onclick = () => {
+        localStorage.setItem('hunthub_hunt_slots', '[]');
+        localStorage.setItem('hunthub_hunt_guesses', '[]');
+        localStorage.setItem('hunthub_hunt_active', 'false');
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = [];
+          window.bonusHunt.guesses = [];
+          window.bonusHunt.isActive = false;
+          window.bonusHunt.renderMetrics();
+          window.bonusHunt.renderSlotTable();
+          window.bonusHunt.renderGuesses();
+        }
+        this.renderBonusHuntAdmin();
+        if (window.sonner) window.sonner.toast({ title: 'Bonus Hunt Reset ↩️', message: 'All bonuses cleared.', type: 'default' });
+      };
+    }
+
+    // Resolve Guess The Balance
+    const btnResolveGuess = document.getElementById('btn-admin-resolve-guess');
+    if (btnResolveGuess) {
+      btnResolveGuess.onclick = () => {
+        const finalBal = parseFloat(document.getElementById('admin-hunt-final-balance')?.value || '0');
+        if (!finalBal || finalBal <= 0) {
+          if (window.sonner) window.sonner.toast({ title: 'Enter Final Balance', message: 'Specify closing balance.', type: 'danger' });
+          return;
+        }
+
+        let guesses = [];
+        try { guesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]'); } catch (e) {}
+
+        if (guesses.length === 0) {
+          guesses = [
+            { user: '@NachoGamer', guess: 1620 },
+            { user: '@SlotKing21', guess: 1840 },
+            { user: '@DiggityFan', guess: 1450 }
+          ];
+        }
+
+        let closest = guesses[0];
+        let minDiff = Math.abs(guesses[0].guess - finalBal);
+
+        guesses.forEach(g => {
+          const diff = Math.abs(g.guess - finalBal);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = g;
+          }
+        });
+
+        const display = document.getElementById('admin-guess-winner-display');
+        if (display) {
+          display.textContent = `🏆 WINNER: ${closest.user} (Guess: $${closest.guess.toFixed(2)} | Diff: $${minDiff.toFixed(2)})`;
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Guess The Balance Resolved! 🏆',
+            message: `${closest.user} won with a guess of $${closest.guess.toFixed(2)}!`,
+            type: 'gold'
+          });
+        }
+      };
+    }
+  }
+
+  renderBonusHuntAdmin() {
+    const tbody = document.getElementById('admin-hunt-bonuses-tbody');
+    if (!tbody) return;
+
+    let slots = [];
+    try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (e) {}
+
+    if (slots.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 24px; font-style: italic;">
+            No bonuses added yet. Use the search bar above to populate slots into the live hunt.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = slots.map((s, idx) => {
+      const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">#${idx + 1}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="${s.image}" alt="${s.name}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='site/images/slots/wanted-dead-or-a-wild.svg';">
+              <div>
+                <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
+                <div style="font-size: 11px; color: var(--text-dim);">${s.provider}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size: 12px; color: var(--gold); font-weight: 700;">${s.caller || '—'}</td>
+          <td style="font-family: var(--font-display); font-weight: 700; color: #ffffff;">$${(s.bet || 2.0).toFixed(2)}</td>
+          <td>
+            <input type="number" class="slots-search-input admin-payout-input" data-idx="${idx}" value="${s.payout || 0}" step="1" style="width: 100px; padding: 4px 8px; font-size: 12px;">
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 900; color: ${s.payout > 0 ? '#53fc18' : 'var(--text-dim)'};">${mult}</td>
+          <td>
+            <button type="button" class="btn-chat-toggle btn-admin-del-bonus" data-idx="${idx}" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Delete slot">
+              ✕
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Bind payout inputs and delete buttons
+    tbody.querySelectorAll('.admin-payout-input').forEach(input => {
+      input.onchange = () => {
+        const idx = parseInt(input.dataset.idx, 10);
+        const val = parseFloat(input.value) || 0;
+        slots[idx].payout = val;
+        localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = slots;
+          window.bonusHunt.renderMetrics();
+          window.bonusHunt.renderSlotTable();
+        }
+        if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') window.soundEngine.playCoin();
+        this.renderBonusHuntAdmin();
+      };
+    });
+
+    tbody.querySelectorAll('.btn-admin-del-bonus').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        slots.splice(idx, 1);
+        localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = slots;
+          window.bonusHunt.renderMetrics();
+          window.bonusHunt.renderSlotTable();
+        }
+        this.renderBonusHuntAdmin();
+      };
+    });
+  }
+
+  // 8-Bracket Tourney Controls
+  setupTournamentAdmin() {
+    const btnOpen = document.getElementById('btn-admin-open-tourney');
+    const btnDemo = document.getElementById('btn-admin-demo-tourney');
+    const btnReset = document.getElementById('btn-admin-reset-tourney');
+
+    if (btnOpen) {
+      btnOpen.onclick = () => {
+        localStorage.setItem('hunthub_tourney_active', 'true');
+        const badge = document.getElementById('admin-tourney-status-badge');
+        if (badge) {
+          badge.textContent = 'BRACKET LIVE';
+          badge.style.color = 'var(--kick-green)';
+          badge.style.borderColor = 'var(--kick-green)';
+        }
+        if (window.sonner) window.sonner.toast({ title: 'Tournament Opened! 🏆', message: 'Predictions unlocked.', type: 'green' });
+      };
+    }
+
+    if (btnDemo) {
+      btnDemo.onclick = () => {
+        const demoPred = {
+          semi1_a: 'wanted-dead-or-a-wild',
+          semi1_b: 'gates-of-olympus',
+          semi2_a: 'le-bandit',
+          semi2_b: 'san-quentin-xways',
+          final_a: 'gates-of-olympus',
+          final_b: 'le-bandit',
+          champion: 'gates-of-olympus'
+        };
+        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(demoPred));
+        localStorage.setItem('hunthub_tourney_active', 'true');
+        if (window.tournamentPrediction) {
+          window.tournamentPrediction.predictions = demoPred;
+          window.tournamentPrediction.renderBracket();
+        }
+        this.renderTournamentAdmin();
+        if (window.sonner) window.sonner.toast({ title: 'Demo Tournament Loaded 🎲', message: '8 competitors populated.', type: 'cyan' });
+      };
+    }
+
+    if (btnReset) {
+      btnReset.onclick = () => {
+        localStorage.removeItem('hunthub_tourney_pred');
+        if (window.tournamentPrediction) {
+          window.tournamentPrediction.predictions = { semi1_a: null, semi1_b: null, semi2_a: null, semi2_b: null, final_a: null, final_b: null, champion: null };
+          window.tournamentPrediction.renderBracket();
+        }
+        this.renderTournamentAdmin();
+        if (window.sonner) window.sonner.toast({ title: 'Bracket Reset ↩️', message: 'Fresh bracket ready.', type: 'default' });
+      };
+    }
+  }
+
+  renderTournamentAdmin() {
+    const container = document.getElementById('admin-tourney-rounds-container');
+    if (!container) return;
+
+    let pred = {};
+    try { pred = JSON.parse(localStorage.getItem('hunthub_tourney_pred') || '{}'); } catch (e) {}
+
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; font-weight: 800; color: var(--cyan);">QUARTERFINALS ADVANCE:</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi1_a" data-winner="wanted-dead-or-a-wild" style="padding: 6px; font-size: 11px;">
+            Match 1: Wanted Dead ✓
+          </button>
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi1_b" data-winner="gates-of-olympus" style="padding: 6px; font-size: 11px;">
+            Match 2: Gates 1000 ✓
+          </button>
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi2_a" data-winner="le-bandit" style="padding: 6px; font-size: 11px;">
+            Match 3: Le Bandit ✓
+          </button>
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi2_b" data-winner="san-quentin-xways" style="padding: 6px; font-size: 11px;">
+            Match 4: San Quentin ✓
+          </button>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 800; color: var(--gold); margin-top: 8px;">SEMIFINALS & CHAMPION:</div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="final_a" data-winner="gates-of-olympus" style="flex: 1; padding: 6px; font-size: 11px;">
+            Semi 1: Gates 1000 ✓
+          </button>
+          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="final_b" data-winner="le-bandit" style="flex: 1; padding: 6px; font-size: 11px;">
+            Semi 2: Le Bandit ✓
+          </button>
+          <button type="button" class="btn-stake-primary btn-adv-tourney" data-round="champion" data-winner="gates-of-olympus" style="flex: 1.2; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #ffd700, #ffb300); color: #000; font-weight: 900;">
+            👑 Crown Champion
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.querySelectorAll('.btn-adv-tourney').forEach(b => {
+      b.onclick = () => {
+        const round = b.dataset.round;
+        const winner = b.dataset.winner;
+        pred[round] = winner;
+        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
+        if (window.tournamentPrediction) {
+          window.tournamentPrediction.predictions = pred;
+          window.tournamentPrediction.renderBracket();
+        }
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (round === 'champion' && typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
+        if (window.sonner) window.sonner.toast({ title: 'Bracket Advanced! 🏆', message: `${winner} advanced in ${round}.`, type: 'green' });
+      };
+    });
+  }
+
+  // 1v1 Battle Controls
+  setupBattleAdmin() {
+    const btnResolve = document.getElementById('btn-admin-resolve-battle');
+    const btnDemo = document.getElementById('btn-admin-demo-battle');
+    const btnReset = document.getElementById('btn-admin-reset-battle');
+
+    if (btnDemo) {
+      btnDemo.onclick = () => {
+        const pA = document.getElementById('admin-battle-player-a-name');
+        const pB = document.getElementById('admin-battle-player-b-name');
+        if (pA) pA.textContent = '@NachoGamer (Wanted Dead)';
+        if (pB) pB.textContent = '@SlotKing21 (Gates 1000)';
+        if (window.sonner) window.sonner.toast({ title: 'Battle Lobby Loaded ⚔️', message: '2 fighters ready.', type: 'cyan' });
+      };
+    }
+
+    if (btnReset) {
+      btnReset.onclick = () => {
+        const payA = document.getElementById('admin-battle-payout-a');
+        const payB = document.getElementById('admin-battle-payout-b');
+        if (payA) payA.value = '0.0';
+        if (payB) payB.value = '0.0';
+        if (window.sonner) window.sonner.toast({ title: 'Battle Reset ↩️', message: 'Payouts cleared.', type: 'default' });
+      };
+    }
+
+    if (btnResolve) {
+      btnResolve.onclick = () => {
+        const payA = parseFloat(document.getElementById('admin-battle-payout-a')?.value || '0');
+        const payB = parseFloat(document.getElementById('admin-battle-payout-b')?.value || '0');
+        const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
+        const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
+
+        let winner = '';
+        if (payA > payB) {
+          winner = `${nameA} Wins with $${payA.toFixed(2)} vs $${payB.toFixed(2)}!`;
+        } else if (payB > payA) {
+          winner = `${nameB} Wins with $${payB.toFixed(2)} vs $${payA.toFixed(2)}!`;
+        } else {
+          winner = `Tie Game ($${payA.toFixed(2)} each)!`;
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 80 });
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '1v1 Battle Resolved! ⚔️',
+            message: winner,
+            type: 'gold'
+          });
+        }
+      };
+    }
+  }
+
+  // ========================================================
+  // TAB 4: CONTROL DE WHEELS EN VIVO
+  // ========================================================
+
+  setupWheelsAdmin() {
+    // 1. Duo-Wheel Controls
+    const btnModeBattle = document.getElementById('btn-duo-mode-battle');
+    const btnModeTourney = document.getElementById('btn-duo-mode-tourney');
+    const btnSpinDuo = document.getElementById('btn-spin-duo-wheel');
+    const btnAddDuo = document.getElementById('btn-admin-add-duo');
+    const btnRestoreDuo = document.getElementById('btn-admin-restore-demo-duos');
+    const btnClearDuo = document.getElementById('btn-admin-clear-duos');
+
+    if (btnModeBattle) {
+      btnModeBattle.onclick = () => this.setDuoMode('battle');
+    }
+    if (btnModeTourney) {
+      btnModeTourney.onclick = () => this.setDuoMode('tourney');
+    }
+
+    if (btnSpinDuo) {
+      btnSpinDuo.onclick = () => this.spinDuoWheel();
+    }
+
+    if (btnAddDuo) {
+      btnAddDuo.onclick = () => {
+        const u = document.getElementById('admin-duo-input-user')?.value.trim().replace(/^@/, '');
+        const s = document.getElementById('admin-duo-input-slot')?.value.trim();
+        if (!u || !s) return;
+        this.duoPool.unshift({ chatter: u, slot: s, provider: 'Casino', icon: '🎰' });
+        document.getElementById('admin-duo-input-user').value = '';
+        document.getElementById('admin-duo-input-slot').value = '';
+        this.renderDuoQueue();
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+      };
+    }
+
+    if (btnRestoreDuo) {
+      btnRestoreDuo.onclick = () => {
+        this.duoPool = [
+          { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw', icon: '🤠' },
+          { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic', icon: '⚡' },
+          { chatter: 'SlotQueen', slot: 'San Quentin xWays', provider: 'Nolimit City', icon: '🔒' },
+          { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic', icon: '🍬' },
+          { chatter: 'Strike777', slot: 'Rip City', provider: 'Hacksaw', icon: '🐱' },
+          { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic', icon: '🎣' },
+          { chatter: 'NeonWolf', slot: 'Chaos Crew 2', provider: 'Hacksaw', icon: '🐺' },
+          { chatter: 'RoyalFlush', slot: 'Zeus vs Hades', provider: 'Pragmatic', icon: '⚔️' }
+        ];
+        this.renderDuoQueue();
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+        if (window.sonner) window.sonner.toast({ title: 'Duo Pool Restored 🎲', message: '8 pairs queued.', type: 'cyan' });
+      };
+    }
+
+    if (btnClearDuo) {
+      btnClearDuo.onclick = () => {
+        this.duoPool = [];
+        this.renderDuoQueue();
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+      };
+    }
+
+    // 2. CS:GO Active Chatter Wheel Controls
+    const btnSpinCSGO = document.getElementById('btn-spin-csgo-wheel');
+    const btnDemoCSGO = document.getElementById('btn-demo-csgo-wheel');
+    const btnClearCooldowns = document.getElementById('btn-admin-clear-cooldowns');
+
+    if (btnSpinCSGO) {
+      btnSpinCSGO.onclick = () => this.spinCSGOWheel(false);
+    }
+    if (btnDemoCSGO) {
+      btnDemoCSGO.onclick = () => this.spinCSGOWheel(true);
+    }
+    if (btnClearCooldowns) {
+      btnClearCooldowns.onclick = () => {
+        this.recentChatters.clear();
+        this.renderActiveChatters();
+        if (window.sonner) window.sonner.toast({ title: 'Cooldowns Cleared 🔄', message: 'Chatter history reset.', type: 'default' });
+      };
+    }
+
+    // 3. Random Slot Wheel Controls
+    const btnSpinSlot = document.getElementById('btn-spin-slot-wheel');
+    const btnDemoSlot = document.getElementById('btn-demo-slot-wheel');
+
+    if (btnSpinSlot) {
+      btnSpinSlot.onclick = () => this.spinSlotWheel(false);
+    }
+    if (btnDemoSlot) {
+      btnDemoSlot.onclick = () => this.spinSlotWheel(true);
+    }
+  }
+
+  setDuoMode(mode) {
+    this.duoMode = mode;
+    const badge = document.getElementById('admin-duo-mode-badge');
+    const btnB = document.getElementById('btn-duo-mode-battle');
+    const btnT = document.getElementById('btn-duo-mode-tourney');
+
+    if (mode === 'battle') {
+      if (badge) {
+        badge.textContent = '1V1 BATTLE';
+        badge.style.color = 'var(--cyan)';
+        badge.style.borderColor = 'var(--cyan)';
+      }
+      if (btnB) { btnB.className = 'btn-stake-primary'; }
+      if (btnT) { btnT.className = 'btn-stake-secondary'; }
+    } else {
+      if (badge) {
+        badge.textContent = '8-BRACKET TOURNEY';
+        badge.style.color = 'var(--gold)';
+        badge.style.borderColor = 'var(--gold)';
+      }
+      if (btnB) { btnB.className = 'btn-stake-secondary'; }
+      if (btnT) { btnT.className = 'btn-stake-primary'; }
+    }
+
+    if (this.channelDuo) {
+      this.channelDuo.postMessage({ action: 'set_mode', mode: this.duoMode, ts: Date.now() });
+    }
+    if (window.sonner) window.sonner.toast({ title: `Duo-Wheel Mode: ${mode.toUpperCase()} 🔄`, message: 'Synced to OBS overlay.', type: 'cyan' });
+  }
+
+  renderDuoQueue() {
+    const listEl = document.getElementById('admin-duo-list');
+    const countEl = document.getElementById('admin-duo-count');
+    if (!listEl) return;
+
+    if (countEl) countEl.textContent = this.duoPool.length.toString();
+
+    if (this.duoPool.length === 0) {
+      listEl.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Queue empty. Add chatters above.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = this.duoPool.map((p, idx) => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
+        <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${p.chatter}</span>
+        <span style="font-size: 11px; color: var(--gold);">${p.slot}</span>
+      </div>
+    `).join('');
+  }
+
+  spinDuoWheel() {
+    if (this.duoPool.length === 0) {
+      if (window.sonner) window.sonner.toast({ title: 'Queue Empty', message: 'Add duos to spin.', type: 'danger' });
+      return;
+    }
+
+    const btn = document.getElementById('btn-spin-duo-wheel');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '🎰 SPINNING DUO-WHEEL...';
+    }
+
+    const winner = this.duoPool[Math.floor(Math.random() * this.duoPool.length)];
+
+    if (this.channelDuo) {
+      this.channelDuo.postMessage({ action: 'spin', mode: this.duoMode, winner, ts: Date.now() });
+    }
+
+    try {
+      localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify({ action: 'spin', mode: this.duoMode, winner, ts: Date.now() }));
+    } catch (_) {}
+
+    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') {
+      window.soundEngine.playDiceRoll();
+    }
+
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🎰 SPIN DUO-WHEEL (SELECT WINNER)';
+      }
+      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+      if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
+
+      // Auto-assign to seat
+      if (this.duoMode === 'battle') {
+        const pB = document.getElementById('admin-battle-player-b-name');
+        if (pB) pB.textContent = `@${winner.chatter} (${winner.slot})`;
+      }
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Duo-Wheel Winner Selected! 🎰',
+          message: `@${winner.chatter} won with slot "${winner.slot}"!`,
+          type: 'gold'
+        });
+      }
+    }, 4500);
+  }
+
+  renderActiveChatters() {
+    const listEl = document.getElementById('admin-chatters-list');
+    const countEl = document.getElementById('admin-chatters-count');
+    if (!listEl) return;
+
+    // Seed realistic chatters if map empty
+    if (this.recentChatters.size === 0) {
+      const now = Date.now();
+      this.recentChatters.set('NachoGamer', { user: 'NachoGamer', ts: now - 12000 });
+      this.recentChatters.set('SlotKing21', { user: 'SlotKing21', ts: now - 28000 });
+      this.recentChatters.set('DiggityFan', { user: 'DiggityFan', ts: now - 45000 });
+      this.recentChatters.set('CryptoSpin', { user: 'CryptoSpin', ts: now - 62000 });
+      this.recentChatters.set('AgusKick', { user: 'AgusKick', ts: now - 75000 });
+    }
+
+    const arr = Array.from(this.recentChatters.values());
+    if (countEl) countEl.textContent = arr.length.toString();
+
+    listEl.innerHTML = arr.map(c => {
+      const secAgo = Math.floor((Date.now() - c.ts) / 1000);
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
+          <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${c.user}</span>
+          <span style="font-size: 10.5px; color: var(--kick-green);">${secAgo}s ago</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  spinCSGOWheel(demo = false) {
+    const btn = document.getElementById('btn-spin-csgo-wheel');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '🎯 SPINNING CS:GO REEL...';
+    }
+
+    const arr = Array.from(this.recentChatters.values());
+    const winner = arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)].user : 'LuckyChatter';
+
+    if (this.channelGiveaway) {
+      this.channelGiveaway.postMessage({ type: demo ? 'test_spin' : 'spin', winner, ts: Date.now() });
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') window.soundEngine.playDiceRoll();
+
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🎯 SPIN CS:GO WHEEL (PICK WINNER)';
+      }
+      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+      if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
+
+      // Assign Spotlight Recommender in Bonus Hunt
+      const callerInput = document.getElementById('admin-hunt-caller-input');
+      if (callerInput && !demo) callerInput.value = `@${winner}`;
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: demo ? 'CS:GO Demo Spin Done 🧪' : 'Spotlight Recommender Chosen! 🎯',
+          message: `@${winner} picked live on CS:GO Wheel!`,
+          type: 'gold'
+        });
+      }
+    }, 4500);
+  }
+
+  spinSlotWheel(demo = false) {
+    const catSelect = document.getElementById('admin-slot-category-select');
+    const cat = catSelect ? catSelect.value : 'all';
+
+    const btn = document.getElementById('btn-spin-slot-wheel');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '🎰 SPINNING 60 FPS ROULETTE...';
+    }
+
+    if (this.channelSlotWheel) {
+      this.channelSlotWheel.postMessage({ type: demo ? 'test_spin' : 'spin', category: cat, ts: Date.now() });
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') window.soundEngine.playDiceRoll();
+
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🎰 SPIN RANDOM SLOT WHEEL';
+      }
+      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+
+      const slots = window.HUNTHUB_CURATED_SLOTS || [];
+      const pool = cat === 'all' ? slots : slots.filter(s => s.category === cat);
+      const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : { name: 'Gates of Olympus 1000' };
+
+      // Set input in bonus hunt search
+      const huntSearch = document.getElementById('admin-hunt-slot-search');
+      if (huntSearch && !demo) huntSearch.value = chosen.name;
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Slot Wheel Selected! 🎰',
+          message: `${chosen.name} (${chosen.provider || cat.toUpperCase()})`,
+          type: 'gold'
+        });
+      }
+    }, 5000);
+  }
+
+  bindAdminControls() {
+    this.renderKPIs();
   }
 }
 

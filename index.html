@@ -1774,9 +1774,9 @@
           <h2 class="section-title">
             <span>👑</span> STREAMER <span class="accent">COMMAND CENTER</span>
           </h2>
-          <p class="section-subtitle">Exclusive control deck for <strong>@diggitybets</strong> · Live voucher claims, Sunday $100 raffle draw & anti-sybil radar</p>
+          <p class="section-subtitle">Exclusive master deck for <strong>@diggitybets</strong> · Store vouchers, Sunday raffle, Anti-Sybil radar, Games manager & Live Wheels</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">🟢 LIVE SYNC ACTIVE</span>
           <button type="button" class="btn-chat-toggle" id="btn-sim-alt-test" title="Simulate multi-account flag for testing">🚨 Test Alt Detection</button>
         </div>
@@ -1800,184 +1800,441 @@
           <div class="bh-metric-label">ALT ACCOUNTS FLAGGED</div>
           <div class="bh-metric-value" id="admin-kpi-flagged-alts" style="color: var(--magenta);">0</div>
         </div>
-      <!-- DECK 0: STAKE AFFILIATE VERIFICATIONS AUDIT QUEUE -->
-      <div class="bh-table-card" style="margin-bottom: 28px; border-color: rgba(83, 252, 24, 0.4); box-shadow: 0 0 20px rgba(83, 252, 24, 0.06);">
-        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-              <span>🎰</span> STAKE AFFILIATE VERIFICATIONS QUEUE (Code: diggitybets)
-            </h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Audit $0 Limbo bets placed by viewers with their unique Target Multipliers. Verify in 1 click to award +250 $DIG and VIP status.
-            </p>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn-stake-secondary" id="btn-refresh-stake-admin-queue" style="padding: 6px 12px; font-size: 12px;">
-              🔄 Refresh Queue
-            </button>
-          </div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="bh-table">
-            <thead>
-              <tr>
-                <th>TIME</th>
-                <th>KICK USER</th>
-                <th>STAKE USERNAME</th>
-                <th>TARGET MULTIPLIER</th>
-                <th>BET ID</th>
-                <th>AUDIT LINK</th>
-                <th>STATUS</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="admin-stake-verifications-tbody">
-              <tr>
-                <td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">
-                  No pending Stake verification requests.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
 
-      <!-- DECK 1: LIVE VOUCHER CLAIMS QUEUE -->
-      <div class="bh-table-card" style="margin-bottom: 28px;">
-        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff;">
-              📦 REAL-TIME VOUCHER REDEMPTIONS QUEUE
-            </h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Review and fulfill spectator reward claims in real-time. Anti-sybil status checks for shared hardware.
-            </p>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="admin-filter-btn active" data-filter="all">All Claims</button>
-            <button type="button" class="admin-filter-btn" data-filter="pending">Pending ⏳</button>
-            <button type="button" class="admin-filter-btn" data-filter="fulfilled">Fulfilled ✓</button>
-          </div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="bh-table">
-            <thead>
-              <tr>
-                <th>TIME</th>
-                <th>SPECTATOR</th>
-                <th>VOUCHER CLAIMED</th>
-                <th>COST</th>
-                <th>ANTI-FRAUD / ALT STATUS</th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody id="admin-claims-tbody">
-              <!-- Rendered dynamically by admin-hub.js -->
-            </tbody>
-          </table>
-        </div>
+      <!-- 4 TABS NAVIGATION FOR ADMIN CONTROL DECK -->
+      <div class="admin-tabs-nav-bar" style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; overflow-x: auto;">
+        <button type="button" class="btn-game-action primary admin-subtab-btn active" data-subtab="vouchers-stake" id="btn-subtab-vouchers" style="padding: 10px 18px; font-size: 13px;">
+          <span>📦</span> Vouchers, Raffles & Stake
+        </button>
+        <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="anti-sybil" id="btn-subtab-sybil" style="padding: 10px 18px; font-size: 13px;">
+          <span>🛡️</span> Alertas Anti-Sybil
+        </button>
+        <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="games-ctrl" id="btn-subtab-games" style="padding: 10px 18px; font-size: 13px;">
+          <span>🎮</span> Control Maestro de Juegos
+        </button>
+        <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="wheels-ctrl" id="btn-subtab-wheels" style="padding: 10px 18px; font-size: 13px;">
+          <span>🎡</span> Control de Wheels en Vivo
+        </button>
       </div>
 
-      <!-- 2-COLUMN LOWER DECK: SUNDAY RAFFLE & SECURITY RADAR -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
-        <!-- DECK 2: SUNDAY $100 BONUS BUY RAFFLE -->
-        <div class="profile-glass-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <h3 class="profile-card-title"><span>🎟️</span> SUNDAY $100 RAFFLE LEDGER</h3>
-            <span class="reward-badge-pill" id="admin-raffle-total-tickets" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">0 Tickets</span>
+      <!-- ==========================================
+           TAB 1: VOUCHERS, RAFFLES & STAKE QUEUE
+           ========================================== -->
+      <div class="admin-subtab-pane active" id="pane-admin-vouchers-stake">
+        <!-- DECK 1A: STORE REDEMPTIONS QUEUE -->
+        <div class="bh-table-card" style="margin-bottom: 28px;">
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>📦</span> REAL-TIME STORE VOUCHERS REDEMPTIONS QUEUE
+              </h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                Review spectator voucher claims ($20 bonus buy split, 1v1 entry, tourney entry, VIP role). Copy payout crypto wallets in 1 click.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="admin-filter-btn active" data-filter="all">All Claims</button>
+              <button type="button" class="admin-filter-btn" data-filter="pending">Pending ⏳</button>
+              <button type="button" class="admin-filter-btn" data-filter="fulfilled">Fulfilled ✓</button>
+            </div>
           </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-            Every active ticket has an equal provably fair chance. Rolled live on Kick every Sunday via HMAC-SHA256 commit-reveal.
-          </p>
 
-          <div id="admin-raffle-participants-list" style="max-height: 220px; overflow-y: auto; margin-bottom: 18px;">
-            <!-- Rendered dynamically -->
-          </div>
-
-          <button type="button" class="btn-voucher-action btn-game-action primary" id="btn-roll-sunday-raffle" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 900;">
-            🎲 ROLL SUNDAY WINNER LIVE (PROVABLY FAIR) 🏆
-          </button>
-        </div>
-
-        <!-- DECK 3: ANTI-SYBIL & MULTI-ACCOUNT SECURITY RADAR -->
-        <div class="profile-glass-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <h3 class="profile-card-title"><span>🛡️</span> ANTI-SYBIL RADAR (1 PC / 1 USER)</h3>
-            <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">ACTIVE ENFORCEMENT</span>
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-            Detects multiple Kick accounts farming points or claiming vouchers on the same physical PC or IP address via ThumbmarkJS hardware hashing.
-          </p>
-
-          <div style="overflow-x: auto; max-height: 250px;">
-            <table class="bh-table" style="font-size: 12px;">
+          <div style="overflow-x: auto;">
+            <table class="bh-table">
               <thead>
                 <tr>
-                  <th>DEVICE</th>
-                  <th>PRIMARY</th>
-                  <th>DETECTED ALT</th>
-                  <th>RISK</th>
-                  <th>ACTION</th>
+                  <th>TIME</th>
+                  <th>SPECTATOR</th>
+                  <th>VOUCHER CLAIMED</th>
+                  <th>COST</th>
+                  <th>CRYPTO PAYOUT WALLETS (1-CLICK COPY)</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
-              <tbody id="admin-alts-tbody">
-                <!-- Rendered dynamically -->
+              <tbody id="admin-claims-tbody">
+                <!-- Rendered dynamically by admin-hub.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2-COLUMN LOWER DECK: SUNDAY RAFFLE & STAKE VERIFICATION QUEUE -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px; margin-bottom: 28px;">
+          <!-- DECK 1B: WEEKLY STREAM DRAW & RAFFLE LEDGER -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <h3 class="profile-card-title"><span>🎟️</span> SUNDAY $100 RAFFLE LEDGER</h3>
+              <span class="reward-badge-pill" id="admin-raffle-total-tickets" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">0 Tickets</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+              Every active ticket has an equal provably fair chance. Rolled live on Kick every Sunday via HMAC-SHA256 commit-reveal.
+            </p>
+
+            <div id="admin-raffle-participants-list" style="max-height: 220px; overflow-y: auto; margin-bottom: 18px;">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <button type="button" class="btn-voucher-action btn-game-action primary" id="btn-roll-sunday-raffle" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 900;">
+              🎲 ROLL SUNDAY WINNER LIVE (PROVABLY FAIR) 🏆
+            </button>
+          </div>
+
+          <!-- DECK 1C: STAKE AFFILIATE VERIFICATIONS AUDIT QUEUE -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <h3 class="profile-card-title"><span>🎰</span> STAKE VERIFICATION QUEUE (Code: diggitybets)</h3>
+              <button type="button" class="btn-stake-secondary" id="btn-refresh-stake-admin-queue" style="padding: 4px 10px; font-size: 11px;">
+                🔄 Refresh
+              </button>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+              Audit $0 Limbo bets placed by viewers with their assigned Target Multipliers. Verify in 1 click to award +250 $DIG.
+            </p>
+
+            <div style="overflow-x: auto; max-height: 250px;">
+              <table class="bh-table" style="font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th>TIME</th>
+                    <th>USER</th>
+                    <th>TARGET</th>
+                    <th>BET LINK</th>
+                    <th>STATUS</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-stake-verifications-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECK 1D: STAKE AFFILIATE & REFERRALS SYNC MANAGER -->
+        <div class="bh-table-card">
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 24px; width: auto; object-fit: contain;">
+                <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--kick-green); margin: 0;">
+                  STAKE PARTNERS REFERRALS & BULK SYNC
+                </h3>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Cross-check viewers against your official Stake Affiliate campaign dashboard (code: <strong>diggitybets</strong>).
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-stake-primary" id="btn-admin-sync-stake" style="padding: 6px 14px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                ⚡ Quick Sync List
+              </button>
+            </div>
+          </div>
+
+          <div style="padding: 18px 22px; background: rgba(0, 0, 0, 0.25); border-bottom: 1px solid var(--border-subtle);">
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 6px;">
+              PASTE STAKE AFFILIATE USER LIST (One username per line or CSV export):
+            </label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <textarea id="admin-stake-sync-input" class="slots-search-input" rows="2" placeholder="e.g. PlayerOne, StakeWinner99, LuckyKick77" style="flex: 1; min-height: 44px; font-family: monospace; font-size: 11px; resize: vertical;"></textarea>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-bulk-verify-stake" style="padding: 8px 16px; font-size: 12px; align-self: flex-start;">
+                Apply Sync 🔄
+              </button>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="bh-table">
+              <thead>
+                <tr>
+                  <th>STAKE USER</th>
+                  <th>KICK USERNAME</th>
+                  <th>AFFILIATE STATUS</th>
+                  <th>REGISTERED / VERIFIED AT</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="admin-stake-referrals-tbody">
+                <!-- Rendered dynamically by admin-hub.js -->
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- DECK 3: STAKE AFFILIATE & REFERRALS SYNC MANAGER -->
-      <div class="bh-table-card" style="margin-top: 28px; margin-bottom: 28px;">
-        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 24px; width: auto; object-fit: contain;">
-              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--kick-green); margin: 0;">
-                STAKE PARTNERS REFERRALS & AFFILIATE SYNC
+      <!-- ==========================================
+           TAB 2: ALERTAS DE SEGURIDAD ANTI-SYBIL
+           ========================================== -->
+      <div class="admin-subtab-pane" id="pane-admin-anti-sybil" style="display: none;">
+        <div class="bh-table-card" style="margin-bottom: 28px;">
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>🛡️</span> ANTI-SYBIL RADAR & MULTI-ACCOUNT ALERTS (1 PC / 1 USER)
               </h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                Flags 2 or more accounts attempting to farm points or claim vouchers from the same PC hardware hash (ThumbmarkJS), IP subnet, or shared Stake account.
+              </p>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-              Cross-check viewers against your official Stake Affiliate campaign dashboard (code: <strong>diggitybets</strong>).
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-stake-secondary" id="btn-refresh-security-alerts" style="padding: 6px 12px; font-size: 12px;">
+                🔄 Refresh Radar
+              </button>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="bh-table">
+              <thead>
+                <tr>
+                  <th>DEVICE HASH</th>
+                  <th>IP SUBNET</th>
+                  <th>PRIMARY USER</th>
+                  <th>DETECTED ALT</th>
+                  <th>REASON</th>
+                  <th>RISK</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="admin-alts-tbody">
+                <!-- Rendered dynamically by admin-hub.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           TAB 3: CONTROL MAESTRO DE JUEGOS
+           ========================================== -->
+      <div class="admin-subtab-pane" id="pane-admin-games-ctrl" style="display: none;">
+        <!-- 1. Community Bonus Hunt Master Deck -->
+        <div class="bh-table-card" style="margin-bottom: 28px;">
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>💎</span> COMMUNITY BONUS HUNT MASTER CONTROL
+              </h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                Search catalog slots, add callers, record live payouts, calculate average multiplier, and resolve Guess The Balance winners.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-stake-primary" id="btn-admin-start-hunt" style="padding: 6px 14px; font-size: 12px;">Start New Hunt</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-hunt" style="padding: 6px 12px; font-size: 12px;">🎲 Load 12 Demo Bonuses</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-hunt" style="padding: 6px 12px; font-size: 12px; color: var(--magenta);">Reset Hunt</button>
+            </div>
+          </div>
+
+          <!-- Add Bonus Bar with Autocomplete Slot Search -->
+          <div style="padding: 18px 22px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+              <div style="flex: 2; min-width: 200px; position: relative;">
+                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
+                <input type="text" id="admin-hunt-slot-search" class="slots-search-input" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off">
+                <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
+              </div>
+              <div style="flex: 1; min-width: 120px;">
+                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
+                <input type="text" id="admin-hunt-caller-input" class="slots-search-input" placeholder="@Viewer">
+              </div>
+              <div style="width: 90px;">
+                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
+                <input type="number" id="admin-hunt-bet-input" class="slots-search-input" value="1.0" step="0.2">
+              </div>
+              <button type="button" class="btn-game-action primary" id="btn-admin-add-bonus" style="padding: 10px 18px; font-size: 13px;">
+                + Add Bonus
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Bonuses Table -->
+          <div style="overflow-x: auto;">
+            <table class="bh-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>SLOT MACHINE</th>
+                  <th>CALLER</th>
+                  <th>BET ($)</th>
+                  <th>PAYOUT ($) (ENTER IN LIVE)</th>
+                  <th>MULTIPLIER</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="admin-hunt-bonuses-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Guess The Balance Resolution Bar -->
+          <div style="padding: 16px 22px; background: rgba(0, 0, 0, 0.4); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--gold);">FINAL BALANCE ($):</span>
+              <input type="number" id="admin-hunt-final-balance" class="slots-search-input" placeholder="e.g. 1420.50" style="width: 140px;">
+              <button type="button" class="btn-game-action primary" id="btn-admin-resolve-guess" style="padding: 8px 16px; font-size: 12px;">
+                🏆 Resolve Guess The Balance Winner
+              </button>
+            </div>
+            <div id="admin-guess-winner-display" style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--kick-green);"></div>
+          </div>
+        </div>
+
+        <!-- 2-COLUMN DECK: 8-BRACKET TOURNEY & 1V1 BATTLES -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
+          <!-- 2. 8-Bracket Tourney Control -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <h3 class="profile-card-title"><span>🏆</span> 8-BRACKET TOURNAMENT CONTROL</h3>
+              <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">LOBBY OPEN</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+              Manage the 8 tournament competitors, advance match winners through Quarterfinals and Semifinals, and crown the Grand Champion.
             </p>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <button type="button" class="btn-stake-primary" id="btn-admin-open-tourney" style="flex: 1; padding: 8px 12px; font-size: 12px;">Open Bracket</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-tourney" style="flex: 1; padding: 8px 12px; font-size: 12px;">🎲 8 Demo Players</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
+            </div>
+
+            <div id="admin-tourney-rounds-container" style="max-height: 280px; overflow-y: auto;">
+              <!-- Rendered dynamically -->
+            </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn-stake-primary" id="btn-admin-sync-stake" style="padding: 6px 14px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
-              ⚡ Quick Sync (Stake Affiliate List)
+
+          <!-- 3. 1v1 Battle Control -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <h3 class="profile-card-title"><span>⚔️</span> 1V1 BATTLE LIVE CONTROLLER</h3>
+              <span class="reward-badge-pill" id="admin-battle-status-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">READY</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+              Manage Player A (Blue) vs Player B (Red), enter spin multipliers or buy payouts, and declare the live duel winner.
+            </p>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+              <button type="button" class="btn-stake-primary" id="btn-admin-open-battle" style="flex: 1; padding: 8px 12px; font-size: 12px;">Open Battle</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-battle" style="flex: 1; padding: 8px 12px; font-size: 12px;">🎲 2 Demo Players</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-battle" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div style="padding: 12px; background: rgba(0, 100, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 8px;">
+                <div style="font-size: 11px; font-weight: 800; color: var(--cyan); margin-bottom: 4px;">PLAYER A (BLUE)</div>
+                <div id="admin-battle-player-a-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerA</div>
+                <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT ($):</label>
+                <input type="number" id="admin-battle-payout-a" class="slots-search-input" value="150.0" style="padding: 4px 8px; font-size: 12px;">
+              </div>
+              <div style="padding: 12px; background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 8px;">
+                <div style="font-size: 11px; font-weight: 800; color: #ff6b8b; margin-bottom: 4px;">PLAYER B (RED)</div>
+                <div id="admin-battle-player-b-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerB</div>
+                <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT ($):</label>
+                <input type="number" id="admin-battle-payout-b" class="slots-search-input" value="85.0" style="padding: 4px 8px; font-size: 12px;">
+              </div>
+            </div>
+
+            <button type="button" class="btn-game-action primary" id="btn-admin-resolve-battle" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900;">
+              🏆 Resolve Winner & Award Prize
             </button>
           </div>
         </div>
+      </div>
 
-        <div style="padding: 18px 22px; background: rgba(0, 0, 0, 0.25); border-bottom: 1px solid var(--border-subtle);">
-          <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 6px;">
-            PASTE STAKE AFFILIATE USER LIST (One username per line or CSV export from Stake dashboard):
-          </label>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <textarea id="admin-stake-sync-input" class="slots-search-input" rows="2" placeholder="e.g. PlayerOne, StakeWinner99, LuckyKick77" style="flex: 1; min-height: 44px; font-family: monospace; font-size: 11px; resize: vertical;"></textarea>
-            <button type="button" class="btn-stake-secondary" id="btn-admin-bulk-verify-stake" style="padding: 8px 16px; font-size: 12px; align-self: flex-start;">
-              Apply Sync 🔄
+      <!-- ==========================================
+           TAB 4: CONTROL DE WHEELS EN VIVO
+           ========================================== -->
+      <div class="admin-subtab-pane" id="pane-admin-wheels-ctrl" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
+          <!-- 1. Wheel Dual (wheel-duo) -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 class="profile-card-title"><span>🎰</span> WHEEL DUAL (DUO-WHEEL)</h3>
+              <span class="reward-badge-pill" id="admin-duo-mode-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">1V1 BATTLE</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+              Syncs chatter and slot machine together. Dispatches winner automatically to free seat in battle or tourney.
+            </p>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+              <button type="button" class="btn-stake-primary" id="btn-duo-mode-battle" style="flex: 1; padding: 6px 10px; font-size: 11px;">⚔️ Mode: 1v1 Battle</button>
+              <button type="button" class="btn-stake-secondary" id="btn-duo-mode-tourney" style="flex: 1; padding: 6px 10px; font-size: 11px;">🏆 Mode: Tourney</button>
+            </div>
+
+            <button type="button" class="btn-game-action primary" id="btn-spin-duo-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 14px;">
+              🎰 SPIN DUO-WHEEL (SELECT WINNER)
+            </button>
+
+            <div style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); margin-bottom: 6px;">QUEUE PAIRS (<span id="admin-duo-count">0</span>):</div>
+            <div id="admin-duo-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px;"></div>
+
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+              <input type="text" id="admin-duo-input-user" class="slots-search-input" placeholder="@Chatter" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+              <input type="text" id="admin-duo-input-slot" class="slots-search-input" placeholder="Slot Name" style="flex: 1.5; padding: 6px 8px; font-size: 11px;">
+              <button type="button" class="btn-stake-secondary" id="btn-admin-add-duo" style="padding: 6px 12px; font-size: 11px;">+ Add</button>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-stake-secondary" id="btn-admin-restore-demo-duos" style="flex: 1; padding: 6px; font-size: 11px;">🎲 Restore 8 Duos</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-clear-duos" style="flex: 1; padding: 6px; font-size: 11px; color: var(--magenta);">Clear</button>
+            </div>
+          </div>
+
+          <!-- 2. CS:GO Active Chatter Wheel (wheel-csgo) -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 class="profile-card-title"><span>🎯</span> CS:GO ACTIVE CHATTER WHEEL</h3>
+              <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">90s WINDOW</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+              Selects organic chatters active in the last 90 seconds (emote spam stripped) as Spotlight Recommenders.
+            </p>
+
+            <button type="button" class="btn-game-action primary" id="btn-spin-csgo-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 8px;">
+              🎯 SPIN CS:GO WHEEL (PICK WINNER)
+            </button>
+            <button type="button" class="btn-stake-secondary" id="btn-demo-csgo-wheel" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 14px;">
+              🧪 Test Demo Reel
+            </button>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim);">ACTIVE CHATTERS (<span id="admin-chatters-count">0</span>):</span>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-clear-cooldowns" style="padding: 2px 6px; font-size: 10px; color: var(--gold);">Reset Cooldowns</button>
+            </div>
+            <div id="admin-chatters-list" style="max-height: 180px; overflow-y: auto;">
+              <div style="font-size: 11px; color: var(--text-muted); padding: 8px;">Listening for live chatters...</div>
+            </div>
+          </div>
+
+          <!-- 3. Random Slot Wheel (wheel-slots) -->
+          <div class="profile-glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 class="profile-card-title"><span>🎰</span> RANDOM SLOT WHEEL</h3>
+              <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold);">4,889 SLOTS</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+              60 FPS roulette weighted with Provider TIERS (Stake Exclusives 6.25x, Pragmatic/Hacksaw 4.5x).
+            </p>
+
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CATEGORY FILTER:</label>
+            <select id="admin-slot-category-select" class="slots-search-input" style="width: 100%; margin-bottom: 14px; padding: 8px 10px;">
+              <option value="all">ALL SLOTS (4,889)</option>
+              <option value="stake">💎 ONLY ON STAKE</option>
+              <option value="pragmatic">⚡ PRAGMATIC PLAY</option>
+              <option value="hacksaw">🪚 HACKSAW GAMING</option>
+              <option value="nolimit">💀 NOLIMIT CITY</option>
+            </select>
+
+            <button type="button" class="btn-game-action primary" id="btn-spin-slot-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 8px;">
+              🎰 SPIN RANDOM SLOT WHEEL
+            </button>
+            <button type="button" class="btn-stake-secondary" id="btn-demo-slot-wheel" style="width: 100%; padding: 8px; font-size: 12px;">
+              🧪 Test Demo Slot Spin
             </button>
           </div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="bh-table">
-            <thead>
-              <tr>
-                <th>STAKE USER</th>
-                <th>KICK USERNAME</th>
-                <th>AFFILIATE STATUS</th>
-                <th>REGISTERED / VERIFIED AT</th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody id="admin-stake-referrals-tbody">
-              <!-- Rendered dynamically by admin-hub.js -->
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -2005,6 +2262,7 @@
         </div>
       </div>
     </section>
+
 
   </main>
 

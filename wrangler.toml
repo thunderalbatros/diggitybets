@@ -14,8 +14,15 @@ not_found_handling = "single-page-application"
 [observability]
 enabled = true
 
+# Cloudflare D1 Serverless SQLite (100% Free Tier: 5M reads/day, 100k writes/day, 5GB storage, $0 permanent)
+[[d1_databases]]
+binding = "DB"
+database_name = "hunthub_production"
+database_id = "hunthub-d1-db"
+
 # Secrets to be configured via `npx wrangler secret put <KEY>` or Cloudflare Dashboard:
 # - KICK_CLIENT_ID
 # - KICK_CLIENT_SECRET
 # - DISCORD_CLIENT_ID
 # - DISCORD_CLIENT_SECRET
+

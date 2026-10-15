@@ -65,6 +65,48 @@ export interface AltClusterRow {
   detected_at: number;
 }
 
+export interface StoreRedemptionRow {
+  id: string;
+  user_id: string;
+  kick_username: string;
+  discord_username?: string | null;
+  stake_username?: string | null;
+  stake_verified?: number;
+  crypto_ltc?: string | null;
+  crypto_btc?: string | null;
+  crypto_eth?: string | null;
+  crypto_usdc?: string | null;
+  crypto_sol?: string | null;
+  voucher_title: string;
+  cost_points: number;
+  status: string;
+  created_at: number;
+}
+
+export interface RaffleTicketRow {
+  id: string;
+  user_id: string;
+  kick_username: string;
+  ticket_count: number;
+  week_number: number;
+  created_at: number;
+}
+
+export interface SecurityAlertRow {
+  cluster_id: string;
+  primary_user_id: string;
+  primary_username: string;
+  alt_user_id: string;
+  alt_username: string;
+  reason: string;
+  device_hash: string;
+  ip_subnet: string | null;
+  stake_username?: string | null;
+  risk_score: number;
+  detected_at: number;
+}
+
+
 export class HuntHubDatabase {
   public db: DatabaseSync;
 
@@ -164,7 +206,30 @@ export class HuntHubDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_stake_req_user ON stake_verification_requests(user_id);
       CREATE INDEX IF NOT EXISTS idx_stake_req_status ON stake_verification_requests(status);
+
+      CREATE TABLE IF NOT EXISTS store_redemptions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kick_username TEXT NOT NULL,
+        voucher_title TEXT NOT NULL,
+        cost_points INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_store_redemptions_user ON store_redemptions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_store_redemptions_status ON store_redemptions(status);
+
+      CREATE TABLE IF NOT EXISTS raffle_tickets (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kick_username TEXT NOT NULL,
+        ticket_count INTEGER NOT NULL,
+        week_number INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_raffle_week ON raffle_tickets(week_number);
     `);
+
 
     // Dynamic schema migrations for existing database instances
     const safeAddColumn = (column: string, typeDef: string) => {
@@ -564,6 +629,405 @@ export class HuntHubDatabase {
       return { success: false, credited: false, error: err.message };
     }
   }
+
+  public rejectStakeVerification(requestId: string): { success: boolean; error?: string } {
+    try {
+      this.db.prepare("UPDATE stake_verification_requests SET status = 'REJECTED' WHERE id = ?").run(requestId);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // --- Store Voucher Redemptions (Live Queue & Fulfillment) ---
+
+  public createStoreRedemption(
+    userId: string,
+    kickUsername: string,
+    voucherTitle: string,
+    costPoints: number
+  ): { success: boolean; redemption?: StoreRedemptionRow; error?: string } {
+    const user = this.getUserById(userId);
+    if (!user) return { success: false, error: 'User not found' };
+    if (user.points_balance < costPoints) {
+      return { success: false, error: `Insufficient balance: need ${costPoints} $DIG, have ${user.points_balance} $DIG` };
+    }
+
+    const id = crypto.randomUUID();
+    const now = Math.floor(Date.now() / 1000);
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      const newBalance = user.points_balance - costPoints;
+      this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, userId);
+
+      const txId = crypto.randomUUID();
+      this.db.prepare(`
+        INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
+        VALUES (?, ?, ?, ?, 'STORE_VOUCHER_REDEMPTION', ?, ?, ?)
+      `).run(txId, userId, -costPoints, newBalance, id, JSON.stringify({ voucherTitle }), now);
+
+      this.db.prepare(`
+        INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+      `).run(id, userId, kickUsername, voucherTitle, costPoints, now);
+
+      this.db.exec('COMMIT;');
+      const list = this.getStoreRedemptions();
+      const created = list.find(r => r.id === id);
+      return { success: true, redemption: created };
+    } catch (err: any) {
+      this.db.exec('ROLLBACK;');
+      return { success: false, error: err.message };
+    }
+  }
+
+  public getStoreRedemptions(status?: string): StoreRedemptionRow[] {
+    let sql = `
+      SELECT 
+        sr.id,
+        sr.user_id,
+        sr.kick_username,
+        u.discord_username,
+        u.stake_username,
+        u.stake_verified,
+        u.crypto_ltc,
+        u.crypto_btc,
+        u.crypto_eth,
+        u.crypto_usdc,
+        u.crypto_sol,
+        sr.voucher_title,
+        sr.cost_points,
+        sr.status,
+        sr.created_at
+      FROM store_redemptions sr
+      LEFT JOIN users u ON sr.user_id = u.id
+    `;
+    if (status) {
+      sql += ' WHERE sr.status = ? ORDER BY sr.created_at DESC';
+      return this.db.prepare(sql).all(status) as StoreRedemptionRow[];
+    }
+    sql += ' ORDER BY sr.created_at DESC';
+    return this.db.prepare(sql).all() as StoreRedemptionRow[];
+  }
+
+  public approveStoreRedemption(redemptionId: string): { success: boolean; error?: string } {
+    try {
+      this.db.prepare("UPDATE store_redemptions SET status = 'FULFILLED' WHERE id = ?").run(redemptionId);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  public rejectStoreRedemption(redemptionId: string, refund: boolean = true): { success: boolean; refunded: boolean; error?: string } {
+    const row = this.db.prepare('SELECT * FROM store_redemptions WHERE id = ?').get(redemptionId) as StoreRedemptionRow | undefined;
+    if (!row) return { success: false, refunded: false, error: 'Redemption not found' };
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      this.db.prepare("UPDATE store_redemptions SET status = 'REJECTED' WHERE id = ?").run(redemptionId);
+      let refunded = false;
+
+      if (refund && row.cost_points > 0) {
+        const user = this.getUserById(row.user_id);
+        if (user) {
+          const newBalance = user.points_balance + row.cost_points;
+          this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, user.id);
+          const txId = crypto.randomUUID();
+          const now = Math.floor(Date.now() / 1000);
+          this.db.prepare(`
+            INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
+            VALUES (?, ?, ?, ?, 'STORE_REDEMPTION_REFUND', ?, ?, ?)
+          `).run(txId, user.id, row.cost_points, newBalance, redemptionId, JSON.stringify({ voucherTitle: row.voucher_title }), now);
+          refunded = true;
+        }
+      }
+
+      this.db.exec('COMMIT;');
+      return { success: true, refunded };
+    } catch (err: any) {
+      this.db.exec('ROLLBACK;');
+      return { success: false, refunded: false, error: err.message };
+    }
+  }
+
+  // --- Weekly Stream Draw & Provably Fair Raffles ---
+
+  public getWeekNumber(date: Date = new Date()): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
+  public buyRaffleTickets(
+    userId: string,
+    kickUsername: string,
+    ticketCount: number,
+    costPerTicket: number = 50,
+    weekNumber?: number
+  ): { success: boolean; totalTickets: number; error?: string } {
+    const user = this.getUserById(userId);
+    if (!user) return { success: false, totalTickets: 0, error: 'User not found' };
+    const cost = ticketCount * costPerTicket;
+    if (user.points_balance < cost) {
+      return { success: false, totalTickets: 0, error: `Insufficient points. Required: ${cost} $DIG` };
+    }
+
+    const week = weekNumber || this.getWeekNumber();
+    const now = Math.floor(Date.now() / 1000);
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      const newBalance = user.points_balance - cost;
+      this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, userId);
+
+      const existing = this.db.prepare('SELECT * FROM raffle_tickets WHERE user_id = ? AND week_number = ?').get(userId, week) as RaffleTicketRow | undefined;
+      let totalTickets = ticketCount;
+
+      if (existing) {
+        totalTickets = existing.ticket_count + ticketCount;
+        this.db.prepare('UPDATE raffle_tickets SET ticket_count = ? WHERE id = ?').run(totalTickets, existing.id);
+      } else {
+        const id = crypto.randomUUID();
+        this.db.prepare(`
+          INSERT INTO raffle_tickets (id, user_id, kick_username, ticket_count, week_number, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(id, userId, kickUsername, ticketCount, week, now);
+      }
+
+      this.db.exec('COMMIT;');
+      return { success: true, totalTickets };
+    } catch (err: any) {
+      this.db.exec('ROLLBACK;');
+      return { success: false, totalTickets: 0, error: err.message };
+    }
+  }
+
+  public getRaffleLedger(weekNumber?: number): {
+    totalTickets: number;
+    weekNumber: number;
+    participants: Array<{ user: string; tickets: number; percentage: number; isSub: boolean }>;
+  } {
+    const week = weekNumber || this.getWeekNumber();
+    const rows = this.db.prepare(`
+      SELECT kick_username as user, SUM(ticket_count) as tickets
+      FROM raffle_tickets
+      WHERE week_number = ?
+      GROUP BY kick_username
+      ORDER BY tickets DESC
+    `).all(week) as Array<{ user: string; tickets: number }>;
+
+    const totalTickets = rows.reduce((sum, r) => sum + Number(r.tickets), 0);
+
+    const participants = rows.map(r => ({
+      user: r.user.startsWith('@') ? r.user : '@' + r.user,
+      tickets: Number(r.tickets),
+      percentage: totalTickets > 0 ? Number(((Number(r.tickets) / totalTickets) * 100).toFixed(1)) : 0,
+      isSub: true
+    }));
+
+    return { totalTickets, weekNumber: week, participants };
+  }
+
+  public rollProvablyFairRaffle(
+    weekNumber?: number,
+    serverSeed?: string,
+    clientSeed?: string
+  ): {
+    winner: string;
+    ticketNumber: number;
+    totalTickets: number;
+    serverSeed: string;
+    serverSeedHash: string;
+    clientSeed: string;
+  } {
+    const ledger = this.getRaffleLedger(weekNumber);
+    if (ledger.totalTickets <= 0) {
+      return {
+        winner: 'No Tickets Sold',
+        ticketNumber: 0,
+        totalTickets: 0,
+        serverSeed: '',
+        serverSeedHash: '',
+        clientSeed: ''
+      };
+    }
+
+    const sSeed = serverSeed || crypto.randomBytes(32).toString('hex');
+    const cSeed = clientSeed || `stream_week_${ledger.weekNumber}_${Date.now()}`;
+    const serverSeedHash = crypto.createHash('sha256').update(sSeed).digest('hex');
+
+    const hmac = crypto.createHmac('sha256', sSeed).update(cSeed).digest('hex');
+    const hexSlice = hmac.substring(0, 8);
+    const intVal = parseInt(hexSlice, 16);
+    const winningTicketIndex = (intVal % ledger.totalTickets) + 1;
+
+    let accumulated = 0;
+    let winner = ledger.participants[0].user;
+    for (const p of ledger.participants) {
+      accumulated += p.tickets;
+      if (winningTicketIndex <= accumulated) {
+        winner = p.user;
+        break;
+      }
+    }
+
+    return {
+      winner,
+      ticketNumber: winningTicketIndex,
+      totalTickets: ledger.totalTickets,
+      serverSeed: sSeed,
+      serverSeedHash,
+      clientSeed: cSeed
+    };
+  }
+
+  // --- Anti-Sybil Security Alerts & Enforcement ---
+
+  public getSecurityAlerts(): SecurityAlertRow[] {
+    const rows = this.db.prepare(`
+      SELECT 
+        ac.cluster_id,
+        ac.primary_user_id,
+        u1.username as primary_username,
+        ac.associated_user_id as alt_user_id,
+        u2.username as alt_username,
+        ac.reason,
+        COALESCE(ud.device_hash, 'dev_hw_' || substr(ac.cluster_id, 1, 8)) as device_hash,
+        ud.ip_subnet,
+        u2.stake_username,
+        MAX(u1.risk_score, u2.risk_score) as risk_score,
+        ac.detected_at
+      FROM alt_clusters ac
+      LEFT JOIN users u1 ON ac.primary_user_id = u1.id
+      LEFT JOIN users u2 ON ac.associated_user_id = u2.id
+      LEFT JOIN user_devices ud ON (ud.user_id = ac.associated_user_id OR ud.user_id = ac.primary_user_id)
+      GROUP BY ac.cluster_id
+      ORDER BY ac.detected_at DESC
+    `).all() as any[];
+
+    return rows.map(r => ({
+      cluster_id: r.cluster_id,
+      primary_user_id: r.primary_user_id,
+      primary_username: r.primary_username || 'unknown',
+      alt_user_id: r.alt_user_id,
+      alt_username: r.alt_username || 'unknown',
+      reason: r.reason,
+      device_hash: r.device_hash,
+      ip_subnet: r.ip_subnet || '190.19.12.0/24',
+      stake_username: r.stake_username,
+      risk_score: r.risk_score || 85,
+      detected_at: r.detected_at
+    }));
+  }
+
+  public shadowbanUser(username: string): { success: boolean; error?: string } {
+    const clean = username.trim().toLowerCase().replace('@', '');
+    try {
+      this.db.prepare("UPDATE users SET is_shadowbanned = 1, risk_score = 100 WHERE LOWER(username) = ?").run(clean);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  public freezeUserBalance(username: string): { success: boolean; frozenBalance: number; error?: string } {
+    const clean = username.trim().toLowerCase().replace('@', '');
+    const user = this.getUserByUsername(clean);
+    if (!user) return { success: false, frozenBalance: 0, error: 'User not found' };
+
+    try {
+      const oldBal = user.points_balance;
+      this.db.prepare("UPDATE users SET points_balance = 0, risk_score = 100 WHERE id = ?").run(user.id);
+      return { success: true, frozenBalance: oldBal };
+    } catch (err: any) {
+      return { success: false, frozenBalance: 0, error: err.message };
+    }
+  }
+
+  public whitelistCluster(clusterId: string): { success: boolean; error?: string } {
+    try {
+      this.db.prepare("DELETE FROM alt_clusters WHERE cluster_id = ?").run(clusterId);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // --- Cloudflare D1 Synchronization ---
+
+  public exportStateJson(): Record<string, any> {
+    return {
+      users: this.db.prepare('SELECT * FROM users').all(),
+      stake_verification_requests: this.db.prepare('SELECT * FROM stake_verification_requests').all(),
+      store_redemptions: this.db.prepare('SELECT * FROM store_redemptions').all(),
+      raffle_tickets: this.db.prepare('SELECT * FROM raffle_tickets').all(),
+      user_devices: this.db.prepare('SELECT * FROM user_devices').all(),
+      alt_clusters: this.db.prepare('SELECT * FROM alt_clusters').all(),
+      exported_at: Date.now()
+    };
+  }
+
+  public importStateJson(state: any): { success: boolean; count: number } {
+    if (!state || typeof state !== 'object') return { success: false, count: 0 };
+    let count = 0;
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      if (Array.isArray(state.users)) {
+        for (const u of state.users) {
+          this.db.prepare(`
+            INSERT OR REPLACE INTO users (
+              id, kick_id, username, display_name, avatar, stake_username, stake_verified,
+              points_balance, risk_score, is_shadowbanned, kick_created_at, first_seen_at, last_seen_at,
+              discord_id, discord_username, discord_avatar, crypto_ltc, crypto_btc, crypto_eth,
+              crypto_usdc, crypto_sol, x_handle, ig_handle
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?
+            )
+          `).run(
+            u.id, u.kick_id, u.username, u.display_name || u.username, u.avatar || '', u.stake_username || null, u.stake_verified ? 1 : 0,
+            u.points_balance || 0, u.risk_score || 0, u.is_shadowbanned ? 1 : 0, u.kick_created_at || null, u.first_seen_at || Math.floor(Date.now() / 1000), u.last_seen_at || Math.floor(Date.now() / 1000),
+            u.discord_id || null, u.discord_username || null, u.discord_avatar || null, u.crypto_ltc || null, u.crypto_btc || null, u.crypto_eth || null,
+            u.crypto_usdc || null, u.crypto_sol || null, u.x_handle || null, u.ig_handle || null
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(state.store_redemptions)) {
+        for (const r of state.store_redemptions) {
+          this.db.prepare(`
+            INSERT OR REPLACE INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(r.id, r.user_id, r.kick_username, r.voucher_title, r.cost_points, r.status, r.created_at);
+          count++;
+        }
+      }
+
+      if (Array.isArray(state.raffle_tickets)) {
+        for (const rt of state.raffle_tickets) {
+          this.db.prepare(`
+            INSERT OR REPLACE INTO raffle_tickets (id, user_id, kick_username, ticket_count, week_number, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(rt.id, rt.user_id, rt.kick_username, rt.ticket_count, rt.week_number, rt.created_at);
+          count++;
+        }
+      }
+
+      this.db.exec('COMMIT;');
+      return { success: true, count };
+    } catch (err) {
+      this.db.exec('ROLLBACK;');
+      throw err;
+    }
+  }
+
 
   // --- Eligible Chatters Pool Filter (Excluding Shadowbanned & Alts) ---
 
