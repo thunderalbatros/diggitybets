@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slot Wheel Control Deck</title>
+  <style>
+    @font-face {
+      font-family: 'Chakra Petch';
+      font-style: normal;
+      font-weight: 700;
+      src: url('libs/fonts/chakra-petch-latin-700-normal.woff2') format('woff2');
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090c14;
+      color: #fff;
+      font-family: 'Chakra Petch', system-ui, sans-serif;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 300px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+    .header h1 {
+      font-size: 16px;
+      color: #ffd700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 183, 0, 0.2);
+      color: #ffb700;
+      border: 1px solid rgba(255, 183, 0, 0.4);
+    }
+    .status-badge.online {
+      background: rgba(0, 230, 118, 0.2);
+      color: #00e676;
+      border-color: rgba(0, 230, 118, 0.4);
+    }
+
+    .section-title {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .categories button.full-width {
+      grid-column: span 2;
+    }
+
+    .cat-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .cat-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .cat-btn.selected {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: #ffd700;
+      color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+      color: #090c14;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(255, 170, 0, 0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-main:active { transform: scale(0.97); }
+    .btn-main:hover { box-shadow: 0 6px 24px rgba(255, 170, 0, 0.6); }
+
+    .btn-test {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .btn-test:hover { background: rgba(255, 255, 255, 0.14); }
+
+    .tip {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.4;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎰 SLOT WHEEL</h1>
+    <div id="statusBadge" class="status-badge">Connecting…</div>
+  </div>
+
+  <div>
+    <div class="section-title">Select Provider Pool</div>
+    <div class="categories">
+      <button class="cat-btn selected full-width" data-cat="all">🎰 ALL POOLS (~4,800 SLOTS)</button>
+      <button class="cat-btn" data-cat="stake">💎 ONLY ON STAKE</button>
+      <button class="cat-btn" data-cat="pragmatic">⚡ PRAGMATIC</button>
+      <button class="cat-btn" data-cat="hacksaw">🪚 HACKSAW</button>
+      <button class="cat-btn" data-cat="nolimit">💀 NOLIMIT</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnSpin" class="btn-main">🎰 SPIN RANDOM SLOT</button>
+    <button id="btnTest" class="btn-test">🧪 TEST SPIN (NO CHAT)</button>
+  </div>
+
+  <div class="tip">
+    Chat Command: <code>!random</code>, <code>!random stake</code>, <code>!random pragmatic</code>, <code>!random hacksaw</code>, <code>!random nolimit</code>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="libs/streamerbot-client.js"></script>
+  <script>
+    const CFG = Object.assign({
+      host: '127.0.0.1', port: 8080, endpoint: '/', actionName: 'RandomSlot_Picker'
+    }, window.SLOT_WHEEL_CONFIG || {});
+
+    const statusBadge = document.getElementById('statusBadge');
+    const btnSpin = document.getElementById('btnSpin');
+    const btnTest = document.getElementById('btnTest');
+    let selectedCategory = 'all';
+    let client = null;
+    let connected = false;
+
+    const bus = new BroadcastChannel('slot_wheel_bus');
+
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedCategory = btn.dataset.cat;
+      });
+    });
+
+    function connect() {
+      try {
+        client = new StreamerbotClient({
+          host: CFG.host,
+          port: CFG.port,
+          endpoint: CFG.endpoint,
+          password: CFG.password || undefined,
+          autoReconnect: true,
+          retries: -1,
+          onConnect: () => {
+            connected = true;
+            statusBadge.textContent = '● Connected';
+            statusBadge.className = 'status-badge online';
+          },
+          onDisconnect: () => {
+            connected = false;
+            statusBadge.textContent = '○ Reconnecting…';
+            statusBadge.className = 'status-badge';
+          }
+        });
+      } catch (e) {}
+    }
+
+    async function spin() {
+      // 1. Direct tab broadcast for instant preview
+      bus.postMessage({ type: 'spin', category: selectedCategory });
+
+      // 2. Trigger Streamer.bot Action
+      if (client && connected) {
+        try {
+          await client.doAction({ name: CFG.actionName }, { category: selectedCategory });
+        } catch (e) {}
+      }
+    }
+
+    btnSpin.addEventListener('click', spin);
+    btnTest.addEventListener('click', () => {
+      bus.postMessage({ type: 'test', category: selectedCategory });
+    });
+
+    connect();
+  </script>
+</body>
+</html>

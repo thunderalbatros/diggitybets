@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — Duo Wheel (Participant + Slot)</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../data/curated_slots.js"></script>
+  <script src="../data/slot_tiers.js"></script>
+  <script src="libs/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div id="wheel-wrapper">
+    <!-- Header with Visual Mode Switcher -->
+    <header class="wheel-header">
+      <div class="mode-switcher-bar" id="mode-switcher-bar">
+        <button type="button" class="mode-tab-btn active" id="tab-mode-battle" onclick="window.duoWheel && window.duoWheel.setMode('battle')">
+          <span class="tab-icon">⚔️</span> 1v1 BATTLE
+        </button>
+        <button type="button" class="mode-tab-btn" id="tab-mode-tourney" onclick="window.duoWheel && window.duoWheel.setMode('tourney')">
+          <span class="tab-icon">🏆</span> 8-BRACKET TOURNEY
+        </button>
+      </div>
+      <div class="step-indicator" id="step-indicator">
+        <span class="step-label">SELECTING:</span>
+        <span class="step-target-pill" id="current-target-text">PLAYER A (BLUE CORNER)</span>
+      </div>
+    </header>
+
+    <!-- Reel Stage with Center Marker -->
+    <div class="reel-container" id="reel-container" title="Click or press Spacebar to spin">
+      <div class="reel-pointer">
+        <div class="pointer-arrow"></div>
+      </div>
+      <div class="reel-track" id="reel-track">
+        <!-- Cards generated dynamically -->
+      </div>
+      <div class="reel-glass-overlay"></div>
+    </div>
+
+    <!-- Winner Announcement Banner -->
+    <div class="winner-toast" id="winner-toast">
+      <div class="toast-crown">👑</div>
+      <div class="toast-details">
+        <div class="toast-title" id="toast-title">ASSIGNED TO 1v1 BATTLE!</div>
+        <div class="toast-names">
+          <span class="toast-chatter" id="toast-chatter">@LuckyStriker</span>
+          <span class="toast-with">with</span>
+          <span class="toast-slot" id="toast-slot">Wanted Dead or a Wild</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direct Spin Button & Footer Instructions -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button class="direct-spin-btn" id="btn-direct-spin">
+        <span>🎰</span> SPIN DUO WHEEL
+      </button>
+
+      <footer class="wheel-footer">
+        <span class="cmd-pill">!battle &lt;slot&gt;</span>
+        <span class="cmd-pill">!tourney &lt;slot&gt;</span>
+        <span class="footer-note">to join participant queue</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

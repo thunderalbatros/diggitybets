@@ -1,0 +1,636 @@
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('libs/fonts/chakra-petch-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('libs/fonts/chakra-petch-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  --bg-deep: #07090e;
+  --bg-card: rgba(13, 17, 28, 0.88);
+  --cyan-neon: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.35);
+  --crimson-neon: #ff2a5f;
+  --crimson-glow: rgba(255, 42, 95, 0.35);
+  --gold-accent: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.4);
+  --text-primary: #ffffff;
+  --text-muted: #8e9bb0;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+#stage-wrapper {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 60px;
+  transform-origin: center center;
+}
+
+/* Header */
+.battle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(11, 15, 25, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 16px 28px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--gold-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--gold-accent);
+  animation: pulse-dot 2s infinite;
+}
+
+.brand-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.match-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.info-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 6px 20px;
+}
+
+.bet-pill .pill-value {
+  color: var(--cyan-neon);
+}
+
+.prize-pill .pill-value {
+  color: var(--gold-accent);
+}
+
+.pill-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+.pill-value {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 230, 118, 0.1);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #00e676;
+}
+
+.status-pulse {
+  width: 8px;
+  height: 8px;
+  background: #00e676;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00e676;
+}
+
+/* Battle Arena */
+.battle-arena {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  flex: 1;
+  margin: 30px 0;
+  position: relative;
+}
+
+/* Player Cards */
+.player-card {
+  width: 620px;
+  height: 680px;
+  background: var(--bg-card);
+  border-radius: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.3s ease;
+}
+
+.corner-cyan {
+  border: 2px solid var(--cyan-neon);
+  box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 20px rgba(0, 229, 255, 0.05);
+}
+
+.corner-crimson {
+  border: 2px solid var(--crimson-neon);
+  box-shadow: 0 0 30px var(--crimson-glow), inset 0 0 20px rgba(255, 42, 95, 0.05);
+}
+
+.corner-tag {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.corner-cyan .corner-tag {
+  color: var(--cyan-neon);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.corner-crimson .corner-tag {
+  color: var(--crimson-neon);
+  border: 1px solid rgba(255, 42, 95, 0.3);
+}
+
+/* Player Header */
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+}
+
+.corner-cyan .avatar-box {
+  border-color: var(--cyan-neon);
+  box-shadow: 0 0 15px var(--cyan-glow);
+}
+
+.corner-crimson .avatar-box {
+  border-color: var(--crimson-neon);
+  box-shadow: 0 0 15px var(--crimson-glow);
+}
+
+.player-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.player-name {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-status {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Slot Showcase */
+.slot-display {
+  width: 100%;
+  height: 300px;
+  background: rgba(5, 7, 12, 0.6);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-cover {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cover-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.cover-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+}
+
+.cover-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.cover-provider {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.slot-real-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Score Gauge */
+.score-gauge {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gauge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.gauge-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.gauge-payout {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold-accent);
+}
+
+.gauge-value {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.mult-x {
+  font-size: 28px;
+  color: var(--gold-accent);
+  margin-left: 4px;
+}
+
+.gauge-meter {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.meter-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.corner-cyan .meter-bar {
+  background: linear-gradient(90deg, #0091ea, var(--cyan-neon));
+  box-shadow: 0 0 10px var(--cyan-neon);
+}
+
+.corner-crimson .meter-bar {
+  background: linear-gradient(90deg, #c2185b, var(--crimson-neon));
+  box-shadow: 0 0 10px var(--crimson-neon);
+}
+
+/* Center VS */
+.vs-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.vs-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a233a 0%, #080c14 100%);
+  border: 3px solid var(--gold-accent);
+  box-shadow: 0 0 40px var(--gold-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: pulse-vs 2.5s infinite ease-in-out;
+}
+
+.vs-text {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  letter-spacing: 2px;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+
+.vs-subtext {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold-accent);
+  background: rgba(255, 215, 0, 0.1);
+  padding: 4px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+/* Winner Ribbon */
+.winner-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 215, 0, 0.15);
+  border: 4px solid var(--gold-accent);
+  border-radius: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  animation: winner-glow 1.5s infinite alternate;
+}
+
+.winner-ribbon.active {
+  display: flex;
+}
+
+.ribbon-icon {
+  font-size: 72px;
+  animation: bounce-crown 1s infinite alternate;
+}
+
+.ribbon-text {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  letter-spacing: 4px;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+}
+
+/* Footer */
+.battle-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(11, 15, 25, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 14px 28px;
+  backdrop-filter: blur(12px);
+}
+
+.footer-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hint-cmd {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  background: rgba(255, 215, 0, 0.12);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+}
+
+.hint-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.footer-fairness {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.fairness-dot {
+  width: 6px;
+  height: 6px;
+  background: #00e676;
+  border-radius: 50%;
+}
+
+/* Victory Celebration Modal */
+.victory-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 8, 14, 0.85);
+  backdrop-filter: blur(16px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.victory-modal.active {
+  display: flex;
+}
+
+.modal-card {
+  background: radial-gradient(circle, #1a233a 0%, #0d121f 100%);
+  border: 3px solid var(--gold-accent);
+  border-radius: 28px;
+  padding: 60px 80px;
+  text-align: center;
+  box-shadow: 0 0 60px var(--gold-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  transform: scale(0.9);
+  animation: modal-enter 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+.modal-chips-row {
+  font-size: 54px;
+  letter-spacing: 12px;
+  animation: bounce-crown 1.2s ease-in-out infinite alternate;
+}
+
+.modal-subtitle {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 20px;
+  letter-spacing: 6px;
+  color: var(--gold-accent);
+  font-weight: 700;
+  text-shadow: 0 0 12px var(--gold-glow);
+}
+
+.modal-winner {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 72px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 35px rgba(255, 215, 0, 0.8), 0 0 60px rgba(0, 229, 255, 0.4);
+}
+
+.modal-stat {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 28px;
+  color: var(--cyan-neon);
+  font-weight: 700;
+}
+
+.modal-slot-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 22px;
+  color: var(--gold-accent);
+  background: rgba(255, 215, 0, 0.12);
+  padding: 8px 28px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  letter-spacing: 1px;
+}
+
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+@keyframes pulse-vs {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 40px var(--gold-glow); }
+  50% { transform: scale(1.06); box-shadow: 0 0 60px var(--gold-accent); }
+}
+
+@keyframes winner-glow {
+  0% { box-shadow: inset 0 0 20px var(--gold-glow); }
+  100% { box-shadow: inset 0 0 50px var(--gold-accent); }
+}
+
+@keyframes bounce-crown {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-12px); }
+}
+
+@keyframes modal-enter {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

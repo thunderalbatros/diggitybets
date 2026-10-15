@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1v1 Slot Battle Overlay — diggitybets</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="battle-container">
+    <!-- Top HUD: Fighter 1 VS Fighter 2 -->
+    <div class="battle-hud glass-panel">
+      <!-- Red Corner (Fighter 1) -->
+      <div class="fighter-side red-side">
+        <div class="fighter-info">
+          <div class="avatar-box border-red">
+            <img id="f1Avatar" class="avatar-img" src="" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥊</text></svg>'">
+          </div>
+          <div class="name-box">
+            <span id="f1Name" class="fighter-name">FIGHTER RED</span>
+            <span id="f1Slot" class="fighter-slot">Wanted Dead or a Wild</span>
+          </div>
+        </div>
+        <!-- Health Bar -->
+        <div class="hp-track">
+          <div id="f1HpBar" class="hp-fill fill-red" style="width: 100%;"></div>
+          <span id="f1HpText" class="hp-number">10,000 HP</span>
+        </div>
+        <!-- Multiplier / Score -->
+        <div class="fighter-stats">
+          <span class="stat-tag">TOTAL: <strong id="f1Score" class="text-magenta">0.0x</strong></span>
+          <span class="stat-tag">VOTES: <strong id="f1Votes">0</strong> (<span id="f1VotePct">50%</span>)</span>
+        </div>
+      </div>
+
+      <!-- Center VS Emblem -->
+      <div class="vs-center">
+        <div class="vs-circle">VS</div>
+        <div id="roundInfo" class="round-badge badge-gold">SPIN 0 / 10</div>
+      </div>
+
+      <!-- Blue Corner (Fighter 2) -->
+      <div class="fighter-side blue-side">
+        <div class="fighter-info right-align">
+          <div class="name-box right-align">
+            <span id="f2Name" class="fighter-name">FIGHTER BLUE</span>
+            <span id="f2Slot" class="fighter-slot">Gates of Olympus</span>
+          </div>
+          <div class="avatar-box border-cyan">
+            <img id="f2Avatar" class="avatar-img" src="" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥊</text></svg>'">
+          </div>
+        </div>
+        <!-- Health Bar -->
+        <div class="hp-track reverse">
+          <div id="f2HpBar" class="hp-fill fill-cyan" style="width: 100%;"></div>
+          <span id="f2HpText" class="hp-number">10,000 HP</span>
+        </div>
+        <!-- Multiplier / Score -->
+        <div class="fighter-stats right-align">
+          <span class="stat-tag">VOTES: <strong id="f2Votes">0</strong> (<span id="f2VotePct">50%</span>)</span>
+          <span class="stat-tag">TOTAL: <strong id="f2Score" class="text-cyan">0.0x</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Hit / Critical Flare Popup -->
+    <div id="hitAlert" class="hit-alert oculto">CRITICAL HIT! +150x</div>
+
+    <!-- Winner Announcement Banner -->
+    <div id="koBanner" class="ko-banner oculto">
+      <div class="ko-text">K.O.!</div>
+      <div id="winnerName" class="winner-text">FIGHTER RED WINS!</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../shared/libs/confetti.browser.min.js"></script>
+  <script src="../shared/libs/streamerbot-client.js"></script>
+  <script src="../shared/sound.js"></script>
+  <script src="../shared/bus.js"></script>
+  <script src="battle.js"></script>
+</body>
+</html>

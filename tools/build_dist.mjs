@@ -1,0 +1,108 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+const dist = path.join(root, 'dist');
+
+console.log('=== BUILDING CLOUDFLARE PRODUCTION PAYLOAD (dist/) ===\n');
+
+// 1. Clean and recreate dist
+if (fs.existsSync(dist)) {
+  fs.rmSync(dist, { recursive: true, force: true });
+}
+fs.mkdirSync(dist, { recursive: true });
+
+function copyRecursive(src, dest) {
+  if (!fs.existsSync(src)) return;
+  const stat = fs.statSync(src);
+  if (stat.isDirectory()) {
+    fs.mkdirSync(dest, { recursive: true });
+    for (const item of fs.readdirSync(src)) {
+      copyRecursive(path.join(src, item), path.join(dest, item));
+    }
+  } else {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+  }
+}
+
+// 2. Copy core web assets
+console.log('• Copying index.html and site assets...');
+fs.copyFileSync(path.join(root, 'index.html'), path.join(dist, 'index.html'));
+copyRecursive(path.join(root, 'site'), path.join(dist, 'site'));
+
+// 3. Copy slot catalog and tiers
+console.log('• Copying curated slot database & tiers...');
+fs.mkdirSync(path.join(dist, 'data'), { recursive: true });
+if (fs.existsSync(path.join(root, 'data', 'curated_slots.js'))) {
+  fs.copyFileSync(path.join(root, 'data', 'curated_slots.js'), path.join(dist, 'data', 'curated_slots.js'));
+}
+if (fs.existsSync(path.join(root, 'data', 'slot_tiers.js'))) {
+  fs.copyFileSync(path.join(root, 'data', 'slot_tiers.js'), path.join(dist, 'data', 'slot_tiers.js'));
+}
+
+// 4. Map Stake Originals direct assets (/assets/, /dino-assets/)
+console.log('• Mapping Stake Originals assets...');
+const stakeAssets = path.join(root, 'site', 'stake-games', 'assets');
+const stakeDino = path.join(root, 'site', 'stake-games', 'dino-assets');
+if (fs.existsSync(stakeAssets)) copyRecursive(stakeAssets, path.join(dist, 'assets'));
+if (fs.existsSync(stakeDino)) copyRecursive(stakeDino, path.join(dist, 'dino-assets'));
+
+// 5. Generate Cloudflare _headers (Security, Brotli, Caching)
+console.log('• Generating Cloudflare _headers...');
+const headersContent = `/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/site/css/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/site/js/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/site/images/*
+  Cache-Control: public, max-age=2592000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=2592000, immutable
+`;
+fs.writeFileSync(path.join(dist, '_headers'), headersContent.trim() + '\n', 'utf8');
+
+// 6. Generate Cloudflare _redirects (SPA routing for Stake sub-routes)
+console.log('• Generating Cloudflare _redirects...');
+const redirectsContent = `/stake-games /site/stake-games/index.html 200
+/stake-games/* /site/stake-games/index.html 200
+/crash /site/stake-games/index.html 200
+/plinko /site/stake-games/index.html 200
+/mines /site/stake-games/index.html 200
+/dino /site/stake-games/index.html 200
+/favourites /site/stake-games/index.html 200
+/recent /site/stake-games/index.html 200
+/challenges /site/stake-games/index.html 200
+/my-bets /site/stake-games/index.html 200
+`;
+fs.writeFileSync(path.join(dist, '_redirects'), redirectsContent.trim() + '\n', 'utf8');
+
+// 7. Calculate bundle metrics
+function dirMetrics(dirPath) {
+  let count = 0;
+  let totalBytes = 0;
+  function walk(p) {
+    for (const item of fs.readdirSync(p)) {
+      const full = path.join(p, item);
+      const stat = fs.statSync(full);
+      if (stat.isDirectory()) walk(full);
+      else { count++; totalBytes += stat.size; }
+    }
+  }
+  walk(dirPath);
+  return { count, totalBytes };
+}
+
+const { count, totalBytes } = dirMetrics(dist);
+console.log(`\n[SUCCESS] dist/ built cleanly: ${count} files, ${(totalBytes / (1024 * 1024)).toFixed(2)} MB`);
+console.log('Ready for instant zero-card deployment via Cloudflare Pages or Cloudflare Workers Static Assets!\n');

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — Panel de Control Torneo 8-Bracket</title>
+  <style>
+    :root {
+      --bg: #090c15;
+      --card-bg: #121826;
+      --cyan: #00e5ff;
+      --gold: #ffd700;
+      --green: #00e676;
+      --text: #ffffff;
+      --text-muted: #8e9bb0;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 16px;
+      font-size: 13px;
+    }
+    h1 {
+      font-size: 15px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+    .panel-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .row:last-child { margin-bottom: 0; }
+    .col { flex: 1; }
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+    input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    button {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #334155;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+      border-color: var(--gold);
+    }
+    .btn-gold:hover { background: #ffea75; }
+    .btn-blue {
+      background: #2563eb;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-danger {
+      background: rgba(255, 42, 95, 0.2);
+      border-color: #ff2a5f;
+      color: #ff6b8b;
+    }
+    .match-item {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .match-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .match-players {
+      font-size: 12px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .match-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .match-inputs input {
+      width: 75px;
+      text-align: center;
+    }
+    .match-inputs button {
+      flex: 1;
+    }
+    .champ-banner {
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <span>8-BRACKET TOURNAMENT — OBS DOCK</span>
+    <span class="status-badge" id="dock-status">LOCAL ONLINE</span>
+  </h1>
+
+  <div class="panel-grid">
+    <!-- Tournament Configuration -->
+    <div class="card">
+      <div class="card-title">Tournament Configuration</div>
+      <div class="row">
+        <div class="col">
+          <label>Title</label>
+          <input type="text" id="cfg-title" value="8-Bracket Slot Championship">
+        </div>
+        <div class="col">
+          <label>Buy-in ($)</label>
+          <input type="number" id="cfg-bet" value="10">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Prizes</label>
+          <input type="text" id="cfg-prize" value="1st: $150 · 2nd: $50">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <button class="btn-gold" id="btn-open-lobby">Open Tournament Lobby</button>
+        </div>
+        <div class="col">
+          <button class="btn-danger" id="btn-reset">Reset</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 8px;">
+        <button id="btn-demo" class="btn-blue">⚡ Load 8 Demo Players (1-Click)</button>
+      </div>
+    </div>
+
+    <!-- Champion Banner -->
+    <div id="champ-banner" class="champ-banner" style="display: none;">
+      🏆 CHAMPION CROWNED!
+    </div>
+
+    <!-- Matches List with Dual Mode Switcher -->
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Bracket Matches</span>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" id="btn-tmode-mult" onclick="setTourneyMode('multiplier')" style="width: auto; padding: 4px 10px; font-size: 11px; background: var(--gold); color: #000; font-weight: 700; border: none; border-radius: 4px;">
+            📊 Multiplier Mode
+          </button>
+          <button type="button" id="btn-tmode-spin" onclick="setTourneyMode('spins')" style="width: auto; padding: 4px 10px; font-size: 11px; background: #1e293b; color: #fff; font-weight: 700; border: 1px solid var(--border); border-radius: 4px;">
+            🎰 1-Click Win/Pass Mode
+          </button>
+        </div>
+      </div>
+      <div id="matches-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const serverUrl = 'http://127.0.0.1:3001';
+    let bc = null;
+    try {
+      bc = new BroadcastChannel('hunthub_tourney');
+      bc.onmessage = (e) => {
+        if (!e.data) return;
+        if (e.data.action === 'add_participant') {
+          // If Duo Wheel sent a participant, add them to localState if offline
+          handleAddParticipant(e.data.participant);
+        } else if (e.data.state) {
+          localState = e.data.state;
+          updateUI(localState);
+        }
+      };
+    } catch {}
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hunthub_tourney_add_player' && e.newValue) {
+        try {
+          const { participant } = JSON.parse(e.newValue);
+          handleAddParticipant(participant);
+        } catch {}
+      } else if (e.key === 'hunthub_tourney_state' && e.newValue) {
+        try {
+          localState = JSON.parse(e.newValue);
+          updateUI(localState);
+        } catch {}
+      }
+    });
+
+    function handleAddParticipant(participant) {
+      if (!localState || !localState.matches) {
+        localState = generateDemoTournament();
+        localState.participants = [];
+        localState.matches.forEach(m => { m.player1 = null; m.player2 = null; m.status = 'PENDING'; m.score1 = 0; m.score2 = 0; m.winner = null; });
+      }
+      if (!localState.participants) localState.participants = [];
+      const idx = localState.participants.length % 8;
+      localState.participants.push(participant);
+      const m = localState.matches;
+      if (idx === 0) m[0].player1 = participant;
+      else if (idx === 1) m[0].player2 = participant;
+      else if (idx === 2) m[1].player1 = participant;
+      else if (idx === 3) m[1].player2 = participant;
+      else if (idx === 4) m[2].player1 = participant;
+      else if (idx === 5) m[2].player2 = participant;
+      else if (idx === 6) m[3].player1 = participant;
+      else if (idx === 7) m[3].player2 = participant;
+      saveAndBroadcastState(localState);
+    }
+
+    let localState = null;
+    let isServerOnline = false;
+
+    // Default 8-participant demo generator
+    function generateDemoTournament() {
+      const p = [
+        { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead', seed: 1 },
+        { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates 1000', seed: 8 },
+        { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin', seed: 4 },
+        { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush', seed: 5 },
+        { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'Rip City', seed: 2 },
+        { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', seed: 7 },
+        { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', seed: 3 },
+        { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Zeus vs Hades', seed: 6 },
+      ];
+
+      const m = [
+        { id: 'm1', round: 1, matchNumber: 1, player1: p[0], player2: p[1], score1: 24.5, score2: 10.2, winner: p[0], status: 'FINISHED' },
+        { id: 'm2', round: 1, matchNumber: 2, player1: p[2], player2: p[3], score1: 45.0, score2: 8.0, winner: p[2], status: 'FINISHED' },
+        { id: 'm3', round: 1, matchNumber: 3, player1: p[4], player2: p[5], score1: 112.4, score2: 15.1, winner: p[4], status: 'FINISHED' },
+        { id: 'm4', round: 1, matchNumber: 4, player1: p[6], player2: p[7], score1: 32.0, score2: 68.5, winner: p[7], status: 'FINISHED' },
+        { id: 'm5', round: 2, matchNumber: 5, player1: p[0], player2: p[2], score1: 55.0, score2: 120.0, winner: p[2], status: 'FINISHED' },
+        { id: 'm6', round: 2, matchNumber: 6, player1: p[4], player2: p[7], score1: 80.2, score2: 40.0, winner: p[4], status: 'FINISHED' },
+        { id: 'm7', round: 3, matchNumber: 7, player1: p[2], player2: p[4], score1: 150.0, score2: 95.0, winner: p[2], status: 'FINISHED' },
+      ];
+
+      return {
+        id: 'demo_local_' + Date.now(),
+        title: document.getElementById('cfg-title').value || '8-Bracket Slot Championship',
+        status: 'FINISHED',
+        betPerRound: Number(document.getElementById('cfg-bet').value) || 10,
+        prizeText: document.getElementById('cfg-prize').value || '1º: $150 · 2º: $50',
+        participants: p,
+        matches: m,
+        champion: p[2],
+      };
+    }
+
+    function saveAndBroadcastState(state) {
+      localState = state;
+      try {
+        localStorage.setItem('hunthub_tourney_state', JSON.stringify(state));
+      } catch {}
+      if (bc) {
+        bc.postMessage({ state });
+      }
+      updateUI(state);
+    }
+
+    async function apiPost(endpoint, data = {}) {
+      try {
+        const res = await fetch(`${serverUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          isServerOnline = true;
+          return await res.json();
+        }
+      } catch (e) {}
+      isServerOnline = false;
+      return null;
+    }
+
+    async function fetchState() {
+      try {
+        const res = await fetch(`${serverUrl}/api/tourney/state`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.state) {
+            isServerOnline = true;
+            document.getElementById('dock-status').textContent = '🟢 CONECTADO AL CORE';
+            document.getElementById('dock-status').style.color = '#00e676';
+            saveAndBroadcastState(data.state);
+            return;
+          }
+        }
+      } catch {}
+
+      // Server offline fallback
+      isServerOnline = false;
+      document.getElementById('dock-status').textContent = '🟡 MODO LOCAL ACTIVO';
+      document.getElementById('dock-status').style.color = '#ffd700';
+
+      if (!localState) {
+        try {
+          const saved = localStorage.getItem('hunthub_tourney_state');
+          if (saved) {
+            localState = JSON.parse(saved);
+          }
+        } catch {}
+      }
+
+      if (!localState) {
+        localState = generateDemoTournament();
+      }
+
+      updateUI(localState);
+    }
+
+    function updateUI(state) {
+      if (!state) return;
+      if (state.title) document.getElementById('cfg-title').value = state.title;
+      if (state.betPerRound) document.getElementById('cfg-bet').value = state.betPerRound;
+      if (state.prizeText) document.getElementById('cfg-prize').value = state.prizeText;
+
+      const champBanner = document.getElementById('champ-banner');
+      if (state.status === 'FINISHED' && state.champion) {
+        champBanner.style.display = 'block';
+        champBanner.textContent = `👑 ¡Gran Campeón: @${state.champion.displayName} (${state.champion.slotName || ''})!`;
+      } else {
+        champBanner.style.display = 'none';
+      }
+
+      renderMatches(state.matches || []);
+    }
+
+    let tourneyResolutionMode = 'multiplier';
+
+    function setTourneyMode(mode) {
+      tourneyResolutionMode = mode;
+      document.getElementById('btn-tmode-mult').style.background = mode === 'multiplier' ? 'var(--gold)' : '#1e293b';
+      document.getElementById('btn-tmode-mult').style.color = mode === 'multiplier' ? '#000' : '#fff';
+      document.getElementById('btn-tmode-spin').style.background = mode === 'spins' ? 'var(--gold)' : '#1e293b';
+      document.getElementById('btn-tmode-spin').style.color = mode === 'spins' ? '#000' : '#fff';
+      if (localState && localState.matches) renderMatches(localState.matches);
+    }
+
+    function renderMatches(matches) {
+      const container = document.getElementById('matches-list');
+      container.innerHTML = '';
+
+      const labels = {
+        m1: 'Quarterfinal 1', m2: 'Quarterfinal 2', m3: 'Quarterfinal 3', m4: 'Quarterfinal 4',
+        m5: 'Semifinal 1', m6: 'Semifinal 2', m7: 'Grand Final 🏆'
+      };
+
+      matches.forEach((m) => {
+        const div = document.createElement('div');
+        div.className = 'match-item';
+
+        const p1Name = m.player1 ? `@${m.player1.displayName || m.player1.username}` : 'TBD';
+        const p2Name = m.player2 ? `@${m.player2.displayName || m.player2.username}` : 'TBD';
+        const p1Slot = m.player1?.slotName ? ` (${m.player1.slotName})` : '';
+        const p2Slot = m.player2?.slotName ? ` (${m.player2.slotName})` : '';
+        const isReady = Boolean(m.player1 && m.player2);
+        const isFinished = m.status === 'FINISHED';
+
+        let actionHtml = '';
+        if (tourneyResolutionMode === 'multiplier') {
+          actionHtml = `
+            <div class="match-inputs" style="margin-top: 6px;">
+              <input type="number" id="sc1-${m.id}" value="${m.score1 || 0}" step="0.01" ${!isReady || isFinished ? 'disabled' : ''} placeholder="Mult 1">
+              <span style="color: var(--text-muted)">vs</span>
+              <input type="number" id="sc2-${m.id}" value="${m.score2 || 0}" step="0.01" ${!isReady || isFinished ? 'disabled' : ''} placeholder="Mult 2">
+              <button onclick="submitMatchResult('${m.id}')" ${!isReady || isFinished ? 'disabled' : ''} class="${m.id === 'm7' ? 'btn-gold' : ''}">
+                ${m.id === 'm7' ? '👑 Crown Champ' : '⚖️ Advance'}
+              </button>
+            </div>
+          `;
+        } else {
+          // Spin Win / Pass mode
+          actionHtml = `
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button onclick="passTourneyWinner('${m.id}', 1)" ${!isReady || isFinished ? 'disabled' : ''} style="flex: 1; background: ${isFinished && m.winner?.username === m.player1?.username ? 'var(--green)' : 'rgba(0, 229, 255, 0.2)'}; border: 1px solid var(--cyan); color: #fff; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+                🏆 ${p1Name} WIN (PASS)
+              </button>
+              <button onclick="passTourneyWinner('${m.id}', 2)" ${!isReady || isFinished ? 'disabled' : ''} style="flex: 1; background: ${isFinished && m.winner?.username === m.player2?.username ? 'var(--green)' : 'rgba(255, 42, 95, 0.2)'}; border: 1px solid #ff2a5f; color: #fff; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+                🏆 ${p2Name} WIN (PASS)
+              </button>
+            </div>
+          `;
+        }
+
+        div.innerHTML = `
+          <div class="match-title">
+            <span>${labels[m.id] || m.id}</span>
+            <span style="color: ${isFinished ? '#00e676' : (isReady ? '#00e5ff' : '#8e9bb0')}">
+              ${isFinished ? (m.winner ? `WINNER: @${m.winner.displayName || m.winner.username}` : 'FINISHED') : (isReady ? 'READY' : 'WAITING')}
+            </span>
+          </div>
+          <div class="match-players">
+            <strong style="color: var(--cyan);">${p1Name}</strong><span style="color: var(--gold); font-size: 11px;">${p1Slot}</span> 
+            <span style="color: var(--text-muted);">vs</span> 
+            <strong style="color: #ff2a5f;">${p2Name}</strong><span style="color: var(--gold); font-size: 11px;">${p2Slot}</span>
+          </div>
+          ${actionHtml}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.passTourneyWinner = (matchId, winnerPlayerNum) => {
+      if (!localState || !localState.matches) return;
+      const match = localState.matches.find((m) => m.id === matchId);
+      if (!match || !match.player1 || !match.player2) return;
+
+      const winner = winnerPlayerNum === 1 ? match.player1 : match.player2;
+      match.winner = winner;
+      match.score1 = winnerPlayerNum === 1 ? 1 : 0;
+      match.score2 = winnerPlayerNum === 2 ? 1 : 0;
+      match.status = 'FINISHED';
+
+      // Advance winner in bracket
+      const m = localState.matches;
+      if (matchId === 'm1') m[4].player1 = winner;
+      if (matchId === 'm2') m[4].player2 = winner;
+      if (matchId === 'm3') m[5].player1 = winner;
+      if (matchId === 'm4') m[5].player2 = winner;
+      if (matchId === 'm5') m[6].player1 = winner;
+      if (matchId === 'm6') m[6].player2 = winner;
+
+      if (matchId === 'm7') {
+        localState.champion = winner;
+        localState.status = 'FINISHED';
+      }
+
+      saveAndBroadcastState(localState);
+    };
+
+    window.submitMatchResult = async (matchId) => {
+      const sc1 = Number(document.getElementById(`sc1-${matchId}`).value) || 0;
+      const sc2 = Number(document.getElementById(`sc2-${matchId}`).value) || 0;
+
+      if (isServerOnline) {
+        await apiPost('/api/tourney/result', { matchId, score1: sc1, score2: sc2 });
+        fetchState();
+        return;
+      }
+
+      // Local offline engine advancement
+      if (!localState || !localState.matches) return;
+      const match = localState.matches.find((m) => m.id === matchId);
+      if (!match || !match.player1 || !match.player2) return;
+
+      match.score1 = sc1;
+      match.score2 = sc2;
+      match.winner = sc1 >= sc2 ? match.player1 : match.player2;
+      match.status = 'FINISHED';
+
+      const m = localState.matches;
+      if (matchId === 'm1') m[4].player1 = match.winner;
+      if (matchId === 'm2') m[4].player2 = match.winner;
+      if (matchId === 'm3') m[5].player1 = match.winner;
+      if (matchId === 'm4') m[5].player2 = match.winner;
+      if (matchId === 'm5') m[6].player1 = match.winner;
+      if (matchId === 'm6') m[6].player2 = match.winner;
+
+      if (matchId === 'm7') {
+        localState.champion = match.winner;
+        localState.status = 'FINISHED';
+      }
+
+      saveAndBroadcastState(localState);
+    };
+
+    document.getElementById('btn-open-lobby').onclick = async () => {
+      const title = document.getElementById('cfg-title').value;
+      const bet = Number(document.getElementById('cfg-bet').value) || 10;
+      const prize = document.getElementById('cfg-prize').value;
+
+      if (isServerOnline) {
+        await apiPost('/api/tourney/open', { title, betPerRound: bet, prizeText: prize });
+        fetchState();
+      } else {
+        const emptyState = {
+          id: 'tourney_' + Date.now(),
+          title,
+          status: 'LOBBY',
+          betPerRound: bet,
+          prizeText: prize,
+          participants: [],
+          matches: [
+            { id: 'm1', round: 1, matchNumber: 1, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm2', round: 1, matchNumber: 2, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm3', round: 1, matchNumber: 3, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm4', round: 1, matchNumber: 4, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm5', round: 2, matchNumber: 5, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm6', round: 2, matchNumber: 6, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+            { id: 'm7', round: 3, matchNumber: 7, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+          ],
+          champion: null,
+        };
+        saveAndBroadcastState(emptyState);
+      }
+    };
+
+    document.getElementById('btn-reset').onclick = async () => {
+      if (isServerOnline) {
+        await apiPost('/api/tourney/reset');
+        fetchState();
+      } else {
+        localStorage.removeItem('hunthub_tourney_state');
+        localState = null;
+        fetchState();
+      }
+    };
+
+    document.getElementById('btn-demo').onclick = async () => {
+      if (isServerOnline) {
+        await apiPost('/api/tourney/demo');
+        fetchState();
+      } else {
+        const demo = generateDemoTournament();
+        saveAndBroadcastState(demo);
+      }
+    };
+
+    setInterval(fetchState, 2000);
+    fetchState();
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — Fullscreen Victory & Celebration Screen Overlay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="../data/curated_slots.js"></script>
+</head>
+<body class="preview-mode">
+  <!-- Dynamic Fullscreen Particle Canvas for 3D Gold Coins & Chips Rain -->
+  <canvas id="fx-canvas"></canvas>
+
+  <!-- Audio Gate Prompt (Appears if browser blocked autoplay until user clicks) -->
+  <div id="audio-gate-prompt" class="audio-gate">
+    <div class="audio-gate-pill">
+      <span class="gate-icon">🔊</span>
+      <span>CLICK ANYWHERE TO UNMUTE AUDIO AND TRIGGER CELEBRATION</span>
+      <button class="gate-btn" id="btn-unlock-audio">UNMUTE NOW</button>
+    </div>
+  </div>
+
+  <!-- Floating Luxury Winner Billboard -->
+  <div id="winner-billboard" class="billboard-container active">
+    <div class="billboard-glow-backdrop"></div>
+    
+    <div class="billboard-card">
+      <!-- Top Trophy Header Badge -->
+      <div class="billboard-header">
+        <span class="chip-icon left">🪙</span>
+        <div class="trophy-emblem" id="billboard-icon">🏆</div>
+        <span class="chip-icon right">💰</span>
+      </div>
+
+      <div class="billboard-category" id="billboard-category">TOURNAMENT CHAMPION</div>
+
+      <!-- Glowing Winner Name -->
+      <div class="winner-title-wrapper">
+        <h1 class="winner-username" id="winner-username">@SlotQueen</h1>
+      </div>
+
+      <!-- Winning Slot & Multiplier Info Pill -->
+      <div class="winner-slot-pill" id="winner-slot-pill">
+        <img id="winner-slot-img" class="slot-thumbnail" src="https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format" alt="Winning Slot" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
+        <div class="slot-text-group">
+          <span class="slot-label">WINNING SLOT</span>
+          <span class="slot-name" id="winner-slot-name">Wanted Dead or a Wild</span>
+        </div>
+        <div class="stat-badge" id="winner-stat-badge">
+          <span id="winner-stat-value">150.00x</span>
+        </div>
+      </div>
+
+      <!-- Out-of-band Prize Disclaimer Banner (Responsible Gaming / Rule 2.2) -->
+      <div class="prize-tag" id="winner-prize-tag">
+        <span>PRIZE: 1ST: $150 · 2ND: $50 USD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Streamer Test Controls -->
+  <div id="streamer-controls" class="test-controls-bar">
+    <span class="controls-label">⚡ LIVE DEMO CONTROLS:</span>
+    <button class="test-btn tourney" id="btn-test-tourney">🏆 Tourney Test</button>
+    <button class="test-btn battle" id="btn-test-battle">⚔️ 1v1 Battle Test</button>
+    <button class="test-btn coins" id="btn-test-coins">🪙 Coin Rain</button>
+    <button class="test-btn audio" id="btn-test-audio">🔊 Test Sound</button>
+    <button class="test-btn obs-toggle" id="btn-toggle-bg">🌓 OBS Mode (Transparent / Dark)</button>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

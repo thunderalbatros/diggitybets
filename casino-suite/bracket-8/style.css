@@ -1,0 +1,173 @@
+/* ============================================================
+   CASINO SUITE — 8-Slot Tournament Bracket Stylesheet
+   OBS Studio Viewport: 1920 x 1080
+   ============================================================ */
+
+.tournament-container {
+  width: 100vw;
+  height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tournament-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.trophy-badge {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffd700;
+  text-shadow: 0 0 14px var(--gold-glow);
+  letter-spacing: 1px;
+}
+
+.rules-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* Bracket Grid System */
+.bracket-tree-wrapper {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1.2fr 1.4fr;
+  gap: 30px;
+  align-items: stretch;
+  padding: 10px 0;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.round-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--cyan-primary);
+  border-bottom: 2px solid var(--border-subtle);
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.matches-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.semi-col {
+  padding: 40px 0;
+}
+
+.final-col {
+  padding: 100px 0;
+}
+
+/* Individual Match Box */
+.match-box {
+  background: rgba(16, 20, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.match-box.active-match {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 20px var(--gold-glow);
+  transform: scale(1.03);
+}
+
+.match-box.final-box {
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.match-slot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.match-slot.winner {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+  border-left: 3px solid var(--gold-primary);
+  color: var(--gold-primary);
+}
+
+.match-slot.loser {
+  opacity: 0.45;
+}
+
+.slot-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.slot-score {
+  font-weight: 700;
+  color: var(--cyan-primary);
+}
+
+/* Champion Pedestal */
+.champ-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.champ-pedestal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 0 40px var(--gold-glow), inset 0 0 20px rgba(255, 215, 0, 0.15);
+  animation: neonPulse 2.5s infinite ease-in-out;
+}
+
+.crown-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 16px var(--gold-glow));
+}
+
+.champ-name {
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.champ-sub {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}

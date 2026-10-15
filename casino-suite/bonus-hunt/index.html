@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Bonus Hunt & Guess The Balance — diggitybets</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fixed 1920x1080 transparent OBS stream canvas -->
+  <div class="hunt-overlay-container">
+    
+    <!-- Top HUD: KPIs Bar (Numbers, Multipliers, Progress) -->
+    <header class="hunt-hud glass-panel">
+      <div class="hud-brand">
+        <span class="hud-tag">KICK CASINO</span>
+        <span class="hud-title">COMMUNITY HUNT</span>
+        <span id="phaseBadge" class="badge-cyan">HUNTING</span>
+      </div>
+
+      <div class="hud-stats">
+        <div class="stat-box">
+          <span class="stat-lbl">START BALANCE</span>
+          <span id="statStartBalance" class="stat-val">$1,000.00</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-lbl">CURRENT BALANCE</span>
+          <span id="statCurrentBalance" class="stat-val text-green">$1,000.00</span>
+          <span id="statProfitLoss" class="stat-sub text-muted">$0.00</span>
+        </div>
+        <div class="stat-box highlight-gold">
+          <span class="stat-lbl">REQ AVG X (BREAK-EVEN)</span>
+          <span id="statReqAvgX" class="stat-val text-gold">0.0x</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-lbl">CURRENT AVG X</span>
+          <span id="statAvgX" class="stat-val text-cyan">0.0x</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-lbl">BONUSES</span>
+          <span id="statProgress" class="stat-val">0 / 0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-lbl">BEST WIN</span>
+          <span id="statBestWin" class="stat-val text-magenta">—</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Active Recommender Banner (Triggered when streamer picks a viewer from chat) -->
+    <div id="recommenderBanner" class="recommender-banner glass-panel oculto">
+      <div class="rec-avatar" id="recAvatar">🎲</div>
+      <div class="rec-info">
+        <div class="rec-kicker">🎯 VIEWER IN THE SPOTLIGHT</div>
+        <div class="rec-name"><strong id="recUser">@LuckyChatter</strong> it's your turn to pick!</div>
+        <div class="rec-sub">Type <span class="text-gold">!slot [name]</span> in Kick chat (<span id="recTimer" class="text-cyan">60s</span> remaining)</div>
+      </div>
+    </div>
+
+    <!-- Main Workspace: Slot Grid + Guess the Balance Sidebar -->
+    <main class="hunt-workspace">
+      <!-- Slot Cards Grid -->
+      <section class="slots-section glass-panel">
+        <div class="section-header">
+          <span>COLLECTED SLOTS</span>
+          <span id="slotsSub" class="text-muted">Waiting for bonuses to be opened</span>
+        </div>
+        <div id="bonusGrid" class="bonus-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- Guess the Balance Sidebar -->
+      <aside class="gtb-section glass-panel">
+        <div class="section-header">
+          <span>GUESS THE BALANCE</span>
+          <span id="gtbBadge" class="badge-gold">OPEN: !guess [$$]</span>
+        </div>
+
+        <div class="gtb-status-bar">
+          <div><span class="text-muted">Total Entries:</span> <strong id="gtbTotalCount">0</strong></div>
+          <div><span class="text-muted">Prize:</span> <strong class="text-gold" id="gtbPrize">$50.00</strong></div>
+        </div>
+
+        <!-- Privacy Shield: Hidden during HUNTING to prevent copying, revealed in OPENING -->
+        <div id="gtbList" class="gtb-list">
+          <div class="gtb-locked-msg">
+            <div class="lock-icon">🔒</div>
+            <div class="lock-title">GUESSES HIDDEN</div>
+            <div class="lock-desc">Predictions are sealed to prevent copying.<br>Full leaderboard unlocks when opening starts!</div>
+          </div>
+        </div>
+
+        <!-- Closest Predictions Leaderboard (Active in OPENING & FINISHED) -->
+        <div id="gtbLeaderboardBox" class="gtb-leaderboard-box oculto">
+          <div class="box-header">🏆 TOP 5 CLOSEST GUESSES</div>
+          <div id="gtbTopList" class="gtb-top-list">
+            <!-- Top closest guesses -->
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Winner Celebration Modal (Final Balance & Closest Guess Winner) -->
+    <div id="gtbWinnerModal" class="winner-modal oculto">
+      <div class="winner-card glass-panel">
+        <div class="winner-trophy">🏆</div>
+        <div class="winner-title">GUESS THE BALANCE WINNER!</div>
+        <div class="winner-avatar-box" id="gtbWinnerAvatar"></div>
+        <div class="winner-name" id="gtbWinnerName">@WinnerName</div>
+        <div class="winner-diff" id="gtbWinnerDetails">Guess: $1,250 | Final: $1,248 (Diff: $2)</div>
+        <div class="winner-prize" id="gtbWinnerPrize">PRIZE: $50.00</div>
+      </div>
+    </div>
+
+    <!-- Big Win Popup Modal (For individual slot >100x wins) -->
+    <div id="revealModal" class="reveal-modal oculto">
+      <div class="reveal-card glass-panel">
+        <div class="reveal-badge">🎰 BIG WIN HIT!</div>
+        <div id="revealGame" class="reveal-game">Wanted Dead or a Wild</div>
+        <div id="revealMult" class="reveal-mult">345.5x</div>
+        <div id="revealPayout" class="reveal-payout">+$691.00</div>
+      </div>
+    </div>
+
+    <!-- Compliance Banner -->
+    <footer class="compliance-footer">
+      <span>🔞 +18 ONLY · Responsible Gaming · 100% Free Community Participation (No purchase necessary)</span>
+    </footer>
+  </div>
+
+  <!-- Vendored Libraries -->
+  <script src="../shared/libs/confetti.browser.min.js"></script>
+  <script src="../shared/libs/streamerbot-client.js"></script>
+  <script src="../shared/sound.js"></script>
+  <script src="../shared/slots-catalog.js"></script>
+  <script src="../shared/number-parser.js"></script>
+  <script src="../shared/bus.js"></script>
+  <script src="bonus-hunt.js"></script>
+</body>
+</html>

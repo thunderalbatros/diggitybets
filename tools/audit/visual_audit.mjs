@@ -1,0 +1,122 @@
+// Visual Auditor (Playwright + system Chrome). Zero download, zero cost.
+// Usage:  node tools/audit/visual_audit.mjs [baseUrl]    (default http://127.0.0.1:3000)
+// Output: tools/audit/out/<view>-<width>.png  +  tools/audit/out/report.json  (exit 1 if any BLOCKER)
+import { chromium } from 'playwright-core';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const out = path.join(here, 'out');
+fs.mkdirSync(out, { recursive: true });
+
+const BASE = process.argv[2] || 'http://127.0.0.1:3000';
+const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 768, h: 1024 }, { w: 390, h: 844 }];
+const VIEWS = ['watch', 'house-games', 'tournament', 'bonushunt', 'store', 'leaderboard', 'profile'];
+const CHROME = [
+  'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+].find(p => fs.existsSync(p));
+
+// Runs inside the page: returns a list of findings for the currently visible view.
+function pageChecks() {
+  const findings = [];
+  const vw = document.documentElement.clientWidth;
+  const sel = el => {
+    const id = el.id ? '#' + el.id : '';
+    const cls = (el.className && typeof el.className === 'string') ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '';
+    return el.tagName.toLowerCase() + id + cls;
+  };
+  const visible = el => {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0';
+  };
+  // 1. Accidental page-level horizontal scroll
+  if (document.documentElement.scrollWidth > vw + 1)
+    findings.push({ sev: 'BLOCKER', rule: 'h-scroll', msg: `page scrollWidth ${document.documentElement.scrollWidth} > viewport ${vw}` });
+
+  // contrast helpers
+  const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  const lum = ({ r, g, b }) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+  const bgOf = el => { let n = el; while (n) { const c = parse(getComputedStyle(n).backgroundColor); if (c && c.a > .85) return c; n = n.parentElement; } return { r: 5, g: 8, b: 14, a: 1 }; };
+
+  const seen = new Set();
+  for (const el of document.body.querySelectorAll('*')) {
+    if (!visible(el)) continue;
+    if (el.closest('[style*="display: none"], [hidden], .oculto, .site-sidebar')) continue; // sidebar = intentional off-canvas drawer on small screens
+    const s = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    const key = sel(el);
+    // 2. Element sticks out of the viewport horizontally (skip scroll containers)
+    let scrollParent = false;
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll' || o === 'hidden') { scrollParent = true; break; } }
+    if (!scrollParent && (r.right > vw + 2 || r.left < -2) && r.width < vw * 3 && !seen.has('o' + key)) {
+      seen.add('o' + key);
+      findings.push({ sev: 'MAJOR', rule: 'overflow-x', msg: `${key} spans ${Math.round(r.left)}..${Math.round(r.right)} (vw ${vw})` });
+    }
+    // 3. Truncated text (skip intentionally clipped screen-reader elements)
+    const ownText = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 1);
+    if (ownText && !el.closest('.sr-only') && !el.classList.contains('sr-only')) {
+      if ((s.overflow === 'hidden' || s.textOverflow === 'ellipsis') && el.scrollWidth > el.clientWidth + 2 && !seen.has('t' + key)) {
+        seen.add('t' + key);
+        findings.push({ sev: 'MAJOR', rule: 'truncated-text', msg: `${key} "${el.textContent.trim().slice(0, 40)}" clipped (${el.scrollWidth}>${el.clientWidth})` });
+      }
+      // 4. Contrast (WCAG AA 4.5 normal / 3 large)
+      const fg = parse(s.color); const bg = bgOf(el);
+      let gradient = false; for (let n = el; n; n = n.parentElement) { if (getComputedStyle(n).backgroundImage.includes('gradient')) { gradient = true; break; } }
+      if (fg && fg.a > .5 && !gradient && !el.closest('button:disabled') && !seen.has('c' + key)) {
+        const L1 = lum(fg), L2 = lum(bg); const ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05);
+        const size = parseFloat(s.fontSize); const large = size >= 24 || (size >= 18.66 && parseInt(s.fontWeight) >= 700);
+        if (ratio < (large ? 3 : 4.5)) { seen.add('c' + key); findings.push({ sev: 'MINOR', rule: 'contrast', msg: `${key} ratio ${ratio.toFixed(2)} (${s.color} on ${s.backgroundColor === 'rgba(0, 0, 0, 0)' ? 'inherited' : s.backgroundColor})` }); }
+      }
+    }
+    // 5. Tap targets on touch widths (standalone buttons/links; inline prose links are exempt per WCAG 2.5.5/2.5.8)
+    if (vw <= 480 && (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'INPUT') && (r.height < 32 || r.width < 32) && !seen.has('a' + key)) {
+      if (el.closest('.footer-compliance-box, p') || s.display === 'inline') continue;
+      seen.add('a' + key);
+      findings.push({ sev: 'MINOR', rule: 'tap-target', msg: `${key} is ${Math.round(r.width)}x${Math.round(r.height)}px` });
+    }
+  }
+  // 6. Images without alt / broken
+  for (const img of document.images) { if (!visible(img)) continue; if (!img.hasAttribute('alt')) findings.push({ sev: 'MINOR', rule: 'img-alt', msg: img.src.split('/').pop() }); if (img.complete && img.naturalWidth === 0) findings.push({ sev: 'MAJOR', rule: 'broken-img', msg: img.src }); }
+  // 7. Heading structure
+  const h1 = [...document.querySelectorAll('h1')].filter(visible).length;
+  if (h1 !== 1) findings.push({ sev: 'MINOR', rule: 'h1-count', msg: `${h1} visible <h1>` });
+  return findings;
+}
+
+const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const report = { base: BASE, generated: new Date().toISOString(), runs: [], console: [], failedRequests: [] };
+let blockers = 0;
+
+for (const vp of VIEWPORTS) {
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  page.on('console', m => { if (m.type() === 'error') report.console.push(`[${vp.w}] ${m.text().slice(0, 200)}`); });
+  page.on('pageerror', e => report.console.push(`[${vp.w}] PAGEERROR ${e.message.slice(0, 200)}`));
+  page.on('response', r => { if (r.status() >= 400 && !/kick\.com|fonts\.g|imgix/.test(r.url())) report.failedRequests.push(`[${vp.w}] ${r.status()} ${r.url().slice(0, 140)}`); });
+  page.on('requestfailed', r => { const u = r.url(); if (!/kick\.com|fonts\.g|imgix/.test(u)) report.failedRequests.push(`[${vp.w}] ${u.slice(0, 140)}`); });
+  await page.goto(BASE + '/#watch', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  for (const v of VIEWS) {
+    await page.evaluate(id => window.switchView && window.switchView('#' + id), v);
+    await page.waitForTimeout(450);
+    const findings = await page.evaluate(pageChecks);
+    await page.screenshot({ path: path.join(out, `${v}-${vp.w}.png`), fullPage: false });
+    blockers += findings.filter(f => f.sev === 'BLOCKER').length;
+    report.runs.push({ view: v, width: vp.w, findings });
+  }
+  await ctx.close();
+}
+await browser.close();
+fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
+
+// Console summary
+for (const r of report.runs) {
+  const c = { BLOCKER: 0, MAJOR: 0, MINOR: 0 };
+  r.findings.forEach(f => c[f.sev]++);
+  console.log(`${String(r.width).padStart(4)}px  ${r.view.padEnd(12)} B:${c.BLOCKER} M:${c.MAJOR} m:${c.MINOR}`);
+}
+console.log(`console errors: ${report.console.length}, failed requests: ${report.failedRequests.length}`);
+process.exit(blockers ? 1 : 0);

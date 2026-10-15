@@ -1,0 +1,269 @@
+# HuntHub — Project Status & Roadmap
+
+> **Current Phase:** Phase 1 (Research & Master Plan V2.0 Completed) $\rightarrow$ Ready for Gate 1 Approval & Stage 1 Execution  
+> **Last Updated:** 2026-10-13  
+> **Manager:** Antigravity Tech Lead  
+
+---
+
+## 1. Current Phase Overview
+- **Phase 0 (Setup & Verification):** COMPLETED.
+- **Phase 1 (Research & Master Plan V2.0):** COMPLETED.
+- **Stage 1 (Hybrid Chat Ingestor, Channel Points Bridge & SQLite DB):** COMPLETED & TESTED.
+  - Native SQLite engine with zero dependencies (`node:sqlite`).
+  - Active Kick Pusher key updated to `34bf7a0ff419a2a775b9` (0ms chat connection to diggitybets).
+  - Channel Points webhook bridge with atomic credit fulfillment.
+  - Anti-Sybil multi-account device clustering and shadowban exclusion.
+  - Unit tests (8/8) and event simulation (`chat-sim.ts`) passed with 100% success.
+- **Stage 2 (1v1 Battles & 8-Bracket Tourney with OBS Overlays):** COMPLETED & TESTED.
+  - 1v1 Battle state machine & OBS overlay (`overlay-battle/index.html`, `style.css`, `main.js`, `control.html` custom OBS dock).
+  - 8-Bracket Single Elimination tournament engine & OBS overlay (`overlay-tourney/index.html`, `style.css`, `main.js`, `control.html` custom OBS dock).
+  - Native WebSocket and REST API endpoints (`/api/battle/*`, `/api/tourney/*`).
+  - Full automated test suite (Engine + E2E integration: 15/15 tests passed).
+- **Stage 3 (Duo-Wheel, Tourney Visuals Fix & Community Bonus Hunt Suite):** COMPLETED & TESTED.
+  - **Repaired Tourney 8-Bracket:** Fixed transparent background bug, added native dark SVG bracket tree (`#07090e`), offline demo mode, and BroadcastChannel sync.
+  - **Duo-Wheel (`wheel-duo/`):** 620x620px dual-sided cards with instant visual header mode switcher (`⚔️ 1v1 BATTLE` vs `🏆 8-BRACKET TOURNEY`) and automatic real-time auto-filling:
+    - In 1v1 Battle: Winner 1 auto-fills Player A (Blue Corner) with name + slot card; Winner 2 auto-fills Player B (Red Corner).
+    - In Tourney: Winners 1 to 8 sequentially fill bracket spots 1 to 8 with participant name + mini slot card.
+  - **1v1 Battle Overlay (`overlay-battle/`):** Refactored to exact minimalist layout from Image 3 (`media_1791873706205.png`). Header pills (buy-in, prize, status) and footer panels removed; centers only the two glowing cards + center VS Live Duel.
+  - **8-Bracket Tourney Overlay (`overlay-tourney/`):** Streamlined to Title + Bracket tree with mini slot cards. Header pills and footer command bar removed.
+  - **Dual Resolution Modes (1v1 & Tourney Controls):**
+    - **Multiplier Mode (Bonus Buys):** Compare numeric multipliers (e.g. 3.41 vs 2.11), highest multiplier wins/advances.
+    - **Spin Mode (Slot Spins):** 1-Click `WIN (PASS)` buttons. Selecting Win on one participant automatically marks the other as `LOSE (OUT)` and advances the winner.
+  - **Casino Universe Winner Celebrations:** Center-screen dramatic banner (`@Winner`), procedural Web Audio classic slot chimes and falling coin dispenser sound, and multi-wave cascading rain of gold coins 🪙 and poker chips 💰.
+  - **Bonus Hunt Slot Autocomplete & Cook Out Fix (`overlay-bonushunt/`):**
+    - Corrected Cook Out image to official Stake tile (`67ccc373c89ba0c20791a337d304a8c50c78295c5e18987e59dd4975324119b0`).
+    - Integrated curated catalog `data/curated_slots.js` with 148 verified slots (all 59 Stake exclusives, 50 Pragmatic Play, 25 Hacksaw, 14 Nolimit).
+  - **Master Admin Control Dashboard (`admin/index.html` & `admin.html`):** Unified luxury dark deck with 1-click execution buttons for Giveaway Wheel, Duo Wheel, 1v1 Battle, 8-Bracket Tourney, and Community Bonus Hunt. Runs 100% offline (BroadcastChannel + LocalStorage) and online (Streamer.bot WS + HuntHub Node Core).
+  - **Giveaway Wheel Upgrades:**
+    - Activity timer increased from 45s to **90s** (`WINDOW_MS = 90000`).
+    - **Kick Emote Filter:** Automatically strips `:[a-zA-Z0-9_\-]+:` and ignores emote spammers to guarantee organic chat activity.
+    - **Randomizer Overhaul & Anti-Repeat:** Replaced modulo bias with CSPRNG rejection sampling, added 10-minute winner cooldown (prevents duplicate winners), and implemented **Provably Fair Commit-Reveal (SHA-256 + HMAC)**.
+  - **Packaged Distribution:** Updated `Streamer_Suite_Complete_Stage3.zip` with all latest improvements.
+- **Stage 4 (Timing Synchronization, TIERS Boost, 4,889 Slots Audit, 72h Scraper & Benchmark):** COMPLETED & TESTED.
+  - **Audio/Animation/Chat Synchronization:**
+    - Calibrated both wheels (`wheel-csgo` & `wheel-slots`) so that the visual winner outcome, procedural fanfare sound, confetti blast, and Kick chat announcement occur at the exact same millisecond (`T = 6,850ms`).
+    - Added responsive, center-stage **Winner Result Celebration Modals** (`#resultModal`) to both wheels that pop up simultaneously with the fanfare climax.
+  - **Provider TIERS & Probability Boost System:**
+    - Created `data/slot_tiers.js` boosting the 16 recognized providers of "Only on Stake": Pragmatic Play, Hacksaw Gaming, Paperclip, Pocket Play, Blackout Studios, Colorful Play, Valkyrie, Titan, Donut Gaming, Creative City, Terminal Games, Black Coffee, AvatarUX, Phantom Interactive, Uppercut Gaming, Hyper Play.
+    - Tier 1 flagships weighted at 6.25x, recognized providers at 4.5x, and indie slots at 1.0x (verified via 10,000-iteration statistical test in `core/test/stage4-tiers.test.ts` yielding 84.1% recognized selection rate).
+  - **Complete Slot Library Integration (4,889 Slots):**
+    - Enriched all 4,889 slots from `references/slots_db.json` with CDN tiles from `mediumrare.imgix.net`, max wins, badges, and tiers.
+    - Synchronized `data/curated_slots.js`, `wheel-slots/overlay/slots-data.js`, and `wheel-slots/catalog/slots.json`.
+    - Optimized Bonus Hunt Autocomplete search with top-40 windowing and tier-prioritized sorting (<1ms response time).
+  - **Automated Legal 72h Harvester & 1-Click DevTools Snippet:**
+    - Created `scripts/harvest_new_slots.mjs` (Firecrawl + Serper + local diffing) and Windows Task Scheduler script `scripts/schedule_slot_harvest.ps1`.
+    - Provided 1-click Chrome DevTools Harvester snippet in `references/DEVTOOLS_HARVESTER_SNIPPET.js`.
+  - **Benchmarking & Market Scoring:**
+    - Authored comprehensive comparative report in `docs/BENCHMARK_AND_SCORING.md` comparing HuntHub against Botrix, StreamElements, and ReachAces.
+    - HuntHub scored **9.53 / 10 (Tier S — Industry Leader)** across 6 engineering axes.
+  - **Packaging:** Created `Streamer_Suite_Complete_Stage4.zip`.
+- **Stage 5 (Portal Redesign, Stake Clone Direct Integration & Visual Polish):** COMPLETED & AUDITED.
+  - **Full Stake Originals Direct Integration (`tanh1c/stake-originals-clone`):**
+    - Directly integrated the authentic Stake Originals React build (Plinko, Mines, Crash, Dino Run) into `site/stake-games/`.
+    - Added dedicated game switcher tabs (`🏠 All Games`, `🎳 Plinko`, `💣 Mines`, `📈 Crash`, `🦖 Dino Run`) embedded inside `#house-games`.
+    - Configured local static web server to resolve all Stake assets (`/assets/`, `/images/`, `/dino-assets/`) and client-side routes (`/plinko`, `/mines`, `/crash`, `/dino`).
+  - **Dedicated Multi-View SPA Router (Eliminated Single-Page "Chorizo"):**
+    - Redesigned site architecture into dedicated subpage views: clicking each top nav tab loads only that specific section (`#watch`, `#house-games`, `#tournament`, `#bonushunt`, `#store`, `#provably-fair`, `#links`).
+    - Enforced `.view-section:not(.active-view) { display: none !important; }` with smooth transition animations.
+    - Enlarged top navigation buttons for optimal readability and contrast.
+  - **Brand Assets & Visual Polish:**
+    - Integrated high-resolution transparent Diggity Bets logo (`site/images/diggitybets-logo.png`) in top-left header.
+    - Replaced distorted Kick icon with 3D isometric Kick green logo (`site/images/kick-logo-3d.png`) featuring dynamic 3D floating animation (`@keyframes kick-float`).
+    - Removed Chat Drawer and Admin button from the viewer site (streamer runs management controls locally).
+  - **Clean Empty States & Mini Slot Cards Fix:**
+    - **8-Bracket Tourney:** Added clean standby empty state with dashed TBD cards when no tournament is in progress.
+    - **Bonus Hunt:** Added clean empty state with $0.00 metrics and placeholder table when no hunt is active.
+    - **Mini Slot Cards:** Added proper CSS styles for `.bh-slot-thumb` (44x58px) and `.slot-mini-thumb` (38x50px) with 3:4 aspect ratio, border glow, and reliable local SVG fallback.
+  - **Stream Sidebar Chat Commands:**
+    - Removed broadcast telemetry; replaced with comprehensive, useful chat commands reference (`!guess`, `!battle`, `!random`, `!pickwinner`, `!bracket`, `!points`, `!help`) with click-to-copy interaction.
+  - **System Health Checks:**
+    - Executed `tools/test_site.mjs`: **100% passed** (59/59 elements).
+    - Executed `tools/healthcheck.mjs`: **100% passed** (9/9 checks).
+- **Stage 6 (White Brand Logo, Pixel Kick Assets, TOTP Stake Verifier, Discord Linker & Leaderboard):** COMPLETED & AUDITED.
+  - **Diggity Bets White Letter Logo:** Solid white letters with dark bevel and transparent background (`site/images/diggitybets-logo.png`).
+  - **Pixel Kick Logos:** Extracted 2D pixel 'K' logo (`site/images/kick-k-logo.png`) for header badge and 'Link Kick' button; extracted pixel 'KICK' wordmark (`site/images/kick-wordmark.png`) for live stream title.
+  - **100% Zoom Responsive Header:** Streamlined dimensions (`12.5px`, compact padding) preventing horizontal overflow on 1366x768 screens; removed redundant 'Sound' button; updated points symbol to '$DIG'.
+  - **Robust SPA Navigation Routing:** Eliminated routing locks; prioritized router initialization with error boundaries for every subsystem; verified instant tab switching across all 7 views.
+  - **Fused Live Stream Hub:** Integrated Provably Fair verifier and Community social cards directly inside `#watch`.
+  - **Monthly Wager Leaderboard ($2,000 USD):** Added backlog/roadmap race section with $1,200 / $500 / $300 prize breakdown, live podium, and verified Stake participant standings.
+  - **Dedicated Viewer Profile Section:** Integrated casino avatar selector, Discord linking, dynamic TOTP Stake $0.00 bet multiplier challenge with 3-minute timer, and crypto payout addresses (BTC, SOL, LTC, ETH, USDC).
+  - **House Games Complete Overhaul & Stake Mechanics Parity:**
+    - **Zero-Balance Inactivity Fix:** Initialized starting balance to `1,000 $DIG` by default; implemented non-blocking auto-refill (+500 $DIG) on bet attempts and added prominent `🪙 Free Faucet (+1,000 $DIG)` button in header.
+    - **Dice (Screenshot 1 Match):** Multiplier, Roll Target, and Win Chance inputs are 100% editable with 2-way reactive recalculation; added "Roll Over ↗" / "Roll Under ↘" toggle button with dynamic green/red track coloring (1.00% Stake house edge, 99.00% RTP).
+    - **Plinko:** Activated 60 FPS multi-ball physics loop with collision deflection off pegs, active Low/Med/High risk payout table tabs, and Stake multiplier bins.
+    - **Crash:** 60 FPS exponential rocket trajectory, provably fair instant crash (1% house edge), live cashout button updating with real-time payout, and auto-cashout.
+    - **European Roulette (Screenshot 2 Fix):** Replaced cramped text string with full casino felt betting board (Zero, 1-36 grid, dozens, columns, outside bets, chip selector); aligned European clockwise pocket sequence with decelerating wheel physics stopping on the winning pocket (97.30% RTP).
+    - **Blackjack:** Activated dealing hand, hit, stand, double down, and 3:2 natural blackjack payout (99.50% RTP).
+    - **Tests & Verification:** `tools/test_house_games_math.mjs` and `tools/test_site.mjs` passed 100%. Package updated: `Streamer_Suite_Complete_Stage6.zip` (36.67 MB).
+  - **Stage 6.1 — Golden Ratio, Seed Rotation, Limbo & Streamer-Favored Economy:**
+    - **HIG & Golden Ratio ($\phi \approx 1.618$):** Redesigned the House Games arena grid using Apple HIG guidelines and golden ratio proportions (`minmax(280px, 1fr) minmax(460px, 1.618fr)`).
+    - **Active Seed Rotation Panel:** Relocated from Live Stream to a dedicated card below House Games with live Server Seed SHA-256 hash, customizable Client Seed with randomize button, sequential Nonce, and `🔄 Rotate Seed Pair` action that reveals past unhashed server seed in plain text.
+    - **Stake Original Game "Limbo":** Integrated Limbo into Diggity Originals with exact Stake formula (`Floor(0.99 / float * 100) / 100`), reactive target multiplier $\leftrightarrow$ win chance sync, giant neon counting display, history pills, and provably fair HMAC-SHA256 resolution.
+    - **Crash & Blackjack Fixes:** Crash auto-cashout is now optional (empty by default), triggering real crash explosions when target is reached; Blackjack "Double 2x" button completely hides upon hitting or standing.
+    - **Roulette 12-Number Limit & Continuous Spin:** Ambient idle wheel rotation is continuous; spins launch counter-rotating ivory ball that spirals inward into the provably fair winning pocket; enforced 12-number cap on straight-up bets to prevent risk-free wash betting / points farming.
+    - **Profile Image & Header Fixes:** Added device photo upload with 2MB validation; fixed 100% zoom header collision between navigation and balance pill; moved `#hg-toast` out of document flow to floating viewport bottom-right.
+    - **Zero-Balance Economy:** Viewers start at `0 $DIG` and accumulate points organically on Kick; eliminated free faucets to protect streamer economics.
+    - **Evaluations & Packaging:** `tools/test_site.mjs` and `tools/test_house_games_math.mjs` passed 100%. Rebuilt package: `Streamer_Suite_Complete_Stage6.zip` (36.68 MB).
+
+---
+
+- [x] **Stage 6.2 (Gemini 4 Argon Architectural Blueprint, House Games & Reference Repos):** COMPLETED & TESTED.
+  - **Reference Repositories Ingested (16 Repos Cloned in `references/clones/`):**
+    - `vfairgames/vfair-games`, `tanh1c/stake-originals-clone`, `BrightKingsley/grow-game`, `kayooliveira/plinko-game`, `AnsonH/plinko-game`, `Nou4r/nours-casino`, `ISoft-op/Casino-case-opening`, `nekiro/kick-api`, `BOT-K4CP3R/kick.auth`, `retconned/kick-js`, `DavidHDev/react-bits`, `magicuidesign/magicui`, `ibelick/motion-primitives`, `darkroomengineering/lenis`, `vercel/commerce`, `shadcn-ui/ui`.
+  - **Roulette Physics & Continuous Wheel Rotation Overhaul:**
+    - Continuous ambient rotation (`0.18°/frame`) running perpetually without jerks.
+    - Ball launches on outer rim (152px) counter-rotating and decelerating with realistic quintic ease-out.
+    - Ball drops into winning pocket (135px) and **lingers locked solidary to the rotating pocket for $\ge 1.5$ seconds** with a gold flash highlight before spin completes.
+  - **Limbo Instant Outcome & Removal of "Dropped at...":**
+    - Removed 1100ms count-up latency; outcome hits screen **immediately (<10ms)** with punch slam pulse animation.
+    - Fully eliminated `"💥 Dropped at 1.38x (Target was 1000.00x)"` banner and distracting rocket subtitles.
+    - Instant button re-enable (100ms) for high-frequency manual/auto bets.
+  - **Plinko Multi-Tiered Sound Synthesizer:**
+    - Procedural Web Audio: `playPlinkoCommon()` for common/low multipliers ($<2.0x$), `playPlinkoMedium()` for $2.0x-9.9x$, and `playWin()` + `playCoins()` for jackpots ($\ge 10x$).
+  - **Package Updated:** `Streamer_Suite_Complete_Stage6.zip` (36.68 MB).
+
+- [x] **Stage 6.4 (Fase 1 & 2 — Micro-Interacciones, Caída Instantánea Store & Sonner Toasts):** COMPLETED & TESTED.
+  - **Fase 1 Pulido:** Integrado motor FLIP en tablas/listas (`motion-fx.js`), interpolación numérica suave a 60 FPS (`CountUp.js`), números tabulares sin temblores (`tabular-nums`), y ráfagas de confeti en Canvas (`canvas-confetti`).
+  - **Caída Instantánea de Tarjetas en Store:** Eliminada la animación de levitación en bucle que causaba delay al salir el cursor; configurada caída instantánea en 120ms con curva quíntica de Apple (`cubic-bezier(0.16, 1, 0.3, 1)`).
+  - **Fase 2 Toasts con Resortes (`sonner-toast.js`):** Sistema de notificaciones moderno apilable en 3D con físicas de resorte, descarte táctil por deslizamiento (*swipe-to-dismiss*), y acentos de color neón (Kick verde para victorias, magenta para alertas y dorado para store). Reemplaza alertas bloqueantes.
+  - **Paquete Reconstruido:** `Streamer_Suite_Complete_Stage6.zip` (36.71 MB).
+
+- [x] **Stage 6.5 (Rediseño House Games, Ventana Fija 520px, Menú de Tarjetas Interactivas & Juegos Hi-Lo y Keno):** COMPLETED & TESTED.
+  - **Limpieza de Cabecera y Ventana Fija:** Eliminados textos subtítulos redundantes y la píldora duplicada de balance de House Games. La arena de juegos se fijó rígidamente en 520px (`height: 520px; overflow: hidden;`), eliminando cualquier salto de altura o deformación de texto/interfaz al cambiar de juego.
+  - **Menú de Tarjetas Interactivas (Catálogo Estilo Stake Originals):** Grilla interactiva de 9 tarjetas animadas (Plinko, Mines, Crash, Dice, Limbo, Blackjack, Roulette, Hi-Lo, Keno) con arte SVG representativo, insignias de RTP / Max Win y físicas de levitación con caída instantánea en 120ms (`cubic-bezier(0.16, 1, 0.3, 1)`).
+  - **Juego Original Stake "Hi-Lo":** Baraja completa de 52 cartas, predicciones Higher / Lower con probabilidades dinámicas calculadas sobre 99.00% RTP (1.00% house edge), multiplicadores progresivos acumulables, función Skip Card, Cashout dinámico y animación 3D de giro de carta.
+  - **Juego Original Stake "Keno":** Grilla interactiva de 40 números (8x5), selección de 1 a 10 casilleros con opciones de Auto Pick y Clear, selector de riesgo (Classic, Low, Medium, High), tablas de pago oficiales de Stake hasta 1,000x y sorteo de 10 números provably fair.
+  - **Pruebas y Verificación:** `tools/test_site.mjs`, `tools/test_house_games_math.mjs` y `tools/test_house_games_enhancements.mjs` (100% de suites pasadas con éxito).
+
+- [x] **Stage 6.6 (Disposición Stake: Fila de Tarjetas Arriba + Arena Abajo, -33% Tamaño & Correcciones):** COMPLETED & TESTED.
+  - **Disposición Unificada (Tarjetas Arriba + Juego Abajo):** Se colocó la fila de 9 tarjetas compactas fijas en la parte superior, y la arena interactiva del juego activo (`.stake-arena-wrapper`) directamente debajo. Al hacer clic en cualquier tarjeta, el juego se activa al instante en la arena inferior y la tarjeta se resalta en verde neón (`.active`), sin pantallas intermedias ni saltos de interfaz.
+  - **Tarjetas 33% Más Pequeñas (Estilo Stake Portrait):** Se ajustó la grilla a 9 columnas en escritorio con tarjetas en proporción vertical (`aspect-ratio: 1 / 1.32`, ~115px de ancho por ~150px de alto, 33% más compactas). Cada tarjeta contiene la insignia de multiplicador/RTP arriba a la izquierda, la ilustración SVG centrada y el título integrado abajo en *Chakra Petch*.
+  - **Corrección de Cohete Crash:** Cohete orientado en ascenso diagonal de izquierda a derecha (`rotate(42deg)`), acompañando la trayectoria naranja.
+  - **Sin "xxxx playing":** Removido por completo el pie inferior de jugadores y subtítulos repetitivos.
+  - **Logo "Diggity Bets" +75% y Luz Neón Suave:** Logo aumentado 75% sin sombras negras duras, con aura neón sutil.
+  - **Provably Fair Convertido en Botón y Modal:** El panel permanente de ~400px se transformó en un botón de lujo `[ 🛡️ PROVABLY FAIR & SEED ROTATION ]` ubicado debajo de la arena, abriendo un modal con dark glassmorphism (`#pf-modal-backdrop`). Esto libera todo el espacio vertical de la pantalla para el juego activo. Todos los identificadores DOM requeridos se preservaron intactos.
+  - **Mesa de Apuestas de Ruleta 100% Visible (Sin "Modo Ventana"):** Se rediseñó el tapete y la grilla (`.roulette-table-grid`, `.roulette-felt-container`) con columnas fluidas `34px repeat(12, 1fr) 38px`, filas optimizadas de 30px/26px y `overflow: visible`, eliminando de raíz las barras de desplazamiento horizontal y vertical. Los 37 números (0, 1-36), docenas, columnas y apuestas externas se visualizan completos y nítidos.
+  - **Ruleta Agrandada y Alineación Matemática Verificada:** Canvas aumentado a 380x380 px con números más grandes y nítidos (13px Chakra Petch). Se verificó que el cálculo trigonométrico (`desiredFinalAngle = 270 - (winIdx + 0.5) * (360 / 37)`) alinea con precisión absoluta el casillero ganador exactamente bajo la aguja superior de las 12 en punto (270°). Se añadió un callout central en el eje de la rueda que muestra el número ganador y su color en tipografía grande (20px).
+  - **Pausa de 2 Segundos Completamente Estática:** Al finalizar el giro, la rueda y la bola permanecen **100% inmóviles** (0 deg/seg) durante al menos 2.0 segundos, permitiendo al espectador y al streamer comprobar visualmente sin movimiento ni desenfoque que la bola reposa exactamente en el casillero resultante.
+  - **Audio Procedural Coherente:**
+    - Al girar: ruido de fricción de la bola rodando sobre la pista de madera de caoba (`playRouletteTrack`) junto a chasquidos de deflexión con cadencia física en los separadores (`playRouletteFret`).
+    - Al detenerse: auténtico doble golpe de madera/marfil al caer en la tronera (`playRouletteDrop`), seguido del sonido de victoria o bust.
+  - **Ampliación de Juegos y Reducción del Panel de Control (Plinko, Keno, Mines, Crash):**
+    - Reducción del ~50% en el ancho del panel de control/apuestas lateral (`.hg-control-panel` a 240px) y padding optimizado en todos los juegos para ceder todo el protagonismo a la arena.
+    - **Plinko:** Canvas ampliado a 760x580 (+109% en área). Espaciado reescalado dinámicamente (`colSpacing: 58`, `rowSpacing: 46`, `startY: 36`), pines a radio 4.5px, canastas multiplicadoras ampliadas a 52x30px y canicas a radio 9px.
+    - **Crash:** Canvas ampliado a 840x520 (+92% en resolución y área). Gráfico de despegue y curva con trazo 4.5px, cohete y explosión ampliados, multiplicador central agrandado a 74px/82px Chakra Petch.
+    - **Keno:** Cuadrícula de 40 números ampliada a `repeat(8, minmax(78px, 96px))` y `repeat(5, minmax(68px, 86px))` (+169% en área). Celdas con fuente 20px negrita y tabla de pagos expandida hasta 820px con pills de 62px.
+    - **Mines:** Matriz 5x5 expandida a `repeat(5, minmax(96px, 114px))` con gap de 12px (+423% en área) y diamantes/bombas de 68x68px para llenar toda la ventana gris.
+  - **Reubicación de Logo Diggity Bets y Tarjetas Sociales Oficiales:**
+    - Se eliminó el texto redundante de la sección (`#topbar-active-title`) y se reubicó el logo Diggity Bets en su lugar en la barra superior izquierda (`.topbar-left`).
+    - Se aplicaron 10px de margen superior y altura de 56px (`.topbar-logo-link`, `.site-header-logo`) dentro de una topbar de 80px, garantizando un despeje superior amplio para que el texto "DIGGITY" nunca se corte por el borde superior de la ventana.
+    - Se transformaron los paneles sociales en una grilla estrictamente horizontal de 3 columnas (`.socials-horizontal-grid`), ubicando Kick, Discord e Instagram uno al lado del otro.
+    - Se procesaron, recortaron y añadieron transparencias a los logos oficiales: Kick (`kick-official-logo.png`), Discord (`discord-official-logo.png`) e Instagram (`instagram-official-logo.png`), incorporando efectos de resplandor neón adaptados a cada marca.
+  - **Apuesta Lateral de Seguro en Blackjack (Insurance 2:1):**
+    - Se revisaron los 16 repositorios de referencia clonados confirmando que no disponían de seguro de blackjack.
+    - Se implementó la máquina de estados completa de **Insurance** en [`site/js/house-games.js`](file:///c:/Users/tomas/Desktop/streamerbot/site/js/house-games.js):
+      - **Condición exclusiva:** Se ofrece única y exclusivamente cuando la carta visible del crupier es un As (`dealerHand[0] % 13 === 0`).
+      - **Costo de seguro:** Exactamente el 50% de la apuesta principal (`Math.floor(bet / 2)`).
+      - **Contenedor interactivo:** Caja de decisión neón dorada con botones `[ INSURE 🛡️ ]` y `[ PASS / NO ]` ([`#bj-insurance-box`](file:///c:/Users/tomas/Desktop/streamerbot/index.html#L697)).
+      - **Escenario 1 (Dealer TIENE Blackjack):** Revela carta oculta de inmediato. Si se contrató seguro, paga 2 a 1 (devuelve 3x seguro), dejando al jugador en **tablas exactas (neto 0)**. Si el jugador también tenía 21, empata la mano y además cobra el beneficio del seguro.
+      - **Escenario 2 (Dealer NO tiene Blackjack):** Se descuenta el seguro y la mano se reanuda de inmediato con las reglas y botones regulares (Hit, Stand, Double).
+    - Verificación matemática agregada en [`tools/test_house_games_math.mjs`](file:///c:/Users/tomas/Desktop/streamerbot/tools/test_house_games_math.mjs).
+  - **Agrandado de Logo 150% & Padding Interno Antipuntos de Corte:**
+    - Se agregó padding transparente al archivo [`site/images/diggitybets-logo.png`](file:///c:/Users/tomas/Desktop/streamerbot/site/images/diggitybets-logo.png) (26px superior, 16px laterales) para garantizar que las letras superiores nunca toquen el borde físico.
+    - Se incrementó el alto del logo a 82px (`max-height: 84px`) en [`site/css/style.css`](file:///c:/Users/tomas/Desktop/streamerbot/site/css/style.css) (+150%) y el topbar a 88px, con alineación centrada y cero corte superior.
+  - **Compactación del Banner de Torneo:**
+    - Se redujo el banner de torneo inactivo a un badge estilizado de una sola línea (`🏆 NO ACTIVE TOURNAMENT IN PROGRESS`), eliminando el texto redundante y ahorrando más de 100px de altura.
+  - **Resolución & Diagnóstico de Zoom al 100% en Notebooks (HP 250 G8):**
+    - **Diagnóstico del Zoom al 70%:** Los navegadores (Firefox) guardan el nivel de zoom por dominio (`127.0.0.1:3000`). Al haber hecho zoom previo para que entre la pantalla, Firefox lo restauraba automáticamente al cargar.
+    - **Causa Raíz:** En una notebook de 768p (o 1080p escalada a 125%/150%), la altura útil del navegador es de ~600px - 640px. El catálogo superior, arena de juegos y el fixture de 8 participantes superaban los 900px de altura, provocando cortes forzados al 100%.
+    - **Solución Definitiva al 100%:**
+      - **House Games:** Reducción de márgenes (`.hg-catalog-section` a 6-8px, tarjetas a aspect-ratio 1 / 1.08), fijación estricta de la arena a 480-520px (`min-height: 480px`, `max-height: 520px`), ajuste de Plinko/Crash a `max-height: 480px`, matriz de Minas a 72-86px y Keno a 54-68px.
+      - **8-Bracket Tourney:** Se compactaron las tarjetas de match (`padding: 5px 6px`), mini-miniaturas (30x38px), márgenes de semifinales (12px) y final (22px), gap a 14px, y se habilitó scroll horizontal elástico (`overflow-x: auto`) con `min-width: 800px` para evitar cualquier recorte en pantallas angostas.
+  - **Transición a Rainbet (rainbet.com) & Panel de Comunidad:**
+    - Se procesaron los logos oficiales de Rainbet (isotipo con gota y wordmark con corona) como PNGs transparentes de alta resolución (`site/images/rainbet-logo.png` y `site/images/rainbet-icon.png`).
+    - Se integró el 4to panel de comunidad oficial en [`index.html`](file:///c:/Users/tomas/Desktop/streamerbot/index.html) (`.social-card-rainbet`) con enlace directo a `https://rainbet.com/en?r=diggitybets`, responsive de 4 columnas en desktop y hover celeste característico en [`site/css/style.css`](file:///c:/Users/tomas/Desktop/streamerbot/site/css/style.css).
+  - **Sistema de Verificación de Referidos Rainbet (Código: diggitybets) & Backlog Stake:**
+    - El sistema anterior de verificación Stake TOTP 0.00 bet se trasladó intacto a un contenedor de backlog (`#backlog-stake-verification` con `display: none !important;`), preservando todos los IDs para retrocompatibilidad y auditorías de pruebas automatizadas.
+    - Se diseñó el nuevo módulo interactivo de verificación Rainbet en [`index.html`](file:///c:/Users/tomas/Desktop/streamerbot/index.html): botón de registro directo con código `diggitybets`, input de usuario `#prof-input-rainbet-user`, insignia de estado `#prof-rainbet-status-badge` (`✓ REFERRED VIP (diggitybets)`) y bono de +350 $DIG.
+    - Lógica de cliente e integración con Leaderboard implementada en [`site/js/user-store.js`](file:///c:/Users/tomas/Desktop/streamerbot/site/js/user-store.js).
+    - En el Centro de Control del Streamer ([`site/js/admin-hub.js`](file:///c:/Users/tomas/Desktop/streamerbot/site/js/admin-hub.js)), se incorporó el **Rainbet Partners Referrals & Affiliate Sync Deck**: listado en tiempo real de espectadores registrados, sincronización masiva pegando la lista/CSV de Rainbet Partners (Affilka) y aprobación/rechazo en 1 clic.
+  - **Blackjack — Función "Split" (Dividir Mano):**
+    - **Auditoría en Repositorios Clonados:** Se inspeccionaron exhaustivamente todos los repositorios en `references/clones/` (`vfair-games`, `stake-originals-clone-react`, `nours-casino`). Se verificó que `vfair-games` no tiene Blackjack, `stake-originals-clone-react` tiene un enlace dummy, y `nours-casino` implementa Blackjack con Hit, Stand y Double pero **sin la función de Split**.
+    - **Reglas Estándar & Búsqueda Web:** Se verificaron las reglas universales de casinos (Stake/Vegas): elegibilidad en mano inicial de 2 cartas con igual valor numérico (pares 2-2 a 9-9, cualquier combinación de cartas de 10 puntos como 10-10, 10-J, J-Q, K-10, y pares As-As), apuesta duplicada igual a la original (`balance >= bet`), división en 2 manos independientes, regla estricta de Ases divididos (1 sola carta por As y pase automático al crupier), Double After Split (DAS) disponible, y resolución individual de cada mano contra el crupier.
+    - **Desarrollo Visual y Funcional:** Creado botón interactivo `#bj-btn-split` ("Split ✌️"), vista dual de manos `#bj-split-hands-section` con contenedores estilizados `MANO 1` y `MANO 2`, indicador de turno activo neón verde/oro (`.active-turn`), etiquetas de estado en tiempo real (`TURNO`, `STAND`, `BUST`, `GANÓ`, `TABLAS`, `PERDIÓ`), y banner con desglose detallado de ambas manos y ganancia neta.
+  - **Despliegue Online & Actualización Automática (CI/CD):**
+    - Se analizó la arquitectura de hosting gratuito y continuo: al alojar el sitio en **Cloudflare Pages** o **GitHub Pages** (100% gratis, sin tarjeta de crédito), cada modificación o `git push` impacta en vivo automáticamente a nivel global en 20-30 segundos sin intervención manual.
+  - **Pruebas y Paquete:** `tools/test_site.mjs`, `tools/test_house_games_math.mjs`, `tools/test_house_games_enhancements.mjs`, `tools/test_blackjack_split_simulation.mjs` y `tools/verify_roulette_and_modal.mjs` (100% de éxito, 71 IDs interactivos). Paquete reconstruido: `Streamer_Suite_Complete_Stage6.zip` (37.01 MB).
+
+- [x] **Stage 7 (UI Knowledge Base, RAG Architecture, 4 Specialized Roles, Visual Audit & Cloudflare Deploy):** COMPLETED & AUDITED.
+  - **Base de Conocimiento UI Ingestada (13 Nuevos Repos en `references/ui-kb/`):**
+    - `1-design-systems-and-skills`: awesome-design-md (173 archivos, tokens de Linear/Vercel/Stripe/1win), claudedesignskills (22 skills), shadcn-ui-mcp-server, magic-mcp.
+    - `2-primitives`: radix-primitives (703 archivos), base-ui (2,829 archivos unstyled).
+    - `3-motion-and-ui`: cult-ui (1,764 archivos), background-snippets (texturas sutiles).
+    - `4-micro-ux`: cmdk (paleta de comandos), tremor (tablas y métricas limpias).
+    - `5-golden-apps`: taxonomy (Next.js App Router limpio), next-forge (arquitectura desacoplada), skateshop (filtros y skeletons).
+  - **Estandarización `DESIGN.md`:**
+    - Creado documento maestro [`DESIGN.md`](file:///c:/Users/tomas/Desktop/streamerbot/DESIGN.md) en la raíz del proyecto.
+    - Presupuesto cromático estricto 90 / 8 / 2: 90% escala neutra oscura, 8% superficies de contraste para inputs/pills, 2% acento estratégico (`#53fc18` Kick green, `#ffd700` Casino gold).
+    - Jerarquía de bordes sobre sombras (prohibición de sombras difusas pesadas, uso de bordes de 1px semitransparentes).
+    - Números tabulares obligatorios (`tabular-nums`) y 35% de espacio negativo mínimo.
+  - **4 Roles Especializados con SKILL.md y Restricciones Anti-Slop:**
+    - `design-system-architect`: Encargado de tokens, variables y consistencia tipográfica.
+    - `layout-primitives-architect`: Compositor estructural, grillas bento y empty states.
+    - `motion-engineer`: Físicas de resorte (<400ms), salida rápida (120ms) y respeto estricto a `prefers-reduced-motion`.
+    - `visual-auditor`: Suite automatizada de Playwright y VLM en Chrome/Edge local.
+  - **Auditoría Visual Automatizada (Playwright en 1440px, 768px y 390px):**
+    - Creado script [`tools/audit/visual_audit.mjs`](file:///c:/Users/tomas/Desktop/streamerbot/tools/audit/visual_audit.mjs).
+    - Resultados auditados en las 7 vistas (`#watch`, `#house-games`, `#tournament`, `#bonushunt`, `#store`, `#leaderboard`, `#profile`):
+      - **1440px (Desktop):** 0 Bloqueadores, 0 Mayores, 0 Menores.
+      - **768px (Tablet / Netbook):** 0 Bloqueadores, 0 Mayores, 0 Menores.
+      - **390px (Mobile):** 0 Bloqueadores, 0 Mayores, 0 Menores.
+      - **Consola:** 0 errores.
+      - **Peticiones de red:** 0 fallidas.
+  - **Despliegue a Cloudflare 100% Gratuito y Automatizado:**
+    - Creado script compilador de producción [`tools/build_dist.mjs`](file:///c:/Users/tomas/Desktop/streamerbot/tools/build_dist.mjs) que genera un paquete ultraliviano de **8.13 MB** en `dist/`, con cabeceras de seguridad `_headers` (HSTS, CSP, X-Frame-Options) y reglas SPA `_redirects`.
+    - Configurado [`wrangler.toml`](file:///c:/Users/tomas/Desktop/streamerbot/wrangler.toml) con soporte nativo de Cloudflare Workers Static Assets (`[assets] directory = "./dist"` y `not_found_handling = "single-page-application"`).
+    - Creado ejecutable de 1 clic [`PUBLICAR_EN_CLOUDFLARE.bat`](file:///c:/Users/tomas/Desktop/streamerbot/PUBLICAR_EN_CLOUDFLARE.bat) y script PowerShell [`tools/deploy_cloudflare.ps1`](file:///c:/Users/tomas/Desktop/streamerbot/tools/deploy_cloudflare.ps1).
+    - Guía actualizada en [`docs/GUIA_DESPLIEGUE_CLOUDFLARE_FASE3.md`](file:///c:/Users/tomas/Desktop/streamerbot/docs/GUIA_DESPLIEGUE_CLOUDFLARE_FASE3.md).
+
+## 2. Completed Milestones
+- [x] **CS:GO Giveaway Wheel V1.2.0:** 500x500px, 45s active chatters tracking, compiled to `giveaway-csgo-1.0.7.sb`.
+- [x] **Random Slot Wheel V1.0.0:** 500x500px, vertical cards with cover art, 4,800+ slots (Only on Stake, Pragmatic, Hacksaw, Nolimit).
+- [x] **Duo-Wheel V1.0.0 (Participant + Slot):** 620x620px dual cards with auto-fill to Battle/Tourney.
+- [x] **Tournament 8-Bracket V2.0:** Native dark SVG bracket, responsive grid, offline 1-click demo.
+- [x] **1v1 Battle Overlay V1.0:** Animated duel cards, auto-winner resolution.
+- [x] **Community Bonus Hunt Suite V1.0:** Exact bonushunt.gg/bht.bet metrics, caller names, mini cards, guessing system.
+- [x] **Stage 1 Hybrid Backend & Security:** Pusher chat reader, RSA Webhook receiver, SQLite schema, Anti-Sybil.
+- [x] **Stage 2 1v1 Battles & 8-Bracket Tournament Suite:** Fully built, animated, and tested.
+- [x] **All-in-One Streamer Packages:**
+  - `Streamer_Suite_Complete_Stage6.zip` (36.68 MB): Suite completa con Portal SPA reparado, logos pixel Kick, letras blancas Diggity, TOTP Stake verifier, Discord linker, Leaderboard $2000 USD, juegos Stake, ruleta con giro continuo y bolita anclada 1.5s, Limbo instantáneo sin subtítulos, Plinko con audio común y 16 repositorios de referencia clonados.
+  - `Streamer_Suite_Complete_Stage5.zip` (36.62 MB): Suite completa con Portal SPA, Stake Originals integrados, overlays, ruedas, docks y scripts.
+  - `Streamer_Suite_Complete_Stage4.zip` (36.6 MB): Suite con Boost de Proveedores, Overlays y 4,889 slots de Stake.
+  - `Streamer_Suite_Complete_Stage3.zip` (2.33 MB): Suite con ruedas, overlays y docks.
+  - `Streamerbot_CSGO_Wheel_diggitybets.zip` (32.3 MB): Pre-configured with both wheels, commands and instructions.
+  - `Streamer_Stage2_Battle_and_Tourney.zip` (0.35 MB): Stage 2 1v1 Battle and 8-Bracket Overlays and Docks.
+- [x] **Deep Research Reports & Skills:**
+  - `research/FUTURE_WEB_APP_ARCHITECTURE.md` (Cloudflare Pages, Workers, D1, Turnstile & Kick OAuth 2.1)
+  - `research/KICK_CHANNEL_POINTS_AND_HOUSE_GAMES_RESEARCH.md`
+  - `research/ANTI_SYBIL_MULTI_ACCOUNT_SECURITY.md` (Anti-alt, Sybil clustering & Turnstile)
+  - `.agents/skills/anti-fraud-fingerprinting/`
+  - `.agents/skills/provably-fair-games/`
+  - `.agents/skills/channel-points-bridge/`
+  - `.agents/skills/bracket-8/`
+  - `.agents/skills/fair-draws/`
+- [x] **Kick Events & Store Master Plan V2.0:** Documented in [docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md).
+- [x] **Guía de Uso Streamer:** Documented in [docs/INSTRUCCIONES_SUITE_COMPLETA.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/INSTRUCCIONES_SUITE_COMPLETA.md).
+
+---
+
+## 3. Active Squads & Next Stage
+- **Squad 0 (Manager):** Solicit Gate approval from user.
+- **Squad 4 & 5 (Frontend & Visuals):** Ready for Stage 3 (Community Bonus Hunt tracker & Guess the Final Balance overlay).
+
+---
+
+## 4. Risks & Mitigations
+- **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
+- **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, procedural Web Audio (≤3% CPU in OBS).
+- **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.

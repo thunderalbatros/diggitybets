@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamer Control Deck — Casino Suite (HuntHub)</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+  <div class="deck-container">
+    <!-- Top Deck Header -->
+    <header class="deck-header glass-panel">
+      <div class="deck-logo">🎰 HUNTHUB <span>OPERATOR DECK</span></div>
+      
+      <!-- Tab Navigation -->
+      <nav class="deck-tabs">
+        <button class="tab-btn active" data-tab="huntTab">BONUS HUNT & GTB</button>
+        <button class="tab-btn" data-tab="battleTab">1v1 BATTLE</button>
+        <button class="tab-btn" data-tab="bracketTab">8-SLOT TOURNAMENT</button>
+      </nav>
+
+      <!-- Quick Action Controls -->
+      <div class="deck-header-actions">
+        <button id="btnUndo" class="btn btn-secondary btn-sm" title="Undo last action">↶ Undo</button>
+        <button id="btnRedo" class="btn btn-secondary btn-sm" title="Redo last action">↷ Redo</button>
+        <button id="btnPanic" class="btn btn-danger btn-sm" title="Panic button: blank overlay and mute">🚨 PANIC</button>
+        <div id="wsStatus" class="ws-indicator badge-cyan">SYNC ACTIVE</div>
+      </div>
+    </header>
+
+    <!-- ============================================================
+         TAB 1: COMMUNITY BONUS HUNT & GUESS THE BALANCE
+         ============================================================ -->
+    <section id="huntTab" class="deck-section active">
+      
+      <!-- Phase Lifecycle & Quick Workflow Bar -->
+      <div class="lifecycle-bar glass-panel">
+        <div class="lifecycle-status">
+          <span class="text-muted">PHASE:</span>
+          <span id="adminPhaseBadge" class="badge-cyan">HUNTING</span>
+        </div>
+        <div class="lifecycle-buttons">
+          <button id="btnPhaseHunting" class="btn btn-cyan btn-sm">▶ 1. START HUNTING</button>
+          <button id="btnPickRecommender" class="btn btn-gold btn-sm">🎲 2. PICK RECOMMENDER (60s)</button>
+          <button id="btnPhaseOpening" class="btn btn-gold btn-sm">🚀 3. START OPENING (LOCK GUESSES)</button>
+          <button id="btnPhaseFinish" class="btn btn-green btn-sm">🏁 4. FINISH & AWARD GTB</button>
+          <button id="btnResetHunt" class="btn btn-danger btn-sm">RESET HUNT</button>
+        </div>
+      </div>
+
+      <!-- Live KPIs Bar (Real-time Mirror of OBS Overlay) -->
+      <div class="admin-kpi-bar glass-panel">
+        <div class="kpi-card">
+          <span class="kpi-lbl">START BALANCE ($)</span>
+          <input type="number" id="huntStartBalanceInput" class="kpi-input" step="50" value="1000">
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">CURRENT BALANCE</span>
+          <span id="kpiCurrentBalance" class="kpi-val text-green">$1,000.00</span>
+          <span id="kpiProfitLoss" class="kpi-sub text-muted">+$0.00</span>
+        </div>
+        <div class="kpi-card highlight-kpi">
+          <span class="kpi-lbl">REQ AVG X (BREAK-EVEN)</span>
+          <span id="kpiReqAvgX" class="kpi-val text-gold">0.0x</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">CURRENT AVG X</span>
+          <span id="kpiAvgX" class="kpi-val text-cyan">0.0x</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">PROGRESS (OPENED)</span>
+          <span id="kpiProgress" class="kpi-val">0 / 4</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">BEST WIN</span>
+          <span id="kpiBestWin" class="kpi-val text-magenta">—</span>
+        </div>
+      </div>
+
+      <!-- Spotlight Recommender Active Box (Appears when active) -->
+      <div id="adminSpotlightBox" class="spotlight-deck-box glass-panel oculto">
+        <div class="spotlight-deck-content">
+          <div class="spotlight-deck-avatar">🎲</div>
+          <div>
+            <div class="spotlight-title">SPOTLIGHT RECOMMENDER ACTIVE</div>
+            <div class="spotlight-desc">Waiting for <strong id="adminRecName" class="text-gold">@Viewer</strong> to pick a slot via chat (<span id="adminRecTimer" class="text-cyan">60s</span> left).</div>
+          </div>
+        </div>
+        <div class="spotlight-actions">
+          <button id="btnStopSpotlight" class="btn btn-danger btn-sm">Cancel Spotlight</button>
+          <button id="btnRerollSpotlight" class="btn btn-gold btn-sm">🎲 Re-roll Viewer</button>
+        </div>
+      </div>
+
+      <!-- Main Columns: Left = Add & GTB, Right = Open Bonuses -->
+      <div class="admin-grid">
+        
+        <!-- Left Column: Add Bonus & Guess The Balance -->
+        <div class="admin-col">
+          <!-- Add Bonus Box -->
+          <div class="admin-card glass-panel">
+            <div class="card-header">ADD BONUS TO HUNT</div>
+            <div class="form-row">
+              <label>Slot Game Name (Autocomplete Catalog)</label>
+              <input type="text" id="huntGameInput" list="slotsDatalist" placeholder="e.g. Gates of Olympus" value="Gates of Olympus">
+              <datalist id="slotsDatalist">
+                <!-- Dynamically populated from slots-catalog.json -->
+              </datalist>
+            </div>
+
+            <!-- Live Cover Preview Box -->
+            <div id="slotPreviewCard" class="slot-preview-card">
+              <div class="preview-thumb-wrap">
+                <img id="slotPreviewImg" src="../public/slots/gates-of-olympus.jpg" alt="Preview" class="preview-thumb" onerror="this.style.display='none'; document.getElementById('slotPreviewFallback').style.display='flex';">
+                <div id="slotPreviewFallback" class="preview-fallback" style="display:none;">G</div>
+              </div>
+              <div class="preview-details">
+                <div id="slotPreviewName" class="preview-name">Gates of Olympus</div>
+                <div id="slotPreviewProvider" class="preview-provider text-gold">Pragmatic Play</div>
+                <div id="slotPreviewStats" class="preview-stats text-muted">Max Win: 5,000x · RTP: 96.50%</div>
+              </div>
+            </div>
+
+            <div class="form-row-2col">
+              <div>
+                <label>Bet Size ($)</label>
+                <input type="number" id="huntBetInput" step="0.20" value="2.00">
+              </div>
+              <div>
+                <label>Recommender Chatter (Optional)</label>
+                <input type="text" id="huntRecommenderInput" placeholder="e.g. LuckyChatter" value="">
+              </div>
+            </div>
+            <button id="btnAddBonus" class="btn btn-gold">+ ADD BONUS TO HUNT</button>
+          </div>
+
+          <!-- Stake Exclusives Catalog & Weekly Updates Card -->
+          <div class="admin-card glass-panel border-gold">
+            <div class="card-header flex-between">
+              <span>🎰 STAKE ONLY SLOTS DATABASE</span>
+              <span id="catalogCountBadge" class="badge-cyan">60 SLOTS INDEXED</span>
+            </div>
+            <div class="catalog-sync-desc">
+              Weekly updates automatically index new releases from Stake & exclusive providers (Valkyrie, Hacksaw, Pragmatic, Donut).
+            </div>
+            <div class="inline-input-btn">
+              <button id="btnSyncStakeSlots" class="btn btn-cyan btn-sm" style="flex:1;">🔄 Check Stake Weekly Releases</button>
+              <button id="btnOpenNewSlotModal" class="btn btn-secondary btn-sm" style="flex:1;">+ Register New Slot</button>
+            </div>
+            <div id="syncStatusMsg" class="sync-status-text text-muted" style="font-size:11px;"></div>
+          </div>
+
+          <!-- Guess The Balance Control Box -->
+          <div class="admin-card glass-panel">
+            <div class="card-header flex-between">
+              <span>GUESS THE BALANCE (GTB)</span>
+              <span id="adminGtbBadge" class="badge-gold">STATUS: ABIERTA</span>
+            </div>
+
+            <div class="form-row-2col">
+              <div>
+                <label>Prize Text</label>
+                <input type="text" id="gtbPrizeInput" value="$50.00">
+              </div>
+              <div>
+                <label>GTB Mode</label>
+                <select id="gtbModeSelect" class="admin-select">
+                  <option value="ABIERTA">ABIERTA (Accepting !guess)</option>
+                  <option value="BLOQUEADA">BLOQUEADA (Sealed/Locked)</option>
+                  <option value="RESUELTA">RESUELTA (Finished)</option>
+                  <option value="CERRADA">CERRADA (Disabled)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Manual Guess Entry -->
+            <div class="manual-guess-box">
+              <label>Manual Guess Input (Plan B for Streamer)</label>
+              <div class="inline-input-btn">
+                <input type="text" id="manualGuessUser" placeholder="Chatter Username" style="flex:1;">
+                <input type="text" id="manualGuessVal" placeholder="Guess e.g. 1,250.50" style="flex:1;">
+                <button id="btnSubmitManualGuess" class="btn btn-cyan btn-sm">+ Add</button>
+              </div>
+            </div>
+
+            <!-- Stats & Preview -->
+            <div class="gtb-admin-summary">
+              <div>Total Guesses Received: <strong id="adminGtbCount" class="text-gold">0</strong></div>
+              <button id="btnAwardGTBWinner" class="btn btn-green btn-sm">🏆 Resolve Closest Winner</button>
+            </div>
+
+            <!-- Closest Guesses Preview -->
+            <div class="admin-closest-box">
+              <div class="box-subhead">Top 5 Closest Guesses to Current Balance:</div>
+              <div id="adminClosestList" class="admin-closest-list">
+                <div class="text-muted text-center" style="font-size:12px; padding:8px;">Awaiting guesses or balance...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Collected Bonuses Action Table -->
+        <div class="admin-col">
+          <div class="admin-card glass-panel">
+            <div class="card-header flex-between">
+              <span>COLLECTED BONUSES (<span id="adminBonusCount">0</span>)</span>
+              <span class="text-muted" style="font-size:12px;">Fast Payout Entry for Live Stream</span>
+            </div>
+            
+            <div id="adminBonusList" class="admin-bonus-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 2: 1v1 BATTLE
+         ============================================================ -->
+    <section id="battleTab" class="deck-section">
+      <div class="admin-grid">
+        <!-- Fighter 1 Setup -->
+        <div class="admin-card glass-panel border-magenta">
+          <div class="card-header text-magenta">FIGHTER 1 (RED)</div>
+          <div class="form-row">
+            <label>Fighter Name</label>
+            <input type="text" id="bF1Name" value="Fighter Red">
+          </div>
+          <div class="form-row">
+            <label>Slot Game</label>
+            <input type="text" id="bF1Slot" value="Wanted Dead or a Wild">
+          </div>
+          <div class="spin-record-box">
+            <label>Record Spin Result (Multiplier X)</label>
+            <div class="inline-input-btn">
+              <input type="number" id="bF1Mult" step="0.5" value="15" placeholder="e.g. 25x">
+              <button id="btnF1Spin" class="btn btn-magenta">HIT (-HP F2)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fighter 2 Setup -->
+        <div class="admin-card glass-panel border-cyan">
+          <div class="card-header text-cyan">FIGHTER 2 (BLUE)</div>
+          <div class="form-row">
+            <label>Fighter Name</label>
+            <input type="text" id="bF2Name" value="Fighter Blue">
+          </div>
+          <div class="form-row">
+            <label>Slot Game</label>
+            <input type="text" id="bF2Slot" value="Gates of Olympus">
+          </div>
+          <div class="spin-record-box">
+            <label>Record Spin Result (Multiplier X)</label>
+            <div class="inline-input-btn">
+              <input type="number" id="bF2Mult" step="0.5" value="15" placeholder="e.g. 25x">
+              <button id="btnF2Spin" class="btn btn-cyan">HIT (-HP F1)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="admin-actions-bar glass-panel">
+        <button id="btnApplyBattleFighters" class="btn btn-gold">UPDATE FIGHTERS & RESET HP</button>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 3: 8-SLOT TOURNAMENT
+         ============================================================ -->
+    <section id="bracketTab" class="deck-section">
+      <div class="admin-card glass-panel">
+        <div class="card-header text-gold">CURRENT ACTIVE MATCH CONTROLS</div>
+        <div class="active-match-admin">
+          <div id="adminMatchTitle" class="admin-match-title">MATCH 1: Gates of Olympus VS Sweet Bonanza</div>
+          <div class="match-score-inputs">
+            <div>
+              <label id="lblSlot1">Slot 1 Score (X)</label>
+              <input type="number" id="matchScore1" value="45.5" step="0.5">
+              <button id="btnWinSlot1" class="btn btn-gold">DECLARE SLOT 1 WINNER</button>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div>
+              <label id="lblSlot2">Slot 2 Score (X)</label>
+              <input type="number" id="matchScore2" value="20.0" step="0.5">
+              <button id="btnWinSlot2" class="btn btn-cyan">DECLARE SLOT 2 WINNER</button>
+            </div>
+          </div>
+        </div>
+        <hr class="deck-divider">
+        <button id="btnResetBracket" class="btn btn-danger">RESET ENTIRE TOURNAMENT</button>
+      </div>
+    </section>
+
+    <!-- New Slot Registration Modal -->
+    <div id="newSlotModal" class="admin-modal oculto">
+      <div class="admin-modal-card glass-panel">
+        <div class="card-header flex-between">
+          <span>+ REGISTER NEW SLOT TO CATALOG</span>
+          <button id="btnCloseSlotModal" class="btn btn-secondary btn-sm">✕</button>
+        </div>
+        <div class="form-row">
+          <label>Slot Game Name</label>
+          <input type="text" id="newSlotNameInput" placeholder="e.g. Waylanders Forge 2">
+        </div>
+        <div class="form-row-2col">
+          <div>
+            <label>Provider Studio</label>
+            <input type="text" id="newSlotProviderInput" placeholder="e.g. Valkyrie Studio">
+          </div>
+          <div>
+            <label>Max Win Potential</label>
+            <input type="text" id="newSlotMaxWinInput" placeholder="e.g. 50,000x">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Cover Image URL or Relative Path (Optional)</label>
+          <input type="text" id="newSlotImgInput" placeholder="e.g. ../public/slots/new-game.jpg">
+        </div>
+        <div class="inline-input-btn">
+          <button id="btnSaveNewSlot" class="btn btn-gold" style="flex:1;">Save to Catalog</button>
+          <button id="btnCancelNewSlot" class="btn btn-secondary btn-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="../shared/libs/streamerbot-client.js"></script>
+  <script src="../shared/sound.js"></script>
+  <script src="../shared/slots-catalog.js"></script>
+  <script src="../shared/number-parser.js"></script>
+  <script src="../shared/bus.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

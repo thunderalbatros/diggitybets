@@ -1,0 +1,486 @@
+/* ============================================================
+   CASINO SUITE — Community Bonus Hunt & GTB Stylesheet
+   Canvas: 1920x1080 Fixed Glassmorphism OBS Overlay
+   ============================================================ */
+
+.hunt-overlay-container {
+  width: 1920px;
+  height: 1080px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* ---------- Top HUD Bar (6 Core KPIs) ---------- */
+.hunt-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: linear-gradient(180deg, rgba(16, 20, 32, 0.96) 0%, rgba(9, 12, 20, 0.96) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+}
+
+.hud-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-tag {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.hud-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+.hud-stats {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.stat-lbl {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.stat-sub {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.highlight-gold {
+  border-left: 2px solid rgba(255, 215, 0, 0.5);
+  border-right: 2px solid rgba(255, 215, 0, 0.5);
+  padding: 0 20px;
+}
+
+.text-gold { color: var(--gold-primary); text-shadow: 0 0 10px var(--gold-glow); }
+.text-cyan { color: var(--cyan-primary); text-shadow: 0 0 10px var(--cyan-glow); }
+.text-green { color: var(--green-win); text-shadow: 0 0 10px var(--green-glow); }
+.text-magenta { color: var(--magenta-primary); text-shadow: 0 0 10px var(--magenta-glow); }
+
+/* ---------- Active Recommender Spotlight Banner ---------- */
+.recommender-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(20, 26, 42, 0.95) 100%);
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.4);
+  animation: bannerSlide 0.4s ease-out;
+}
+
+@keyframes bannerSlide {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.rec-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--gold-primary);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+.rec-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rec-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold-primary);
+}
+
+.rec-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rec-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ---------- Main Workspace Grid ---------- */
+.hunt-workspace {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 18px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left: Slots Section */
+.slots-section {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.bonus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.bonus-grid::-webkit-scrollbar,
+.gtb-list::-webkit-scrollbar {
+  width: 6px;
+}
+.bonus-grid::-webkit-scrollbar-thumb,
+.gtb-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+/* Individual Slot Card */
+.bonus-card {
+  background: rgba(18, 24, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.bonus-card.status-opened {
+  border-color: rgba(0, 230, 118, 0.45);
+  background: linear-gradient(135deg, rgba(16, 22, 36, 0.9) 0%, rgba(8, 36, 24, 0.75) 100%);
+}
+
+.bonus-card.status-opening {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 20px var(--gold-glow);
+  transform: scale(1.02);
+}
+
+/* Card Thumbnail Wrapper */
+.card-thumb-wrap {
+  width: 54px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: #101420;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-monogram-fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #4b69ff 0%, #d32ce6 100%);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-idx-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Card Content Body */
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.card-bet {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.card-provider {
+  color: var(--gold-primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.card-game {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+}
+
+.card-recommender {
+  font-size: 11px;
+  color: var(--cyan-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-payout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 3px;
+  margin-top: 2px;
+}
+
+.card-mult {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.card-mult.won {
+  color: var(--gold-primary);
+  text-shadow: 0 0 8px var(--gold-glow);
+}
+
+.card-mult.won-big {
+  color: var(--magenta-primary);
+  text-shadow: 0 0 12px var(--magenta-glow);
+}
+
+.card-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-win);
+}
+
+/* Right: Guess the Balance Section */
+.gtb-section {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.gtb-status-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+}
+
+.gtb-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+/* Sealed State (Privacy Shield) */
+.gtb-locked-msg {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.lock-icon { font-size: 40px; margin-bottom: 6px; }
+.lock-title { font-size: 16px; font-weight: 800; letter-spacing: 1px; color: var(--gold-primary); }
+.lock-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+.guess-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  border-left: 2px solid transparent;
+}
+.guess-row.top-guess {
+  border-left-color: var(--gold-primary);
+  background: rgba(255, 215, 0, 0.08);
+}
+.guess-user { font-weight: 600; color: var(--cyan-primary); }
+.guess-val { font-weight: 700; color: var(--gold-primary); }
+
+.gtb-leaderboard-box {
+  background: rgba(10, 14, 24, 0.9);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.box-header {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold-primary);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.gtb-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gtb-top-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.gtb-top-item:nth-child(1) {
+  background: rgba(255, 215, 0, 0.2);
+  font-weight: 800;
+}
+
+/* ---------- Winner Modals ---------- */
+.winner-modal,
+.reveal-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: modalFade 0.3s ease;
+}
+
+.winner-card,
+.reveal-card {
+  padding: 36px 60px;
+  text-align: center;
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 60px var(--gold-glow);
+  animation: modalPop 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.winner-trophy { font-size: 56px; }
+.winner-title { font-size: 24px; font-weight: 800; letter-spacing: 2px; color: var(--gold-primary); }
+.winner-avatar-box { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--gold-primary); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800; background: var(--gold-primary); color: #000; box-shadow: 0 0 20px var(--gold-glow); }
+.winner-name { font-size: 40px; font-weight: 800; color: #fff; }
+.winner-diff { font-size: 16px; color: var(--text-muted); }
+.winner-prize { font-size: 26px; font-weight: 800; color: var(--green-win); margin-top: 6px; }
+
+.reveal-badge { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: var(--gold-primary); }
+.reveal-game { font-size: 32px; font-weight: 800; color: #fff; }
+.reveal-mult { font-size: 72px; font-weight: 900; color: var(--magenta-primary); text-shadow: 0 0 30px var(--magenta-glow); }
+.reveal-payout { font-size: 28px; font-weight: 800; color: var(--green-win); }
+
+@keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---------- Compliance Footer ---------- */
+.compliance-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  padding-top: 4px;
+}

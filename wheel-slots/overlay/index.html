@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Slot Wheel — diggitybets</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fixed 500x500 design canvas, auto-scaled to whatever size the browser source / window has -->
+  <div id="stage" class="stage">
+    <div id="flash" class="flash"></div>
+    <div id="rays" class="rays"></div>
+
+    <!-- Vertical card reel for slot games -->
+    <div id="ruleta" class="ruleta">
+      <div class="degradado arr"></div>
+      <div class="degradado aba"></div>
+      <div class="marcador"></div>
+      <div id="pista" class="pista"></div>
+    </div>
+
+    <!-- Synchronized Result Celebration Modal -->
+    <div id="resultModal" class="result-modal oculto">
+      <div class="result-glow"></div>
+      <div class="result-pill">🎰 SELECTED SLOT</div>
+      <div class="result-cover-wrap">
+        <img id="resultCover" class="result-cover" src="" alt="Selected Slot" />
+      </div>
+      <div id="resultTitle" class="result-title">Slot Title</div>
+      <div id="resultProvider" class="result-provider">Provider · Max Win</div>
+    </div>
+  </div>
+
+  <!-- Shown outside OBS (or with ?controls=1) for previewing and manual spins -->
+  <div id="controls" class="controls oculto">
+    <div class="filter-group">
+      <button class="btn-filter activo" data-cat="all">ALL</button>
+      <button class="btn-filter" data-cat="stake">💎 STAKE</button>
+      <button class="btn-filter" data-cat="pragmatic">⚡ PRAGMATIC</button>
+      <button class="btn-filter" data-cat="hacksaw">🪚 HACKSAW</button>
+      <button class="btn-filter" data-cat="nolimit">💀 NOLIMIT</button>
+    </div>
+    <div class="action-group">
+      <button id="btnSpin" class="btn btn-gold" title="Spin random slot with current filter">🎰 SPIN SLOT</button>
+      <button id="btnDemo" class="btn btn-ghost" title="Quick local test spin">🧪 TEST</button>
+    </div>
+  </div>
+  <div id="estado" class="estado">Connecting to Streamer.bot…</div>
+
+  <!-- Vendored local dependencies (fully offline & CORS-free for OBS Studio) -->
+  <script src="config.js"></script>
+  <script src="slots-data.js"></script>
+  <script src="../../data/slot_tiers.js"></script>
+  <script src="libs/streamerbot-client.js"></script>
+  <script src="libs/confetti.browser.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

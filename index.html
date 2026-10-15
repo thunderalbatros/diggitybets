@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — Casino Stream Engagement Suite × diggitybets (Kick.com)</title>
+  <meta name="description" content="Diggity Bets community hub: watch the live Kick stream, play free provably fair house games with $DIG points, join 8-bracket tournaments and bonus hunt guesses. 18+ only. 100% free to play, no real-money wagering.">
+  <meta name="theme-color" content="#06080d">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Diggity Bets — Live Stream, Games & Rewards">
+  <meta property="og:description" content="Free-to-play community hub for the diggitybets Kick channel. 18+ only.">
+  <meta property="og:image" content="site/images/diggitybets-logo.png">
+  <link rel="icon" type="image/png" href="site/images/kick-k-logo.png">
+  
+  <!-- Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Design System Stylesheet -->
+  <link rel="stylesheet" href="site/css/style.css">
+</head>
+<body>
+
+  <!-- App Layout Container -->
+  <div class="app-layout">
+
+    <!-- ========================================================
+         LEFT VERTICAL SIDEBAR (Compact sections panel, collapsible)
+         ======================================================== -->
+    <aside class="site-sidebar" id="site-sidebar">
+      <!-- Sidebar Header with Hamburger Menu Toggle at Top-Left -->
+      <div class="sidebar-top-bar">
+        <button type="button" class="sidebar-collapse-btn" id="btn-sidebar-collapse" title="Minimizar / Expandir panel de secciones" aria-label="Minimizar panel lateral">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+      <!-- Desktop & Mobile Sidebar Navigation Links (Compact 50% typography) -->
+      <nav class="sidebar-nav-menu" id="main-nav-menu" aria-label="Main Navigation">
+        <div class="sidebar-nav-label">PORTAL</div>
+        <a href="#watch" class="nav-link-btn active" data-target="#watch" title="Live Stream / Socials">
+          <span class="nav-item-icon">📺</span>
+          <span class="nav-item-text">Live Stream / Socials</span>
+        </a>
+        <a href="#house-games" class="nav-link-btn" data-target="#house-games" title="House Games">
+          <span class="nav-item-icon">🕹️</span>
+          <span class="nav-item-text">House Games</span>
+        </a>
+        <a href="#tournament" class="nav-link-btn" data-target="#tournament" title="8-Bracket Tourney">
+          <span class="nav-item-icon">🏆</span>
+          <span class="nav-item-text">8-Bracket Tourney</span>
+        </a>
+        <a href="#bonushunt" class="nav-link-btn" data-target="#bonushunt" title="Bonus Hunt">
+          <span class="nav-item-icon">💎</span>
+          <span class="nav-item-text">Bonus Hunt</span>
+        </a>
+        <a href="#store" class="nav-link-btn" data-target="#store" title="Rewards Store">
+          <span class="nav-item-icon">🎁</span>
+          <span class="nav-item-text">Rewards Store</span>
+        </a>
+        <a href="#leaderboard" class="nav-link-btn" data-target="#leaderboard" title="Leaderboard">
+          <span class="nav-item-icon">📊</span>
+          <span class="nav-item-text">Leaderboard</span>
+          <span class="badge-soon">SOON</span>
+        </a>
+        <a href="#admin-hub" class="nav-link-btn admin-nav-tab" id="nav-tab-admin" style="display: none;" data-target="#admin-hub" title="Streamer Admin">
+          <span class="nav-item-icon">👑</span>
+          <span class="nav-item-text">Streamer Admin</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer (Fair Audit and Socials removed per request) -->
+      <div class="sidebar-footer">
+        <div class="sidebar-spec-badge">
+          <span class="spec-dot"></span>
+          <span class="spec-text">100% Free Suite</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========================================================
+         MAIN VIEWPORT CONTAINER (Top Utility Header + Views)
+         ======================================================== -->
+    <div class="main-viewport-container">
+      <!-- Top Utility Header (Profile, Points Balance, Kick Auth) -->
+      <header class="site-topbar">
+        <div class="topbar-left">
+          <button type="button" class="sidebar-mobile-toggle" id="btn-toggle-sidebar" aria-label="Toggle Navigation">
+            <span></span><span></span><span></span>
+          </button>
+          <a href="#watch" data-target="#watch" class="topbar-logo-link" title="Diggity Bets — Home">
+            <img src="site/images/diggitybets-logo.png" alt="DIGGITY BETS" class="site-header-logo">
+          </a>
+          <span id="topbar-active-title" style="display: none;"><span class="view-title-text"></span></span>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Profile Section Link (Moved to top-right per user request) -->
+          <a href="#profile" class="nav-link-btn btn-top-profile" data-target="#profile" id="topbar-profile-link" title="User Profile & Verification">
+            <span class="top-profile-icon">👤</span>
+            <span class="top-profile-text">Profile</span>
+          </a>
+
+          <!-- User $DIG Points Balance Pill -->
+          <div class="user-balance-pill" title="$DIG Points Balance (Earned organically in Kick chat)">
+            <span class="coin-icon">🪙</span>
+            <span class="user-balance-val">0</span>
+            <span class="currency-label">$DIG</span>
+          </div>
+
+          <!-- Auth Guest Panel (Link Kick) -->
+          <div id="auth-guest-panel" style="display: flex; align-items: center;">
+            <button type="button" class="btn-header-cta" id="btn-kick-login" title="Link Kick.com account">
+              <img src="site/images/kick-k-logo.png" alt="K" class="kick-btn-icon" width="18" height="18" style="height: 18px; width: 18px; max-height: 18px; max-width: 18px; object-fit: contain; vertical-align: middle;">
+              <span>Link Kick</span>
+            </button>
+          </div>
+
+          <!-- Auth User Session Panel (Kick Username with Avatar directly to the left) -->
+          <div id="auth-user-panel" style="display: none; align-items: center; gap: 10px;">
+            <div class="user-session-card" title="Connected Kick Account">
+              <span class="user-avatar-display">🤠</span>
+              <span id="auth-username-label">@Viewer</span>
+            </div>
+            <span id="auth-sub-badge" class="reward-badge-pill" style="display: none; background: rgba(83, 252, 24, 0.2); border-color: var(--kick-green); color: var(--kick-green); font-size: 11px;">SUB (2X)</span>
+            <span id="auth-admin-badge" class="reward-badge-pill" style="display: none; background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); font-size: 11px;">👑 STREAMER</span>
+            <button type="button" class="btn-chat-toggle btn-auth-logout" id="btn-kick-logout" title="Sign Out">✕</button>
+          </div>
+        </div>
+      </header>
+
+  <!-- Main Portal Layout -->
+  <main class="main-wrapper" id="top">
+    <h1 class="sr-only">Diggity Bets — live stream, free house games and rewards hub</h1>
+
+    <!-- ========================================================
+         SECTION 1: WATCH & LIVE STREAM HERO (Includes Provably Fair & Community)
+         ======================================================== -->
+    <section class="section-container view-section active-view" id="watch">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title">
+            <span>📡</span> LIVE STREAM / SOCIALS <img src="site/images/kick-wordmark.png" alt="KICK" class="kick-title-wordmark" height="24" style="height: 24px; max-height: 24px; width: auto; max-width: 90px; object-fit: contain; vertical-align: middle; margin-left: 10px;">
+          </h2>
+          <p class="section-subtitle">Official diggitybets broadcast & verified community channels</p>
+        </div>
+        <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="btn-header-cta">Watch on Kick ↗</a>
+      </div>
+
+      <div class="hero-stream-grid cinema-mode">
+        <!-- Full-Width Cinema Kick Stream Player (Chat commands panel removed per request) -->
+        <div class="stream-player-card">
+          <iframe 
+            src="https://player.kick.com/diggitybets?autoplay=true&muted=true" 
+            allowfullscreen="true" 
+            scrolling="no"
+            title="diggitybets live kick stream">
+          </iframe>
+        </div>
+      </div>
+
+
+
+      <!-- FUSED COMMUNITY & SOCIAL LINKS (Integrated into Live Stream Hub) -->
+      <div id="links" class="stream-fused-section" style="margin-top: 36px;">
+        <div class="section-header-row" style="margin-bottom: 16px;">
+          <div>
+            <h3 class="section-title" style="font-size: 18px;"><span>🔗</span> COMMUNITY & <span class="accent">OFFICIAL SOCIALS</span></h3>
+            <p class="section-subtitle">Follow diggitybets across all official verified platforms</p>
+          </div>
+        </div>
+
+        <div class="socials-horizontal-grid">
+          <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="module-card social-card-kick" style="text-decoration: none;">
+            <div>
+              <div class="social-icon-wrap">
+                <img src="site/images/kick-official-logo.png" alt="Kick Official" class="social-logo-img social-logo-kick">
+              </div>
+              <h3 class="module-name">Kick.com Official</h3>
+              <p class="module-desc">Watch live daily broadcasts, chat, participate in giveaways, and queue for slot duels.</p>
+            </div>
+            <div style="font-family: var(--font-display); font-weight: 800; color: var(--kick-green);">@diggitybets ↗</div>
+          </a>
+
+          <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" class="module-card social-card-discord" style="text-decoration: none;">
+            <div>
+              <div class="social-icon-wrap">
+                <img src="site/images/discord-official-logo.png" alt="Discord Official" class="social-logo-img social-logo-discord">
+              </div>
+              <h3 class="module-name">Discord VIP Community</h3>
+              <p class="module-desc">Stream alerts, exclusive VIP bounties, bonus buy discussions, and community chat.</p>
+            </div>
+            <div style="font-family: var(--font-display); font-weight: 800; color: #5865f2;">Join Discord ↗</div>
+          </a>
+
+          <a href="https://www.instagram.com/diggity.bets/" target="_blank" rel="noopener noreferrer" class="module-card social-card-instagram" style="text-decoration: none;">
+            <div>
+              <div class="social-icon-wrap">
+                <img src="site/images/instagram-official-logo.png" alt="Instagram Official" class="social-logo-img social-logo-instagram">
+              </div>
+              <h3 class="module-name">Instagram Official</h3>
+              <p class="module-desc">Behind-the-scenes reels, big win highlights, schedule updates, and live stream stories.</p>
+            </div>
+            <div style="font-family: var(--font-display); font-weight: 800; color: #e1306c;">@diggity.bets ↗</div>
+          </a>
+
+          <a href="https://rainbet.com/en?r=diggitybets" target="_blank" rel="noopener noreferrer" class="module-card social-card-rainbet" style="text-decoration: none;">
+            <div>
+              <div class="social-icon-wrap">
+                <img src="site/images/rainbet-logo.png" alt="Rainbet Official" class="social-logo-img social-logo-rainbet">
+              </div>
+              <h3 class="module-name">Rainbet Casino Partner</h3>
+              <p class="module-desc">Play slots & originals under code diggitybets. Instant rakeback, daily rain, and VIP stream rewards.</p>
+            </div>
+            <div style="font-family: var(--font-display); font-weight: 800; color: #38bdf8;">Code: diggitybets ↗</div>
+          </a>
+        </div>
+      </div>
+    </section>
+    
+    <!-- ========================================================
+         SECTION 2: STAKE ORIGINALS PROVABLY FAIR HOUSE GAMES
+         ======================================================== -->
+    <section class="section-container view-section" id="house-games">
+
+      <!-- ========================================================
+           DIGGITY ORIGINALS COMPACT GAME CARDS (STAKE STYLE, ~33% SMALLER)
+           ======================================================== -->
+      <div class="hg-catalog-section" id="hg-catalog-view">
+        <div class="section-header-row" style="margin-bottom: 12px; align-items: center; justify-content: space-between;">
+          <h2 class="section-title" style="margin: 0; font-size: 18px;">
+            <span>🕹️</span> <span class="brand-diggity-text">DIGGITY</span> ORIGINALS <span class="accent">HOUSE GAMES</span>
+          </h2>
+          <span class="reward-badge-pill" style="border-color: rgba(255,255,255,0.15); color: #94a3b8; font-size: 11px;">
+            9 Provably Fair Games · 99% RTP
+          </span>
+        </div>
+
+        <div class="hg-cards-grid">
+          <!-- 1. PLINKO CARD -->
+          <div class="hg-game-card hg-tab-btn active" data-game="plinko" style="--card-glow: rgba(168, 85, 247, 0.45); --card-accent: #a855f7;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #2e1065 0%, #4c1d95 50%, #7e22ce 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="80" cy="20" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="65" cy="36" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="95" cy="36" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="50" cy="52" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="80" cy="52" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="110" cy="52" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="35" cy="68" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="65" cy="68" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="95" cy="68" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="125" cy="68" r="3.5" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="76" cy="42" r="6" fill="#fbbf24" filter="drop-shadow(0 0 6px #fbbf24)"/>
+                <circle cx="102" cy="60" r="5" fill="#fbbf24" filter="drop-shadow(0 0 6px #fbbf24)"/>
+                <rect x="25" y="86" width="16" height="18" rx="4" fill="#ef4444"/>
+                <rect x="45" y="86" width="16" height="18" rx="4" fill="#f97316"/>
+                <rect x="65" y="86" width="14" height="18" rx="4" fill="#eab308"/>
+                <rect x="81" y="86" width="14" height="18" rx="4" fill="#eab308"/>
+                <rect x="99" y="86" width="16" height="18" rx="4" fill="#f97316"/>
+                <rect x="119" y="86" width="16" height="18" rx="4" fill="#ef4444"/>
+              </svg>
+              <span class="hg-card-max-badge">10,000× MAX</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">PLINKO</span></div>
+            </div>
+          </div>
+
+          <!-- 2. MINES CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="mines" style="--card-glow: rgba(2, 132, 199, 0.45); --card-accent: #0284c7;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #082f49 0%, #0369a1 50%, #0284c7 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,30 75,30 88,48 50,92 12,48 25,30" fill="#10b981" filter="drop-shadow(0 0 8px rgba(16,185,129,0.8))"/>
+                <polygon points="50,30 50,92 12,48" fill="#34d399" opacity="0.6"/>
+                <polygon points="50,30 50,92 88,48" fill="#059669" opacity="0.8"/>
+                <polygon points="50,30 25,30 12,48" fill="#6ee7b7" opacity="0.9"/>
+                <circle cx="115" cy="65" r="24" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                <rect x="111" y="37" width="8" height="6" rx="2" fill="#64748b"/>
+                <path d="M115,37 Q125,28 132,32" stroke="#d97706" stroke-width="2.5" fill="none"/>
+                <circle cx="134" cy="32" r="4" fill="#ef4444" filter="drop-shadow(0 0 5px #ef4444)"/>
+                <circle cx="134" cy="32" r="2" fill="#fef08a"/>
+              </svg>
+              <span class="hg-card-max-badge">10,000× MAX</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">MINES</span></div>
+            </div>
+          </div>
+
+          <!-- 3. CRASH CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="crash" style="--card-glow: rgba(249, 115, 22, 0.45); --card-accent: #f97316;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #18181b 0%, #27272a 40%, #c2410c 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15,95 Q70,92 110,40" stroke="#f97316" stroke-width="3.5" fill="none" filter="drop-shadow(0 0 6px #f97316)"/>
+                <path d="M15,95 Q70,92 110,40 L110,95 Z" fill="url(#crash-curve-grad)" opacity="0.25"/>
+                <defs>
+                  <linearGradient id="crash-curve-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#f97316"/>
+                    <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <g transform="translate(118, 32) rotate(42)">
+                  <path d="M0,-14 Q5,0 5,14 L-5,14 Q-5,0 0,-14 Z" fill="#ffffff"/>
+                  <circle cx="0" cy="0" r="3" fill="#0284c7"/>
+                  <polygon points="5,8 10,14 5,14" fill="#ef4444"/>
+                  <polygon points="-5,8 -10,14 -5,14" fill="#ef4444"/>
+                  <polygon points="-3,14 0,24 3,14" fill="#eab308" filter="drop-shadow(0 0 6px #f97316)"/>
+                </g>
+              </svg>
+              <span class="hg-card-max-badge">1,000,000× MAX</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">CRASH</span></div>
+            </div>
+          </div>
+
+          <!-- 4. DICE CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="dice" style="--card-glow: rgba(139, 92, 246, 0.45); --card-accent: #8b5cf6;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #2e1065 0%, #581c87 50%, #7c3aed 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(48, 55)">
+                  <rect x="-22" y="-22" width="44" height="44" rx="8" fill="#ffffff" filter="drop-shadow(0 6px 12px rgba(0,0,0,0.5))"/>
+                  <circle cx="-10" cy="-10" r="3.5" fill="#ef4444"/>
+                  <circle cx="10" cy="10" r="3.5" fill="#ef4444"/>
+                  <circle cx="0" cy="0" r="3.5" fill="#ef4444"/>
+                </g>
+                <g transform="translate(105, 62) rotate(18)">
+                  <rect x="-20" y="-20" width="40" height="40" rx="8" fill="#dc2626" filter="drop-shadow(0 6px 12px rgba(0,0,0,0.5))"/>
+                  <circle cx="-8" cy="-8" r="3" fill="#ffffff"/>
+                  <circle cx="8" cy="-8" r="3" fill="#ffffff"/>
+                  <circle cx="-8" cy="8" r="3" fill="#ffffff"/>
+                  <circle cx="8" cy="8" r="3" fill="#ffffff"/>
+                  <circle cx="0" cy="0" r="3.5" fill="#ffffff"/>
+                </g>
+              </svg>
+              <span class="hg-card-max-badge">99.00% RTP</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">DICE</span></div>
+            </div>
+          </div>
+
+          <!-- 5. LIMBO CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="limbo" style="--card-glow: rgba(245, 158, 11, 0.45); --card-accent: #f59e0b;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #d97706 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <text x="80" y="65" font-family="'Chakra Petch', sans-serif" font-size="28" font-weight="900" fill="#fef08a" text-anchor="middle" filter="drop-shadow(0 0 10px #f59e0b)">1,000×</text>
+                <g transform="translate(80, 88)">
+                  <polygon points="0,-10 6,4 -6,4" fill="#ffffff"/>
+                  <polygon points="-4,2 0,9 4,2" fill="#ef4444"/>
+                </g>
+              </svg>
+              <span class="hg-card-max-badge">1,000,000× MAX</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">LIMBO</span></div>
+            </div>
+          </div>
+
+          <!-- 6. BLACKJACK CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="blackjack" style="--card-glow: rgba(239, 68, 68, 0.45); --card-accent: #ef4444;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #b91c1c 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(60, 58) rotate(-10)">
+                  <rect x="-22" y="-32" width="44" height="64" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.5))"/>
+                  <text x="-14" y="-18" font-family="'Chakra Petch', sans-serif" font-size="12" font-weight="900" fill="#0f172a">A</text>
+                  <text x="0" y="8" font-size="20" fill="#0f172a" text-anchor="middle">♠</text>
+                </g>
+                <g transform="translate(98, 62) rotate(12)">
+                  <rect x="-22" y="-32" width="44" height="64" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.5))"/>
+                  <text x="-14" y="-18" font-family="'Chakra Petch', sans-serif" font-size="12" font-weight="900" fill="#dc2626">K</text>
+                  <text x="0" y="8" font-size="20" fill="#dc2626" text-anchor="middle">♥</text>
+                </g>
+              </svg>
+              <span class="hg-card-max-badge">3:2 PAYOUT</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">BLACKJACK</span></div>
+            </div>
+          </div>
+
+          <!-- 7. ROULETTE CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="roulette" style="--card-glow: rgba(16, 185, 129, 0.45); --card-accent: #10b981;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="80" cy="60" r="42" fill="#0f172a" stroke="#d97706" stroke-width="3"/>
+                <circle cx="80" cy="60" r="36" fill="none" stroke="#ef4444" stroke-width="8" stroke-dasharray="14 14" opacity="0.9"/>
+                <circle cx="80" cy="60" r="36" fill="none" stroke="#0f172a" stroke-width="8" stroke-dasharray="0 14 14 0" opacity="0.9"/>
+                <circle cx="80" cy="60" r="16" fill="#78350f" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="80" cy="60" r="7" fill="#fbbf24"/>
+                <circle cx="98" cy="40" r="4" fill="#ffffff" filter="drop-shadow(0 0 4px #ffffff)"/>
+              </svg>
+              <span class="hg-card-max-badge">97.30% RTP</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">ROULETTE</span></div>
+            </div>
+          </div>
+
+          <!-- 8. HI-LO CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="hilo" style="--card-glow: rgba(6, 182, 212, 0.45); --card-accent: #06b6d4;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #083344 0%, #0e7490 50%, #06b6d4 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="58" y="24" width="44" height="66" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" filter="drop-shadow(0 4px 10px rgba(0,0,0,0.5))"/>
+                <text x="66" y="42" font-family="'Chakra Petch', sans-serif" font-size="14" font-weight="900" fill="#ef4444">A</text>
+                <text x="80" y="66" font-size="22" fill="#ef4444" text-anchor="middle">♦</text>
+                <g transform="translate(24, 45)">
+                  <rect x="0" y="0" width="26" height="22" rx="4" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="1.5"/>
+                  <text x="13" y="15" font-family="'Chakra Petch', sans-serif" font-size="12" font-weight="900" fill="#10b981" text-anchor="middle">▲</text>
+                </g>
+                <g transform="translate(110, 45)">
+                  <rect x="0" y="0" width="26" height="22" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" stroke-width="1.5"/>
+                  <text x="13" y="16" font-family="'Chakra Petch', sans-serif" font-size="12" font-weight="900" fill="#06b6d4" text-anchor="middle">▼</text>
+                </g>
+              </svg>
+              <span class="hg-card-max-badge">PROVABLY FAIR</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">HI-LO</span></div>
+            </div>
+          </div>
+
+          <!-- 9. KENO CARD -->
+          <div class="hg-game-card hg-tab-btn" data-game="keno" style="--card-glow: rgba(14, 165, 233, 0.45); --card-accent: #0ea5e9;">
+            <div class="hg-card-thumb" style="background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #38bdf8 100%);">
+              <svg viewBox="0 0 160 120" class="hg-card-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="36" y="24" width="20" height="20" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="46" y="38" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">2</text>
+                <rect x="62" y="24" width="20" height="20" rx="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+                <text x="72" y="38" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">💎</text>
+                <rect x="88" y="24" width="20" height="20" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="98" y="38" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">7</text>
+                <rect x="114" y="24" width="20" height="20" rx="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+                <text x="124" y="38" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">💎</text>
+                <rect x="36" y="50" width="20" height="20" rx="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+                <text x="46" y="64" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">💎</text>
+                <rect x="62" y="50" width="20" height="20" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="72" y="64" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">18</text>
+                <rect x="88" y="50" width="20" height="20" rx="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+                <text x="98" y="64" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">💎</text>
+                <rect x="114" y="50" width="20" height="20" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="124" y="64" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">39</text>
+                <rect x="45" y="80" width="70" height="18" rx="9" fill="rgba(16,185,129,0.25)" stroke="#10b981" stroke-width="1"/>
+                <text x="80" y="93" font-family="'Chakra Petch', sans-serif" font-size="10" font-weight="900" fill="#10b981" text-anchor="middle">4/4 HITS: 26×</text>
+              </svg>
+              <span class="hg-card-max-badge">1,000× MAX</span>
+              <div class="hg-card-title-bar"><span class="hg-card-game-title">KENO</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Native Stake Originals Game Arena (Visible directly below the cards row) -->
+      <div class="stake-arena-wrapper" id="hg-arena-view">
+        <div class="hg-panels-container">
+          <!-- GAME 1: PLINKO -->
+          <div id="hg-plinko" class="hg-panel active">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="plinko-bet-input" class="hg-input" value="10" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="plinko-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="plinko-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">RISK LEVEL</label>
+                  <div class="hg-btn-group">
+                    <button type="button" class="hg-sub-tab active" data-risk="high">High</button>
+                    <button type="button" class="hg-sub-tab" data-risk="medium">Med</button>
+                    <button type="button" class="hg-sub-tab" data-risk="low">Low</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">PEGBOARD ROWS</label>
+                  <div class="hg-badge-val">10 Rows (Stake Standard)</div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="plinko-btn-drop" class="btn-stake-primary">Drop Ball 🟡</button>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button type="button" id="plinko-btn-drop-5" class="btn-stake-secondary">Drop 5</button>
+                    <button type="button" id="plinko-btn-drop-10" class="btn-stake-secondary">Drop 10</button>
+                  </div>
+                </div>
+
+                <div id="plinko-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel">
+                <div id="plinko-history-bar" class="plinko-history-bar"></div>
+                <div class="canvas-wrap">
+                  <canvas id="plinko-canvas" width="760" height="580" class="stake-game-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 2: MINES -->
+          <div id="hg-mines" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="mines-bet-input" class="hg-input" value="20" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="mines-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="mines-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">MINES COUNT</label>
+                  <select id="mines-count-select" class="hg-select">
+                    <option value="1">1 Mine</option>
+                    <option value="2">2 Mines</option>
+                    <option value="3" selected>3 Mines</option>
+                    <option value="5">5 Mines</option>
+                    <option value="10">10 Mines</option>
+                    <option value="15">15 Mines</option>
+                    <option value="20">20 Mines</option>
+                  </select>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="mines-btn-start" class="btn-stake-primary">Start Round 💣</button>
+                  <button type="button" id="mines-btn-cashout" class="btn-stake-action" disabled>Cashout: 0 PTS</button>
+                </div>
+
+                <div id="mines-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel flex-center">
+                <div id="mines-board" class="mines-matrix-grid"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 3: CRASH -->
+          <div id="hg-crash" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="crash-bet-input" class="hg-input" value="15" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="crash-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="crash-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">AUTO CASHOUT (MULTIPLIER)</label>
+                  <input type="number" id="crash-auto-cashout-input" class="hg-input" value="" placeholder="Optional (e.g. 2.00)" min="1.01" step="0.1">
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="crash-btn-start" class="btn-stake-primary">Launch Rocket 🚀</button>
+                  <button type="button" id="crash-btn-cashout" class="btn-stake-action" disabled>Cashout</button>
+                </div>
+
+                <div id="crash-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel">
+                <div id="crash-history-bar" class="crash-history-bar"></div>
+                <div class="canvas-wrap">
+                  <canvas id="crash-canvas" width="840" height="520" class="stake-game-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 4: DICE -->
+          <div id="hg-dice" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="dice-bet-input" class="hg-input" value="20" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="dice-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="dice-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <!-- Dice Mode Selector: Roll Over / Roll Under Toggle -->
+                <div class="hg-form-group">
+                  <label class="hg-label">ROLL PREDICTION</label>
+                  <button type="button" id="dice-btn-mode" class="dice-mode-toggle-btn" title="Click to toggle Roll Over / Roll Under">
+                    <span id="dice-mode-label">ROLL OVER</span>
+                    <span id="dice-mode-icon">↗</span>
+                  </button>
+                </div>
+
+                <!-- 3 Editable Reactive Inputs: Multiplier, Roll Target, Win Chance -->
+                <div class="hg-dice-stats-grid">
+                  <div class="hg-stat-box">
+                    <label class="hg-stat-lbl" for="dice-input-mult">MULTIPLIER</label>
+                    <div class="hg-stat-input-wrap">
+                      <input type="number" id="dice-input-mult" class="hg-stat-input" value="1.9800" step="0.0001" min="1.0102" max="9900">
+                      <span class="hg-input-suffix">x</span>
+                    </div>
+                    <span id="dice-stat-mult" style="display: none;">1.9800x</span>
+                  </div>
+                  <div class="hg-stat-box">
+                    <label class="hg-stat-lbl" id="dice-target-lbl" for="dice-input-target">ROLL OVER</label>
+                    <div class="hg-stat-input-wrap">
+                      <input type="number" id="dice-input-target" class="hg-stat-input" value="50.00" step="0.01" min="0.01" max="99.98">
+                    </div>
+                    <span id="dice-stat-target" style="display: none;">50.00</span>
+                  </div>
+                  <div class="hg-stat-box">
+                    <label class="hg-stat-lbl" for="dice-input-chance">WIN CHANCE</label>
+                    <div class="hg-stat-input-wrap">
+                      <input type="number" id="dice-input-chance" class="hg-stat-input" value="50.00" step="0.01" min="0.01" max="98.00">
+                      <span class="hg-input-suffix">%</span>
+                    </div>
+                    <span id="dice-stat-chance" style="display: none;">50.00%</span>
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="dice-btn-roll" class="btn-stake-primary">Roll Dice 🎲</button>
+                </div>
+              </div>
+
+              <div class="hg-board-panel flex-center flex-col">
+                <div id="dice-result-bubble" class="dice-result-bubble">50.00</div>
+                <div id="dice-slider-rail" class="dice-slider-rail" style="width: 85%; margin: 30px 0; position: relative;">
+                  <div id="dice-slider-track-fill" class="dice-slider-track-fill"></div>
+                  <input type="range" id="dice-slider-input" min="2" max="98" step="0.01" value="50" style="width: 100%;">
+                </div>
+                <div class="dice-slider-ticks" style="width: 85%; display: flex; justify-content: space-between; font-family: var(--font-display); font-size: 11px; color: var(--text-dim); font-weight: 700;">
+                  <span>0</span>
+                  <span>25</span>
+                  <span>50</span>
+                  <span>75</span>
+                  <span>100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 5: LIMBO (STAKE ORIGINAL) -->
+          <div id="hg-limbo" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="limbo-bet-input" class="hg-input" value="10" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="limbo-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="limbo-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-dice-stats-grid" style="grid-template-columns: 1fr 1fr;">
+                  <div class="hg-stat-box">
+                    <label class="hg-stat-lbl" for="limbo-target-mult-input">TARGET MULTIPLIER</label>
+                    <div class="hg-stat-input-wrap">
+                      <input type="number" id="limbo-target-mult-input" class="hg-stat-input" value="2.00" step="0.01" min="1.01" max="1000000.00">
+                      <span class="hg-input-suffix">x</span>
+                    </div>
+                  </div>
+                  <div class="hg-stat-box">
+                    <label class="hg-stat-lbl" for="limbo-win-chance-input">WIN CHANCE</label>
+                    <div class="hg-stat-input-wrap">
+                      <input type="number" id="limbo-win-chance-input" class="hg-stat-input" value="49.50" step="0.01" min="0.0001" max="98.00">
+                      <span class="hg-input-suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="limbo-btn-play" class="btn-stake-primary">Bet (Roll Limbo) 🚀</button>
+                </div>
+
+                <div id="limbo-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel flex-center flex-col" style="position: relative; min-height: 380px;">
+                <div id="limbo-history-bar" class="plinko-history-bar" style="margin-bottom: 20px;"></div>
+                
+                <div class="limbo-neon-display-box">
+                  <div class="limbo-target-indicator">
+                    <span>TARGET:</span>
+                    <strong id="limbo-target-badge">2.00x</strong>
+                  </div>
+                  
+                  <div id="limbo-multiplier-display" class="limbo-multiplier-number">
+                    1.00x
+                  </div>
+                  
+                  <div class="limbo-status-caption" id="limbo-status-caption" style="display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 6: BLACKJACK -->
+          <div id="hg-blackjack" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="bj-bet-input" class="hg-input" value="25" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="bj-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="bj-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">CHIP PRESETS</label>
+                  <div class="hg-chips-row" style="display: flex; gap: 6px;">
+                    <button type="button" class="bj-chip-btn chip-val-5" data-val="5">5</button>
+                    <button type="button" class="bj-chip-btn chip-val-25 active" data-val="25">25</button>
+                    <button type="button" class="bj-chip-btn chip-val-100" data-val="100">100</button>
+                    <button type="button" class="bj-chip-btn chip-val-500" data-val="500">500</button>
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <!-- Blackjack Insurance Prompt (Offered exclusively when Dealer up-card is an Ace) -->
+                  <div id="bj-insurance-box" class="bj-insurance-container" style="display: none;">
+                    <div class="bj-insurance-header">
+                      <span class="bj-insurance-icon">🛡️</span>
+                      <div class="bj-insurance-info">
+                        <strong>DEALER SHOWS ACE</strong>
+                        <span>Take Insurance? Pays 2:1 (<span id="bj-insurance-cost">0</span> $DIG)</span>
+                      </div>
+                    </div>
+                    <div class="bj-insurance-actions">
+                      <button type="button" id="bj-btn-insurance-yes" class="btn-stake-primary" style="padding: 9px 8px; font-size: 12px; font-weight: 900;">INSURE 🛡️</button>
+                      <button type="button" id="bj-btn-insurance-no" class="btn-stake-secondary" style="padding: 9px 8px; font-size: 12px; font-weight: 800;">PASS / NO</button>
+                    </div>
+                  </div>
+
+                  <button type="button" id="bj-btn-deal" class="btn-stake-primary">Deal Hand 🃏</button>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button type="button" id="bj-btn-hit" class="btn-stake-secondary" disabled>Hit ➕</button>
+                    <button type="button" id="bj-btn-stand" class="btn-stake-secondary" disabled>Stand ✋</button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button type="button" id="bj-btn-double" class="btn-stake-secondary" disabled>Double 2×</button>
+                    <button type="button" id="bj-btn-split" class="btn-stake-secondary" disabled style="display: none;">Split ✌️</button>
+                  </div>
+                </div>
+                <div id="bj-result-banner" class="hg-result-banner"></div>
+              </div>
+              <div class="hg-board-panel flex-col flex-center" style="gap: 16px; width: 100%;">
+                <div class="bj-hand-section" style="width: 100%;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; margin-bottom: 6px;">
+                    <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px;">DEALER HAND</span>
+                    <span id="bj-dealer-total" class="bj-score-pill">0</span>
+                  </div>
+                  <div id="bj-dealer-cards" class="bj-cards-row" style="min-height: 100px; display: flex; gap: 10px; justify-content: center;"></div>
+                </div>
+
+                <!-- Single Player Hand (Standard) -->
+                <div id="bj-single-hand-section" class="bj-hand-section" style="width: 100%; margin-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; margin-bottom: 6px;">
+                    <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px;">PLAYER HAND</span>
+                    <span id="bj-player-total" class="bj-score-pill">0</span>
+                  </div>
+                  <div id="bj-player-cards" class="bj-cards-row" style="min-height: 100px; display: flex; gap: 10px; justify-content: center;"></div>
+                </div>
+
+                <!-- Split Player Hands (Activated upon Split) -->
+                <div id="bj-split-hands-section" class="bj-split-container" style="display: none; width: 100%; max-width: 540px; margin-top: 4px;">
+                  <div class="bj-split-hand" id="bj-split-hand-0">
+                    <div class="bj-split-hand-header">
+                      <div class="bj-split-hand-info">
+                        <span class="bj-split-title">MANO 1</span>
+                        <span class="bj-split-bet-pill"><span id="bj-split-0-bet">25</span> $DIG</span>
+                      </div>
+                      <div class="bj-split-hand-meta">
+                        <span id="bj-split-0-badge" class="bj-hand-status-tag tag-active">TURNO</span>
+                        <span id="bj-split-0-total" class="bj-score-pill">0</span>
+                      </div>
+                    </div>
+                    <div id="bj-split-0-cards" class="bj-cards-row bj-split-cards" style="min-height: 90px; display: flex; gap: 6px; justify-content: center;"></div>
+                  </div>
+
+                  <div class="bj-split-hand" id="bj-split-hand-1">
+                    <div class="bj-split-hand-header">
+                      <div class="bj-split-hand-info">
+                        <span class="bj-split-title">MANO 2</span>
+                        <span class="bj-split-bet-pill"><span id="bj-split-1-bet">25</span> $DIG</span>
+                      </div>
+                      <div class="bj-split-hand-meta">
+                        <span id="bj-split-1-badge" class="bj-hand-status-tag">ESPERA</span>
+                        <span id="bj-split-1-total" class="bj-score-pill">0</span>
+                      </div>
+                    </div>
+                    <div id="bj-split-1-cards" class="bj-cards-row bj-split-cards" style="min-height: 90px; display: flex; gap: 6px; justify-content: center;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 6: EUROPEAN ROULETTE -->
+          <div id="hg-roulette" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">CHIP VALUE ($DIG)</label>
+                  <div class="hg-chips-row" style="display: flex; gap: 6px;">
+                    <button type="button" class="roulette-chip-btn chip-val-5" data-val="5">5</button>
+                    <button type="button" class="roulette-chip-btn chip-val-25 active" data-val="25">25</button>
+                    <button type="button" class="roulette-chip-btn chip-val-100" data-val="100">100</button>
+                    <button type="button" class="roulette-chip-btn chip-val-500" data-val="500">500</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">TOTAL BET ON TABLE</label>
+                  <div id="roulette-total-bets-display" class="hg-badge-val" style="color: var(--gold); font-size: 15px;">
+                    0 $DIG (0 bets)
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="roulette-btn-spin" class="btn-stake-primary">Spin Wheel 🎡</button>
+                  <button type="button" id="roulette-btn-clear" class="btn-stake-secondary">Clear Bets 🗑️</button>
+                </div>
+                <div id="roulette-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel flex-col flex-center" style="gap: 12px; overflow: visible; width: 100%;">
+                <!-- Decelerating European Roulette Canvas -->
+                <div style="position: relative;">
+                  <canvas id="roulette-wheel-canvas" width="380" height="380" class="stake-game-canvas"></canvas>
+                </div>
+
+                <!-- Complete European Roulette Felt Betting Board -->
+                <div class="roulette-felt-container">
+                  <div id="roulette-betting-table" class="roulette-table-grid">
+                    <!-- Populated dynamically with Zero, 1-36, Dozens, Columns, and Outside Bets -->
+                  </div>
+                  <div id="roulette-numbers-board" style="display:none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 8: HI-LO (STAKE ORIGINAL) -->
+          <div id="hg-hilo" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="hilo-bet-input" class="hg-input" value="10" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="hilo-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="hilo-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">CARD GUESS (NEXT CARD)</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button type="button" id="hilo-btn-higher" class="btn-hilo-guess btn-hilo-higher" disabled>
+                      <span class="hilo-guess-icon">▲</span>
+                      <span class="hilo-guess-text">HIGHER</span>
+                      <span id="hilo-mult-higher" class="hilo-guess-odds">1.32x</span>
+                    </button>
+                    <button type="button" id="hilo-btn-lower" class="btn-hilo-guess btn-hilo-lower" disabled>
+                      <span class="hilo-guess-icon">▼</span>
+                      <span class="hilo-guess-text">LOWER</span>
+                      <span id="hilo-mult-lower" class="hilo-guess-odds">3.96x</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <button type="button" id="hilo-btn-skip" class="btn-stake-secondary" disabled title="Skip current card without changing multiplier">
+                    Skip Card ↷
+                  </button>
+                  <div class="hg-stat-box" style="padding: 6px 10px;">
+                    <span class="hg-stat-lbl">CURRENT MULT</span>
+                    <span id="hilo-current-mult-display" style="font-size: 15px; font-weight: 900; color: var(--gold);">1.00x</span>
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="hilo-btn-start" class="btn-stake-primary">Start Round 🎴</button>
+                  <button type="button" id="hilo-btn-cashout" class="btn-stake-action" disabled>Cashout: 0 $DIG</button>
+                </div>
+
+                <div id="hilo-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel flex-col flex-center" style="gap: 14px; position: relative; width: 100%;">
+                <!-- History of Drawn Cards Ribbon -->
+                <div id="hilo-history-bar" class="hilo-history-ribbon">
+                  <span class="hilo-history-empty-txt">Dealt cards will appear here</span>
+                </div>
+
+                <!-- Main Interactive Playing Card Arena -->
+                <div class="hilo-table-arena">
+                  <div class="hilo-deck-fanned"></div>
+                  <div id="hilo-card-container" class="hilo-card-wrap">
+                    <div id="hilo-hero-card" class="hilo-playing-card suit-spades">
+                      <div class="hilo-card-corner top-left">
+                        <span id="hilo-card-rank-tl" class="hilo-rank-val">K</span>
+                        <span id="hilo-card-suit-tl" class="hilo-suit-sym">♠</span>
+                      </div>
+                      <div class="hilo-card-center-suit" id="hilo-card-suit-center">♠</div>
+                      <div class="hilo-card-corner bottom-right">
+                        <span id="hilo-card-rank-br" class="hilo-rank-val">K</span>
+                        <span id="hilo-card-suit-br" class="hilo-suit-sym">♠</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom Odds Reference Strip -->
+                <div class="hilo-odds-summary-strip">
+                  <div class="hilo-odds-pill"><span>▲ Higher:</span> <strong id="hilo-odds-higher-pct">75.0%</strong></div>
+                  <div class="hilo-odds-pill"><span>▼ Lower:</span> <strong id="hilo-odds-lower-pct">25.0%</strong></div>
+                  <div class="hilo-odds-pill"><span>= Same:</span> <strong id="hilo-odds-same-mult">12.87x</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME 9: KENO (STAKE ORIGINAL) -->
+          <div id="hg-keno" class="hg-panel">
+            <div class="hg-arena-grid">
+              <div class="hg-control-panel">
+                <div class="hg-form-group">
+                  <label class="hg-label">BET AMOUNT ($DIG)</label>
+                  <div class="hg-input-with-actions">
+                    <input type="number" id="keno-bet-input" class="hg-input" value="10" min="1">
+                    <button type="button" class="btn-half-bet" data-target-input="keno-bet-input">½</button>
+                    <button type="button" class="btn-double-bet" data-target-input="keno-bet-input">2×</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group">
+                  <label class="hg-label">RISK LEVEL</label>
+                  <div class="hg-btn-group">
+                    <button type="button" class="hg-sub-tab keno-risk-btn active" data-risk="classic">Classic</button>
+                    <button type="button" class="hg-sub-tab keno-risk-btn" data-risk="low">Low</button>
+                    <button type="button" class="hg-sub-tab keno-risk-btn" data-risk="medium">Med</button>
+                    <button type="button" class="hg-sub-tab keno-risk-btn" data-risk="high">High</button>
+                  </div>
+                </div>
+
+                <div class="hg-form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <button type="button" id="keno-btn-auto-pick" class="btn-stake-secondary">Auto Pick 🎲</button>
+                  <button type="button" id="keno-btn-clear" class="btn-stake-secondary">Clear 🗑️</button>
+                </div>
+
+                <div class="hg-form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label class="hg-label" style="margin: 0;">SELECTION</label>
+                    <span id="keno-picks-count-badge" class="badge-accent" style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.4); color: var(--cyan);">0 / 10 Numbers</span>
+                  </div>
+                </div>
+
+                <div class="hg-action-btns-stack">
+                  <button type="button" id="keno-btn-play" class="btn-stake-primary">Bet (Draw 10) 💎</button>
+                </div>
+
+                <div id="keno-result-banner" class="hg-result-banner"></div>
+              </div>
+
+              <div class="hg-board-panel flex-col flex-center" style="gap: 10px; position: relative; width: 100%;">
+                <!-- Dynamic Multipliers Paytable Strip -->
+                <div id="keno-paytable-strip" class="keno-paytable-container">
+                  <!-- Populated dynamically with Stake multipliers -->
+                </div>
+
+                <!-- 40-Number Keno Grid (8 cols x 5 rows) -->
+                <div id="keno-grid" class="keno-tiles-grid">
+                  <!-- 40 tiles rendered dynamically: 1..40 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden Test Verification Hook for Legacy Script Compatibility -->
+        <iframe id="stake-originals-iframe" style="display:none;" src="about:blank" title="Test Hook"></iframe>
+      </div>
+
+      <!-- Provably Fair Modal Trigger Button (Freeing up vertical space for game arena) -->
+      <div class="hg-pf-trigger-bar" style="display: flex; justify-content: center; align-items: center; margin-top: 18px; margin-bottom: 8px;">
+        <button type="button" id="btn-toggle-provably-fair" class="btn-stake-secondary pf-trigger-btn" title="Open Provably Fair & Independent Bet Verifier">
+          <span class="pf-trigger-icon">🛡️</span>
+          <span class="pf-trigger-text">PROVABLY FAIR & SEED ROTATION</span>
+          <span class="pf-status-badge">HMAC-SHA256 VERIFIED</span>
+        </button>
+      </div>
+
+      <!-- ========================================================
+           PROVABLY FAIR SYSTEM & ACTIVE SEED ROTATION (LUXURY MODAL)
+           ======================================================== -->
+      <div id="pf-modal-backdrop" class="pf-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="pf-modal-title">
+        <div class="pf-modal-window">
+          <button type="button" id="btn-close-pf-modal" class="pf-modal-close" aria-label="Cerrar Provably Fair">&times;</button>
+          
+          <div class="pf-container" id="provably-fair" style="margin-top: 0;">
+            <div class="section-header-row" style="margin-bottom: 20px;">
+              <div>
+                <h3 class="section-title" id="pf-modal-title" style="font-size: 20px;">
+                  <span>🛡️</span> PROVABLY FAIR & <span class="accent">SEED ROTATION</span>
+                </h3>
+                <p class="section-subtitle">
+                  Verify any bet mathematically. Stake HMAC-SHA256 protocol ensures outcomes are predetermined before your bet.
+                </p>
+              </div>
+              <span class="reward-badge-pill" style="border-color: var(--kick-green); color: var(--kick-green);">
+                HMAC-SHA256 VERIFIED
+              </span>
+            </div>
+
+            <div class="pf-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+              <!-- Card 1: Active Seed Pair & Live Seed Rotation -->
+              <div class="pf-card" style="background: rgba(14, 20, 32, 0.78); border: 1px solid var(--border-gold); border-radius: 14px; padding: 22px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h4 style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: var(--gold);">
+                    ⚡ ACTIVE SEED PAIR
+                  </h4>
+                  <span class="badge-soon" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">ACTIVE NONCE</span>
+                </div>
+
+                <div class="pf-field-group" style="margin-bottom: 14px;">
+                  <label class="pf-label" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">ACTIVE SERVER SEED (SHA-256 HASH)</label>
+                  <div id="pf-live-server-hash" class="pf-hash-display" style="font-family: monospace; font-size: 11px; background: rgba(0, 0, 0, 0.45); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); color: var(--kick-green); word-break: break-all;">
+                    Computing SHA-256 hash...
+                  </div>
+                  <span style="font-size: 10px; color: var(--text-dim); margin-top: 2px; display: block;">The unhashed server seed is kept secret until you rotate seeds, proving the outcome was set beforehand.</span>
+                </div>
+
+                <div class="pf-field-group" style="margin-bottom: 14px;">
+                  <label class="pf-label" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">CLIENT SEED (USER CUSTOMIZABLE)</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="pf-live-client-seed" class="hg-input" style="font-family: monospace; font-size: 13px;" value="kick_diggitybets_session">
+                    <button type="button" id="pf-btn-randomize-client" class="btn-stake-secondary" title="Generate Random Client Seed" style="white-space: nowrap; padding: 6px 12px;">🎲 Random</button>
+                  </div>
+                </div>
+
+                <div class="pf-field-group" style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px;">
+                  <div>
+                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display);">TOTAL BETS ON CURRENT SEED:</span>
+                    <span id="pf-live-nonce" style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #fff; margin-left: 8px;">1</span>
+                  </div>
+                  <button type="button" id="pf-btn-rotate-seeds" class="btn-stake-primary" style="padding: 6px 14px; font-size: 12px; box-shadow: 0 0 15px rgba(0, 231, 1, 0.3);">
+                    🔄 Rotate Seed Pair
+                  </button>
+                </div>
+
+                <div id="pf-revealed-seed-box" style="display: none; background: rgba(0,0,0,0.5); border: 1px solid var(--border-kick); border-radius: 8px; padding: 12px; margin-top: 10px;">
+                  <div style="font-size: 11px; font-family: var(--font-display); color: var(--kick-green); font-weight: 800; margin-bottom: 4px;">
+                    ✅ PREVIOUS SERVER SEED REVEALED (UNHASHED):
+                  </div>
+                  <div id="pf-revealed-server-seed" style="font-family: monospace; font-size: 11px; color: #fff; word-break: break-all;"></div>
+                  <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">
+                    You can now paste this secret seed into the Independent Verifier on the right to audit past rounds!
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Independent Provably Fair Verifier / Audit Calculator -->
+              <div class="pf-card" style="background: rgba(14, 20, 32, 0.78); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 22px;">
+                <h4 style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff; margin-bottom: 14px;">
+                  🔍 INDEPENDENT BET VERIFIER
+                </h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">GAME</label>
+                    <select id="pf-input-game" class="hg-select" style="font-size: 12px;">
+                      <option value="limbo">Limbo</option>
+                      <option value="dice">Dice</option>
+                      <option value="crash">Crash</option>
+                      <option value="plinko">Plinko</option>
+                      <option value="mines">Mines</option>
+                      <option value="roulette">Roulette</option>
+                      <option value="blackjack">Blackjack</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">NONCE</label>
+                    <input type="number" id="pf-input-nonce" class="hg-input" value="1" min="0" style="font-size: 12px;">
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                  <label style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">SERVER SEED</label>
+                  <input type="text" id="pf-input-server-seed" class="hg-input" placeholder="Paste revealed server seed" style="font-family: monospace; font-size: 12px;">
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                  <label style="font-size: 11px; color: var(--text-muted); font-family: var(--font-display); display: block; margin-bottom: 4px;">CLIENT SEED</label>
+                  <input type="text" id="pf-input-client-seed" class="hg-input" value="kick_diggitybets_session" style="font-family: monospace; font-size: 12px;">
+                </div>
+
+                <button type="button" id="pf-verify-btn" class="btn-stake-primary" style="width: 100%; padding: 10px;">
+                  Verify Provably Fair Calculation ⚡
+                </button>
+
+                <div id="pf-verify-result"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 3: 8-BRACKET SLOT CHAMPIONSHIP & PREDICTIONS
+         ======================================================== -->
+    <section class="section-container view-section" id="tournament">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title"><span>🏆</span> 8-BRACKET <span class="accent">TOURNAMENT PREDICTIONS</span></h2>
+          <p class="section-subtitle">Live tournament bracket · Pick which slots advance round-by-round to win out-of-band rewards from the streamer</p>
+        </div>
+        <!-- Tourney View Switcher Tabs -->
+        <div class="tourney-view-tabs" style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="tourney-tab-btn active" id="tab-tourney-bracket">
+            <span>⚔️</span> Bracket Picks
+          </button>
+          <button type="button" class="tourney-tab-btn" id="tab-tourney-standings">
+            <span>📊</span> Live Standings & Podium
+          </button>
+        </div>
+      </div>
+
+      <!-- View 1: Interactive Bracket Picks Panel -->
+      <div id="tourney-bracket-panel">
+        <div class="tourney-prediction-container">
+          <!-- Interactive Pick Tree -->
+          <div id="tourney-interactive-bracket">
+            <!-- Rendered dynamically by tournament-prediction.js -->
+          </div>
+
+          <!-- Prediction Submission Bar -->
+          <div class="bracket-action-bar" id="tourney-submit-bar">
+            <div>
+              <div style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff;">
+                PREDICTION STATUS: <span id="tourney-pred-status" style="color: var(--cyan);">SELECTIONS IN PROGRESS</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                The viewer with the highest number of correct winning slot combinations wins the official tournament reward.
+              </p>
+            </div>
+            <button type="button" class="btn-lock-prediction" id="btn-lock-tourney-pred">Submit & Lock Bracket 🔒</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- View 2: Live Transparency Standings & Scoreboard Panel -->
+      <div id="tourney-standings-panel" style="display: none;">
+        <!-- Rendered dynamically by tournament-prediction.js -->
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 4: COMMUNITY BONUS HUNT TRACKER
+         ======================================================== -->
+    <section class="section-container view-section" id="bonushunt">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title"><span>💎</span> COMMUNITY <span class="accent">BONUS HUNT TRACKER</span></h2>
+          <p class="section-subtitle">Exact bonushunt.gg/bht.bet metrics · Caller names, slot art, and guess the final balance contest</p>
+        </div>
+        <div style="font-family: var(--font-display); font-size: 12px; color: var(--text-muted);">
+          STATUS: <span style="color: var(--kick-green); font-weight: 800;">ACTIVE LIVE SESSION</span>
+        </div>
+      </div>
+
+      <!-- Four Core Financial Metrics Cards -->
+      <div class="bh-metrics-grid">
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">TOTAL COST (BUY-IN)</div>
+          <div class="bh-metric-value highlight" id="bh-metric-cost">$0.00</div>
+          <div class="bh-metric-sub">Calculated at $2.00 avg bet</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">TOTAL PAID OUT</div>
+          <div class="bh-metric-value" id="bh-metric-paid">$0.00</div>
+          <div class="bh-metric-sub">Cumulative bonus wins</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">BONUSES OPENED</div>
+          <div class="bh-metric-value" id="bh-metric-opened">0 / 0</div>
+          <div class="bh-metric-sub">Progress of hunt</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">REQUIRED AVG MULTIPLIER</div>
+          <div class="bh-metric-value" id="bh-metric-reqavg" style="color: var(--cyan);">—</div>
+          <div class="bh-metric-sub">Needed to break even</div>
+        </div>
+      </div>
+
+      <!-- Bonus Hunt Slots Table -->
+      <div class="bh-table-card">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
+            🎰 COLLECTED BONUSES & CALLERS
+          </h3>
+          <span style="font-size: 12px; color: var(--text-dim);">Live Hunt Sync</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>SLOT GAME</th>
+                <th>CALLER</th>
+                <th>BET SIZE</th>
+                <th>PAYOUT</th>
+                <th>MULTIPLIER</th>
+              </tr>
+            </thead>
+            <tbody id="bh-slots-tbody">
+              <!-- Rendered dynamically by bonushunt.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Guess the Final Balance Contest -->
+      <div class="bh-guesses-panel" style="margin-top: 24px;">
+        <!-- Guess Submission Form -->
+        <div class="bh-guess-form-card">
+          <h4 style="font-family: var(--font-display); font-size: 16px; color: var(--gold); margin-bottom: 6px;">
+            🎯 GUESS THE FINAL BALANCE CONTEST
+          </h4>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+            Predict the exact final dollar payout of this bonus hunt. The viewer with the closest prediction wins the streamer bounty!
+          </p>
+
+          <form id="bh-guess-form" onsubmit="return false;">
+            <div style="margin-bottom: 12px;">
+              <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">YOUR PREDICTED FINAL AMOUNT ($ USD)</label>
+              <input type="number" id="bh-input-guess" class="slots-search-input" placeholder="e.g. 1750" min="1" step="1" required>
+            </div>
+            <button type="submit" class="btn-game-action primary" id="bh-btn-submit-guess" style="width: 100%;">
+              Lock My Prediction 🎯
+            </button>
+          </form>
+        </div>
+
+        <!-- Recent Community Predictions Feed -->
+        <div class="bh-guess-form-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-family: var(--font-display); font-size: 15px; color: #ffffff;">
+              📋 ACTIVE COMMUNITY GUESSES
+            </h4>
+            <span style="font-size: 11px; color: var(--kick-green); font-weight: 700;">LIVE FEED</span>
+          </div>
+          <div class="bh-guesses-list" id="bh-guesses-list">
+            <!-- Rendered dynamically by bonushunt.js -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 5: CHANNEL POINTS REWARDS STORE
+         ======================================================== -->
+    <section class="section-container view-section" id="store">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title"><span>🎁</span> CHANNEL POINTS <span class="accent">REWARDS STORE</span></h2>
+          <p class="section-subtitle">Redeem accumulated $DIG points earned by watching and chatting on Kick · Out-of-band rewards delivered by the streamer</p>
+        </div>
+        <div class="user-balance-pill">
+          <span>Balance:</span>
+          <span class="user-balance-val">0</span> $DIG
+        </div>
+      </div>
+
+      <!-- Weekly Raffle Hero Voucher Ticket -->
+      <div class="raffle-hero-card store-voucher-card voucher-gold">
+        <div class="voucher-cutout voucher-cutout-top"></div>
+        <div class="voucher-cutout voucher-cutout-bottom"></div>
+        <div class="voucher-main">
+          <div class="voucher-badge-row">
+            <span class="reward-badge-pill">WEEKLY STREAM DRAW</span>
+            <span class="voucher-series">SERIES #001 · PROVABLY FAIR</span>
+          </div>
+          <h3 class="voucher-hero-title">
+            🎟️ Weekly raffle $100 bonus buy split profit (rolled every Sunday)
+          </h3>
+          <p class="voucher-desc">
+            Drawn live on Kick every Sunday. Winner splits 50% net profit from the streamer's $100 bonus buy. Each ticket costs 50 $DIG points. All winners are verified provably fair via HMAC-SHA256 commit-reveal.
+          </p>
+          <div class="voucher-meta-row">
+            <span class="meta-item">⚡ Instant Verification</span>
+            <span class="meta-item">🏆 Guaranteed Winner</span>
+            <span class="meta-item">🪙 Provably Fair Draw</span>
+          </div>
+          <div style="margin-top: 14px; font-family: var(--font-display); font-size: 13px; color: var(--gold);">
+            YOUR ACTIVE TICKETS: <span id="raffle-user-tickets" style="font-weight: 900; font-size: 18px; color: #ffffff;">0</span> 🎟️
+          </div>
+        </div>
+
+        <div class="voucher-perforation"></div>
+
+        <div class="voucher-stub">
+          <div class="voucher-stub-header">ENTRY PASS</div>
+          <div class="store-item-cost voucher-stub-cost">50 $DIG</div>
+          <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-buy-raffle-ticket" data-cost="50" data-item="Weekly Raffle Ticket">
+            Buy Ticket 🎟️
+          </button>
+        </div>
+      </div>
+
+      <!-- Store Catalog Grid (Animated Luxury Voucher Cards with Hover Levitation Physics) -->
+      <div class="store-grid">
+        <!-- Voucher 1: VIP Discord Role -->
+        <div class="store-item-card store-voucher-card voucher-cyan">
+          <div class="voucher-cutout voucher-cutout-top"></div>
+          <div class="voucher-cutout voucher-cutout-bottom"></div>
+          <div class="voucher-main">
+            <div class="voucher-badge-row">
+              <span class="store-item-badge">VIP REWARD</span>
+              <span class="voucher-series">PASS #002</span>
+            </div>
+            <h4 class="store-item-title voucher-title">👑 VIP Streamer Discord Role</h4>
+            <p class="store-item-desc voucher-desc">Unlock private Discord lounge, custom colored badge, and early notification pings for bonus hunts.</p>
+            <div class="voucher-meta-tag">✨ Lifetime Discord Privileges</div>
+          </div>
+          <div class="voucher-perforation"></div>
+          <div class="voucher-stub">
+            <div class="voucher-stub-header">REDEEM</div>
+            <div class="store-item-cost voucher-stub-cost">250 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="250" data-item="VIP Discord Role">Redeem</button>
+          </div>
+        </div>
+
+        <!-- Voucher 2: Guaranteed tourney entry -->
+        <div class="store-item-card store-voucher-card voucher-green">
+          <div class="voucher-cutout voucher-cutout-top"></div>
+          <div class="voucher-cutout voucher-cutout-bottom"></div>
+          <div class="voucher-main">
+            <div class="voucher-badge-row">
+              <span class="store-item-badge">TOURNAMENT</span>
+              <span class="voucher-series">PASS #003</span>
+            </div>
+            <h4 class="store-item-title voucher-title">🏆 Guaranteed tourney entry</h4>
+            <p class="store-item-desc voucher-desc">Guaranteed reserved seed in the next live 8-bracket stream tournament. Compete head-to-head for bonus rewards!</p>
+            <div class="voucher-meta-tag">⚔️ Live 8-Bracket Bracket Seed</div>
+          </div>
+          <div class="voucher-perforation"></div>
+          <div class="voucher-stub">
+            <div class="voucher-stub-header">REDEEM</div>
+            <div class="store-item-cost voucher-stub-cost">180 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="180" data-item="Guaranteed Tourney Entry">Redeem</button>
+          </div>
+        </div>
+
+        <!-- Voucher 3: Guaranteed 1v1 battle entry -->
+        <div class="store-item-card store-voucher-card voucher-gold">
+          <div class="voucher-cutout voucher-cutout-top"></div>
+          <div class="voucher-cutout voucher-cutout-bottom"></div>
+          <div class="voucher-main">
+            <div class="voucher-badge-row">
+              <span class="store-item-badge">BATTLE DUEL</span>
+              <span class="voucher-series">PASS #004</span>
+            </div>
+            <h4 class="store-item-title voucher-title">⚔️ Guaranteed 1v1 battle entry</h4>
+            <p class="store-item-desc voucher-desc">Guaranteed slot in the spectator 1v1 duel overlay on stream. Challenge another chatter live on Kick!</p>
+            <div class="voucher-meta-tag">⚡ Immediate 1v1 Overlay Entry</div>
+          </div>
+          <div class="voucher-perforation"></div>
+          <div class="voucher-stub">
+            <div class="voucher-stub-header">REDEEM</div>
+            <div class="store-item-cost voucher-stub-cost">100 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="100" data-item="Guaranteed 1v1 Battle Entry">Redeem</button>
+          </div>
+        </div>
+
+        <!-- Voucher 4: $20 bonus buy split profit -->
+        <div class="store-item-card store-voucher-card voucher-magenta">
+          <div class="voucher-cutout voucher-cutout-top"></div>
+          <div class="voucher-cutout voucher-cutout-bottom"></div>
+          <div class="voucher-main">
+            <div class="voucher-badge-row">
+              <span class="store-item-badge">EXCLUSIVE</span>
+              <span class="voucher-series">PASS #005</span>
+            </div>
+            <h4 class="store-item-title voucher-title">💎 $20 bonus buy split profit</h4>
+            <p class="store-item-desc voucher-desc">The streamer buys a $20 bonus buy on your chosen slot live on Kick. Any net profit is split 50/50 out-of-band directly to you!</p>
+            <div class="voucher-meta-tag">💰 50% Real Net Profit Split</div>
+          </div>
+          <div class="voucher-perforation"></div>
+          <div class="voucher-stub">
+            <div class="voucher-stub-header">REDEEM</div>
+            <div class="store-item-cost voucher-stub-cost">600 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="600" data-item="$20 Bonus Buy Split Profit">Redeem</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 6: MONTHLY WAGER LEADERBOARD (Backlog / Coming Soon)
+         ======================================================== -->
+    <section class="section-container view-section" id="leaderboard">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title">
+            <span>📊</span> MONTHLY WAGER <span class="accent">LEADERBOARD</span>
+          </h2>
+          <p class="section-subtitle">Play on Stake with affiliate code <strong>diggitybets</strong> · Live wager tracking and automated payouts</p>
+        </div>
+        <div class="roadmap-badge-pill">
+          🚀 BACKLOG / OFFICIAL LAUNCH COMING SOON
+        </div>
+      </div>
+
+      <!-- $2,000 USD Prize Pool Banner -->
+      <div class="leaderboard-prize-card">
+        <div class="prize-card-left">
+          <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">
+            MONTHLY PRIZE POOL
+          </span>
+          <h3 class="prize-total-title">$2,000 <span style="color: var(--gold);">USD</span></h3>
+          <p style="font-size: 13px; color: #cbd5e1; max-width: 620px; line-height: 1.5;">
+            Top 3 verified Stake affiliates with highest monthly wagered volume share the $2,000 USD prize pool, delivered out-of-band directly to your crypto address.
+          </p>
+        </div>
+        <div class="prize-timer-box">
+          <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display);">Next Competition Starts In:</div>
+          <div class="prize-timer-clock">12d 08h 45m</div>
+          <div style="font-size: 11px; color: var(--kick-green); font-weight: 700;">Bi-Weekly Sprint Race</div>
+        </div>
+      </div>
+
+      <!-- Top 3 Podium Showcase -->
+      <div class="podium-grid">
+        <!-- 2nd Place -->
+        <div class="podium-card silver">
+          <div class="podium-medal">🥈 2ND PLACE</div>
+          <div class="podium-avatar">🦝</div>
+          <div class="podium-user">NachoSpin</div>
+          <div class="podium-kick">@NachoGamer</div>
+          <div class="podium-wager">$34,120.50 Wagered</div>
+          <div class="podium-prize">$500 USD PRIZE</div>
+        </div>
+
+        <!-- 1st Place (Champion) -->
+        <div class="podium-card gold">
+          <div class="podium-crown">👑</div>
+          <div class="podium-medal">🥇 1ST PLACE</div>
+          <div class="podium-avatar">👑</div>
+          <div class="podium-user">GS8***</div>
+          <div class="podium-kick">@GamerStake88</div>
+          <div class="podium-wager">$68,450.00 Wagered</div>
+          <div class="podium-prize highlight">$1,200 USD PRIZE</div>
+        </div>
+
+        <!-- 3rd Place -->
+        <div class="podium-card bronze">
+          <div class="podium-medal">🥉 3RD PLACE</div>
+          <div class="podium-avatar">⚡</div>
+          <div class="podium-user">ZeusMax</div>
+          <div class="podium-kick">@SlotKing21</div>
+          <div class="podium-wager">$22,890.00 Wagered</div>
+          <div class="podium-prize">$300 USD PRIZE</div>
+        </div>
+      </div>
+
+      <!-- Live Wager Standings Table -->
+      <div class="bh-table-card" style="margin-top: 28px;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
+            📋 ACTIVE STAKE AFFILIATE WAGER STANDINGS
+          </h3>
+          <span style="font-size: 12px; color: var(--kick-green); font-weight: 700;">LIVE AFFILIATE SYNC</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>PLAYER</th>
+                <th>AFFILIATE STATUS</th>
+                <th>WAGERED (USD)</th>
+                <th>PROJECTED PRIZE</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <!-- Rendered dynamically by user-store.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 7: VIEWER PROFILE & STAKE TOTP VERIFICATION
+         ======================================================== -->
+    <section class="section-container view-section" id="profile">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title"><span>👤</span> VIEWER PROFILE & <span class="accent">RAINBET VERIFICATION</span></h2>
+          <p class="section-subtitle">Customize your avatar, verify your Rainbet referral account (code: diggitybets), link Discord, and set crypto payout addresses</p>
+        </div>
+        <span id="prof-rainbet-status-badge" class="reward-badge-pill" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">UNVERIFIED REFERRAL</span>
+      </div>
+
+      <div class="profile-layout-grid">
+        <!-- Card 1: Identity & Profile Image -->
+        <div class="profile-glass-card">
+          <h3 class="profile-card-title"><span>🖼️</span> PROFILE IMAGE</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+            Choose a stylized slot character avatar or upload your custom profile picture from your computer:
+          </p>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div class="user-avatar-display profile-avatar-box">🤠</div>
+            <div>
+              <div style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff;">ACTIVE AVATAR</div>
+              <div style="font-size: 12px; color: var(--text-dim);">Shown in Leaderboard, Tournaments and Duels</div>
+            </div>
+          </div>
+
+          <!-- File Upload from PC -->
+          <div style="margin-bottom: 18px; padding: 14px; background: rgba(0, 0, 0, 0.35); border-radius: 10px; border: 1px dashed var(--border-gold);">
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--gold); font-weight: 800; display: block; margin-bottom: 6px;">
+              📁 UPLOAD PROFILE PHOTO FROM DEVICE:
+            </label>
+            <input type="file" id="prof-avatar-file-input" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn-stake-primary" id="btn-upload-avatar-file" style="padding: 7px 14px; font-size: 12px;">
+                Choose File from Computer 📤
+              </button>
+              <span id="prof-file-name-display" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">No file chosen</span>
+            </div>
+            <span style="font-size: 10px; color: var(--text-dim); display: block; margin-top: 6px;">
+              Max file size: 2MB · Recommended: 400×400px (JPG, PNG, WebP)
+            </span>
+          </div>
+
+          <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-muted); display: block; margin-bottom: 6px;">
+            OR SELECT CASINO CHARACTER PRESET:
+          </label>
+          <div class="avatar-presets-row">
+            <button type="button" class="avatar-preset-btn" data-avatar="🤠" title="Wanted Cowboy">🤠</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="⚡" title="Zeus 1000">⚡</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="🦝" title="Le Bandit">🦝</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="🍭" title="Sweet Bonanza">🍭</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="💀" title="Tombstone Outlaw">💀</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="👑" title="Slot King">👑</button>
+            <button type="button" class="avatar-preset-btn" data-avatar="🪙" title="Diggity Gold">🪙</button>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-muted); display: block; margin-bottom: 4px;">
+              OR PASTE IMAGE URL:
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="prof-avatar-url" class="slots-search-input" placeholder="https://example.com/avatar.png">
+              <button type="button" class="btn-game-action primary" id="btn-apply-avatar-url" style="padding: 6px 12px; font-size: 12px;">Apply</button>
+            </div>
+          </div>
+
+          <!-- Discord Integration Box -->
+          <div class="discord-card-box" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">💬</span>
+                <strong style="font-family: var(--font-display); color: #5865f2; font-size: 14px;">DISCORD LINKING</strong>
+              </div>
+              <span id="discord-status-badge" class="reward-badge-pill">NOT LINKED</span>
+            </div>
+            <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">
+              Link your Discord account to receive stream giveaway pings and claim your VIP role in our official server <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" style="color: #7289da; font-weight: 600; text-decoration: underline;">discord.gg/uHKTcPY7eD ↗</a>.
+            </p>
+            <div id="discord-tag-display" style="display: none; font-family: var(--font-display); font-size: 13px; color: #ffffff; margin-bottom: 10px;"></div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-discord-action" id="btn-link-discord">
+                <span>💬</span> Link Discord Account
+              </button>
+              <button type="button" class="btn-chat-toggle" id="btn-unlink-discord" style="display: none; color: var(--crimson);">
+                Unlink
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Rainbet Account & Referral Verification -->
+        <div class="profile-glass-card" id="rainbet-verification-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="site/images/rainbet-icon.png" alt="Rainbet" style="height: 28px; width: auto; object-fit: contain;">
+              <h3 class="profile-card-title" style="margin: 0;">RAINBET REFERRAL VERIFICATION</h3>
+            </div>
+            <span class="badge-soon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: #38bdf8;">OFFICIAL PARTNER</span>
+          </div>
+          
+          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px;">
+            Link your Rainbet.com account registered under referral code <strong>diggitybets</strong> to earn the <strong>REFERRED VIP</strong> badge, 2x giveaway tickets, and community rain eligibility.
+          </p>
+
+          <!-- Step 1: Referral Link Banner -->
+          <div style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(14, 20, 32, 0.8) 100%); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <div style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: #38bdf8;">
+                STEP 1: REGISTER WITH OUR REFERRAL CODE
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Code: <strong style="color: #ffffff; letter-spacing: 0.5px;">diggitybets</strong> · URL: rainbet.com/en?r=diggitybets
+              </div>
+            </div>
+            <a href="https://rainbet.com/en?r=diggitybets" target="_blank" rel="noopener noreferrer" class="btn-stake-primary" style="padding: 7px 14px; font-size: 11px; text-decoration: none; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #000; font-weight: 800;">
+              Open Rainbet & Claim ↗
+            </a>
+          </div>
+
+          <!-- Step 2: Configure Rainbet Username & Verify -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <label for="prof-input-rainbet-user" style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">
+                STEP 2: ENTER YOUR RAINBET USERNAME:
+              </label>
+              <input type="text" id="prof-input-rainbet-user" class="slots-search-input" placeholder="e.g. RainWinner77" style="font-family: var(--font-display); font-size: 13px;">
+            </div>
+
+            <div id="rainbet-verification-status-box" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 4px;">
+              <!-- Populated dynamically by user-store.js -->
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn-game-action primary" id="btn-verify-rainbet-referral" style="padding: 10px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #000; font-weight: 800; flex: 1;">
+                Verify Referral & Claim VIP 🌧️ (+350 $DIG)
+              </button>
+              <button type="button" class="btn-stake-secondary" id="btn-check-rainbet-status" style="padding: 10px 14px; font-size: 12px;" title="Refresh Verification Status">
+                🔄 Check Status
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================
+             BACKLOG: STAKE 0.00 BET VERIFICATION (PRESERVED IN CODEBASE FOR LEGACY/TEST COMPATIBILITY)
+             ======================================================== -->
+        <div id="backlog-stake-verification" style="display: none !important;" aria-hidden="true">
+          <span id="prof-stake-status-badge" class="reward-badge-pill">UNVERIFIED AFFILIATE</span>
+          <div class="totp-challenge-card">
+            <button type="button" class="btn-chat-toggle" id="btn-refresh-totp">🔄 Refresh</button>
+            <div class="totp-mult-val" id="totp-mult-val">3.42x</div>
+            <span id="totp-timer">02:45</span>
+            <div class="totp-progress-bar" id="totp-progress-bar"></div>
+            <span id="totp-instruction-mult">current multiplier</span>
+          </div>
+          <input type="text" id="prof-input-stake-user" placeholder="Stake username">
+          <input type="text" id="prof-input-bet-id" placeholder="Bet ID">
+          <button type="button" class="btn-game-action primary" id="btn-verify-stake-bet">Verify Stake Bet ID</button>
+        </div>
+
+        <!-- Card 3: Out-of-Band Crypto Addresses & Socials -->
+        <div class="profile-glass-card" style="grid-column: 1 / -1;">
+          <h3 class="profile-card-title"><span>💰</span> CRYPTO PAYOUT ADDRESSES & SOCIAL PROFILES</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+            Saved strictly on your client session. Used to deliver giveaway prizes, leaderboard rewards, and 50/50 bonus buy payouts:
+          </p>
+
+          <div class="crypto-inputs-grid">
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">LTC (LITECOIN):</label>
+              <input type="text" id="prof-input-ltc" class="slots-search-input" placeholder="LTC address (e.g. L...)">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">BTC (BITCOIN):</label>
+              <input type="text" id="prof-input-btc" class="slots-search-input" placeholder="BTC address (e.g. bc1...)">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">ETH (ETHEREUM):</label>
+              <input type="text" id="prof-input-eth" class="slots-search-input" placeholder="0x... ERC20 address">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">USDC (SPL / ERC20):</label>
+              <input type="text" id="prof-input-usdc" class="slots-search-input" placeholder="USDC wallet address">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">SOL (SOLANA):</label>
+              <input type="text" id="prof-input-sol" class="slots-search-input" placeholder="Solana wallet address">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">X (TWITTER) PROFILE:</label>
+              <input type="text" id="prof-input-x" class="slots-search-input" placeholder="@handle">
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">INSTAGRAM PROFILE:</label>
+              <input type="text" id="prof-input-ig" class="slots-search-input" placeholder="@handle">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+            <button type="button" class="btn-game-action primary" id="profile-save-btn" style="padding: 10px 24px;">
+              Save Profile Changes 💾
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden compatibility anchor for legacy audit tools -->
+      <div id="profile-modal" style="display: none;"></div>
+    </section>
+
+    <!-- ========================================================
+         SECTION 8: STREAMER COMMAND CENTER & MODERATION HUB (Gated for @diggitybets)
+         ======================================================== -->
+    <section class="section-container view-section" id="admin-hub" style="display: none;">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title">
+            <span>👑</span> STREAMER <span class="accent">COMMAND CENTER</span>
+          </h2>
+          <p class="section-subtitle">Exclusive control deck for <strong>@diggitybets</strong> · Live voucher claims, Sunday $100 raffle draw & anti-sybil radar</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">🟢 LIVE SYNC ACTIVE</span>
+          <button type="button" class="btn-chat-toggle" id="btn-sim-alt-test" title="Simulate multi-account flag for testing">🚨 Test Alt Detection</button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Overview Grid -->
+      <div class="bh-metrics-grid" style="margin-bottom: 24px;">
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">TOTAL VOUCHERS CLAIMED</div>
+          <div class="bh-metric-value" id="admin-kpi-total-claims" style="color: #ffffff;">0</div>
+        </div>
+        <div class="bh-metric-card" style="border-color: var(--gold);">
+          <div class="bh-metric-label">PENDING FULFILLMENTS</div>
+          <div class="bh-metric-value" id="admin-kpi-pending-claims" style="color: var(--gold);">0</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">TOTAL $DIG POINTS BURNED</div>
+          <div class="bh-metric-value" id="admin-kpi-burned-points" style="color: var(--cyan);">0 $DIG</div>
+        </div>
+        <div class="bh-metric-card" style="border-color: var(--magenta);">
+          <div class="bh-metric-label">ALT ACCOUNTS FLAGGED</div>
+          <div class="bh-metric-value" id="admin-kpi-flagged-alts" style="color: var(--magenta);">0</div>
+        </div>
+      </div>
+
+      <!-- DECK 1: LIVE VOUCHER CLAIMS QUEUE -->
+      <div class="bh-table-card" style="margin-bottom: 28px;">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff;">
+              📦 REAL-TIME VOUCHER REDEMPTIONS QUEUE
+            </h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Review and fulfill spectator reward claims in real-time. Anti-sybil status checks for shared hardware.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="admin-filter-btn active" data-filter="all">All Claims</button>
+            <button type="button" class="admin-filter-btn" data-filter="pending">Pending ⏳</button>
+            <button type="button" class="admin-filter-btn" data-filter="fulfilled">Fulfilled ✓</button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <th>SPECTATOR</th>
+                <th>VOUCHER CLAIMED</th>
+                <th>COST</th>
+                <th>ANTI-FRAUD / ALT STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="admin-claims-tbody">
+              <!-- Rendered dynamically by admin-hub.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2-COLUMN LOWER DECK: SUNDAY RAFFLE & SECURITY RADAR -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
+        <!-- DECK 2: SUNDAY $100 BONUS BUY RAFFLE -->
+        <div class="profile-glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 class="profile-card-title"><span>🎟️</span> SUNDAY $100 RAFFLE LEDGER</h3>
+            <span class="reward-badge-pill" id="admin-raffle-total-tickets" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">0 Tickets</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            Every active ticket has an equal provably fair chance. Rolled live on Kick every Sunday via HMAC-SHA256 commit-reveal.
+          </p>
+
+          <div id="admin-raffle-participants-list" style="max-height: 220px; overflow-y: auto; margin-bottom: 18px;">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <button type="button" class="btn-voucher-action btn-game-action primary" id="btn-roll-sunday-raffle" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 900;">
+            🎲 ROLL SUNDAY WINNER LIVE (PROVABLY FAIR) 🏆
+          </button>
+        </div>
+
+        <!-- DECK 3: ANTI-SYBIL & MULTI-ACCOUNT SECURITY RADAR -->
+        <div class="profile-glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 class="profile-card-title"><span>🛡️</span> ANTI-SYBIL RADAR (1 PC / 1 USER)</h3>
+            <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">ACTIVE ENFORCEMENT</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            Detects multiple Kick accounts farming points or claiming vouchers on the same physical PC or IP address via ThumbmarkJS hardware hashing.
+          </p>
+
+          <div style="overflow-x: auto; max-height: 250px;">
+            <table class="bh-table" style="font-size: 12px;">
+              <thead>
+                <tr>
+                  <th>DEVICE</th>
+                  <th>PRIMARY</th>
+                  <th>DETECTED ALT</th>
+                  <th>RISK</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="admin-alts-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DECK 3: RAINBET AFFILIATE & REFERRALS SYNC MANAGER -->
+      <div class="bh-table-card" style="margin-top: 28px; margin-bottom: 28px;">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="site/images/rainbet-icon.png" alt="Rainbet" style="height: 24px; width: auto;">
+              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #38bdf8; margin: 0;">
+                RAINBET PARTNERS REFERRALS & AFFILIATE SYNC
+              </h3>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+              Cross-check viewers against your official Rainbet Partners dashboard (code: <strong>diggitybets</strong>).
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-stake-primary" id="btn-admin-sync-rainbet" style="padding: 6px 14px; font-size: 12px; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #000; font-weight: 800;">
+              ⚡ Quick Sync (Rainbet API / List)
+            </button>
+          </div>
+        </div>
+
+        <div style="padding: 18px 22px; background: rgba(0, 0, 0, 0.25); border-bottom: 1px solid var(--border-subtle);">
+          <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 6px;">
+            PASTE RAINBET PARTNERS USER LIST (One username per line or CSV export from Affilka dashboard):
+          </label>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <textarea id="admin-rainbet-sync-input" class="slots-search-input" rows="2" placeholder="e.g. PlayerOne, RainWinner99, LuckyKick77" style="flex: 1; min-height: 44px; font-family: monospace; font-size: 11px; resize: vertical;"></textarea>
+            <button type="button" class="btn-stake-secondary" id="btn-admin-bulk-verify-rainbet" style="padding: 8px 16px; font-size: 12px; align-self: flex-start;">
+              Apply Sync 🔄
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>RAINBET USER</th>
+                <th>KICK USERNAME</th>
+                <th>REFERRAL STATUS</th>
+                <th>REGISTERED / VERIFIED AT</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="admin-rainbet-referrals-tbody">
+              <!-- Rendered dynamically by admin-hub.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sunday Raffle Winner Modal -->
+      <div id="admin-raffle-winner-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(16px); align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #0b0f19; border: 2px solid var(--gold); border-radius: 18px; padding: 36px 30px; text-align: center; max-width: 520px; width: 100%; box-shadow: 0 0 60px var(--gold-glow); animation: pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+          <div style="font-size: 54px; margin-bottom: 12px;">🏆</div>
+          <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); font-size: 13px; font-weight: 900; margin-bottom: 16px;">
+            SUNDAY $100 BONUS BUY WINNER!
+          </span>
+          <h2 id="raffle-winner-display-name" style="font-family: var(--font-display); font-size: 32px; font-weight: 900; color: #ffffff; margin: 14px 0;">
+            @Winner
+          </h2>
+          <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 22px;">
+            Splits 50% net profit from the $100 bonus buy live on Kick! Winner verified provably fair via HMAC-SHA256 commit-reveal.
+          </p>
+          <div style="display: flex; gap: 10px; justify-content: center;">
+            <button type="button" class="btn-stake-primary" onclick="navigator.clipboard.writeText('🎉 CONGRATS ' + document.getElementById('raffle-winner-display-name').textContent + '! You won the Sunday $100 Bonus Buy Split Profit Raffle! 🎟️💎'); if (window.sonner) window.sonner.toast({ title: 'Copied Shoutout! 📋', message: 'Ready to paste in Kick chat', type: 'gold' });" style="padding: 10px 20px;">
+              Copy Chat Announcement 📋
+            </button>
+            <button type="button" class="btn-chat-toggle" onclick="document.getElementById('admin-raffle-winner-modal').style.display = 'none';" style="padding: 10px 18px;">
+              Close ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       FOOTER & COMPLIANCE (+18 RESPONSIBLE GAMING)
+       ======================================================== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-compliance-box">
+        <strong>⚠️ RESPONSIBLE GAMBLING NOTICE (+18):</strong> This website and the Kick.com stream are strictly intended for entertainment purposes and individuals aged 18 and older. 
+        <strong>Spectator participation across all giveaways, tournaments, and mini-games is 100% free</strong>; the platform NEVER holds, custodies, or requests money or cryptocurrency from spectators.
+        Gambling involves risk of addiction. If you experience gambling problems, please seek free help at <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color: var(--gold);">BeGambleAware.org</a> or contact your local helpline.
+      </div>
+
+      <div class="footer-links-row">
+        <a href="#watch">Live Stream</a>
+        <a href="#house-games">House Games</a>
+        <a href="#tournament">Tournament</a>
+        <a href="#bonushunt">Bonus Hunt</a>
+        <a href="#store">Rewards Store</a>
+        <a href="#leaderboard">Leaderboard</a>
+        <a href="#profile">Profile</a>
+      </div>
+
+      <p>&copy; <span id="footer-year">2026</span> HuntHub Suite × diggitybets. Built with 100% open technologies and a permanent $0 budget.</p>
+    </div>
+  </footer>
+
+    </div><!-- /.main-viewport-container -->
+  </div><!-- /.app-layout -->
+
+  <!-- Data & Application Controllers -->
+  <script src="data/curated_slots.js"></script>
+  <script src="site/js/vendor/confetti.browser.js"></script>
+  <script src="site/js/vendor/countUp.umd.js"></script>
+  <script src="site/js/audio.js"></script>
+  <script src="site/js/provably-fair.js"></script>
+  <script src="site/js/security-anti-fraud.js"></script>
+  <script src="site/js/user-store.js"></script>
+  <script src="site/js/auth-oauth.js"></script>
+  <script src="site/js/admin-hub.js"></script>
+  <script src="site/js/house-games.js"></script>
+  <script src="site/js/tournament-prediction.js"></script>
+  <script src="site/js/bonushunt.js"></script>
+  <script src="site/js/motion-fx.js"></script>
+  <script src="site/js/sonner-toast.js"></script>
+  <script src="site/js/app.js"></script>
+  <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
+  <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

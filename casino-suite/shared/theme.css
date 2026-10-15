@@ -1,0 +1,118 @@
+/* ============================================================
+   CASINO SUITE — Shared Design System & Theme
+   Professional High-Roller Casino Dark Theme (OBS Studio 60FPS)
+   ============================================================ */
+
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("../shared/libs/fonts/chakra-petch-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("../shared/libs/fonts/chakra-petch-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("../shared/libs/fonts/chakra-petch-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  --bg-dark: #0a0c14;
+  --bg-card: rgba(16, 20, 32, 0.85);
+  --bg-card-hover: rgba(24, 30, 48, 0.95);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Vegas Neon Palette */
+  --gold-primary: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.45);
+  --cyan-primary: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.4);
+  --magenta-primary: #ff0055;
+  --magenta-glow: rgba(255, 0, 85, 0.45);
+  --green-win: #00e676;
+  --green-glow: rgba(0, 230, 118, 0.4);
+
+  --text-main: #ffffff;
+  --text-muted: #8e99b0;
+  --text-dim: #545e75;
+
+  --font-main: "Chakra Petch", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background: transparent;
+  color: var(--text-main);
+  overflow: hidden;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* Glassmorphism Panel */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+}
+
+/* Glowing Badges */
+.badge-gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 183, 0, 0.25) 100%);
+  border: 1px solid var(--gold-primary);
+  color: var(--gold-primary);
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+.badge-cyan {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 184, 255, 0.25) 100%);
+  border: 1px solid var(--cyan-primary);
+  color: var(--cyan-primary);
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.badge-magenta {
+  background: linear-gradient(135deg, rgba(255, 0, 85, 0.15) 0%, rgba(200, 0, 60, 0.25) 100%);
+  border: 1px solid var(--magenta-primary);
+  color: var(--magenta-primary);
+  text-shadow: 0 0 10px var(--magenta-glow);
+}
+
+/* Animations */
+@keyframes neonPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px var(--gold-glow)); }
+  50% { filter: drop-shadow(0 0 14px var(--gold-glow)); }
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-4px, 3px) rotate(-0.5deg); }
+  40% { transform: translate(4px, -3px) rotate(0.5deg); }
+  60% { transform: translate(-3px, -2px) rotate(0deg); }
+  80% { transform: translate(3px, 2px) rotate(-0.5deg); }
+}
+
+.shake {
+  animation: screenShake 0.4s ease infinite;
+}
