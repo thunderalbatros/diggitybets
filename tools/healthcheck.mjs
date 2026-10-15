@@ -116,7 +116,7 @@ check('Cloudflare Production Dist Payload & wrangler.toml Assets', () => {
   if (!wrangler.includes('[assets]') || !wrangler.includes('directory = "./dist"')) {
     throw new Error('wrangler.toml missing static assets binding to ./dist');
   }
-  if (!fs.existsSync('dist/index.html') || !fs.existsSync('dist/_headers') || !fs.existsSync('dist/_redirects')) {
+  if (!fs.existsSync('dist/index.html') || !fs.existsSync('dist/_headers')) {
     throw new Error('Missing dist/ artifacts. Run: node tools/build_dist.mjs');
   }
 });

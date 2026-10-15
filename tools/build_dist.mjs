@@ -72,20 +72,9 @@ const headersContent = `/*
 `;
 fs.writeFileSync(path.join(dist, '_headers'), headersContent.trim() + '\n', 'utf8');
 
-// 6. Generate Cloudflare _redirects (SPA routing for Stake sub-routes)
-console.log('• Generating Cloudflare _redirects...');
-const redirectsContent = `/stake-games /site/stake-games/index.html 200
-/stake-games/* /site/stake-games/index.html 200
-/crash /site/stake-games/index.html 200
-/plinko /site/stake-games/index.html 200
-/mines /site/stake-games/index.html 200
-/dino /site/stake-games/index.html 200
-/favourites /site/stake-games/index.html 200
-/recent /site/stake-games/index.html 200
-/challenges /site/stake-games/index.html 200
-/my-bets /site/stake-games/index.html 200
-`;
-fs.writeFileSync(path.join(dist, '_redirects'), redirectsContent.trim() + '\n', 'utf8');
+// 6. Cloudflare SPA routing is handled natively via wrangler.toml:
+// not_found_handling = "single-page-application" (avoids infinite loops with .html stripping)
+
 
 // 7. Calculate bundle metrics
 function dirMetrics(dirPath) {
