@@ -1,0 +1,225 @@
+/* ============================================================
+   CASINO SUITE — 1v1 Battle Arena Stylesheet
+   Designed for top-screen overlay (1920 x 240 / 300)
+   ============================================================ */
+
+.battle-container {
+  width: 100vw;
+  height: 100vh;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+}
+
+/* Battle HUD Grid */
+.battle-hud {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(14, 18, 30, 0.95) 0%, rgba(8, 10, 16, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+/* Fighter Side */
+.fighter-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fighter-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fighter-info.right-align {
+  justify-content: flex-end;
+}
+
+.avatar-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #080a10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.border-red {
+  border: 3px solid var(--magenta-primary);
+  box-shadow: 0 0 16px var(--magenta-glow);
+}
+.border-cyan {
+  border: 3px solid var(--cyan-primary);
+  box-shadow: 0 0 16px var(--cyan-glow);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.name-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name-box.right-align {
+  text-align: right;
+}
+
+.fighter-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.fighter-slot {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Health Bar (Street Fighter Style) */
+.hp-track {
+  width: 100%;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hp-fill {
+  height: 100%;
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.fill-red {
+  background: linear-gradient(90deg, #ff0055 0%, #ff5500 100%);
+  box-shadow: 0 0 10px var(--magenta-glow);
+}
+
+.fill-cyan {
+  background: linear-gradient(270deg, #00f0ff 0%, #0088ff 100%);
+  box-shadow: 0 0 10px var(--cyan-glow);
+  margin-left: auto;
+}
+
+.hp-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+/* Stats Row */
+.fighter-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.fighter-stats.right-align {
+  justify-content: flex-end;
+}
+
+/* Center VS Badge */
+.vs-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vs-circle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+  color: #000;
+  font-size: 24px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px var(--gold-glow);
+  animation: neonPulse 2s infinite ease-in-out;
+}
+
+.round-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Hit Alert / Popups */
+.hit-alert {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 40px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 0 25px var(--gold-glow);
+  background: rgba(10, 12, 18, 0.85);
+  border: 2px solid #ffd700;
+  padding: 8px 32px;
+  border-radius: 12px;
+  animation: hitPop 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes hitPop {
+  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* K.O. Banner */
+.ko-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(8, 10, 16, 0.95);
+  border: 3px solid #ffd700;
+  border-radius: 16px;
+  padding: 30px 60px;
+  box-shadow: 0 0 50px var(--gold-glow);
+  z-index: 50;
+  animation: koEnter 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.ko-text {
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--magenta-primary);
+  text-shadow: 0 0 30px var(--magenta-glow);
+  letter-spacing: 4px;
+}
+
+.winner-text {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-top: 10px;
+}
+
+@keyframes koEnter {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}

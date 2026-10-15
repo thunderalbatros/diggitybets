@@ -1,0 +1,21 @@
+name = "hunthub"
+main = "worker/index.js"
+compatibility_date = "2026-10-14"
+
+# 100% Free Plan Configuration (100,000 req/day, $0 cost permanently, zero credit card)
+workers_dev = true
+
+# Cloudflare Workers Static Assets: serves dist/ directly with SPA fallback
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[observability]
+enabled = true
+
+# Secrets to be configured via `npx wrangler secret put <KEY>` or Cloudflare Dashboard:
+# - KICK_CLIENT_ID
+# - KICK_CLIENT_SECRET
+# - DISCORD_CLIENT_ID
+# - DISCORD_CLIENT_SECRET

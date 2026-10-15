@@ -1,0 +1,1 @@
+{"name":"hunthub-visual-audit","private":true,"type":"module","version":"1.0.0","description":"Playwright visual audit (dev only, not deployed)","dependencies":{"playwright-core":"^1.64.1"}}

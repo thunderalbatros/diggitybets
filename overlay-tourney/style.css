@@ -1,0 +1,473 @@
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('libs/fonts/chakra-petch-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('libs/fonts/chakra-petch-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  --bg-deep: #07090e;
+  --bg-card: rgba(13, 17, 28, 0.92);
+  --cyan-neon: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.35);
+  --crimson-neon: #ff2a5f;
+  --gold-accent: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.4);
+  --green-neon: #00e676;
+  --text-primary: #ffffff;
+  --text-muted: #8e9bb0;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+#stage-wrapper {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 30px 50px;
+  transform-origin: center center;
+  background: radial-gradient(circle at 50% 25%, #0f1626 0%, #060910 100%);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+}
+
+/* Header */
+.tourney-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(11, 15, 25, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 16px 32px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trophy-badge {
+  font-size: 38px;
+  filter: drop-shadow(0 0 14px var(--gold-accent));
+}
+
+.tourney-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.3);
+}
+
+.tourney-subtitle {
+  font-size: 13px;
+  color: var(--gold-accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.header-pills {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.info-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 6px 20px;
+}
+
+.bet-pill .pill-value {
+  color: var(--cyan-neon);
+}
+
+.prize-pill .pill-value {
+  color: var(--gold-accent);
+}
+
+.pill-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+.pill-value {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 230, 118, 0.12);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #00e676;
+}
+
+.status-pulse {
+  width: 8px;
+  height: 8px;
+  background: #00e676;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00e676;
+}
+
+/* Arena & Bracket Canvas */
+.tourney-arena {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Custom 8-Bracket Grid */
+.native-bracket-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 60px 1.15fr;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.bracket-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.column-header {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 12px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.match-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  position: relative;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.match-card.active-match {
+  border-color: var(--cyan-neon);
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.match-card.final-match {
+  border-color: var(--gold-accent);
+  box-shadow: 0 0 30px var(--gold-glow);
+}
+
+.match-badge {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.player-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  font-weight: 600;
+  border-left: 3px solid transparent;
+}
+
+.player-slot:last-child {
+  margin-bottom: 0;
+}
+
+.player-slot.winner {
+  background: rgba(0, 230, 118, 0.12);
+  border-left-color: #00e676;
+  color: #00e676;
+}
+
+.player-slot.loser {
+  opacity: 0.5;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cyan-neon);
+  flex-shrink: 0;
+}
+
+.player-name-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.player-slot-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-accent);
+  margin-left: 4px;
+}
+
+.player-score {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Connector SVG lines */
+.connectors-col {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.connector-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.connector-line {
+  stroke: rgba(255, 215, 0, 0.4);
+  stroke-width: 2;
+  fill: none;
+}
+
+.connector-line.active {
+  stroke: var(--gold-accent);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--gold-accent));
+}
+
+/* Footer */
+.tourney-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(11, 15, 25, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 14px 32px;
+  backdrop-filter: blur(12px);
+}
+
+.footer-cmd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cmd-tag {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  background: rgba(255, 215, 0, 0.12);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+}
+
+.cmd-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.footer-fairness {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.fairness-dot {
+  width: 6px;
+  height: 6px;
+  background: #00e676;
+  border-radius: 50%;
+}
+
+.mini-slot-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+  flex-shrink: 0;
+}
+
+/* Champion Modal */
+.champion-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 8, 14, 0.92);
+  backdrop-filter: blur(18px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.champion-modal.active {
+  display: flex;
+}
+
+.modal-card {
+  background: radial-gradient(circle, #1a233a 0%, #0d121f 100%);
+  border: 3px solid var(--gold-accent);
+  border-radius: 28px;
+  padding: 60px 90px;
+  text-align: center;
+  box-shadow: 0 0 60px var(--gold-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: modal-zoom 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+.modal-chips-row {
+  font-size: 54px;
+  letter-spacing: 12px;
+  animation: trophy-bounce 1s infinite alternate;
+}
+
+.champion-badge {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 20px;
+  letter-spacing: 6px;
+  color: var(--gold-accent);
+  font-weight: 700;
+  text-shadow: 0 0 12px var(--gold-glow);
+}
+
+.champion-name {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 72px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 35px rgba(255, 215, 0, 0.8), 0 0 60px rgba(0, 229, 255, 0.4);
+}
+
+.champion-slot {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 24px;
+  color: var(--gold-accent);
+  background: rgba(255, 215, 0, 0.12);
+  padding: 8px 28px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+@keyframes modal-zoom {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes trophy-bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}

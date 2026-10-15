@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giveaway Control Deck — diggitybets</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Chakra Petch", 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 20%, #171d2b 0%, #0a0d14 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      user-select: none;
+    }
+    .panel-card {
+      background: linear-gradient(160deg, #161c29 0%, #0e121a 100%);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    }
+    .badge-channel {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00e676;
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffd700;
+      margin-bottom: 6px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    }
+    .desc {
+      font-size: 13px;
+      color: #8f9bb3;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .btn-spin {
+      width: 100%;
+      background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+      color: #000;
+      border: none;
+      padding: 18px 20px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(255, 215, 0, 0.45);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-spin:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255, 215, 0, 0.65);
+    }
+    .btn-spin:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .btn-spin:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-test {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-test:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .btn-test:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status-box {
+      margin-top: 20px;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffb700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffb700;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .dot.online { background: #00e676; }
+    .dot.offline { background: #ff5252; }
+    .hint {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel-card">
+    <div class="badge-channel">KICK.COM / DIGGITYBETS</div>
+    <div class="logo">🎰 GIVEAWAY WHEEL</div>
+    <div class="desc">
+      1-Click roulette trigger for active chatters (last 90s).<br>
+      Works as an OBS Custom Browser Dock or separate browser window.
+    </div>
+
+    <!-- Live Pick Button -->
+    <button id="btnSpin" class="btn-spin">
+      <span>🎰</span> PICK WINNER & SPIN
+    </button>
+
+    <!-- Test Demo Button -->
+    <button id="btnTest" class="btn-test">
+      <span>🧪</span> RUN DEMO SPIN (NO CHAT MSG)
+    </button>
+
+    <div class="status-box">
+      <span id="statusDot" class="dot"></span>
+      <span id="statusText">Connecting to Streamer.bot…</span>
+    </div>
+    <div class="hint">Dock URL: <code>http://127.0.0.1:8080/</code> or local file in OBS</div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="libs/streamerbot-client.js"></script>
+  <script>
+    const CFG = Object.assign({
+      host: '127.0.0.1', port: 8080, endpoint: '/', password: '',
+      actionName: 'Giveaway_CSGO'
+    }, window.GIVEAWAY_CONFIG || {});
+
+    const btnSpin = document.getElementById('btnSpin');
+    const btnTest = document.getElementById('btnTest');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    const bus = new BroadcastChannel('giveaway_bus');
+    let client = null;
+    let connected = false;
+
+    function setStatus(text, state) {
+      statusText.textContent = text;
+      statusDot.className = 'dot ' + (state || '');
+    }
+
+    function initClient() {
+      client = new StreamerbotClient({
+        host: CFG.host,
+        port: CFG.port,
+        endpoint: CFG.endpoint,
+        password: CFG.password || undefined,
+        autoReconnect: true,
+        retries: -1,
+        onConnect: () => {
+          connected = true;
+          setStatus('Connected to Streamer.bot (Ready)', 'online');
+          btnSpin.disabled = false;
+        },
+        onDisconnect: () => {
+          connected = false;
+          setStatus('Disconnected from Streamer.bot (Reconnecting…)', 'offline');
+        },
+        onError: (err) => {
+          console.warn('[Giveaway Control] Socket warning:', err);
+        }
+      });
+    }
+
+    async function triggerAction(demo = false) {
+      // Broadcast fallback for local preview windows
+      try { bus.postMessage({ type: demo ? 'test_spin' : 'spin' }); } catch (e) {}
+
+      if (!connected) {
+        setStatus('WS Offline: Triggered local fallback', 'offline');
+        return;
+      }
+
+      btnSpin.disabled = true;
+      btnTest.disabled = true;
+      btnSpin.innerHTML = '<span>🎲</span> SPINNING IN PROGRESS...';
+
+      try {
+        const res = await client.doAction({ name: CFG.actionName }, demo ? { demo: true } : {});
+        if (res && res.status && res.status !== 'ok') {
+          throw new Error(res.error || res.status);
+        }
+        setStatus(demo ? 'Demo spin sent!' : 'Winner draw triggered on stream!', 'online');
+      } catch (err) {
+        console.error('[Giveaway Control] doAction error:', err);
+        setStatus(`Action error: ${err.message || err}`, 'offline');
+      } finally {
+        setTimeout(() => {
+          btnSpin.disabled = false;
+          btnTest.disabled = false;
+          btnSpin.innerHTML = '<span>🎰</span> PICK WINNER & SPIN';
+          setStatus(connected ? 'Connected to Streamer.bot (Ready)' : 'Disconnected', connected ? 'online' : 'offline');
+        }, 9000);
+      }
+    }
+
+    btnSpin.addEventListener('click', () => triggerAction(false));
+    btnTest.addEventListener('click', () => triggerAction(true));
+
+    initClient();
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+# Secrets & Private Environment Variables (MANDATORY: zero secrets in git)
+.dev.vars
+.env
+*.pem
+*.key
+*.secret
+
+# Build Output (Cloudflare builds this dynamically via 'node tools/build_dist.mjs')
+dist/
+
+# Dependencies
+node_modules/
+core/node_modules/
+tools/audit/node_modules/
+
+# Local Streamer.bot Runtime & Binaries (Desktop only)
+*.dll
+*.exe
+*.exe.config
+*.zip
+*.sb
+eng.traineddata
+Streamer.bot.exe.WebView2/
+AudioDevices/
+
+# Local SQLite databases, caches & logs
+*.log
+logs/
+scratch/
+backup/
+data/*.db
+data/*.db.bak
+data/*.cache*
+data/*.dat*
+
+# Local UI Knowledge Base & Reference Repos (~1.2 GB, cloned locally for research)
+references/
+tools/audit/out/*.png
+tools/audit/out/*.json
+
+# Operating System & IDE Artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/

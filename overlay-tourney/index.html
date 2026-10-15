@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — 8-Bracket Tournament Overlay</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../data/curated_slots.js"></script>
+  <script src="libs/confetti.browser.min.js"></script>
+  <script src="libs/lucide.min.js"></script>
+</head>
+<body>
+  <div id="stage-wrapper">
+    <!-- Top Header (Minimalist Title Only) -->
+    <header class="tourney-header">
+      <div class="brand-group">
+        <div class="trophy-badge">🏆</div>
+        <div>
+          <h1 class="tourney-title" id="tourney-title">8-BRACKET SLOT CHAMPIONSHIP</h1>
+          <span class="tourney-subtitle">SINGLE ELIMINATION TOURNAMENT</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tournament Bracket Stage with Mini Slot Cards -->
+    <main class="tourney-arena">
+      <div id="bracket-grid" class="native-bracket-grid">
+        <!-- Col 1: Quarterfinals (m1..m4) -->
+        <div class="bracket-column" id="col-quarters">
+          <div class="column-header">QUARTERFINALS</div>
+          <div class="match-card" id="card-m1"></div>
+          <div class="match-card" id="card-m2"></div>
+          <div class="match-card" id="card-m3"></div>
+          <div class="match-card" id="card-m4"></div>
+        </div>
+
+        <!-- Connectors Col 1 -> Col 2 -->
+        <div class="connectors-col">
+          <svg class="connector-svg" viewBox="0 0 60 600" preserveAspectRatio="none">
+            <path class="connector-line" d="M 0 75 H 30 V 225 H 60" />
+            <path class="connector-line" d="M 0 225 H 30 V 75 H 60" />
+            <path class="connector-line" d="M 0 375 H 30 V 525 H 60" />
+            <path class="connector-line" d="M 0 525 H 30 V 375 H 60" />
+          </svg>
+        </div>
+
+        <!-- Col 2: Semifinals (m5, m6) -->
+        <div class="bracket-column" id="col-semis">
+          <div class="column-header">SEMIFINALS</div>
+          <div class="match-card" id="card-m5" style="margin: 40px 0;"></div>
+          <div class="match-card" id="card-m6" style="margin: 40px 0;"></div>
+        </div>
+
+        <!-- Connectors Col 2 -> Col 3 -->
+        <div class="connectors-col">
+          <svg class="connector-svg" viewBox="0 0 60 600" preserveAspectRatio="none">
+            <path class="connector-line" d="M 0 150 H 30 V 300 H 60" />
+            <path class="connector-line" d="M 0 450 H 30 V 300 H 60" />
+          </svg>
+        </div>
+
+        <!-- Col 3: Grand Final (m7) -->
+        <div class="bracket-column" id="col-final">
+          <div class="column-header" style="color: var(--gold-accent);">GRAND FINAL 🏆</div>
+          <div class="match-card final-match" id="card-m7" style="margin: auto 0;"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Fullscreen Casino Universe Champion Celebration Modal -->
+    <div class="champion-modal" id="champion-modal">
+      <div class="modal-card">
+        <div class="modal-chips-row">🪙 💰 🏆 💰 🪙</div>
+        <div class="champion-badge">TOURNAMENT CHAMPION</div>
+        <h1 class="champion-name" id="champion-name">@StreamerWinner</h1>
+        <div class="champion-slot" id="champion-slot">Winning Slot: Wanted Dead or a Wild</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

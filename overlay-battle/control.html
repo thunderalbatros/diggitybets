@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — 1v1 Battle OBS Control Dock</title>
+  <style>
+    :root {
+      --bg: #090c15;
+      --card-bg: #121826;
+      --cyan: #00e5ff;
+      --crimson: #ff2a5f;
+      --gold: #ffd700;
+      --green: #00e676;
+      --text: #ffffff;
+      --text-muted: #8e9bb0;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 16px;
+      font-size: 13px;
+    }
+    h1 {
+      font-size: 16px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+    .panel-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .row:last-child { margin-bottom: 0; }
+    .col { flex: 1; }
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+    input, select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    button {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #334155;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+      border-color: var(--gold);
+    }
+    .btn-gold:hover {
+      background: #ffea75;
+    }
+    .btn-cyan {
+      background: var(--cyan);
+      color: #000;
+      border-color: var(--cyan);
+    }
+    .btn-cyan:hover {
+      background: #70f3ff;
+    }
+    .btn-danger {
+      background: rgba(255, 42, 95, 0.2);
+      border-color: var(--crimson);
+      color: #ff6b8b;
+    }
+    .btn-danger:hover {
+      background: rgba(255, 42, 95, 0.4);
+    }
+    .corner-a {
+      border-left: 3px solid var(--cyan);
+    }
+    .corner-b {
+      border-left: 3px solid var(--crimson);
+    }
+    .chatter-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .winner-box {
+      background: rgba(255, 215, 0, 0.08);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--gold);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <span>1v1 BATTLE — OBS CONTROL</span>
+    <span class="status-badge" id="dock-status">LOCAL ONLINE</span>
+  </h1>
+
+  <div class="panel-grid">
+    <!-- Battle Configuration -->
+    <div class="card">
+      <div class="card-title">Battle Configuration</div>
+      <div class="row">
+        <div class="col">
+          <label>Buy-in ($)</label>
+          <input type="number" id="cfg-bet" value="10" step="1">
+        </div>
+        <div class="col">
+          <label>Prize Pool</label>
+          <input type="text" id="cfg-prize" value="$50.00 POOL">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <button class="btn-gold" id="btn-open-lobby">Open Live Lobby</button>
+        </div>
+        <div class="col">
+          <button class="btn-danger" id="btn-reset">Reset</button>
+        </div>
+      </div>
+      <div class="chatter-hint">Kick Chat Command: <code>!battle &lt;slot&gt;</code></div>
+    </div>
+
+    <!-- Mode Selection (Multiplier vs Spin Win/Pass) -->
+    <div class="card">
+      <div class="card-title">Resolution Mode</div>
+      <div class="mode-select" style="display: flex; gap: 8px;">
+        <button type="button" class="mode-tab-btn active" id="btn-mode-multiplier" onclick="setResolutionMode('multiplier')" style="flex: 1; padding: 8px; background: var(--gold); color: #000; font-weight: 700; border: none; border-radius: 6px; cursor: pointer;">
+          📊 Multiplier Mode (Bonus Buy)
+        </button>
+        <button type="button" class="mode-tab-btn" id="btn-mode-spins" onclick="setResolutionMode('spins')" style="flex: 1; padding: 8px; background: #1e293b; color: #fff; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">
+          🎰 Spin Mode (Win / Lose)
+        </button>
+      </div>
+    </div>
+
+    <!-- Player A (Blue Corner) -->
+    <div class="card corner-a">
+      <div class="card-title" style="color: var(--cyan); display: flex; justify-content: space-between;">
+        <span>Player A (Blue Corner)</span>
+        <span id="p-a-status-tag" style="font-size: 10px; color: var(--cyan); border: 1px solid var(--cyan); padding: 2px 6px; border-radius: 10px;">READY</span>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Username</label>
+          <input type="text" id="p-a-user" placeholder="Kick Username (e.g. LuckyStriker)">
+        </div>
+        <div class="col">
+          <label>Chosen Slot</label>
+          <input type="text" id="p-a-slot" placeholder="e.g. Wanted Dead or a Wild">
+        </div>
+      </div>
+      <!-- Multiplier input row -->
+      <div class="row row-mult-mode">
+        <div class="col">
+          <label>Multiplier (x)</label>
+          <input type="number" id="p-a-mult" value="0.00" step="0.01" placeholder="e.g. 3.41">
+        </div>
+        <div class="col" style="display: flex; align-items: flex-end;">
+          <button id="btn-save-a">Save A</button>
+        </div>
+      </div>
+      <!-- Spin Win/Pass row -->
+      <div class="row row-spin-mode" style="display: none; margin-top: 6px;">
+        <button type="button" class="btn-cyan" id="btn-win-pass-a" onclick="passWinner('A')" style="font-size: 13px; font-weight: 700; padding: 10px;">
+          🏆 WIN (PASS) — PLAYER A
+        </button>
+      </div>
+    </div>
+
+    <!-- Player B (Red Corner) -->
+    <div class="card corner-b">
+      <div class="card-title" style="color: var(--crimson); display: flex; justify-content: space-between;">
+        <span>Player B (Red Corner)</span>
+        <span id="p-b-status-tag" style="font-size: 10px; color: var(--crimson); border: 1px solid var(--crimson); padding: 2px 6px; border-radius: 10px;">READY</span>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Username</label>
+          <input type="text" id="p-b-user" placeholder="Kick Username (e.g. VegasKing)">
+        </div>
+        <div class="col">
+          <label>Chosen Slot</label>
+          <input type="text" id="p-b-slot" placeholder="e.g. Gates of Olympus 1000">
+        </div>
+      </div>
+      <!-- Multiplier input row -->
+      <div class="row row-mult-mode">
+        <div class="col">
+          <label>Multiplier (x)</label>
+          <input type="number" id="p-b-mult" value="0.00" step="0.01" placeholder="e.g. 2.11">
+        </div>
+        <div class="col" style="display: flex; align-items: flex-end;">
+          <button id="btn-save-b">Save B</button>
+        </div>
+      </div>
+      <!-- Spin Win/Pass row -->
+      <div class="row row-spin-mode" style="display: none; margin-top: 6px;">
+        <button type="button" class="btn-danger" id="btn-win-pass-b" onclick="passWinner('B')" style="font-size: 13px; font-weight: 700; padding: 10px; color: #fff; background: var(--crimson);">
+          🏆 WIN (PASS) — PLAYER B
+        </button>
+      </div>
+    </div>
+
+    <!-- Winner Resolution Card -->
+    <div class="card">
+      <div class="card-title">Resolution & Winner Action</div>
+      <div class="row row-mult-mode">
+        <button class="btn-gold" id="btn-resolve" style="padding: 12px; font-size: 13px; font-weight: 700;">
+          ⚖️ COMPARE MULTIPLIERS & DECLARE WINNER
+        </button>
+      </div>
+      <div class="winner-box" id="winner-box" style="display: none;">
+        Winner Declared!
+      </div>
+      <div class="row" style="margin-top: 10px;">
+        <button id="btn-demo" style="background: #1e293b; color: #8e9bb0;">⚡ Load Demo Battle (1-Click)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const serverUrl = 'http://127.0.0.1:3001';
+    let bc = null;
+    try {
+      bc = new BroadcastChannel('hunthub_battle');
+    } catch {}
+
+    let currentResolutionMode = 'multiplier';
+    let localState = null;
+    let isServerOnline = false;
+
+    function setResolutionMode(mode) {
+      currentResolutionMode = mode;
+      const isMult = mode === 'multiplier';
+      document.getElementById('btn-mode-multiplier').style.background = isMult ? 'var(--gold)' : '#1e293b';
+      document.getElementById('btn-mode-multiplier').style.color = isMult ? '#000' : '#fff';
+      document.getElementById('btn-mode-spins').style.background = !isMult ? 'var(--gold)' : '#1e293b';
+      document.getElementById('btn-mode-spins').style.color = !isMult ? '#000' : '#fff';
+
+      document.querySelectorAll('.row-mult-mode').forEach((el) => {
+        el.style.display = isMult ? 'flex' : 'none';
+      });
+      document.querySelectorAll('.row-spin-mode').forEach((el) => {
+        el.style.display = !isMult ? 'flex' : 'none';
+      });
+    }
+
+    function saveAndBroadcast(state) {
+      localState = state;
+      try {
+        localStorage.setItem('hunthub_battle_state', JSON.stringify(state));
+      } catch {}
+      if (bc) {
+        bc.postMessage({ action: 'battle_update', state });
+      }
+      updateUI(state);
+    }
+
+    // Pass Winner 1-Click for Spin Mode
+    function passWinner(winnerSlot) {
+      if (!localState) {
+        localState = {
+          id: 'battle_' + Date.now(),
+          status: 'READY',
+          betAmount: 10,
+          prizeText: '$50.00 POOL',
+          playerA: { username: document.getElementById('p-a-user').value || 'Player A', slotName: document.getElementById('p-a-slot').value || 'Slot A' },
+          playerB: { username: document.getElementById('p-b-user').value || 'Player B', slotName: document.getElementById('p-b-slot').value || 'Slot B' },
+        };
+      }
+
+      localState.status = 'RESOLVED';
+      localState.winner = winnerSlot;
+
+      // Update tags
+      document.getElementById('p-a-status-tag').textContent = winnerSlot === 'A' ? 'WIN (PASSED) 👑' : 'LOSE (OUT)';
+      document.getElementById('p-a-status-tag').style.color = winnerSlot === 'A' ? 'var(--green)' : '#ff2a5f';
+      document.getElementById('p-b-status-tag').textContent = winnerSlot === 'B' ? 'WIN (PASSED) 👑' : 'LOSE (OUT)';
+      document.getElementById('p-b-status-tag').style.color = winnerSlot === 'B' ? 'var(--green)' : '#ff2a5f';
+
+      saveAndBroadcast(localState);
+      if (bc) {
+        bc.postMessage({ action: 'resolve_battle', winner: winnerSlot });
+      }
+    }
+
+    async function apiPost(endpoint, data = {}) {
+      try {
+        const res = await fetch(`${serverUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          isServerOnline = true;
+          document.getElementById('dock-status').textContent = 'CONNECTED';
+          return await res.json();
+        }
+      } catch (e) {
+        isServerOnline = false;
+        document.getElementById('dock-status').textContent = 'LOCAL ONLINE';
+      }
+      return null;
+    }
+
+    async function fetchState() {
+      try {
+        const res = await fetch(`${serverUrl}/api/battle/state`);
+        if (res.ok) {
+          isServerOnline = true;
+          document.getElementById('dock-status').textContent = 'CONNECTED';
+          const data = await res.json();
+          if (data && data.state) {
+            saveAndBroadcast(data.state);
+            return;
+          }
+        }
+      } catch {}
+      isServerOnline = false;
+      document.getElementById('dock-status').textContent = 'LOCAL ONLINE';
+    }
+
+    function updateUI(state) {
+      if (!state) return;
+      if (state.betAmount) document.getElementById('cfg-bet').value = state.betAmount;
+      if (state.prizeText) document.getElementById('cfg-prize').value = state.prizeText;
+
+      if (state.playerA) {
+        document.getElementById('p-a-user').value = state.playerA.displayName || state.playerA.username || '';
+        document.getElementById('p-a-slot').value = state.playerA.slotName || '';
+        if (state.playerA.multiplier !== undefined) document.getElementById('p-a-mult').value = Number(state.playerA.multiplier).toFixed(2);
+      }
+      if (state.playerB) {
+        document.getElementById('p-b-user').value = state.playerB.displayName || state.playerB.username || '';
+        document.getElementById('p-b-slot').value = state.playerB.slotName || '';
+        if (state.playerB.multiplier !== undefined) document.getElementById('p-b-mult').value = Number(state.playerB.multiplier).toFixed(2);
+      }
+
+      const wBox = document.getElementById('winner-box');
+      if (state.status === 'RESOLVED' && state.winner) {
+        wBox.style.display = 'block';
+        const winName = state.winner === 'A' ? state.playerA?.displayName : (state.winner === 'B' ? state.playerB?.displayName : 'TIE');
+        const mult = state.winner === 'A' ? state.playerA?.multiplier : state.playerB?.multiplier;
+        const multText = mult ? ` (${Number(mult).toFixed(2)}x)` : '';
+        wBox.textContent = `👑 Winner: @${winName}${multText}`;
+      } else {
+        wBox.style.display = 'none';
+      }
+    }
+
+    // Listen for Duo-Wheel Broadcast
+    if (bc) {
+      bc.onmessage = (e) => {
+        if (!e.data) return;
+        if (e.data.action === 'assign_player') {
+          const { playerSlot, player } = e.data;
+          if (playerSlot === 'A') {
+            document.getElementById('p-a-user').value = player.displayName || player.username;
+            document.getElementById('p-a-slot').value = player.slotName;
+          } else if (playerSlot === 'B') {
+            document.getElementById('p-b-user').value = player.displayName || player.username;
+            document.getElementById('p-b-slot').value = player.slotName;
+          }
+        } else if (e.data.state) {
+          updateUI(e.data.state);
+        }
+      };
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hunthub_battle_assign' && e.newValue) {
+        try {
+          const { playerSlot, player } = JSON.parse(e.newValue);
+          if (playerSlot === 'A') {
+            document.getElementById('p-a-user').value = player.displayName || player.username;
+            document.getElementById('p-a-slot').value = player.slotName;
+          } else if (playerSlot === 'B') {
+            document.getElementById('p-b-user').value = player.displayName || player.username;
+            document.getElementById('p-b-slot').value = player.slotName;
+          }
+        } catch {}
+      } else if (e.key === 'hunthub_battle_state' && e.newValue) {
+        try {
+          updateUI(JSON.parse(e.newValue));
+        } catch {}
+      }
+    });
+
+    document.getElementById('btn-open-lobby').onclick = async () => {
+      const bet = Number(document.getElementById('cfg-bet').value) || 10;
+      const prize = document.getElementById('cfg-prize').value || '$50.00 POOL';
+
+      const res = await apiPost('/api/battle/open', { betAmount: bet, prizeText: prize });
+      if (!res) {
+        const state = {
+          status: 'LOBBY',
+          betAmount: bet,
+          prizeText: prize,
+          playerA: null,
+          playerB: null,
+          winner: null,
+        };
+        saveAndBroadcast(state);
+      }
+    };
+
+    document.getElementById('btn-reset').onclick = async () => {
+      const res = await apiPost('/api/battle/reset');
+      if (!res) {
+        const state = {
+          status: 'LOBBY',
+          betAmount: 10,
+          prizeText: '$50.00 POOL',
+          playerA: null,
+          playerB: null,
+          winner: null,
+        };
+        saveAndBroadcast(state);
+      }
+    };
+
+    document.getElementById('btn-save-a').onclick = () => {
+      const mult = Number(document.getElementById('p-a-mult').value) || 0;
+      const user = document.getElementById('p-a-user').value.trim() || 'LuckyStriker';
+      const slot = document.getElementById('p-a-slot').value.trim() || 'Wanted Dead';
+
+      if (!localState) localState = { status: 'LOBBY', betAmount: 10, prizeText: '$50.00 POOL' };
+      if (!localState.playerA) {
+        localState.playerA = { username: user, displayName: user, slotName: slot, multiplier: mult };
+      } else {
+        localState.playerA.username = user;
+        localState.playerA.displayName = user;
+        localState.playerA.slotName = slot;
+        localState.playerA.multiplier = mult;
+      }
+      saveAndBroadcast(localState);
+    };
+
+    document.getElementById('btn-save-b').onclick = () => {
+      const mult = Number(document.getElementById('p-b-mult').value) || 0;
+      const user = document.getElementById('p-b-user').value.trim() || 'VegasKing';
+      const slot = document.getElementById('p-b-slot').value.trim() || 'Gates 1000';
+
+      if (!localState) localState = { status: 'LOBBY', betAmount: 10, prizeText: '$50.00 POOL' };
+      if (!localState.playerB) {
+        localState.playerB = { username: user, displayName: user, slotName: slot, multiplier: mult };
+      } else {
+        localState.playerB.username = user;
+        localState.playerB.displayName = user;
+        localState.playerB.slotName = slot;
+        localState.playerB.multiplier = mult;
+      }
+      saveAndBroadcast(localState);
+    };
+
+    document.getElementById('btn-resolve').onclick = async () => {
+      const multA = Number(document.getElementById('p-a-mult').value) || 0;
+      const multB = Number(document.getElementById('p-b-mult').value) || 0;
+
+      if (!localState) localState = { status: 'READY', betAmount: 10, prizeText: '$50.00 POOL' };
+      if (!localState.playerA) {
+        localState.playerA = { username: document.getElementById('p-a-user').value || 'Player A', slotName: document.getElementById('p-a-slot').value || 'Slot A' };
+      }
+      if (!localState.playerB) {
+        localState.playerB = { username: document.getElementById('p-b-user').value || 'Player B', slotName: document.getElementById('p-b-slot').value || 'Slot B' };
+      }
+
+      localState.playerA.multiplier = multA;
+      localState.playerB.multiplier = multB;
+      localState.winner = multA >= multB ? 'A' : 'B';
+      localState.status = 'RESOLVED';
+
+      saveAndBroadcast(localState);
+      if (bc) {
+        bc.postMessage({ action: 'resolve_battle', winner: localState.winner, multA, multB });
+      }
+    };
+
+    document.getElementById('btn-demo').onclick = () => {
+      const demoState = {
+        status: 'RESOLVED',
+        betAmount: 10,
+        prizeText: '$50.00 POOL',
+        playerA: {
+          username: 'LuckyStriker',
+          displayName: 'LuckyStriker',
+          slotName: 'Wanted Dead or a Wild',
+          slotProvider: 'Hacksaw Gaming',
+          multiplier: 3.41,
+        },
+        playerB: {
+          username: 'VegasKing',
+          displayName: 'VegasKing',
+          slotName: 'Gates of Olympus 1000',
+          slotProvider: 'Pragmatic Play',
+          multiplier: 2.11,
+        },
+        winner: 'A',
+      };
+      saveAndBroadcast(demoState);
+      if (bc) {
+        bc.postMessage({ action: 'resolve_battle', winner: 'A', multA: 3.41, multB: 2.11 });
+      }
+    };
+
+    // Initial load
+    try {
+      const saved = localStorage.getItem('hunthub_battle_state');
+      if (saved) {
+        localState = JSON.parse(saved);
+        updateUI(localState);
+      }
+    } catch {}
+    fetchState();
+  </script>
+</body>
+</html>

@@ -1,0 +1,3206 @@
+{
+ "meta": {
+  "name": "Spinning Prize Wheel",
+  "author": "Lyfesaver74 & Whipstickgostop & Rondhi",
+  "version": "2.0.5",
+  "description": "Display a spinning prize wheel in OBS and run giveaways on Twitch/YouTube/Kick",
+  "autoRunAction": null,
+  "minimumVersion": null
+ },
+ "data": {
+  "actions": [
+   {
+    "id": "0c28c913-9250-4fff-ae45-cb7b281c8345",
+    "queue": "9125a937-7147-4651-9ebb-b6d694d82837",
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel 0. Spin (Custom)",
+    "group": "Spinning Prize Wheel - Custom",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "c880f7ab-ee3b-4505-9aeb-65a5b21cbd68",
+      "id": "28eb021b-6aac-44cc-a2d7-90d1bb8d8326",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "This action makes the Spinner visible using names.txt as input",
+      "color": "",
+      "id": "1518cb55-c97c-4cbf-91f3-194f68de5aea",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "destination": 0,
+        "variableName": "spinningWheelUseTextFile",
+        "persisted": false,
+        "source": 0,
+        "value": true,
+        "autoType": true,
+        "id": "e4f49307-6185-4264-ac7a-5e072c0a112a",
+        "weight": 0.0,
+        "type": 122,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelSceneName",
+        "persisted": true,
+        "destinationVariable": "sceneName",
+        "defaultValue": null,
+        "id": "6d73c493-a1e3-434a-80aa-766af8162637",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelSpinnerSourceName",
+        "persisted": true,
+        "destinationVariable": "sourceName",
+        "defaultValue": null,
+        "id": "17f0ef94-096d-4d4a-a456-b91e09d1f4eb",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "2d0ad606-db80-413a-802f-c8a353d52185",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 3
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 0,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "fcecf5b7-856e-47a3-9f2c-6f7dcb2e4f4a",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 4
+       },
+       {
+        "value": "15000",
+        "maxValue": "0",
+        "random": false,
+        "id": "686ec0b3-6d4b-4ed7-9f64-dc991a6c1781",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 5
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 1,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "f4dba328-5e86-484f-97ae-362b4c0e6d7e",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 6
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "d9f5ea11-e05c-4b8a-9633-5d7e4ec6d7d7",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 7
+       }
+      ],
+      "id": "d9d5f583-8441-454e-be74-f154516c5e21",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     }
+    ],
+    "collapsedGroups": [
+     "d9d5f583-8441-454e-be74-f154516c5e21"
+    ]
+   },
+   {
+    "id": "6c00f131-30f5-4991-8e1a-eafdb5f497c8",
+    "queue": "f34965c8-cc9e-41c8-b178-2b45e8075189",
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Winner",
+    "group": "Spinning Prize Wheel",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [],
+    "subActions": [
+     {
+      "value": "This action is triggered when the wheel stops spinning",
+      "color": "",
+      "id": "93c94897-aed3-4bc3-b561-33054c2a8df1",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Show Winner Source",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "4add802a-b09a-4e1f-8eb4-fe8b72311d9e",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelSceneName",
+        "persisted": true,
+        "destinationVariable": "sceneName",
+        "defaultValue": null,
+        "id": "33f225cf-abf3-4a1d-a799-bc9aa390bb6b",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelWinnerSourceName",
+        "persisted": true,
+        "destinationVariable": "sourceName",
+        "defaultValue": null,
+        "id": "e0231c9f-7db6-4d32-b056-94c9c727c498",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelWinnerUrl",
+        "persisted": true,
+        "destinationVariable": "url",
+        "defaultValue": null,
+        "id": "ab703b54-25c4-4957-bf03-38a919abdce6",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 3
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "url": "%url%%winner%",
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "1fed0ed5-fcd7-47d9-9cc3-cfa1edfffc58",
+        "weight": 0.0,
+        "type": 38,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 4
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 0,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "c48f8258-1f07-48ca-bbe6-c3fddedec888",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+        "enabled": true,
+        "index": 5
+       }
+      ],
+      "id": "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "972817e8-14b8-4ef3-8bc0-207ca227f094",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "a86c352e-7ad2-49e8-9fe9-b9cb63b54696",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "%winner% on %platform% is the winner!",
+        "autoType": true,
+        "id": "258e6046-caca-4d50-a881-760bcebf6056",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "a86c352e-7ad2-49e8-9fe9-b9cb63b54696",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "e1c2fa8f-bca7-4dec-aefc-b65b99deb6a1",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "a86c352e-7ad2-49e8-9fe9-b9cb63b54696",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "a86c352e-7ad2-49e8-9fe9-b9cb63b54696",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "name": "Hide Winner Source",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "7000",
+        "maxValue": "0",
+        "random": false,
+        "id": "b46c9600-646a-4536-bc5f-fa96e2e26c1f",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 1,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "5ea89468-31d1-4930-b572-cc1f228b158b",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "4bf2c1e9-a4b4-485d-b857-94b1a843aa38",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "url": "about:blank",
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "0bcafd2e-6878-4969-b663-e2f05867e554",
+        "weight": 0.0,
+        "type": 38,
+        "parentId": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+        "enabled": true,
+        "index": 3
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "fc3506ad-6265-4cb2-97b7-0fc022fc10ff",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+        "enabled": true,
+        "index": 4
+       }
+      ],
+      "id": "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     },
+     {
+      "value": "If a user-related spin, announce winner",
+      "color": "",
+      "id": "9f82fa4a-14de-41d9-a068-227db9c63e8b",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 4
+     },
+     {
+      "input": "%useCustom%",
+      "operation": 0,
+      "value": "False",
+      "autoType": true,
+      "subActions": [
+       {
+        "random": false,
+        "subActions": [
+         {
+          "actionId": "8fc146a1-54a2-4256-8f42-16d938f86a01",
+          "runImmedately": true,
+          "id": "1457ed90-ab38-4958-901b-d05287e7aa82",
+          "weight": 0.0,
+          "type": 4,
+          "parentId": "36af8269-dc16-4d1d-b082-3b7d40be7900",
+          "enabled": true,
+          "index": 0
+         }
+        ],
+        "id": "36af8269-dc16-4d1d-b082-3b7d40be7900",
+        "weight": 0.0,
+        "type": 99901,
+        "parentId": "aa7e5ade-1998-424a-b3c5-7fa3e620cc5b",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "random": false,
+        "subActions": [],
+        "id": "a50df575-930b-404e-afbe-abc418fafe1e",
+        "weight": 0.0,
+        "type": 99902,
+        "parentId": "aa7e5ade-1998-424a-b3c5-7fa3e620cc5b",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "aa7e5ade-1998-424a-b3c5-7fa3e620cc5b",
+      "weight": 0.0,
+      "type": 120,
+      "parentId": null,
+      "enabled": true,
+      "index": 5
+     }
+    ],
+    "collapsedGroups": [
+     "6cc2d8d2-2d29-4c7d-a4a5-1bcfdef3c9d1",
+     "6e5753d6-d6e2-4d04-86b4-18ab615e4fb3"
+    ]
+   },
+   {
+    "id": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel 1. Settings",
+    "group": "Spinning Prize Wheel",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [],
+    "subActions": [
+     {
+      "name": "WebSocket Server Settings for OBS Config - Easy Mode via Import",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Enable if not using default websocket server ws://127.0.0.1:8080/",
+        "color": "",
+        "id": "0e42b62f-9493-475d-a2ae-6d10b26d9be1",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "wsHost",
+        "value": "127.0.0.1",
+        "autoType": false,
+        "id": "1095c8d5-1760-45be-af1f-460cde94d600",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": false,
+        "index": 1
+       },
+       {
+        "variableName": "wsPort",
+        "value": "8080",
+        "autoType": false,
+        "id": "956909b7-61e9-453e-891d-29b759df3438",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": false,
+        "index": 2
+       },
+       {
+        "variableName": "wsEndpoint",
+        "value": "/",
+        "autoType": false,
+        "id": "125f99c9-3a35-457f-825d-ba10a85f942e",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": false,
+        "index": 3
+       },
+       {
+        "value": "Enable and edit if you want to add a custom center image URL",
+        "color": "",
+        "id": "e45ed280-e761-4973-9647-b78fd40dea58",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": true,
+        "index": 4
+       },
+       {
+        "variableName": "img",
+        "value": "./logo.png",
+        "autoType": false,
+        "id": "9b9bb340-19f6-4d72-b988-52d3ce22945b",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+        "enabled": false,
+        "index": 5
+       }
+      ],
+      "id": "46590aaa-8cea-4580-add4-b5f0761d48ca",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "User Group Settings",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Create these user groups in Settings > Groups",
+        "color": "",
+        "id": "acd14f09-6cf1-443d-bcbc-56828ae9b2cd",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "5fa407ef-121e-477f-8667-9ff6b9681c46",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "entriesGroupName",
+        "value": "Prize Wheel Entries",
+        "autoType": true,
+        "id": "1e51858c-9d06-47cf-aa8d-65a5f731bea8",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "5fa407ef-121e-477f-8667-9ff6b9681c46",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "variableName": "winningGroupName",
+        "value": "Prize Wheel Winner",
+        "autoType": true,
+        "id": "698eb54f-ec54-46fe-ba35-8685cde2c328",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "5fa407ef-121e-477f-8667-9ff6b9681c46",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "5fa407ef-121e-477f-8667-9ff6b9681c46",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Settings",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Send messages with bot account",
+        "color": "",
+        "id": "99e6347f-ad6d-41b8-9d71-a99cb4ba276f",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "sendAsBot",
+        "value": true,
+        "autoType": true,
+        "id": "c83a10b9-47b4-49a3-9277-677bdb150995",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "value": "Send messages as broadcaster if bot fails to send message",
+        "color": "",
+        "id": "e35cbeb6-423f-4ac7-8cc7-4609ff4fec5c",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "variableName": "sendFallback",
+        "value": true,
+        "autoType": true,
+        "id": "35b0ee5a-aa80-4e2c-8195-9fdf57b234a1",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 3
+       },
+       {
+        "value": "Send messages to all connected platforms",
+        "color": "",
+        "id": "60b06931-570e-4ec3-bdbf-1ddf1102a399",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 4
+       },
+       {
+        "variableName": "sendAllPlatforms",
+        "value": true,
+        "autoType": true,
+        "id": "15318440-ed74-432b-b242-c181f33e11b7",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 5
+       },
+       {
+        "value": "Configure which platforms you use, separated by commas",
+        "color": "",
+        "id": "150236c7-d548-4ec3-ad66-5d6cfd789e55",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 6
+       },
+       {
+        "value": "Any combination of twitch, youtube, and kick",
+        "color": "",
+        "id": "e9d776d1-d6fd-41ef-8dd2-fd5c800f5d1d",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 7
+       },
+       {
+        "value": "Example: twitch,youtube,kick",
+        "color": "",
+        "id": "6c53e218-7739-4966-a76b-b2e3a1faea28",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 8
+       },
+       {
+        "variableName": "platforms",
+        "value": "twitch",
+        "autoType": false,
+        "id": "38b00491-799e-431f-a812-e9b1b2156f81",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+        "enabled": true,
+        "index": 9
+       }
+      ],
+      "id": "8cc7a498-8354-4720-97b5-79ae786d6cce",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "name": "OBS Settings",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "variableName": "obsConnection",
+        "value": "0",
+        "autoType": false,
+        "id": "5cbb007f-a9b0-4d40-9afb-41ae98b76b19",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "2f9ff0b5-9052-4e91-ab97-30dfb6ef124e",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "destination": 0,
+        "variableName": "spinningWheelSceneName",
+        "persisted": true,
+        "source": 0,
+        "value": "[NS] Spinning Prize Wheel",
+        "autoType": true,
+        "id": "b7556910-4536-44df-8c3f-bfb022721fcd",
+        "weight": 0.0,
+        "type": 122,
+        "parentId": "2f9ff0b5-9052-4e91-ab97-30dfb6ef124e",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "destination": 0,
+        "variableName": "spinningWheelSpinnerSourceName",
+        "persisted": true,
+        "source": 0,
+        "value": "Wheel Spinner",
+        "autoType": true,
+        "id": "68c139b2-c4b1-4a9d-bf87-946541a6e56a",
+        "weight": 0.0,
+        "type": 122,
+        "parentId": "2f9ff0b5-9052-4e91-ab97-30dfb6ef124e",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "destination": 0,
+        "variableName": "spinningWheelWinnerSourceName",
+        "persisted": true,
+        "source": 0,
+        "value": "Wheel Winner",
+        "autoType": true,
+        "id": "538b66f1-4ed4-45d8-aa01-6f0acffe8a8d",
+        "weight": 0.0,
+        "type": 122,
+        "parentId": "2f9ff0b5-9052-4e91-ab97-30dfb6ef124e",
+        "enabled": true,
+        "index": 3
+       }
+      ],
+      "id": "2f9ff0b5-9052-4e91-ab97-30dfb6ef124e",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     },
+     {
+      "name": "Debug",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "variableName": "logging",
+        "value": true,
+        "autoType": true,
+        "id": "91c9c054-befb-4751-8166-f50061e0cbc5",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "29409cec-ac45-4bae-9c26-01801f7b22cf",
+        "enabled": false,
+        "index": 0
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelUseTextFile",
+        "persisted": false,
+        "destinationVariable": "useCustom",
+        "defaultValue": true,
+        "id": "49f240f0-dc23-468c-a46c-14b762f90d72",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "29409cec-ac45-4bae-9c26-01801f7b22cf",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "29409cec-ac45-4bae-9c26-01801f7b22cf",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 4
+     }
+    ],
+    "collapsedGroups": [
+     "29409cec-ac45-4bae-9c26-01801f7b22cf",
+     "46590aaa-8cea-4580-add4-b5f0761d48ca"
+    ]
+   },
+   {
+    "id": "b28bf89c-3ef2-45e3-a97b-8fe17c4b7511",
+    "queue": "00000000-0000-0000-0000-000000000000",
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel [Code]",
+    "group": "Spinning Prize Wheel",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "variables": {},
+      "id": "9136847d-a587-4fd8-99fa-b36bfead4202",
+      "type": 702,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "name": "Spinning Prize Wheel v2.0.5",
+      "description": "",
+      "references": [
+       "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll",
+       "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll",
+       "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Runtime.Serialization.dll",
+       "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll",
+       "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Windows.Forms.dll"
+      ],
+      "byteCode": "dXNpbmcgU3lzdGVtOw0KdXNpbmcgU3lzdGVtLkxpbnE7DQp1c2luZyBTeXN0ZW0uSU87DQp1c2luZyBTeXN0ZW0uV2luZG93cy5Gb3JtczsNCnVzaW5nIFN5c3RlbS5UZXh0Ow0KdXNpbmcgU3lzdGVtLlRleHQuUmVndWxhckV4cHJlc3Npb25zOw0KdXNpbmcgU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWM7DQp1c2luZyBTeXN0ZW0uUmVmbGVjdGlvbjsNCnVzaW5nIFN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb247DQp1c2luZyBOZXd0b25zb2Z0Lkpzb247DQp1c2luZyBOZXd0b25zb2Z0Lkpzb24uTGlucTsNCg0KLy8gQ2xhc3Mgc2hvdWxkIG1hdGNoIGZpbGUgbmFtZSAgICAgICAgICAgICAgICAgICAgLy8NCiNpZiBFWFRFUk5BTF9FRElUT1IgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC8vDQpwdWJsaWMgY2xhc3MgU3Bpbm5pbmdQcml6ZVdoZWVsX3YyXzBfNSA6IENQSElubGluZUJhc2UNCiNlbHNlICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC8vDQpwdWJsaWMgY2xhc3MgQ1BISW5saW5lICAgICAgICAgICAgICAgICAgICAgICAgICAgICAvLw0KI2VuZGlmICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLy8NCi8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS8vDQp7DQogICAgY29uc3Qgc3RyaW5nIEVYVEVOU0lPTl9OQU1FID0gIlNwaW5uaW5nIFByaXplIFdoZWVsIHYyLjAuNSI7DQogICAgY29uc3Qgc3RyaW5nIExPR19IRUFERVIgPSAkIntFWFRFTlNJT05fTkFNRX0gTG9nOiAiOw0KICAgIGNvbnN0IHN0cmluZyBHVkFSX1BSRUZJWCA9ICJzcGlubmluZ1doZWVsIjsNCiAgICBwcml2YXRlIFBsYXRmb3JtIGN1cnJlbnRQbGF0Zm9ybSA9IFBsYXRmb3JtLlR3aXRjaDsNCiAgICBwcml2YXRlIEhhc2hTZXQ8UGxhdGZvcm0+IHBsYXRmb3JtTGlzdCA9IG5ldyBIYXNoU2V0PFBsYXRmb3JtPigpOw0KICAgIHByaXZhdGUgYm9vbCBzZW5kQWxsUGxhdGZvcm1zID0gdHJ1ZTsNCiAgICBwcml2YXRlIGJvb2wgc2VuZEFzQm90ID0gdHJ1ZTsNCiAgICBwcml2YXRlIGJvb2wgc2VuZEZhbGxiYWNrID0gdHJ1ZTsNCiAgICBwcml2YXRlIGJvb2wgY29uZmlybUNsZWFyVGV4dEZpbGUgPSBmYWxzZTsNCiAgICBwcml2YXRlIGJvb2wgY29uZmlybUNsZWFyVXNlckVudHJpZXMgPSBmYWxzZTsNCiAgICBwcml2YXRlIGJvb2wgY29uZmlybUNsZWFyVXNlcldpbm5lcnMgPSBmYWxzZTsNCg0KICAgIHB1YmxpYyB2b2lkIEluaXQoKQ0KICAgIHsNCiAgICAgICAgSW5pdEdsb2JhbFZhcmlhYmxlcygpOw0KICAgIH0NCg0KICAgIHByaXZhdGUgdm9pZCBJbml0R2xvYmFsVmFyaWFibGVzKCkNCiAgICB7DQogICAgICAgIHN0cmluZyB2YXJOYW1lID0gIkZvbGRlclBhdGgiOw0KICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoQ1BILkdldEdsb2JhbFZhcjxzdHJpbmc+KCQie0dWQVJfUFJFRklYfXt2YXJOYW1lfSIpID8/IHN0cmluZy5FbXB0eSkpDQogICAgICAgICAgICBDUEguU2V0R2xvYmFsVmFyKCQie0dWQVJfUFJFRklYfXt2YXJOYW1lfSIsIHN0cmluZy5FbXB0eSk7DQoNCiAgICAgICAgdmFyTmFtZSA9ICJXaW5uZXJVcmwiOw0KICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoQ1BILkdldEdsb2JhbFZhcjxzdHJpbmc+KCQie0dWQVJfUFJFRklYfXt2YXJOYW1lfSIpID8/IHN0cmluZy5FbXB0eSkpDQogICAgICAgICAgICBDUEguU2V0R2xvYmFsVmFyKCQie0dWQVJfUFJFRklYfXt2YXJOYW1lfSIsICI/bmFtZT0iKTsNCg0KICAgICAgICB2YXJOYW1lID0gIlNjZW5lTmFtZSI7DQogICAgICAgIGlmIChzdHJpbmcuSXNOdWxsT3JFbXB0eShDUEguR2V0R2xvYmFsVmFyPHN0cmluZz4oJCJ7R1ZBUl9QUkVGSVh9e3Zhck5hbWV9IikgPz8gc3RyaW5nLkVtcHR5KSkNCiAgICAgICAgICAgIENQSC5TZXRHbG9iYWxWYXIoJCJ7R1ZBUl9QUkVGSVh9e3Zhck5hbWV9IiwgIltOU10gU3Bpbm5pbmcgUHJpemUgV2hlZWwiKTsNCg0KICAgICAgICB2YXJOYW1lID0gIlNwaW5uZXJTb3VyY2VOYW1lIjsNCiAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KENQSC5HZXRHbG9iYWxWYXI8c3RyaW5nPigkIntHVkFSX1BSRUZJWH17dmFyTmFtZX0iKSA/PyBzdHJpbmcuRW1wdHkpKQ0KICAgICAgICAgICAgQ1BILlNldEdsb2JhbFZhcigkIntHVkFSX1BSRUZJWH17dmFyTmFtZX0iLCAiV2hlZWwgU3Bpbm5lciIpOw0KDQogICAgICAgIHZhck5hbWUgPSAiV2lubmVyU291cmNlTmFtZSI7DQogICAgICAgIGlmIChzdHJpbmcuSXNOdWxsT3JFbXB0eShDUEguR2V0R2xvYmFsVmFyPHN0cmluZz4oJCJ7R1ZBUl9QUkVGSVh9e3Zhck5hbWV9IikgPz8gc3RyaW5nLkVtcHR5KSkNCiAgICAgICAgICAgIENQSC5TZXRHbG9iYWxWYXIoJCJ7R1ZBUl9QUkVGSVh9e3Zhck5hbWV9IiwgIldoZWVsIFdpbm5lciIpOw0KICAgIH0NCg0KICAgIHB1YmxpYyBib29sIEV4ZWN1dGUoKQ0KICAgIHsNCiAgICAgICAgcmV0dXJuIHRydWU7DQogICAgfQ0KDQogICAgcHVibGljIGJvb2wgSW1wb3J0U291cmNlQ29weSgpDQogICAgew0KICAgICAgICBzdHJpbmcgbWV0aG9kTmFtZSA9ICQie01ldGhvZEJhc2UuR2V0Q3VycmVudE1ldGhvZCgpLk5hbWV9OiAiOw0KICAgICAgICBTZXRNZXNzYWdlUGxhdGZvcm0oKTsNCiAgICAgICAgc3RyaW5nIHNwaW5uaW5nV2hlZWxTY2VuZU5hbWUgPSBDUEguR2V0R2xvYmFsVmFyPHN0cmluZz4oJCJ7R1ZBUl9QUkVGSVh9U2NlbmVOYW1lIiwgdHJ1ZSk7DQogICAgICAgIHN0cmluZyBzcGlubmluZ1doZWVsU3Bpbm5lclNvdXJjZU5hbWUgPSBDUEguR2V0R2xvYmFsVmFyPHN0cmluZz4oJCJ7R1ZBUl9QUkVGSVh9U3Bpbm5lclNvdXJjZU5hbWUiLCB0cnVlKTsNCiAgICAgICAgc3RyaW5nIHNwaW5uaW5nV2hlZWxXaW5uZXJTb3VyY2VOYW1lID0gQ1BILkdldEdsb2JhbFZhcjxzdHJpbmc+KCQie0dWQVJfUFJFRklYfVdpbm5lclNvdXJjZU5hbWUiLCB0cnVlKTsNCg0KICAgICAgICBzdHJpbmcgc3Bpbm5pbmd3aGVlbEZvbGRlclBhdGg7DQogICAgICAgIGlmIChUcnlHZXRGaWxlUGF0aChvdXQgc3RyaW5nIHNwaW5XaGVlbEZpbGVQYXRoKSkNCiAgICAgICAgew0KICAgICAgICAgICAgc3Bpbm5pbmd3aGVlbEZvbGRlclBhdGggPSBQYXRoLkdldERpcmVjdG9yeU5hbWUoc3BpbldoZWVsRmlsZVBhdGgpOw0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgc3RyaW5nIGN1cnJlbnREaXJlY3RvcnkgPSBBcHBEb21haW4uQ3VycmVudERvbWFpbi5CYXNlRGlyZWN0b3J5Ow0KICAgICAgICAgICAgc3Bpbm5pbmd3aGVlbEZvbGRlclBhdGggPSBQYXRoLkdldEZ1bGxQYXRoKFBhdGguQ29tYmluZShjdXJyZW50RGlyZWN0b3J5LCAiLi4iLCAic3Bpbm5pbmdQcml6ZVdoZWVsIikpOw0KICAgICAgICB9ICAgICAgICANCiAgICAgICAgDQogICAgICAgIGlmICghRGlyZWN0b3J5LkV4aXN0cyhzcGlubmluZ3doZWVsRm9sZGVyUGF0aCkpDQogICAgICAgIHsNCiAgICAgICAgICAgIExvZ0Vycm9yKCQie21ldGhvZE5hbWV9e3NwaW5uaW5nd2hlZWxGb2xkZXJQYXRofSBkb2Vzbid0IGV4aXN0ISIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQogICAgICAgIENQSC5TZXRHbG9iYWxWYXIoJCJ7R1ZBUl9QUkVGSVh9Rm9sZGVyUGF0aCIsIHNwaW5uaW5nd2hlZWxGb2xkZXJQYXRoLCB0cnVlKTsNCg0KICAgICAgICAvLyBDcmVhdGUgdGhlIGZ1bGwgZmlsZSBwYXRoDQogICAgICAgIHN0cmluZyB3aGVlbFNwaW5uZXJGaWxlUGF0aCA9IFBhdGguQ29tYmluZShzcGlubmluZ3doZWVsRm9sZGVyUGF0aCwgImluZGV4Lmh0bWwiKS5SZXBsYWNlKCIgIiwgIiUyMCIpLlJlcGxhY2UoIlxcIiwgIi8iKTsNCiAgICAgICAgc3RyaW5nIHdoZWVsV2lubmVyRmlsZVBhdGggPSBQYXRoLkNvbWJpbmUoc3Bpbm5pbmd3aGVlbEZvbGRlclBhdGgsICJXaGVlbCBXaW5uZXIiLCAiaW5kZXguaHRtbD9uYW1lPSIpLlJlcGxhY2UoIiAiLCAiJTIwIikuUmVwbGFjZSgiXFwiLCAiLyIpOw0KDQogICAgICAgIHN0cmluZyB3aGVlbFNwaW5uZXJVcmwgPSAkImZpbGU6Ly97d2hlZWxTcGlubmVyRmlsZVBhdGh9IjsNCiAgICAgICAgc3RyaW5nIHdoZWVsV2lubmVyVXJsID0gJCJmaWxlOi8ve3doZWVsV2lubmVyRmlsZVBhdGh9IjsNCg0KICAgICAgICAvLyBSZW1vdmUgRHJpdmUgTGV0dGVyIGlmIG5vdCB3aW5kb3dzDQogICAgICAgIGJvb2wgaXNXaW5kb3dzID0gSXNXaW5kb3dzKCk7DQogICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX1pc1dpbmRvd3M6ICd7aXNXaW5kb3dzfSciKTsNCiAgICAgICAgaWYgKCFpc1dpbmRvd3MpDQogICAgICAgIHsNCiAgICAgICAgICAgIHdoZWVsU3Bpbm5lclVybCA9IFJlbW92ZURyaXZlTGV0dGVyRnJvbVVybCh3aGVlbFNwaW5uZXJVcmwpOw0KICAgICAgICAgICAgd2hlZWxXaW5uZXJVcmwgPSBSZW1vdmVEcml2ZUxldHRlckZyb21Vcmwod2hlZWxXaW5uZXJVcmwpOw0KICAgICAgICB9DQoNCiAgICAgICAgLy8gR2V0IHdzSXBBZGRyZXNzIGFuZCB3c1BvcnQNCiAgICAgICAgc3RyaW5nIHVybFBhcmFtcyA9IEFwcGVuZFVSTFBhcmFtcygpOw0KDQogICAgICAgIC8vIEFwcGVuZCB0aGUgcXVlcnkgc3RyaW5nIHRvIHRoZSBVUkwNCiAgICAgICAgd2hlZWxTcGlubmVyVXJsICs9IHVybFBhcmFtczsNCg0KICAgICAgICBDUEguU2V0R2xvYmFsVmFyKCQie0dWQVJfUFJFRklYfVdpbm5lclVybCIsIHdoZWVsV2lubmVyVXJsLCB0cnVlKTsNCiAgICAgICAgQ1BILlNldEdsb2JhbFZhcigkIntHVkFSX1BSRUZJWH1TcGlubmVyVXJsIiwgd2hlZWxTcGlubmVyVXJsLCB0cnVlKTsNCg0KICAgICAgICBpZiAoIUNQSC5UcnlHZXRBcmcoIm9ic0Nvbm5lY3Rpb24iLCBvdXQgaW50IG9ic0Nvbm5lY3Rpb24pKQ0KICAgICAgICAgICAgb2JzQ29ubmVjdGlvbiA9IDA7DQoNCiAgICAgICAgc3RyaW5nIHZpZGVvU2V0dGluZ3NKc29uU3RyaW5nID0gQ1BILk9ic1NlbmRSYXcoIkdldFZpZGVvU2V0dGluZ3MiLCBuZXcgSk9iamVjdCgpLlRvU3RyaW5nKCksIG9ic0Nvbm5lY3Rpb24pOw0KICAgICAgICBKT2JqZWN0IHZpZGVvU2V0dGluZ3NKc29uID0gSk9iamVjdC5QYXJzZSh2aWRlb1NldHRpbmdzSnNvblN0cmluZyk7DQogICAgICAgIGludCBiYXNlV2lkdGggPSBDb252ZXJ0LlRvSW50MzIodmlkZW9TZXR0aW5nc0pzb25bImJhc2VXaWR0aCJdPy5Ub1N0cmluZygpID8/ICIxOTIwIik7DQogICAgICAgIGludCBiYXNlSGVpZ2h0ID0gQ29udmVydC5Ub0ludDMyKHZpZGVvU2V0dGluZ3NKc29uWyJiYXNlSGVpZ2h0Il0/LlRvU3RyaW5nKCkgPz8gIjEwODAiKTsNCg0KICAgICAgICBKT2JqZWN0IHNvdXJjZUNvcHk7DQoNCiAgICAgICAgc3RyaW5nIHNvdXJjZUNvcHlGaWxlUGF0aCA9IFBhdGguQ29tYmluZShzcGlubmluZ3doZWVsRm9sZGVyUGF0aCwgInNvdXJjZUNvcHkgLSBTcGlubmluZyBQcml6ZSBXaGVlbC5qc29uIik7DQogICAgICAgIGlmICghRmlsZS5FeGlzdHMoc291cmNlQ29weUZpbGVQYXRoKSkNCiAgICAgICAgew0KICAgICAgICAgICAgTG9nRXJyb3IoJCJ7bWV0aG9kTmFtZX1GaWxlIGRvZXMgbm90IGV4aXN0LiBEaWQgeW91IGV4dHJhY3QgaXQgY29ycmVjdGx5IHRvICd7c3Bpbm5pbmd3aGVlbEZvbGRlclBhdGh9JyA/Iik7DQogICAgICAgICAgICByZXR1cm4gZmFsc2U7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBSZWFkIHRoZSBKU09OIGRhdGEgZnJvbSB0aGUgZmlsZQ0KICAgICAgICBzdHJpbmcgc291cmNlQ29weUpzb24gPSBGaWxlLlJlYWRBbGxUZXh0KHNvdXJjZUNvcHlGaWxlUGF0aCk7DQoNCiAgICAgICAgLy8gUGFyc2UgdGhlIEpTT04gZGF0YQ0KICAgICAgICBzb3VyY2VDb3B5ID0gSk9iamVjdC5QYXJzZShzb3VyY2VDb3B5SnNvbik7DQogICAgICAgIENQSC5TZXRHbG9iYWxWYXIoJCJ7R1ZBUl9QUkVGSVh9U291cmNlQ29weUJlZm9yZSIsIHNvdXJjZUNvcHkuVG9TdHJpbmcoRm9ybWF0dGluZy5Ob25lKSwgZmFsc2UpOw0KDQogICAgICAgIC8vIEFjY2Vzc2luZyBlbGVtZW50cw0KICAgICAgICBKQXJyYXk/IHNvdXJjZXMgPSBzb3VyY2VDb3B5WyJzb3VyY2VzIl0gYXMgSkFycmF5Ow0KICAgICAgICBpZiAoc291cmNlcyBpcyBudWxsIHx8IHNvdXJjZXMuQ291bnQgPCAxKQ0KICAgICAgICB7DQogICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfXNvdXJjZXMgaXMgbnVsbCBvciBlbXB0eSIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgZmxvYXQgd2lkdGhSYXRpbyA9IChmbG9hdCliYXNlV2lkdGgvMTkyMDsNCiAgICAgICAgZmxvYXQgaGVpZ2h0UmF0aW8gPSAoZmxvYXQpYmFzZUhlaWdodC8xMDgwOw0KDQogICAgICAgIGZvcmVhY2ggKEpPYmplY3Qgc291cmNlIGluIHNvdXJjZXMpDQogICAgICAgIHsNCiAgICAgICAgICAgIHN0cmluZyBpZCA9IHNvdXJjZVsiaWQiXT8uVG9TdHJpbmcoKSA/PyBzdHJpbmcuRW1wdHk7DQogICAgICAgICAgICBzd2l0Y2ggKGlkKQ0KICAgICAgICAgICAgew0KICAgICAgICAgICAgICAgIGNhc2UgImJyb3dzZXJfc291cmNlIjoNCiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIG5hbWUgPSBzb3VyY2VbIm5hbWUiXT8uVG9TdHJpbmcoKSA/PyBzdHJpbmcuRW1wdHk7DQogICAgICAgICAgICAgICAgICAgIGlmIChuYW1lLkluZGV4T2YoInNwaW5uZXIiLCBTdHJpbmdDb21wYXJpc29uLk9yZGluYWxJZ25vcmVDYXNlKSA+PSAwKQ0KICAgICAgICAgICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgICAgICAgICAvLyBVcGRhdGUgdGhlIFVSTCBwcm9wZXJ0eSBmb3IgU3Bpbm5lcg0KICAgICAgICAgICAgICAgICAgICAgICAgc291cmNlWyJuYW1lIl0gPSBzcGlubmluZ1doZWVsU3Bpbm5lclNvdXJjZU5hbWU7DQogICAgICAgICAgICAgICAgICAgICAgICBzb3VyY2VbInNldHRpbmdzIl0hWyJ1cmwiXSA9IHdoZWVsU3Bpbm5lclVybDsNCiAgICAgICAgICAgICAgICAgICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX1zcGlubmVyIHVybDogJ3tzb3VyY2UuU2VsZWN0VG9rZW4oInNldHRpbmdzLnVybCIpPy5Ub1N0cmluZygpID8/IHN0cmluZy5FbXB0eX0nIik7DQogICAgICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgICAgICAgICAgZWxzZSBpZiAobmFtZS5JbmRleE9mKCJ3aW5uZXIiLCBTdHJpbmdDb21wYXJpc29uLk9yZGluYWxJZ25vcmVDYXNlKSA+PSAwKQ0KICAgICAgICAgICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgICAgICAgICAvLyBVcGRhdGUgdGhlIFVSTCBwcm9wZXJ0eSBmb3IgV2lubmVyDQogICAgICAgICAgICAgICAgICAgICAgICBzb3VyY2VbIm5hbWUiXSA9IHNwaW5uaW5nV2hlZWxXaW5uZXJTb3VyY2VOYW1lOw0KICAgICAgICAgICAgICAgICAgICAgICAgc291cmNlWyJzZXR0aW5ncyJdIVsidXJsIl0gPSB3aGVlbFdpbm5lclVybDsNCiAgICAgICAgICAgICAgICAgICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX13aW5uZXIgdXJsOiAne3NvdXJjZS5TZWxlY3RUb2tlbigic2V0dGluZ3MudXJsIik/LlRvU3RyaW5nKCkgPz8gc3RyaW5nLkVtcHR5fSciKTsNCiAgICAgICAgICAgICAgICAgICAgfQ0KICAgICAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgICAgIGNhc2UgInNjZW5lIjoNCiAgICAgICAgICAgICAgICAgICAgLy8gVXBkYXRlIHRoZSBzY2VuZSBuYW1lDQogICAgICAgICAgICAgICAgICAgIHNvdXJjZVsibmFtZSJdID0gc3Bpbm5pbmdXaGVlbFNjZW5lTmFtZTsNCiAgICAgICAgICAgICAgICAgICAgSkFycmF5PyBpdGVtcyA9IG5ldyBKQXJyYXkoKTsNCiAgICAgICAgICAgICAgICAgICAgaWYgKHNvdXJjZS5TZWxlY3RUb2tlbigic2V0dGluZ3MuaXRlbXMiKSBpcyBub3QgbnVsbCkNCiAgICAgICAgICAgICAgICAgICAgICAgIGl0ZW1zID0gc291cmNlWyJzZXR0aW5ncyJdIVsiaXRlbXMiXSBhcyBKQXJyYXk7DQogICAgICAgICAgICAgICAgICAgIGlmIChpdGVtcyBpcyBudWxsIHx8IGl0ZW1zLkNvdW50IDwgMSkNCiAgICAgICAgICAgICAgICAgICAgew0KICAgICAgICAgICAgICAgICAgICAgICAgTG9nRXJyb3IoJCJ7bWV0aG9kTmFtZX1pdGVtcyBpcyBudWxsIG9yIGVtcHR5Iik7DQogICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gZmFsc2U7DQogICAgICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoSk9iamVjdCBpdGVtIGluIGl0ZW1zKQ0KICAgICAgICAgICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgICAgICAgICBpdGVtWyJib3VuZHNfdHlwZSJdID0gMjsNCiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChpdGVtLlNlbGVjdFRva2VuKCJib3VuZHMueCIpIGlzIG5vdCBudWxsICYmIGl0ZW0uU2VsZWN0VG9rZW4oImJvdW5kcy55IikgaXMgbm90IG51bGwpDQogICAgICAgICAgICAgICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgICAgICAgICAgICAgaXRlbVsiYm91bmRzIl0hWyJ4Il0gPSBiYXNlV2lkdGg7DQogICAgICAgICAgICAgICAgICAgICAgICAgICAgaXRlbVsiYm91bmRzIl0hWyJ5Il0gPSBiYXNlSGVpZ2h0OyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgICAgICAgICB9DQogICAgICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgICAgICAgICAgYnJlYWs7DQogICAgICAgICAgICB9DQogICAgICAgIH0NCiAgICAgICAgQ1BILlNldEdsb2JhbFZhcigkIntHVkFSX1BSRUZJWH1Tb3VyY2VDb3B5QWZ0ZXIiLCBzb3VyY2VDb3B5LlRvU3RyaW5nKEZvcm1hdHRpbmcuTm9uZSksIGZhbHNlKTsNCg0KICAgICAgICBzdHJpbmcgcmVxdWVzdFR5cGUgPSAiQ2FsbFZlbmRvclJlcXVlc3QiOw0KICAgICAgICBKT2JqZWN0IHJlcXVlc3REYXRhID0gbmV3IEpPYmplY3QoDQogICAgICAgICAgICBuZXcgSlByb3BlcnR5KCJ2ZW5kb3JOYW1lIiwgInNvdXJjZS1jb3B5IiksDQogICAgICAgICAgICBuZXcgSlByb3BlcnR5KCJyZXF1ZXN0VHlwZSIsICJhZGRfc2NlbmUiKSwNCiAgICAgICAgICAgIG5ldyBKUHJvcGVydHkoInJlcXVlc3REYXRhIiwgc291cmNlQ29weSkNCiAgICAgICAgKTsNCg0KICAgICAgICAvLyBDaGVjayBpZiBPQlMgY29ubmVjdGlvbiBpcyBlc3RhYmxpc2hlZCBhbmQgYWN0aXZlDQogICAgICAgIGlmICghQ1BILk9ic0lzQ29ubmVjdGVkKG9ic0Nvbm5lY3Rpb24pKQ0KICAgICAgICB7DQogICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfU9CUyBDb25uZWN0aW9uICd7b2JzQ29ubmVjdGlvbn0nIGlzIG5vdCBjdXJyZW50bHkgY29ubmVjdGVkIik7DQogICAgICAgICAgICByZXR1cm4gZmFsc2U7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBTZW5kIGEgcmF3IHJlcXVlc3QgdG8gT0JTIHdpdGggdGhlIHNwZWNpZmllZCB0eXBlIGFuZCBkYXRhDQogICAgICAgIGJvb2wgb2JzU2VuZFJhd1N1Y2Nlc3MgPSBmYWxzZTsNCiAgICAgICAgc3RyaW5nIG9ic1NlbmRSYXcgPSBDUEguT2JzU2VuZFJhdyhyZXF1ZXN0VHlwZSwgcmVxdWVzdERhdGEuVG9TdHJpbmcoKSwgb2JzQ29ubmVjdGlvbik7DQogICAgICAgIHRyeQ0KICAgICAgICB7DQogICAgICAgICAgICAvLyBBdHRlbXB0IHRvIHBhcnNlIHRoZSByZXNwb25zZSBhcyBKU09ODQogICAgICAgICAgICBKT2JqZWN0IG9ic1NlbmRSYXdKc29uID0gSk9iamVjdC5QYXJzZShvYnNTZW5kUmF3KTsNCiAgICAgICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX1vYnNTZW5kUmF3SnNvbjogJ3tvYnNTZW5kUmF3SnNvbi5Ub1N0cmluZyhGb3JtYXR0aW5nLk5vbmUpfSciKTsNCg0KICAgICAgICAgICAgLy8gQ2hlY2sgaWYgdGhlIHJlc3BvbnNlIGlzIGEgc2ltcGxlIG9iamVjdCB3aXRoIG5vIHByb3BlcnRpZXMgKGkuZS4sICJ7fSIpDQogICAgICAgICAgICBib29sIGhhc1ZhbHVlcyA9IG9ic1NlbmRSYXdKc29uLlByb3BlcnRpZXMoKS5BbnkocHJvcGVydHkgPT4gcHJvcGVydHkuVmFsdWUuVHlwZSAhPSBKVG9rZW5UeXBlLk51bGwpOw0KDQogICAgICAgICAgICAvLyBJZiB0aGUgcmVzcG9uc2UgaXMgYW4gZW1wdHkgb2JqZWN0LCBsb2cgYW4gZXJyb3IgaW5kaWNhdGluZyB0aGF0IHRoZSBTb3VyY2VDb3B5IHBsdWdpbiBtYXkgbm90IGJlIGluc3RhbGxlZA0KICAgICAgICAgICAgaWYgKCFoYXNWYWx1ZXMpDQogICAgICAgICAgICAgICAgTG9nRXJyb3IoJCJ7bWV0aG9kTmFtZX1Tb3VyY2VDb3B5IHBsdWdpbiBtYXkgbm90IGJlIGluc3RhbGxlZCIpOw0KDQogICAgICAgICAgICAvLyBFeHRyYWN0IGFuZCBwYXJzZSB0aGUgInJlc3BvbnNlRGF0YSIgc2VjdGlvbiBvZiB0aGUgSlNPTiByZXNwb25zZQ0KICAgICAgICAgICAgSlRva2VuIHJlc3BvbnNlRGF0YSA9IG9ic1NlbmRSYXdKc29uLlNlbGVjdFRva2VuKCJyZXNwb25zZURhdGEiKSA/PyBuZXcgSk9iamVjdCgpOw0KICAgICAgICAgICAgb2JzU2VuZFJhd1N1Y2Nlc3MgPSBDb252ZXJ0LlRvQm9vbGVhbihyZXNwb25zZURhdGEuU2VsZWN0VG9rZW4oInN1Y2Nlc3MiKSA/PyAiZmFsc2UiKTsNCiAgICAgICAgfQ0KICAgICAgICBjYXRjaCAoSnNvblJlYWRlckV4Y2VwdGlvbikNCiAgICAgICAgew0KICAgICAgICAgICAgLy8gSGFuZGxlIGFueSBleGNlcHRpb25zIHRoYXQgb2NjdXIgZHVyaW5nIEpTT04gcGFyc2luZywgbG9nZ2luZyBhbiBlcnJvciBhbmQgcmV0dXJuaW5nIGZhbHNlDQogICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfW9ic1NlbmRSYXcgaXMgbm90IHZhbGlkIEpTT04iKTsNCiAgICAgICAgfQ0KDQogICAgICAgIC8vIFJldHVybiB0aGUgcmVzdWx0IG9mIHRoZSByZXF1ZXN0LCBpbmRpY2F0aW5nIHdoZXRoZXIgaXQgd2FzIHN1Y2Nlc3NmdWwgb3Igbm90DQogICAgICAgIHJldHVybiBvYnNTZW5kUmF3U3VjY2VzczsNCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBBZGRUb1RleHRGaWxlKCkNCiAgICB7DQogICAgICAgIHN0cmluZyBtZXRob2ROYW1lID0gJCJ7TWV0aG9kQmFzZS5HZXRDdXJyZW50TWV0aG9kKCkuTmFtZX06ICI7DQogICAgICAgIFNldE1lc3NhZ2VQbGF0Zm9ybSgpOw0KICAgICAgICBzdHJpbmcgdXNlciA9ICJCcm9hZGNhc3RlciI7DQogICAgICAgIGlmIChDUEguVHJ5R2V0QXJnKCJ1c2VyIiwgb3V0IHVzZXIpKXt9DQogICAgICAgIHN0cmluZyBmaWxlUGF0aCA9IEdldEZpbGVQYXRoKCk7DQogICAgICAgIGlmICghRmlsZS5FeGlzdHMoZmlsZVBhdGgpKQ0KICAgICAgICB7DQogICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfWZpbGVwYXRoICd7ZmlsZVBhdGh9JyBkb2Vzbid0IGV4aXN0ISIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgaWYgKCFDUEguVHJ5R2V0QXJnKCJyYXdJbnB1dCIsIG91dCBzdHJpbmcgcmF3SW5wdXQpKQ0KICAgICAgICB7DQogICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfSVyYXdJbnB1dCUgZG9lc24ndCBleGlzdCIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgaWYgKCFDUEguVHJ5R2V0QXJnKCJhbGxvd0R1cGxpY2F0ZXMiLCBvdXQgYm9vbCBhbGxvd0R1cGxpY2F0ZXMpKQ0KICAgICAgICAgICAgYWxsb3dEdXBsaWNhdGVzID0gZmFsc2U7DQoNCiAgICAgICAgcmV0dXJuIE1vZGlmeVRleHRGaWxlKGZpbGVQYXRoLCByYXdJbnB1dCwgdHJ1ZSwgYWxsb3dEdXBsaWNhdGVzKTsNCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBSZW1vdmVGcm9tVGV4dEZpbGUoKQ0KICAgIHsNCiAgICAgICAgc3RyaW5nIG1ldGhvZE5hbWUgPSAkIntNZXRob2RCYXNlLkdldEN1cnJlbnRNZXRob2QoKS5OYW1lfTogIjsNCiAgICAgICAgU2V0TWVzc2FnZVBsYXRmb3JtKCk7DQogICAgICAgIHN0cmluZyB1c2VyID0gIkJyb2FkY2FzdGVyIjsNCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoInVzZXIiLCBvdXQgdXNlcikpe30NCiAgICAgICAgc3RyaW5nIHNwaW5uaW5nV2hlZWxGb2xkZXJQYXRoID0gQ1BILkdldEdsb2JhbFZhcjxzdHJpbmc+KCQie0dWQVJfUFJFRklYfUZvbGRlclBhdGgiLCB0cnVlKSA/PyBQYXRoLkdldEZ1bGxQYXRoKCBQYXRoLkNvbWJpbmUoQXBwRG9tYWluLkN1cnJlbnREb21haW4uQmFzZURpcmVjdG9yeSwgIi4uIiwgInNwaW5uaW5nUHJpemVXaGVlbCIpICk7Ow0KICAgICAgICBzdHJpbmcgZmlsZVBhdGggPSBQYXRoLkdldEZ1bGxQYXRoKFBhdGguQ29tYmluZShzcGlubmluZ1doZWVsRm9sZGVyUGF0aCwgIm5hbWVzLnR4dCIpKTsNCiAgICAgICAgaWYgKCFGaWxlLkV4aXN0cyhmaWxlUGF0aCkpDQogICAgICAgIHsNCiAgICAgICAgICAgIExvZ0Vycm9yKCQie21ldGhvZE5hbWV9ZmlsZXBhdGggJ3tmaWxlUGF0aH0nIGRvZXNuJ3QgZXhpc3QhIik7DQogICAgICAgICAgICByZXR1cm4gZmFsc2U7DQogICAgICAgIH0NCg0KICAgICAgICBpZiAoIUNQSC5UcnlHZXRBcmcoInJhd0lucHV0Iiwgb3V0IHN0cmluZyByYXdJbnB1dCkpDQogICAgICAgIHsNCiAgICAgICAgICAgIExvZ0Vycm9yKCQie21ldGhvZE5hbWV9JXJhd0lucHV0JSBkb2Vzbid0IGV4aXN0ISIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgcmV0dXJuIE1vZGlmeVRleHRGaWxlKGZpbGVQYXRoLCByYXdJbnB1dCwgZmFsc2UpOw0KICAgIH0NCg0KICAgIHByaXZhdGUgc3RyaW5nIEdldEZpbGVQYXRoKCkNCiAgICB7DQogICAgICAgIHN0cmluZyBzcGlubmluZ1doZWVsRm9sZGVyUGF0aCA9IENQSC5HZXRHbG9iYWxWYXI8c3RyaW5nPigkIntHVkFSX1BSRUZJWH1Gb2xkZXJQYXRoIiwgdHJ1ZSkgPz8gUGF0aC5HZXRGdWxsUGF0aCggUGF0aC5Db21iaW5lKEFwcERvbWFpbi5DdXJyZW50RG9tYWluLkJhc2VEaXJlY3RvcnksICIuLiIsICJzcGlubmluZ1ByaXplV2hlZWwiKSApOzsNCiAgICAgICAgcmV0dXJuIFBhdGguR2V0RnVsbFBhdGgoIFBhdGguQ29tYmluZShzcGlubmluZ1doZWVsRm9sZGVyUGF0aCwgIm5hbWVzLnR4dCIpICk7DQogICAgfQ0KDQogICAgcHJpdmF0ZSBib29sIE1vZGlmeVRleHRGaWxlKHN0cmluZyBmaWxlUGF0aCwgc3RyaW5nIHJhd0lucHV0LCBib29sIGFkZCwgYm9vbCBhbGxvd0R1cGxpY2F0ZXMgPSBmYWxzZSkNCiAgICB7DQogICAgICAgIHN0cmluZyBtZXRob2ROYW1lID0gJCJ7TWV0aG9kQmFzZS5HZXRDdXJyZW50TWV0aG9kKCkuTmFtZX06ICI7DQogICAgICAgIHN0cmluZyBub3JtYWxpemVkSW5wdXQgPSBSZWdleC5SZXBsYWNlKHJhd0lucHV0LCBAIlxzKyIsICIiKS5Ub0xvd2VyKCk7DQogICAgICAgIEhhc2hTZXQ8c3RyaW5nPiBub3JtYWxpemVkTGluZXMgPSBuZXcgSGFzaFNldDxzdHJpbmc+KEZpbGUuUmVhZEFsbExpbmVzKGZpbGVQYXRoKS5TZWxlY3QobGluZSA9PiBSZWdleC5SZXBsYWNlKGxpbmUsIEAiXHMrIiwgIiIpLlRvTG93ZXIoKSkpOw0KDQogICAgICAgIC8vIFJlbW92ZSBsaW5lcw0KICAgICAgICBpZiAoIWFkZCkNCiAgICAgICAgew0KICAgICAgICAgICAgaWYgKCFub3JtYWxpemVkTGluZXMuQ29udGFpbnMobm9ybWFsaXplZElucHV0KSkNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfSd7cmF3SW5wdXR9JyBkb2VzIG5vdCBleGlzdCBpbiB0aGUgd2hlZWwgdGV4dCBmaWxlISIpOw0KICAgICAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgICAgIH0NCiAgICAgICAgICAgIHN0cmluZ1tdIGxpbmVzID0gRmlsZS5SZWFkQWxsTGluZXMoZmlsZVBhdGgpOw0KICAgICAgICAgICAgbGluZXMgPSBsaW5lcy5XaGVyZShsaW5lID0+IFJlZ2V4LlJlcGxhY2UobGluZSwgQCJccysiLCAiIikuVG9Mb3dlcigpICE9IG5vcm1hbGl6ZWRJbnB1dCkuVG9BcnJheSgpOw0KICAgICAgICAgICAgRmlsZS5Xcml0ZUFsbExpbmVzKGZpbGVQYXRoLCBsaW5lcyk7DQogICAgICAgICAgICByZXR1cm4gdHJ1ZTsNCiAgICAgICAgfQ0KDQogICAgICAgIGlmIChhbGxvd0R1cGxpY2F0ZXMpDQogICAgICAgICAgICBGaWxlLkFwcGVuZEFsbFRleHQoZmlsZVBhdGgsIHJhd0lucHV0ICsgRW52aXJvbm1lbnQuTmV3TGluZSk7DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgaWYgKG5vcm1hbGl6ZWRMaW5lcy5Db250YWlucyhub3JtYWxpemVkSW5wdXQpKQ0KICAgICAgICAgICAgew0KICAgICAgICAgICAgICAgIExvZ0Vycm9yKCQie21ldGhvZE5hbWV9J3tyYXdJbnB1dH0nIGFscmVhZHkgZXhpc3RzIGluIHRoZSB3aGVlbCB0ZXh0IGZpbGUhIik7DQogICAgICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICAgICAgfQ0KICAgICAgICAgICAgRmlsZS5BcHBlbmRBbGxUZXh0KGZpbGVQYXRoLCByYXdJbnB1dCArIEVudmlyb25tZW50Lk5ld0xpbmUpOw0KICAgICAgICB9DQogICAgICAgIHJldHVybiB0cnVlOw0KICAgIH0NCg0KICAgIHB1YmxpYyBib29sIENsZWFyVGV4dEZpbGUoKQ0KICAgIHsNCiAgICAgICAgc3RyaW5nIG1ldGhvZE5hbWUgPSAkIntNZXRob2RCYXNlLkdldEN1cnJlbnRNZXRob2QoKS5OYW1lfTogIjsNCiAgICAgICAgU2V0TWVzc2FnZVBsYXRmb3JtKCk7DQogICAgICAgIHN0cmluZyBjb21tYW5kOw0KICAgICAgICBpZiAoIUNQSC5UcnlHZXRBcmcoImNvbW1hbmQiLCBvdXQgY29tbWFuZCkpDQogICAgICAgICAgICBjb21tYW5kID0gInRoaXMgYWN0aW9uIjsNCiAgICAgICAgaWYgKCFjb25maXJtQ2xlYXJUZXh0RmlsZSkNCiAgICAgICAgew0KICAgICAgICAgICAgU2VuZE1lc3NhZ2VJbkNodW5rcygkIkFyZSB5b3Ugc3VyZSB5b3Ugd2FudCB0byBjbGVhciB0aGUgdGV4dCBmaWxlPyBSdW4ge2NvbW1hbmR9IGFnYWluIHRvIGNvbmZpcm0iKTsNCiAgICAgICAgICAgIGNvbmZpcm1DbGVhclRleHRGaWxlID0gdHJ1ZTsNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgfQ0KICAgICAgICBlbHNlDQogICAgICAgIHsNCiAgICAgICAgICAgIHN0cmluZyBzcGlubmluZ3doZWVsRm9sZGVyUGF0aCA9IENQSC5HZXRHbG9iYWxWYXI8c3RyaW5nPigkIntHVkFSX1BSRUZJWH1Gb2xkZXJQYXRoIiwgdHJ1ZSkgPz8gUGF0aC5HZXRGdWxsUGF0aCggUGF0aC5Db21iaW5lKEFwcERvbWFpbi5DdXJyZW50RG9tYWluLkJhc2VEaXJlY3RvcnksICIuLiIsICJzcGlubmluZ1ByaXplV2hlZWwiKSApOzsNCiAgICAgICAgICAgIHN0cmluZyBmaWxlUGF0aCA9IFBhdGguR2V0RnVsbFBhdGgoIFBhdGguQ29tYmluZShzcGlubmluZ3doZWVsRm9sZGVyUGF0aCwgIm5hbWVzLnR4dCIpICk7DQogICAgICAgICAgICBpZiAoIUZpbGUuRXhpc3RzKGZpbGVQYXRoKSkNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICBMb2dFcnJvcigkInttZXRob2ROYW1lfSd7ZmlsZVBhdGh9JyBkb2Vzbid0IGV4aXN0ISIpOw0KICAgICAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgICAgIH0NCiAgICAgICAgICAgIEZpbGUuV3JpdGVBbGxUZXh0KGZpbGVQYXRoLCAiIik7DQogICAgICAgICAgICBTZXRDbGVhckNvbmZpcm1Ub0ZhbHNlKCk7DQogICAgICAgICAgICByZXR1cm4gdHJ1ZTsNCiAgICAgICAgfQ0KICAgIH0NCg0KICAgIHB1YmxpYyBib29sIEFkZFVzZXJUb0VudHJpZXNHcm91cCgpDQogICAgew0KICAgICAgICBTZXRNZXNzYWdlUGxhdGZvcm0oKTsNCiAgICAgICAgQ1BILlRyeUdldEFyZygibWVzc2FnZSIsIG91dCBzdHJpbmcgbWVzc2FnZSk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoInVzZXIiLCBvdXQgc3RyaW5nIHVzZXIpOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ1c2VySWQiLCBvdXQgc3RyaW5nIHVzZXJJZCk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoImVudHJpZXNHcm91cE5hbWUiLCBvdXQgc3RyaW5nIGVudHJpZXNHcm91cE5hbWUpOw0KICAgICAgICBpZiAoQ1BILlVzZXJJZEluR3JvdXAodXNlcklkLCBjdXJyZW50UGxhdGZvcm0sIGVudHJpZXNHcm91cE5hbWUpKQ0KICAgICAgICB7DQogICAgICAgICAgICBTZW5kTWVzc2FnZUluQ2h1bmtzKCQiVXNlciAne3VzZXJ9JyBpcyBhbHJlYWR5IGluIHRoZSBncm91cCAne2VudHJpZXNHcm91cE5hbWV9JyIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgaWYgKFRyeU1vZGlmeVVzZXJHcm91cCh1c2VyLCB1c2VySWQsIHRydWUsIGVudHJpZXNHcm91cE5hbWUpKQ0KICAgICAgICB7DQogICAgICAgICAgICBTZW5kTWVzc2FnZUluQ2h1bmtzKCQie21lc3NhZ2V9Iik7DQogICAgICAgICAgICByZXR1cm4gdHJ1ZTsNCiAgICAgICAgfQ0KICAgICAgICBlbHNlDQogICAgICAgIHsNCiAgICAgICAgICAgIFNlbmRNZXNzYWdlSW5DaHVua3MoJCJVbmFibGUgdG8gYWRkICd7dXNlcn0nIHRvIHRoZSBncm91cCAne2VudHJpZXNHcm91cE5hbWV9JyIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQogICAgfQ0KDQogICAgcHVibGljIGJvb2wgUmVtb3ZlVXNlckZyb21FbnRyaWVzR3JvdXAoKQ0KICAgIHsNCiAgICAgICAgU2V0TWVzc2FnZVBsYXRmb3JtKCk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoIm1lc3NhZ2UiLCBvdXQgc3RyaW5nIG1lc3NhZ2UpOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ1c2VyIiwgb3V0IHN0cmluZyB1c2VyKTsNCiAgICAgICAgQ1BILlRyeUdldEFyZygidXNlcklkIiwgb3V0IHN0cmluZyB1c2VySWQpOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJlbnRyaWVzR3JvdXBOYW1lIiwgb3V0IHN0cmluZyBlbnRyaWVzR3JvdXBOYW1lKTsNCiAgICAgICAgaWYgKCFDUEguVXNlcklkSW5Hcm91cCh1c2VySWQsIGN1cnJlbnRQbGF0Zm9ybSwgZW50cmllc0dyb3VwTmFtZSkpDQogICAgICAgIHsNCiAgICAgICAgICAgIFNlbmRNZXNzYWdlSW5DaHVua3MoJCJVc2VyICd7dXNlcn0nIGlzIG5vdCBmb3VuZCBpbiB0aGUgZ3JvdXAgJ3tlbnRyaWVzR3JvdXBOYW1lfSciKTsNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgfQ0KDQogICAgICAgIGlmIChUcnlNb2RpZnlVc2VyR3JvdXAodXNlciwgdXNlcklkLCBmYWxzZSwgZW50cmllc0dyb3VwTmFtZSkpDQogICAgICAgIHsNCiAgICAgICAgICAgIFNlbmRNZXNzYWdlSW5DaHVua3MoJCJ7bWVzc2FnZX0iKTsNCiAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgU2VuZE1lc3NhZ2VJbkNodW5rcygkIlVuYWJsZSB0byByZW1vdmUgJ3t1c2VyfScgZnJvbSB0aGUgZ3JvdXAgJ3tlbnRyaWVzR3JvdXBOYW1lfSciKTsNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgfQ0KICAgICAgICANCiAgICB9DQoNCiAgICBwcml2YXRlIGJvb2wgVHJ5TW9kaWZ5VXNlckdyb3VwKHN0cmluZyB1c2VyLCBzdHJpbmcgdXNlcklkLCBib29sIGFkZFRvR3JvdXAsIHN0cmluZyBlbnRyaWVzR3JvdXBOYW1lKQ0KICAgIHsNCiAgICAgICAgaWYgKGFkZFRvR3JvdXApDQogICAgICAgICAgICByZXR1cm4gQ1BILkFkZFVzZXJJZFRvR3JvdXAodXNlcklkLCBjdXJyZW50UGxhdGZvcm0sIGVudHJpZXNHcm91cE5hbWUpOw0KICAgICAgICBlbHNlDQogICAgICAgICAgICByZXR1cm4gQ1BILlJlbW92ZVVzZXJJZEZyb21Hcm91cCh1c2VySWQsIGN1cnJlbnRQbGF0Zm9ybSwgZW50cmllc0dyb3VwTmFtZSk7DQogICAgfQ0KDQogICAgcHVibGljIGJvb2wgQWRkVXNlclRvV2lubmVycygpDQogICAgew0KICAgICAgICBTZXRNZXNzYWdlUGxhdGZvcm0oKTsNCiAgICAgICAgQ1BILlRyeUdldEFyZygidXNlQ3VzdG9tIiwgb3V0IGJvb2wgdXNlQ3VzdG9tKTsNCiAgICAgICAgaWYgKHVzZUN1c3RvbSkNCiAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ1c2VyTmFtZSIsIG91dCBzdHJpbmcgdXNlck5hbWUpOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ1c2VySWQiLCBvdXQgc3RyaW5nIHVzZXJJZCk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoInBsYXRmb3JtIiwgb3V0IHN0cmluZyBwbGF0Zm9ybSk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoImVudHJpZXNHcm91cE5hbWUiLCBvdXQgc3RyaW5nIGVudHJpZXNHcm91cE5hbWUpOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ3aW5uaW5nR3JvdXBOYW1lIiwgb3V0IHN0cmluZyB3aW5uaW5nR3JvdXBOYW1lKTsNCiAgICAgICAgaWYgKEVudW0uVHJ5UGFyc2UocGxhdGZvcm0sIHRydWUsIG91dCBjdXJyZW50UGxhdGZvcm0pKQ0KICAgICAgICB7DQogICAgICAgICAgICBDUEguQWRkVXNlcklkVG9Hcm91cCh1c2VySWQsIGN1cnJlbnRQbGF0Zm9ybSwgd2lubmluZ0dyb3VwTmFtZSk7DQogICAgICAgICAgICBDUEguUmVtb3ZlVXNlcklkRnJvbUdyb3VwKHVzZXJJZCwgY3VycmVudFBsYXRmb3JtLCBlbnRyaWVzR3JvdXBOYW1lKTsNCiAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBSZW1vdmVVc2VyRnJvbVdpbm5lcnMoKQ0KICAgIHsNCiAgICAgICAgU2V0TWVzc2FnZVBsYXRmb3JtKCk7DQogICAgICAgIENQSC5UcnlHZXRBcmcoInVzZXJJZCIsIG91dCBzdHJpbmcgdXNlcklkKTsNCiAgICAgICAgQ1BILlRyeUdldEFyZygiY29tbWFuZFNvdXJjZSIsIG91dCBzdHJpbmcgcGxhdGZvcm0pOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJ3aW5uaW5nR3JvdXBOYW1lIiwgb3V0IHN0cmluZyB3aW5uaW5nR3JvdXBOYW1lKTsNCiAgICAgICAgaWYgKEVudW0uVHJ5UGFyc2UocGxhdGZvcm0sIHRydWUsIG91dCBjdXJyZW50UGxhdGZvcm0pKQ0KICAgICAgICB7DQogICAgICAgICAgICBDUEguUmVtb3ZlVXNlcklkRnJvbUdyb3VwKHVzZXJJZCwgY3VycmVudFBsYXRmb3JtLCB3aW5uaW5nR3JvdXBOYW1lKTsNCiAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBDbGVhckVudHJpZXNHcm91cCgpDQogICAgew0KICAgICAgICBzdHJpbmcgY29tbWFuZDsNCiAgICAgICAgaWYgKCFDUEguVHJ5R2V0QXJnKCJjb21tYW5kIiwgb3V0IGNvbW1hbmQpKQ0KICAgICAgICAgICAgY29tbWFuZCA9ICJ0aGlzIGFjdGlvbiI7DQoNCiAgICAgICAgaWYgKCFjb25maXJtQ2xlYXJVc2VyRW50cmllcykNCiAgICAgICAgew0KICAgICAgICAgICAgU2VuZE1lc3NhZ2VJbkNodW5rcygkIkFyZSB5b3Ugc3VyZSB5b3Ugd2FudCB0byBjbGVhciB0aGUgdGV4dCBmaWxlPyBSdW4ge2NvbW1hbmR9IGFnYWluIHRvIGNvbmZpcm0iKTsNCiAgICAgICAgICAgIGNvbmZpcm1DbGVhclVzZXJFbnRyaWVzID0gdHJ1ZTsNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgfQ0KICAgICAgICBlbHNlDQogICAgICAgIHsNCiAgICAgICAgICAgIFNldE1lc3NhZ2VQbGF0Zm9ybSgpOw0KICAgICAgICAgICAgQ1BILlRyeUdldEFyZygiZW50cmllc0dyb3VwTmFtZSIsIG91dCBzdHJpbmcgZW50cmllc0dyb3VwTmFtZSk7DQogICAgICAgICAgICBTZXRDbGVhckNvbmZpcm1Ub0ZhbHNlKCk7DQogICAgICAgICAgICByZXR1cm4gQ1BILkNsZWFyVXNlcnNGcm9tR3JvdXAoZW50cmllc0dyb3VwTmFtZSk7DQogICAgICAgIH0NCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBDbGVhcldpbm5lcnNHcm91cCgpDQogICAgew0KICAgICAgICBzdHJpbmcgY29tbWFuZDsNCiAgICAgICAgaWYgKCFDUEguVHJ5R2V0QXJnKCJjb21tYW5kIiwgb3V0IGNvbW1hbmQpKQ0KICAgICAgICAgICAgY29tbWFuZCA9ICJ0aGlzIGFjdGlvbiI7DQoNCiAgICAgICAgaWYgKCFjb25maXJtQ2xlYXJVc2VyV2lubmVycykNCiAgICAgICAgew0KICAgICAgICAgICAgU2VuZE1lc3NhZ2VJbkNodW5rcygkIkFyZSB5b3Ugc3VyZSB5b3Ugd2FudCB0byBjbGVhciB0aGUgdGV4dCBmaWxlPyBSdW4ge2NvbW1hbmR9IGFnYWluIHRvIGNvbmZpcm0iKTsNCiAgICAgICAgICAgIGNvbmZpcm1DbGVhclVzZXJXaW5uZXJzID0gdHJ1ZTsNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgfQ0KICAgICAgICBlbHNlDQogICAgICAgIHsNCiAgICAgICAgICAgIFNldE1lc3NhZ2VQbGF0Zm9ybSgpOw0KICAgICAgICAgICAgQ1BILlRyeUdldEFyZygid2lubmluZ0dyb3VwTmFtZSIsIG91dCBzdHJpbmcgd2lubmluZ0dyb3VwTmFtZSk7DQogICAgICAgICAgICBTZXRDbGVhckNvbmZpcm1Ub0ZhbHNlKCk7DQogICAgICAgICAgICByZXR1cm4gQ1BILkNsZWFyVXNlcnNGcm9tR3JvdXAod2lubmluZ0dyb3VwTmFtZSk7DQogICAgICAgIH0NCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBTZW5kR3JvdXBEYXRhKCkNCiAgICB7DQogICAgICAgIHN0cmluZyBtZXRob2ROYW1lID0gJCJ7TWV0aG9kQmFzZS5HZXRDdXJyZW50TWV0aG9kKCkuTmFtZX06ICI7DQogICAgICAgIGlmICghQ1BILlRyeUdldEFyZygiaW5zdGFuY2UiLCBvdXQgc3RyaW5nIGluc3RhbmNlKSkNCiAgICAgICAgICAgIGluc3RhbmNlID0gIjAiOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJlbnRyaWVzR3JvdXBOYW1lIiwgb3V0IHN0cmluZyBlbnRyaWVzR3JvdXBOYW1lKTsNCiAgICAgICAgQ1BILlRyeUdldEFyZygidXNlQ3VzdG9tIiwgb3V0IGJvb2wgdXNlQ3VzdG9tKTsNCiAgICAgICAgTGlzdDxHcm91cFVzZXI+IHVzZXJzSW5Hcm91cCA9IENQSC5Vc2Vyc0luR3JvdXAoZW50cmllc0dyb3VwTmFtZSk7DQogICAgICAgIExpc3Q8V2hlZWxXaW5uZXI+IHVzZXJMaXN0ID0gbmV3IExpc3Q8V2hlZWxXaW5uZXI+KCk7DQogICAgICAgIGlmICghdXNlQ3VzdG9tKQ0KICAgICAgICB7ICAgICAgICAgICAgDQogICAgICAgICAgICBmb3JlYWNoIChHcm91cFVzZXIgdXNlciBpbiB1c2Vyc0luR3JvdXApDQogICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgdXNlckxpc3QuQWRkKG5ldyBXaGVlbFdpbm5lcnsNCiAgICAgICAgICAgICAgICAgICAgdXNlck5hbWUgPSB1c2VyLlVzZXJuYW1lLA0KICAgICAgICAgICAgICAgICAgICB1c2VySWQgPSB1c2VyLklkLA0KICAgICAgICAgICAgICAgICAgICBwbGF0Zm9ybSA9IHVzZXIuVHlwZQ0KICAgICAgICAgICAgICAgIH0pOw0KICAgICAgICAgICAgfQ0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgc3RyaW5nIHNwaW5uaW5nd2hlZWxGb2xkZXJQYXRoID0gQ1BILkdldEdsb2JhbFZhcjxzdHJpbmc+KCQie0dWQVJfUFJFRklYfUZvbGRlclBhdGgiLCB0cnVlKSA/PyBQYXRoLkdldEZ1bGxQYXRoKCBQYXRoLkNvbWJpbmUoQXBwRG9tYWluLkN1cnJlbnREb21haW4uQmFzZURpcmVjdG9yeSwgIi4uIiwgInNwaW5uaW5nUHJpemVXaGVlbCIpICk7DQogICAgICAgICAgICBzdHJpbmcgZmlsZVBhdGggPSBQYXRoLkNvbWJpbmUoc3Bpbm5pbmd3aGVlbEZvbGRlclBhdGgsICJuYW1lcy50eHQiKTsNCiAgICAgICAgICAgIGludCB1c2VySWRDb3VudGVyID0gMDsNCiAgICAgICAgICAgIHVzaW5nIChTdHJlYW1SZWFkZXIgc3IgPSBuZXcgU3RyZWFtUmVhZGVyKGZpbGVQYXRoKSkNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICBzdHJpbmcgbGluZTsNCiAgICAgICAgICAgICAgICB3aGlsZSAoKGxpbmUgPSBzci5SZWFkTGluZSgpKSAhPSBudWxsKQ0KICAgICAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICAgICAgdXNlckxpc3QuQWRkKG5ldyBXaGVlbFdpbm5lcnsNCiAgICAgICAgICAgICAgICAgICAgICAgIHVzZXJOYW1lID0gbGluZS5UcmltKCksDQogICAgICAgICAgICAgICAgICAgICAgICB1c2VySWQgPSB1c2VySWRDb3VudGVyKysuVG9TdHJpbmcoKSwNCiAgICAgICAgICAgICAgICAgICAgICAgIHBsYXRmb3JtID0gImN1c3RvbSINCiAgICAgICAgICAgICAgICAgICAgfSk7DQogICAgICAgICAgICAgICAgfQ0KICAgICAgICAgICAgfQ0KICAgICAgICB9DQoNCiAgICAgICAgLy8gQ3JlYXRlIGEgSlNPTiBvYmplY3QgY29udGFpbmluZyB0aGUgYXJyYXkgb2YgdXNlciBkYXRhDQogICAgICAgIEpPYmplY3Qgak9iamVjdCA9IG5ldyBKT2JqZWN0KA0KICAgICAgICAgICAgbmV3IEpQcm9wZXJ0eSgiZXh0ZW5zaW9uTmFtZSIsICJzcGlubmluZ1ByaXplV2hlZWwiKSwNCiAgICAgICAgICAgIG5ldyBKUHJvcGVydHkoImdyb3VwRGF0YSIsIEpBcnJheS5Gcm9tT2JqZWN0KHVzZXJMaXN0KSksDQogICAgICAgICAgICBuZXcgSlByb3BlcnR5KCJ1c2VDdXN0b20iLCB1c2VDdXN0b20pLA0KICAgICAgICAgICAgbmV3IEpQcm9wZXJ0eSgiaW5zdGFuY2UiLCBpbnN0YW5jZSkNCiAgICAgICAgKTsNCg0KICAgICAgICBMb2dWZXJib3NlKCQie21ldGhvZE5hbWV9Z3JvdXBEYXRhICd7SnNvbkNvbnZlcnQuU2VyaWFsaXplT2JqZWN0KGpPYmplY3QsIEZvcm1hdHRpbmcuTm9uZSl9JyIpOw0KICAgICAgICBDUEguV2Vic29ja2V0QnJvYWRjYXN0SnNvbihqT2JqZWN0LlRvU3RyaW5nKCkpOyAvLyBCcm9hZGNhc3QgdGhlIHNlcmlhbGl6ZWQgSk9iamVjdA0KICAgICAgICByZXR1cm4gdHJ1ZTsNCiAgICB9DQoNCiAgICBwdWJsaWMgYm9vbCBTZW5kTWVzc2FnZVRvUGxhdGZvcm0oKQ0KICAgIHsNCiAgICAgICAgc3RyaW5nIG1ldGhvZE5hbWUgPSAkIntNZXRob2RCYXNlLkdldEN1cnJlbnRNZXRob2QoKS5OYW1lfTogIjsNCiAgICAgICAgaWYgKCFUcnlHZXRQbGF0Zm9ybUxpc3Qob3V0IEhhc2hTZXQ8UGxhdGZvcm0+IHBsYXRmb3JtTGlzdCkpDQogICAgICAgIHsNCiAgICAgICAgICAgIExvZ0Vycm9yKCQie21ldGhvZE5hbWV9UGxlYXNlIGNoZWNrICdTcGlubmluZyBQcml6ZSBXaGVlbCAxLiBTZXR0aW5ncycgdG8gbWFrZSBzdXJlIHlvdXIgcGxhdGZvcm0gaGFzIGF0IGxlYXN0IG9uZSBwbGF0Zm9ybSIpOw0KICAgICAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgICAgICB9DQoNCiAgICAgICAgaWYgKCFDUEguVHJ5R2V0QXJnKCJtZXNzYWdlIiwgb3V0IHN0cmluZyBtZXNzYWdlKSkNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCiAgICAgICAgYm9vbCBzdWNjZXNzID0gZmFsc2U7DQoNCiAgICAgICAgaWYgKHNlbmRBbGxQbGF0Zm9ybXMpDQogICAgICAgIHsNCiAgICAgICAgICAgIGZvcmVhY2ggKHZhciBwbGF0Zm9ybSBpbiBwbGF0Zm9ybUxpc3QpDQogICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgY3VycmVudFBsYXRmb3JtID0gcGxhdGZvcm07DQogICAgICAgICAgICAgICAgc3VjY2VzcyA9IFNlbmRNZXNzYWdlSW5DaHVua3MobWVzc2FnZSk7DQogICAgICAgICAgICB9DQogICAgICAgIH0NCiAgICAgICAgZWxzZQ0KICAgICAgICAgICAgc3VjY2VzcyA9IFNlbmRNZXNzYWdlSW5DaHVua3MobWVzc2FnZSk7DQogICAgICAgIHJldHVybiBzdWNjZXNzOw0KICAgIH0NCg0KICAgIHByaXZhdGUgYm9vbCBUcnlHZXRGaWxlUGF0aChvdXQgc3RyaW5nIGZpbGVQYXRoKQ0KICAgIHsNCiAgICAgICAgdXNpbmcgKE9wZW5GaWxlRGlhbG9nIG9wZW5GaWxlRGlhbG9nID0gbmV3IE9wZW5GaWxlRGlhbG9nKCkpDQogICAgICAgIHsNCiAgICAgICAgICAgIC8vIFNldCB0aGUgaW5pdGlhbCBkaXJlY3RvcnkgKG9wdGlvbmFsKQ0KICAgICAgICAgICAgb3BlbkZpbGVEaWFsb2cuSW5pdGlhbERpcmVjdG9yeSA9IEFwcERvbWFpbi5DdXJyZW50RG9tYWluLkJhc2VEaXJlY3Rvcnk7DQoNCiAgICAgICAgICAgIC8vIFNldCB0aGUgZmlsZSBmaWx0ZXIgKG9wdGlvbmFsKQ0KICAgICAgICAgICAgLy8gb3BlbkZpbGVEaWFsb2cuRmlsdGVyID0gIlRleHQgRmlsZXMgKCoudHh0KXwqLnR4dHxBbGwgRmlsZXMgKCouKil8Ki4qIjsNCg0KICAgICAgICAgICAgLy8gU2V0IG5vIGZpbHRlciwgYWxsb3dpbmcgYWxsIGZpbGVzIHRvIGJlIGRpc3BsYXllZA0KICAgICAgICAgICAgb3BlbkZpbGVEaWFsb2cuRmlsdGVyID0gIkhUTUwgRmlsZXMgKCouaHRtbCl8Ki5odG1sIjsNCg0KICAgICAgICAgICAgLy8gU2hvdyB0aGUgZGlhbG9nIGFuZCBjaGVjayBpZiB0aGUgdXNlciBjbGlja2VkIE9LDQogICAgICAgICAgICBpZiAob3BlbkZpbGVEaWFsb2cuU2hvd0RpYWxvZygpID09IERpYWxvZ1Jlc3VsdC5PSykNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICAvLyBTZXQgdGhlIHNlbGVjdGVkIGZpbGUgcGF0aCBhbmQgcmV0dXJuIHRydWUNCiAgICAgICAgICAgICAgICBmaWxlUGF0aCA9IG9wZW5GaWxlRGlhbG9nLkZpbGVOYW1lOw0KICAgICAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICAgICAgfQ0KICAgICAgICB9DQoNCiAgICAgICAgLy8gSWYgbm8gZmlsZSB3YXMgc2VsZWN0ZWQgb3IgdGhlIGRpYWxvZyB3YXMgY2FuY2VsbGVkLCBzZXQgdGhlIGZpbGVQYXRoIHRvIG51bGwgYW5kIHJldHVybiBmYWxzZQ0KICAgICAgICBmaWxlUGF0aCA9IHN0cmluZy5FbXB0eTsNCiAgICAgICAgcmV0dXJuIGZhbHNlOw0KICAgIH0NCg0KICAgIHByaXZhdGUgc3RyaW5nIEFwcGVuZFVSTFBhcmFtcygpDQogICAgew0KICAgICAgICBTdHJpbmdCdWlsZGVyIHF1ZXJ5U3RyaW5nQnVpbGRlciA9IG5ldyBTdHJpbmdCdWlsZGVyKCk7DQoNCiAgICAgICAgLy8gQXBwZW5kIHdzSG9zdCBhcyBhIHF1ZXJ5IHBhcmFtZXRlciBpZiBpdCBleGlzdHMNCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoIndzSG9zdCIsIG91dCBzdHJpbmcgd3NIb3N0KSkNCiAgICAgICAgew0KICAgICAgICAgICAgcXVlcnlTdHJpbmdCdWlsZGVyLkFwcGVuZCgkIj9ob3N0PXt3c0hvc3R9Iik7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBBcHBlbmQgd3NQb3J0IGFzIGEgcXVlcnkgcGFyYW1ldGVyIGlmIGl0IGV4aXN0cw0KICAgICAgICBpZiAoQ1BILlRyeUdldEFyZygid3NQb3J0Iiwgb3V0IHN0cmluZyB3c1BvcnQpKQ0KICAgICAgICB7DQogICAgICAgICAgICBpZiAocXVlcnlTdHJpbmdCdWlsZGVyLkxlbmd0aCA+IDApDQogICAgICAgICAgICAgICAgcXVlcnlTdHJpbmdCdWlsZGVyLkFwcGVuZCgkIiZwb3J0PXt3c1BvcnR9Iik7IC8vIEFwcGVuZCB3aXRoIGFuIGFtcGVyc2FuZA0KICAgICAgICAgICAgZWxzZQ0KICAgICAgICAgICAgICAgIHF1ZXJ5U3RyaW5nQnVpbGRlci5BcHBlbmQoJCI/cG9ydD17d3NQb3J0fSIpOyAvLyBBcHBlbmQgd2l0aCBhIHF1ZXN0aW9uIG1hcmsgc2luY2UgaXQncyB0aGUgZmlyc3QgcGFyYW1ldGVyDQogICAgICAgIH0NCg0KICAgICAgICAvLyBBcHBlbmQgd3NFbmRwb2ludCBhcyBhIHF1ZXJ5IHBhcmFtZXRlciBpZiBpdCBleGlzdHMNCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoIndzRW5kcG9pbnQiLCBvdXQgc3RyaW5nIHdzRW5kcG9pbnQpKQ0KICAgICAgICB7DQogICAgICAgICAgICBpZiAocXVlcnlTdHJpbmdCdWlsZGVyLkxlbmd0aCA+IDApDQogICAgICAgICAgICAgICAgcXVlcnlTdHJpbmdCdWlsZGVyLkFwcGVuZCgkIiZlbmRwb2ludD17d3NFbmRwb2ludH0iKTsgLy8gQXBwZW5kIHdpdGggYW4gYW1wZXJzYW5kDQogICAgICAgICAgICBlbHNlDQogICAgICAgICAgICAgICAgcXVlcnlTdHJpbmdCdWlsZGVyLkFwcGVuZCgkIj9lbmRwb2ludD17d3NFbmRwb2ludH0iKTsgLy8gQXBwZW5kIHdpdGggYSBxdWVzdGlvbiBtYXJrIHNpbmNlIGl0J3MgdGhlIGZpcnN0IHBhcmFtZXRlcg0KICAgICAgICB9DQoNCiAgICAgICAgLy8gQXBwZW5kIGltZyBhcyBhIHF1ZXJ5IHBhcmFtZXRlciBpZiBpdCBleGlzdHMNCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoImltZyIsIG91dCBzdHJpbmcgaW1nKSkNCiAgICAgICAgew0KICAgICAgICAgICAgaWYgKHF1ZXJ5U3RyaW5nQnVpbGRlci5MZW5ndGggPiAwKQ0KICAgICAgICAgICAgICAgIHF1ZXJ5U3RyaW5nQnVpbGRlci5BcHBlbmQoJCImaW1nPXtpbWd9Iik7IC8vIEFwcGVuZCB3aXRoIGFuIGFtcGVyc2FuZA0KICAgICAgICAgICAgZWxzZQ0KICAgICAgICAgICAgICAgIHF1ZXJ5U3RyaW5nQnVpbGRlci5BcHBlbmQoJCI/aW1nPXtpbWd9Iik7IC8vIEFwcGVuZCB3aXRoIGEgcXVlc3Rpb24gbWFyayBzaW5jZSBpdCdzIHRoZSBmaXJzdCBwYXJhbWV0ZXINCiAgICAgICAgfQ0KDQogICAgICAgIC8vIEFwcGVuZCB0aGUgcXVlcnkgc3RyaW5nIHRvIHRoZSBVUkwNCiAgICAgICAgcmV0dXJuIHF1ZXJ5U3RyaW5nQnVpbGRlci5Ub1N0cmluZygpOw0KICAgIH0NCg0KICAgIHByaXZhdGUgYm9vbCBJc1dpbmRvd3MoKQ0KICAgIHsNCiAgICAgICAgc3RyaW5nIG1ldGhvZE5hbWUgPSAkIntNZXRob2RCYXNlLkdldEN1cnJlbnRNZXRob2QoKS5OYW1lfTogIjsNCiAgICAgICAgaW50IG9ic0Nvbm5lY3Rpb24gPSAwOw0KICAgICAgICBpZiAoQ1BILlRyeUdldEFyZygib2JzQ29ubmVjdGlvbiIsIG91dCBzdHJpbmcgb2JzQ29ubmVjdGlvblN0cmluZykpDQogICAgICAgIHsNCiAgICAgICAgICAgIG9ic0Nvbm5lY3Rpb24gPSBDb252ZXJ0LlRvSW50MzIob2JzQ29ubmVjdGlvblN0cmluZyk7DQogICAgICAgIH0NCiAgICAgICAgc3RyaW5nIGpzb25TdHJpbmcgPSBDUEguT2JzU2VuZFJhdygiR2V0VmVyc2lvbiIsIG5ldyBKT2JqZWN0KCkuVG9TdHJpbmcoKSwgb2JzQ29ubmVjdGlvbik7DQogICAgICAgIEpPYmplY3QganNvbiA9IEpPYmplY3QuUGFyc2UoanNvblN0cmluZyk7DQogICAgICAgIHN0cmluZyBwbGF0Zm9ybSA9IGpzb25bInBsYXRmb3JtIl0/LlRvU3RyaW5nKCkgPz8gIndpbmRvd3MiOw0KICAgICAgICBMb2dEZWJ1ZygkInttZXRob2ROYW1lfXBsYXRmb3JtOiAne3BsYXRmb3JtfSciKTsNCg0KICAgICAgICAvLyBQZXJmb3JtIG9yZGluYWwgaWdub3JlIGNhc2UgY29tcGFyaXNvbg0KICAgICAgICBib29sIGlzV2luZG93cyA9IHN0cmluZy5FcXVhbHMocGxhdGZvcm0sICJ3aW5kb3dzIiwgU3RyaW5nQ29tcGFyaXNvbi5PcmRpbmFsSWdub3JlQ2FzZSk7DQogICAgICAgIHJldHVybiBpc1dpbmRvd3M7DQogICAgfQ0KDQogICAgcHJpdmF0ZSBzdHJpbmcgUmVtb3ZlRHJpdmVMZXR0ZXJGcm9tVXJsKHN0cmluZyB1cmwpDQogICAgew0KICAgICAgICAvLyBEZWZpbmUgYSByZWd1bGFyIGV4cHJlc3Npb24gcGF0dGVybiB0byBtYXRjaCB0aGUgZHJpdmUgbGV0dGVyIGFuZCBjb2xvbiBhdCB0aGUgYmVnaW5uaW5nIG9mIHRoZSBVUkwNCiAgICAgICAgc3RyaW5nIHBhdHRlcm4gPSBAIl5maWxlOi8vW2EtekEtWl06LyI7DQoNCiAgICAgICAgLy8gVXNlIFJlZ2V4LlJlcGxhY2UgdG8gcmVtb3ZlIHRoZSBkcml2ZSBsZXR0ZXIgYW5kIGNvbG9uIGZyb20gdGhlIGJlZ2lubmluZyBvZiB0aGUgVVJMDQogICAgICAgIHN0cmluZyBuZXdVcmwgPSBSZWdleC5SZXBsYWNlKHVybCwgcGF0dGVybiwgImZpbGU6Ly8vIik7DQoNCiAgICAgICAgcmV0dXJuIG5ld1VybDsNCiAgICB9DQoNCiAgICBwcml2YXRlIHN0cmluZyBHZXRQbGF0Zm9ybU5hbWUoRW51bSBlbnVtVmFsdWUpDQogICAgew0KICAgICAgICBzdHJpbmcgZW51bU5hbWUgPSBlbnVtVmFsdWUuVG9TdHJpbmcoKTsNCiAgICAgICAgTWVtYmVySW5mbyBtZW1iZXJJbmZvID0gZW51bVZhbHVlLkdldFR5cGUoKS5HZXRNZW1iZXIoZW51bU5hbWUpWzBdOw0KICAgICAgICBFbnVtTWVtYmVyQXR0cmlidXRlIGF0dHJpYnV0ZSA9IChFbnVtTWVtYmVyQXR0cmlidXRlKUF0dHJpYnV0ZS5HZXRDdXN0b21BdHRyaWJ1dGUobWVtYmVySW5mbywgdHlwZW9mKEVudW1NZW1iZXJBdHRyaWJ1dGUpKTsNCiAgICAgICAgDQogICAgICAgIHN0cmluZyBhdHRyaWJ1dGVWYWx1ZSA9IGF0dHJpYnV0ZS5WYWx1ZTsNCiAgICAgICAgaWYgKGF0dHJpYnV0ZVZhbHVlICE9IG51bGwpDQogICAgICAgIHsNCiAgICAgICAgICAgIC8vIENhcGl0YWxpemUgdGhlIGZpcnN0IGxldHRlciBpZiBpdCdzIG5vdCBhbHJlYWR5IGNhcGl0YWxpemVkDQogICAgICAgICAgICBhdHRyaWJ1dGVWYWx1ZSA9IGNoYXIuVG9VcHBlcihhdHRyaWJ1dGVWYWx1ZVswXSkgKyBhdHRyaWJ1dGVWYWx1ZS5TdWJzdHJpbmcoMSk7DQogICAgICAgICAgICANCiAgICAgICAgICAgIC8vIFNwZWNpYWwgaGFuZGxpbmcgZm9yICJ5b3V0dWJlIg0KICAgICAgICAgICAgaWYgKGVudW1OYW1lLkVxdWFscygieW91dHViZSIsIFN0cmluZ0NvbXBhcmlzb24uT3JkaW5hbElnbm9yZUNhc2UpKQ0KICAgICAgICAgICAgew0KICAgICAgICAgICAgICAgIGF0dHJpYnV0ZVZhbHVlID0gIllvdVR1YmUiOw0KICAgICAgICAgICAgfQ0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgYXR0cmlidXRlVmFsdWUgPSBlbnVtTmFtZTsgLy8gRmFsbCBiYWNrIHRvIGVudW0gbmFtZSBpZiBubyBhdHRyaWJ1dGUgdmFsdWUNCiAgICAgICAgfQ0KICAgICAgICANCiAgICAgICAgcmV0dXJuIGF0dHJpYnV0ZVZhbHVlOw0KICAgIH0NCg0KICAgIHByaXZhdGUgdm9pZCBTZXRDbGVhckNvbmZpcm1Ub0ZhbHNlKCkNCiAgICB7DQogICAgICAgIGNvbmZpcm1DbGVhclRleHRGaWxlID0gZmFsc2U7DQogICAgICAgIGNvbmZpcm1DbGVhclVzZXJFbnRyaWVzID0gZmFsc2U7DQogICAgICAgIGNvbmZpcm1DbGVhclVzZXJXaW5uZXJzID0gZmFsc2U7DQogICAgfQ0KDQogICAgcHVibGljIGJvb2wgVHJ5R2V0UGxhdGZvcm1MaXN0KG91dCBIYXNoU2V0PFBsYXRmb3JtPiBwbGF0Zm9ybUxpc3QpDQogICAgew0KICAgICAgICBzdHJpbmcgbWV0aG9kTmFtZSA9ICQie01ldGhvZEJhc2UuR2V0Q3VycmVudE1ldGhvZCgpLk5hbWV9OiAiOw0KICAgICAgICBwbGF0Zm9ybUxpc3QgPSBuZXcgSGFzaFNldDxQbGF0Zm9ybT4oKTsNCiAgICAgICAgaW50IHBsYXRmb3JtQWRkZWQgPSAwOw0KICAgICAgICBDUEguVHJ5R2V0QXJnKCJwbGF0Zm9ybXMiLCBvdXQgc3RyaW5nIHBsYXRmb3JtU3RyaW5nKTsNCiAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KHBsYXRmb3JtU3RyaW5nKSkNCiAgICAgICAgICAgIHJldHVybiBmYWxzZTsNCg0KICAgICAgICBwbGF0Zm9ybVN0cmluZyA9IHBsYXRmb3JtU3RyaW5nLlRyaW0oKTsgLy8gUmVtb3ZlIGxlYWRpbmcgYW5kIHRyYWlsaW5nIHdoaXRlc3BhY2UNCiAgICAgICAgcGxhdGZvcm1TdHJpbmcgPSBSZWdleC5SZXBsYWNlKHBsYXRmb3JtU3RyaW5nLCBAIlteXHdcc10iLCAiLCIpOyAvLyBSZXBsYWNlIGFsbCBub24td29yZCBjaGFyYWN0ZXJzICh3aGl0ZXNwYWNlIG9yIHB1bmN0dWF0aW9uKSB3aXRoIHNwYWNlcw0KDQogICAgICAgIC8vIFNwbGl0IHRoZSBwbGF0Zm9ybVN0cmluZyBieSBjb21tYXMNCiAgICAgICAgc3RyaW5nW10gcGxhdGZvcm1zID0gUmVnZXguU3BsaXQocGxhdGZvcm1TdHJpbmcsIEAiW1xzLF0rIik7DQogICAgICAgIGludCBwbGF0Zm9ybVN0cmluZ0NvdW50ID0gcGxhdGZvcm1zLkxlbmd0aDsNCg0KICAgICAgICAvLyBJdGVyYXRlIG92ZXIgZWFjaCBwbGF0Zm9ybQ0KICAgICAgICBmb3JlYWNoIChzdHJpbmcgcGxhdGZvcm0gaW4gcGxhdGZvcm1zKQ0KICAgICAgICB7DQogICAgICAgICAgICBpZiAoIUVudW0uVHJ5UGFyc2UocGxhdGZvcm0uVHJpbSgpLCB0cnVlLCBvdXQgUGxhdGZvcm0gdGhpc1BsYXRmb3JtKSkNCiAgICAgICAgICAgICAgICBjb250aW51ZTsNCiAgICAgICAgICAgIHBsYXRmb3JtTGlzdC5BZGQodGhpc1BsYXRmb3JtKTsNCiAgICAgICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX1BZGRlZCAne3BsYXRmb3JtfSB0byBwbGF0Zm9ybUxpc3QnIik7DQogICAgICAgICAgICBwbGF0Zm9ybUFkZGVkKys7DQogICAgICAgIH0NCg0KICAgICAgICBpZiAocGxhdGZvcm1BZGRlZCA9PSBwbGF0Zm9ybVN0cmluZ0NvdW50KQ0KICAgICAgICB7DQogICAgICAgICAgICBMb2dWZXJib3NlKCQie21ldGhvZE5hbWV9e3BsYXRmb3JtQWRkZWR9IHBsYXRmb3JtcyBhZGRlZCB0byBwbGF0Zm9ybUxpc3QiKTsNCiAgICAgICAgICAgIExvZ1ZlcmJvc2UoJCJ7bWV0aG9kTmFtZX1wbGF0Zm9ybUxpc3QgJ3tKc29uQ29udmVydC5TZXJpYWxpemVPYmplY3QocGxhdGZvcm1MaXN0LCBGb3JtYXR0aW5nLk5vbmUpfSciKTsNCiAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAgICB9DQogICAgICAgIGVsc2UNCiAgICAgICAgew0KICAgICAgICAgICAgTG9nRXJyb3IoJCJ7bWV0aG9kTmFtZX1Ob3QgYWxsIHBsYXRmb3JtcyBhZGRlZCB0byBsaXN0Iik7DQogICAgICAgICAgICBMb2dWZXJib3NlKCQie21ldGhvZE5hbWV9cGxhdGZvcm1MaXN0ICd7SnNvbkNvbnZlcnQuU2VyaWFsaXplT2JqZWN0KHBsYXRmb3JtTGlzdCwgRm9ybWF0dGluZy5Ob25lKX0nIik7DQogICAgICAgICAgICByZXR1cm4gZmFsc2U7DQogICAgICAgIH0NCiAgICB9DQoNCiAgICAvLyBTZXQgdGhlIG1lc3NhZ2UgcGxhdGZvcm0gYmFzZWQgb24gdGhlIHNwZWNpZmllZCBvciBkZWZhdWx0IGNvbW1hbmQgc291cmNlDQogICAgcHJpdmF0ZSB2b2lkIFNldE1lc3NhZ2VQbGF0Zm9ybSgpDQogICAgew0KICAgICAgICBzdHJpbmcgbWV0aG9kTmFtZSA9ICQie01ldGhvZEJhc2UuR2V0Q3VycmVudE1ldGhvZCgpLk5hbWV9OiAiOw0KICAgICAgICBzd2l0Y2ggKENQSC5HZXRTb3VyY2UoKSkNCiAgICAgICAgew0KICAgICAgICAgICAgY2FzZSBFdmVudFNvdXJjZS5Ud2l0Y2g6DQogICAgICAgICAgICAgICAgY3VycmVudFBsYXRmb3JtID0gUGxhdGZvcm0uVHdpdGNoOw0KICAgICAgICAgICAgICAgIHBsYXRmb3JtTGlzdC5BZGQoUGxhdGZvcm0uVHdpdGNoKTsNCiAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgY2FzZSBFdmVudFNvdXJjZS5Zb3VUdWJlOg0KICAgICAgICAgICAgICAgIGN1cnJlbnRQbGF0Zm9ybSA9IFBsYXRmb3JtLllvdVR1YmU7DQogICAgICAgICAgICAgICAgcGxhdGZvcm1MaXN0LkFkZChQbGF0Zm9ybS5Zb3VUdWJlKTsNCiAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgY2FzZSBFdmVudFNvdXJjZS5LaWNrOg0KICAgICAgICAgICAgICAgIGN1cnJlbnRQbGF0Zm9ybSA9IFBsYXRmb3JtLktpY2s7DQogICAgICAgICAgICAgICAgcGxhdGZvcm1MaXN0LkFkZChQbGF0Zm9ybS5LaWNrKTsNCiAgICAgICAgICAgICAgICBicmVhazsNCiAgICAgICAgfQ0KDQogICAgICAgIHN3aXRjaCAoQ1BILkdldEV2ZW50VHlwZSgpKQ0KICAgICAgICB7DQogICAgICAgICAgICBjYXNlIEV2ZW50VHlwZS5Db21tYW5kVHJpZ2dlcmVkOg0KICAgICAgICAgICAgICAgIENQSC5UcnlHZXRBcmcoImNvbW1hbmRTb3VyY2UiLCBvdXQgc3RyaW5nIGNvbW1hbmRTb3VyY2UpOw0KICAgICAgICAgICAgICAgIEVudW0uVHJ5UGFyc2UoY29tbWFuZFNvdXJjZSwgdHJ1ZSwgb3V0IGN1cnJlbnRQbGF0Zm9ybSk7DQogICAgICAgICAgICAgICAgTG9nVmVyYm9zZSgkInttZXRob2ROYW1lfWNvbW1hbmRTb3VyY2UgJ3tjb21tYW5kU291cmNlfSciKTsNCiAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgY2FzZSBFdmVudFR5cGUuVHdpdGNoUmV3YXJkUmVkZW1wdGlvbjoNCiAgICAgICAgICAgICAgICBjdXJyZW50UGxhdGZvcm0gPSBQbGF0Zm9ybS5Ud2l0Y2g7DQogICAgICAgICAgICAgICAgYnJlYWs7DQogICAgICAgIH0NCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoInNlbmRBbGxQbGF0Zm9ybXMiLCBvdXQgc2VuZEFsbFBsYXRmb3Jtcykpe30NCiAgICAgICAgaWYgKENQSC5UcnlHZXRBcmcoInNlbmRBc0JvdCIsIG91dCBzZW5kQXNCb3QpKXt9DQogICAgICAgIGlmIChDUEguVHJ5R2V0QXJnKCJzZW5kRmFsbGJhY2siLCBvdXQgc2VuZEZhbGxiYWNrKSl7fQ0KICAgIH0NCg0KICAgIC8vIFNlbmQgYSBtZXNzYWdlIGluIGNodW5rcyBiYXNlZCBvbiB0aGUgc3BlY2lmaWVkIG1heCBjaHVuayBzaXplDQogICAgcHJpdmF0ZSBib29sIFNlbmRNZXNzYWdlSW5DaHVua3Moc3RyaW5nIG1lc3NhZ2UpDQogICAgew0KICAgICAgICBpbnQgbWF4Q2h1bmtTaXplOw0KICAgICAgICBpbnQgZGVsYXk7DQogICAgICAgIGJvb2wgc3VjY2VzcyA9IGZhbHNlOw0KICAgICAgICBzd2l0Y2ggKGN1cnJlbnRQbGF0Zm9ybSkNCiAgICAgICAgew0KICAgICAgICAgICAgY2FzZSBQbGF0Zm9ybS5Ud2l0Y2g6DQogICAgICAgICAgICBjYXNlIFBsYXRmb3JtLktpY2s6DQogICAgICAgICAgICAgICAgbWF4Q2h1bmtTaXplID0gNTAwOw0KICAgICAgICAgICAgICAgIGRlbGF5ID0gMTAwMDsNCiAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgZGVmYXVsdDogLy8gWW91VHViZQ0KICAgICAgICAgICAgICAgIG1heENodW5rU2l6ZSA9IDIwMDsNCiAgICAgICAgICAgICAgICBkZWxheSA9IDIwMDA7DQogICAgICAgICAgICAgICAgYnJlYWs7DQogICAgICAgIH0NCiAgICAgICAgTGlzdDxzdHJpbmc+IGNodW5rcyA9IFNwbGl0TWVzc2FnZUludG9DaHVua3NCeVdvcmRzKG1lc3NhZ2UsIG1heENodW5rU2l6ZSk7DQoNCiAgICAgICAgZm9yZWFjaCAoc3RyaW5nIGNodW5rIGluIGNodW5rcykNCiAgICAgICAgew0KICAgICAgICAgICAgc3VjY2VzcyA9IFNlbmRNZXNzYWdlKGNodW5rKTsNCiAgICAgICAgICAgIENQSC5XYWl0KGRlbGF5KTsNCiAgICAgICAgfQ0KICAgICAgICByZXR1cm4gc3VjY2VzczsNCiAgICB9DQoNCiAgICBwcml2YXRlIExpc3Q8c3RyaW5nPiBTcGxpdE1lc3NhZ2VJbnRvQ2h1bmtzQnlXb3JkcyhzdHJpbmcgbWVzc2FnZSwgaW50IG1heENodW5rU2l6ZSkNCiAgICB7DQogICAgICAgIExpc3Q8c3RyaW5nPiBjaHVua3MgPSBuZXcgTGlzdDxzdHJpbmc+KCk7DQogICAgICAgIHN0cmluZ1tdIHdvcmRzID0gbWVzc2FnZS5TcGxpdCgnICcpOw0KDQogICAgICAgIFN0cmluZ0J1aWxkZXIgY3VycmVudENodW5rID0gbmV3IFN0cmluZ0J1aWxkZXIoKTsNCiAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHdvcmQgaW4gd29yZHMpDQogICAgICAgIHsNCiAgICAgICAgICAgIGlmIChjdXJyZW50Q2h1bmsuTGVuZ3RoICsgd29yZC5MZW5ndGggKyAxIDw9IG1heENodW5rU2l6ZSkNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICBpZiAoY3VycmVudENodW5rLkxlbmd0aCA+IDApDQogICAgICAgICAgICAgICAgew0KICAgICAgICAgICAgICAgICAgICBjdXJyZW50Q2h1bmsuQXBwZW5kKCcgJyk7IC8vIEFkZCBzcGFjZSBiZXR3ZWVuIHdvcmRzDQogICAgICAgICAgICAgICAgfQ0KICAgICAgICAgICAgICAgIGN1cnJlbnRDaHVuay5BcHBlbmQod29yZCk7DQogICAgICAgICAgICB9DQogICAgICAgICAgICBlbHNlDQogICAgICAgICAgICB7DQogICAgICAgICAgICAgICAgY2h1bmtzLkFkZChjdXJyZW50Q2h1bmsuVG9TdHJpbmcoKSk7DQogICAgICAgICAgICAgICAgY3VycmVudENodW5rID0gbmV3IFN0cmluZ0J1aWxkZXIod29yZCk7DQogICAgICAgICAgICB9DQogICAgICAgIH0NCg0KICAgICAgICBpZiAoY3VycmVudENodW5rLkxlbmd0aCA+IDApDQogICAgICAgIHsNCiAgICAgICAgICAgIGNodW5rcy5BZGQoY3VycmVudENodW5rLlRvU3RyaW5nKCkpOw0KICAgICAgICB9DQoNCiAgICAgICAgcmV0dXJuIGNodW5rczsNCiAgICB9DQoNCiAgICAvLyBTZW5kIGEgbWVzc2FnZSBiYXNlZCBvbiB0aGUgc3BlY2lmaWVkIGNvbW1hbmQgc291cmNlDQogICAgcHJpdmF0ZSBib29sIFNlbmRNZXNzYWdlKHN0cmluZyBtZXNzYWdlKQ0KICAgIHsNCiAgICAgICAgYm9vbCBtZXNzYWdlU2VudCA9IGZhbHNlOw0KICAgICAgICBzd2l0Y2ggKGN1cnJlbnRQbGF0Zm9ybSkNCiAgICAgICAgew0KICAgICAgICAgICAgY2FzZSBQbGF0Zm9ybS5Zb3VUdWJlOg0KICAgICAgICAgICAgICAgIENQSC5TZW5kWW91VHViZU1lc3NhZ2UobWVzc2FnZSwgc2VuZEFzQm90LCBzZW5kRmFsbGJhY2spOw0KICAgICAgICAgICAgICAgIG1lc3NhZ2VTZW50ID0gdHJ1ZTsNCiAgICAgICAgICAgICAgICBicmVhazsNCg0KICAgICAgICAgICAgY2FzZSBQbGF0Zm9ybS5Ud2l0Y2g6DQogICAgICAgICAgICAgICAgQ1BILlNlbmRNZXNzYWdlKG1lc3NhZ2UsIHNlbmRBc0JvdCwgc2VuZEZhbGxiYWNrKTsNCiAgICAgICAgICAgICAgICBtZXNzYWdlU2VudCA9IHRydWU7DQogICAgICAgICAgICAgICAgYnJlYWs7DQoNCiAgICAgICAgICAgIGNhc2UgUGxhdGZvcm0uS2ljazoNCiAgICAgICAgICAgICAgICBDUEguU2VuZEtpY2tNZXNzYWdlKG1lc3NhZ2UsIHNlbmRBc0JvdCwgc2VuZEZhbGxiYWNrKTsNCiAgICAgICAgICAgICAgICBtZXNzYWdlU2VudCA9IHRydWU7DQogICAgICAgICAgICAgICAgYnJlYWs7DQoNCiAgICAgICAgICAgIGRlZmF1bHQ6DQogICAgICAgICAgICAgICAgYnJlYWs7DQogICAgICAgIH0NCiAgICAgICAgcmV0dXJuIG1lc3NhZ2VTZW50Ow0KICAgIH0NCg0KICAgIHByaXZhdGUgdm9pZCBMb2dFcnJvcihzdHJpbmcgZXJyb3JNZXNzYWdlKQ0KICAgIHsNCiAgICAgICAgQ1BILkxvZ0Vycm9yKCQie0VYVEVOU0lPTl9OQU1FfToge2Vycm9yTWVzc2FnZX0iKTsNCiAgICB9DQoNCiAgICBwcml2YXRlIHZvaWQgTG9nRGVidWcoc3RyaW5nIGRlYnVnTWVzc2FnZSkNCiAgICB7DQogICAgICAgIENQSC5Mb2dEZWJ1ZygkIntMT0dfSEVBREVSfXtkZWJ1Z01lc3NhZ2V9Iik7DQogICAgfQ0KDQogICAgcHJpdmF0ZSB2b2lkIExvZ1ZlcmJvc2Uoc3RyaW5nIHZlcmJvc2VNZXNzYWdlKQ0KICAgIHsNCiAgICAgICAgQ1BILkxvZ1ZlcmJvc2UoJCJ7TE9HX0hFQURFUn17dmVyYm9zZU1lc3NhZ2V9Iik7DQogICAgfQ0KDQogICAgcHJpdmF0ZSBjbGFzcyBXaGVlbFdpbm5lcg0KICAgIHsNCiAgICAgICAgcHVibGljIHN0cmluZyB1c2VyTmFtZSB7IGdldDsgc2V0OyB9ID0gc3RyaW5nLkVtcHR5Ow0KICAgICAgICBwdWJsaWMgc3RyaW5nIHVzZXJJZCB7IGdldDsgc2V0OyB9ID0gc3RyaW5nLkVtcHR5Ow0KICAgICAgICBwdWJsaWMgc3RyaW5nIHBsYXRmb3JtIHsgZ2V0OyBzZXQ7IH0gPSBzdHJpbmcuRW1wdHk7DQogICAgfQ0KfQ0K",
+      "precompile": true,
+      "delayStart": false,
+      "saveResultToVariable": false,
+      "saveToVariable": "",
+      "id": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+      "weight": 0.0,
+      "type": 99999,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     }
+    ],
+    "collapsedGroups": []
+   },
+   {
+    "id": "8fc146a1-54a2-4256-8f42-16d938f86a01",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Winner Announce",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [],
+    "subActions": [
+     {
+      "value": "This action tells a winning user to use the !claim command",
+      "color": "",
+      "id": "66b8fafb-c6e8-4351-8880-5d38c84fe0a3",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "value": "Triggered by Spinning Prize Wheel Spin (User Group)",
+      "color": "",
+      "id": "e08b8968-2257-4da3-bc3a-cd3d33e87d6e",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "837b4ea6-feef-442e-ab9b-d925c02485b5",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "3b9d4b87-0cef-4b29-8ef5-6554661d62bc",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Adding %userName% to the list of winners",
+        "autoType": true,
+        "id": "ea893cb5-ecd3-4423-8a55-acc2ab14a1e5",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "3b9d4b87-0cef-4b29-8ef5-6554661d62bc",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "AddUserToWinners",
+        "runOnUiThread": false,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "4ffdfb84-59be-4aa1-aee5-ca28af8974b9",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "3b9d4b87-0cef-4b29-8ef5-6554661d62bc",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "3b9d4b87-0cef-4b29-8ef5-6554661d62bc",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "56c4a5b8-6f97-47f2-8685-1da75eaa9fc8",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "2477ede3-5743-4524-83c8-eee8e58eb352",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Attention %userName% on %platform%, please type !claim to claim your prize",
+        "autoType": true,
+        "id": "69468a0b-4180-48a3-8812-af00cb3089f0",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "2477ede3-5743-4524-83c8-eee8e58eb352",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "fc5159d9-f9ae-479b-b21c-b4e4661d1010",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "2477ede3-5743-4524-83c8-eee8e58eb352",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "2477ede3-5743-4524-83c8-eee8e58eb352",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     }
+    ],
+    "collapsedGroups": [
+     "3b9d4b87-0cef-4b29-8ef5-6554661d62bc"
+    ]
+   },
+   {
+    "id": "baed2743-783a-4611-a946-4637969f195e",
+    "queue": "00000000-0000-0000-0000-000000000000",
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel 2. OBS Import",
+    "group": "Spinning Prize Wheel",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "variables": {},
+      "id": "6aeca10c-da27-4285-ada8-aa2702bfa4a1",
+      "type": 702,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "1. Run the test trigger to import into OBS",
+      "color": "",
+      "id": "afb7f14a-9998-4405-af19-5c384a351b5d",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "value": "2. It will open a file dialog",
+      "color": "",
+      "id": "2cf56d2e-da6c-4ea9-bdcf-6139eed4f5c5",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "value": "3. Navigate to your spinningPrizeWheel folder",
+      "color": "",
+      "id": "dbd4e2bb-fc7b-4a75-b6a0-860d9f8e12c2",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "value": "4. Select the index.html file and click OK",
+      "color": "",
+      "id": "5ac36777-cb16-4cc6-85a1-da1641db24a1",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "3ad23171-1702-4b82-8d3a-62491ebc9d46",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "26b508a7-9201-4ed6-9c3f-c1a6594231ef",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "ConfigurePlatforms",
+        "runOnUiThread": false,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "b0abec8e-86cf-4621-8789-367324dabb8f",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "26b508a7-9201-4ed6-9c3f-c1a6594231ef",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "ImportSourceCopy",
+        "runOnUiThread": true,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "50d50273-f0dd-492c-b551-fd22d85330b2",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "26b508a7-9201-4ed6-9c3f-c1a6594231ef",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "26b508a7-9201-4ed6-9c3f-c1a6594231ef",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 4
+     }
+    ],
+    "collapsedGroups": [
+     "26b508a7-9201-4ed6-9c3f-c1a6594231ef"
+    ]
+   },
+   {
+    "id": "7189d25b-0a6d-4706-9f31-6cd205415634",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": true,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Send Group Data",
+    "group": "Spinning Prize Wheel",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [],
+    "subActions": [
+     {
+      "value": "This action is triggered when the Spinner browser source connects to SB's websocket server",
+      "color": "",
+      "id": "0488957a-e060-4ba7-9482-7f3b490d9e00",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "4c2d8866-b8ed-4120-aace-406b095d10a2",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendGroupData",
+        "runOnUiThread": false,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "2131e50d-3af7-42cc-81ab-b782101a6986",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   },
+   {
+    "id": "8cc0d953-8b7b-4877-a362-97d8757b13fa",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Winner Claim",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "0cd64d51-4c47-4d40-a641-a26c293f6791",
+      "id": "cf0ec64e-4410-4d6e-9aa3-9d4ca0bd9903",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Winner gets added to a group that has permission to trigger this action",
+      "color": "",
+      "id": "f7fa0248-2975-4d4f-88df-bb5d7f78a451",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "221e2041-3e2e-461c-b3fc-ea2cea4bfff3",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "1c8647ed-647e-41a2-9492-52f171ef0b5f",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "RemoveUserFromWinners",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "removeSuccess",
+        "id": "d9e7c07e-926b-46e1-acac-95e31b9b3961",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "1c8647ed-647e-41a2-9492-52f171ef0b5f",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "1c8647ed-647e-41a2-9492-52f171ef0b5f",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "5ec1144b-ec55-4bad-93cd-74a6e39edd67",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "5276c191-f912-4d39-bcf3-41a50ddd990a",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Congrats on claiming your prize, %userName%!",
+        "autoType": true,
+        "id": "edce019b-2b14-4a16-895a-ffdfcacca415",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "5276c191-f912-4d39-bcf3-41a50ddd990a",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "6b3e5eab-b26c-4013-9b28-7bf8586d6df2",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "5276c191-f912-4d39-bcf3-41a50ddd990a",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "5276c191-f912-4d39-bcf3-41a50ddd990a",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "value": "Do whatever else when Winner claims",
+      "color": "",
+      "id": "239ad64f-79d7-4785-8a1b-0751b65be035",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     },
+     {
+      "name": "Save to winners.csv",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "source": 0,
+        "variableName": "spinningWheelFolderPath",
+        "persisted": true,
+        "destinationVariable": "spinningWheelFolderPathArgs",
+        "defaultValue": null,
+        "id": "8852c196-7205-4b02-aab9-c96706fc419b",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "b4073b8a-f4b1-48f4-acdc-37ff87f887f4",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "winnerCsvPath",
+        "value": "%spinningWheelFolderPathArgs%\\winners.csv",
+        "autoType": true,
+        "id": "0686bbbc-4d6b-4d5c-8012-33d978a36374",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "b4073b8a-f4b1-48f4-acdc-37ff87f887f4",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "file": "%winnerCsvPath%",
+        "text": "%date:yyyy-MM-dd%,%time:HH:mm:ss%,%userName%,%userId%,%commandSource%",
+        "append": true,
+        "id": "91c33dfc-b653-4b6b-a62f-4e8b40c19218",
+        "weight": 0.0,
+        "type": 3,
+        "parentId": "b4073b8a-f4b1-48f4-acdc-37ff87f887f4",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "b4073b8a-f4b1-48f4-acdc-37ff87f887f4",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 4
+     }
+    ],
+    "collapsedGroups": [
+     "b4073b8a-f4b1-48f4-acdc-37ff87f887f4",
+     "1c8647ed-647e-41a2-9492-52f171ef0b5f"
+    ]
+   },
+   {
+    "id": "00cb0ef0-c816-4ce9-aa67-36981e2eb244",
+    "queue": "9125a937-7147-4651-9ebb-b6d694d82837",
+    "enabled": false,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Command Add User to Group",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "18746c7c-cc54-4673-bc60-b4bfffba754f",
+      "id": "651539e8-a260-43fa-b9b1-0d102ce513b7",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Viewers will use the !enter command to add themselves to the giveaway",
+      "color": "",
+      "id": "d79580b9-e1c3-4a3a-8e8e-0f05e46f6ca2",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "425f4056-22b1-448f-8def-71eb19359603",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Thanks, %user%, you are now entered!",
+        "autoType": true,
+        "id": "2075b0e8-aab8-485e-9d23-5bd5e92e7a7b",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "b69bb258-cf30-44b6-96a2-db544ed016e0",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "AddUserToEntriesGroup",
+        "runOnUiThread": false,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "73e1532d-d3c1-4d71-9987-7487dbe27fe5",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "6b3c3834-01d7-4bcb-a5d5-153c478847ab"
+    ]
+   },
+   {
+    "id": "b2784bdb-88bb-47ac-aac2-a50a6c9d0614",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Entries Open",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "4437b7c4-878f-49b2-8cba-59d66994eaeb",
+      "id": "6f7313de-1d69-4f8b-90b2-e5548db28e52",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "name": "Enable Add Entry Action",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "00cb0ef0-c816-4ce9-aa67-36981e2eb244",
+        "state": 0,
+        "id": "c6cf8ac0-3543-4ed3-82a4-a0fe3b7d6a41",
+        "weight": 0.0,
+        "type": 1004,
+        "parentId": "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "actionId": "53e5a4da-237e-49fd-8cf0-b36ad70622b9",
+        "state": 0,
+        "id": "3fabdba6-b664-4d06-b990-f0fd789bb4e6",
+        "weight": 0.0,
+        "type": 1004,
+        "parentId": "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "commandId": "18746c7c-cc54-4673-bc60-b4bfffba754f",
+        "state": 0,
+        "id": "bc70f96a-e830-48c0-9252-0edf8e4c4bc0",
+        "weight": 0.0,
+        "type": 9,
+        "parentId": "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "6daacb22-0dd7-45d9-bb0b-b4e6633d4e98",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae",
+        "enabled": true,
+        "index": 3
+       }
+      ],
+      "id": "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "073bfa4d-7c16-4898-9656-fb86b48ffda6",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "2b6d3985-9872-47fb-8d4b-988a1ec2179b",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Entries for the wheel spin have opened. Type !enter to join",
+        "autoType": true,
+        "id": "e2989f84-6ef6-4018-85c9-5d1772051f58",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "2b6d3985-9872-47fb-8d4b-988a1ec2179b",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "c3498af6-004a-44e5-a4c8-d2c5616b4971",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "2b6d3985-9872-47fb-8d4b-988a1ec2179b",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "2b6d3985-9872-47fb-8d4b-988a1ec2179b",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     }
+    ],
+    "collapsedGroups": [
+     "427642d7-f0d9-4ca3-bc82-5c5128e8b7ae"
+    ]
+   },
+   {
+    "id": "53e5a4da-237e-49fd-8cf0-b36ad70622b9",
+    "queue": "9125a937-7147-4651-9ebb-b6d694d82837",
+    "enabled": false,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Command Remove User from Group",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "8a2ae13c-40b7-40cd-abe2-73875103613e",
+      "id": "cfaebaec-d64e-42fc-9b8d-0dec0a95fa16",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Viewers will use the !enter command to remove themselves to the giveaway",
+      "color": "",
+      "id": "beac602d-b954-48ed-8ee3-634872ba031e",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "242ac053-057f-406d-b088-92ceb1769637",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "%user%, you are now removed from entries",
+        "autoType": true,
+        "id": "86ab9c8d-6b6b-445d-a093-d79807774dd3",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "0b7d7032-3328-46f5-9ba2-1a5afc7a8a4e",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "13ddc76c-21bb-4335-bbbb-2a9aceae47b4",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "RemoveUserFromEntriesGroup",
+        "runOnUiThread": false,
+        "saveResultToVariable": false,
+        "saveToVariable": "",
+        "id": "970b08b8-0f8e-428f-b4fa-a708b2dee010",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+        "enabled": true,
+        "index": 1
+       }
+      ],
+      "id": "6b3c3834-01d7-4bcb-a5d5-153c478847ab",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "6b3c3834-01d7-4bcb-a5d5-153c478847ab"
+    ]
+   },
+   {
+    "id": "35206dbf-2eeb-4875-a291-5f6db529d017",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Entries Close",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "f4960921-1e8c-4f28-9174-393c1172314a",
+      "id": "38ced97b-5c9d-47bc-98e9-79fd4da251b1",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "name": "Disable Add Entry Action",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "00cb0ef0-c816-4ce9-aa67-36981e2eb244",
+        "state": 1,
+        "id": "4a6aa63e-5d43-4099-a7ee-28b2f06174f2",
+        "weight": 0.0,
+        "type": 1004,
+        "parentId": "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "actionId": "53e5a4da-237e-49fd-8cf0-b36ad70622b9",
+        "state": 1,
+        "id": "fc4f349d-5727-4e5a-881c-3a707e0a6167",
+        "weight": 0.0,
+        "type": 1004,
+        "parentId": "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "commandId": "18746c7c-cc54-4673-bc60-b4bfffba754f",
+        "state": 1,
+        "id": "e8b85712-7965-4adf-ac9b-597b6cf1f239",
+        "weight": 0.0,
+        "type": 9,
+        "parentId": "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "2f430f71-4d00-4eab-9684-da5bd4276d06",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9",
+        "enabled": true,
+        "index": 3
+       }
+      ],
+      "id": "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "04553fbd-a14b-4bb7-a302-88fe0d0f9df4",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "eb9563a5-74fa-431a-90f7-8e93a1366290",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "Entries for the wheel spin have now closed.",
+        "autoType": true,
+        "id": "5e55777f-b821-4b71-a0ed-463d204d3b57",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "eb9563a5-74fa-431a-90f7-8e93a1366290",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "5b1a315e-4051-4efe-95e6-130983dda06a",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "eb9563a5-74fa-431a-90f7-8e93a1366290",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "eb9563a5-74fa-431a-90f7-8e93a1366290",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     }
+    ],
+    "collapsedGroups": [
+     "70a2b716-9dfd-4a2e-9663-e4ee0e4065b9"
+    ]
+   },
+   {
+    "id": "b5f4c751-8301-465a-9802-3a2a0c6f5255",
+    "queue": "9125a937-7147-4651-9ebb-b6d694d82837",
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel 0. Spin (User Group)",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "99cdd9c1-2883-4c84-ad86-fea7259a5306",
+      "id": "22b8a467-7675-4f6f-bc5f-1999121f119f",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "This action makes the Spinner visible using a User Group as input",
+      "color": "",
+      "id": "422b6049-84ac-4cbe-8552-ced909041437",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "destination": 0,
+        "variableName": "spinningWheelUseTextFile",
+        "persisted": false,
+        "source": 0,
+        "value": false,
+        "autoType": true,
+        "id": "6d442695-0b24-454d-9b22-c25805774c53",
+        "weight": 0.0,
+        "type": 122,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelSceneName",
+        "persisted": true,
+        "destinationVariable": "sceneName",
+        "defaultValue": null,
+        "id": "e26803f7-5850-49df-bca2-121e88c0ee56",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "source": 0,
+        "variableName": "spinningWheelSpinnerSourceName",
+        "persisted": true,
+        "destinationVariable": "sourceName",
+        "defaultValue": null,
+        "id": "b897f537-9818-431a-a0c3-67c1ef54bf40",
+        "weight": 0.0,
+        "type": 121,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 2
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "ecb5a762-9e5c-4941-859d-0f846a64e889",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 3
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 0,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "34d5ec79-e6bc-4d8e-8953-039e1ad83a1e",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 4
+       },
+       {
+        "value": "15000",
+        "maxValue": "0",
+        "random": false,
+        "id": "d1dc345f-9e98-4796-938e-6bd8a2abf95b",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 5
+       },
+       {
+        "sceneName": "%sceneName%",
+        "sourceName": "%sourceName%",
+        "state": 1,
+        "connectionId": "00000000-0000-0000-0000-000000000000",
+        "id": "2775dca4-3608-458d-b799-bd9d082bf78d",
+        "weight": 0.0,
+        "type": 30,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 6
+       },
+       {
+        "value": "1000",
+        "maxValue": "0",
+        "random": false,
+        "id": "162d12cc-0f6b-4af1-87de-3e67efd505a3",
+        "weight": 0.0,
+        "type": 1002,
+        "parentId": "d9d5f583-8441-454e-be74-f154516c5e21",
+        "enabled": true,
+        "index": 7
+       }
+      ],
+      "id": "d9d5f583-8441-454e-be74-f154516c5e21",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     }
+    ],
+    "collapsedGroups": [
+     "d9d5f583-8441-454e-be74-f154516c5e21"
+    ]
+   },
+   {
+    "id": "a1c3af93-c7dd-4e5c-856e-8b0153dbb1aa",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Add Custom Entry",
+    "group": "Spinning Prize Wheel - Custom",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "bfa804f5-d028-4565-ae85-b5dac7472bcb",
+      "id": "94972045-17d7-4c35-810b-48f38916d6e5",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "This action takes %rawInput% and appends it as a line to the names.txt file",
+      "color": "",
+      "id": "fe132171-db7f-43b6-ba7d-8c19c572b915",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Enable this action if you want to allow duplicate entries in the text file",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "variableName": "allowDuplicates",
+        "value": true,
+        "autoType": true,
+        "id": "536af2cf-47b7-4d80-8fcb-f8d8967916a8",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "46c524fd-2316-4cc2-8c09-6db167da3cbe",
+        "enabled": false,
+        "index": 0
+       }
+      ],
+      "id": "46c524fd-2316-4cc2-8c09-6db167da3cbe",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "29049b40-eec6-4e4b-83a2-27644304b548",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "AddToTextFile",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "addTextSuccess",
+        "id": "52abf784-b64d-4496-8dd1-2b7f44df919b",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "input": "%addTextSuccess%",
+        "operation": 0,
+        "value": "True",
+        "autoType": true,
+        "subActions": [
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "12f9c474-0d26-4161-8bd2-fe087eda2329",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "e66d375a-9a38-4358-90bd-9594f9de3537",
+            "enabled": true,
+            "index": 0
+           }
+          ],
+          "id": "e66d375a-9a38-4358-90bd-9594f9de3537",
+          "weight": 0.0,
+          "type": 99901,
+          "parentId": "7bf36f28-16ae-430d-9859-34dd957192ab",
+          "enabled": true,
+          "index": 0
+         },
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "6b5ba037-526a-4b2d-b81e-f7a489dd8b7b",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "bd5aecc6-6c65-496a-a1bd-24cd41dc3f7f",
+            "enabled": true,
+            "index": 0
+           },
+           {
+            "id": "cc4aff1d-ace9-49d1-8c50-859eb2b52ad2",
+            "weight": 0.0,
+            "type": 124,
+            "parentId": "bd5aecc6-6c65-496a-a1bd-24cd41dc3f7f",
+            "enabled": true,
+            "index": 1
+           }
+          ],
+          "id": "bd5aecc6-6c65-496a-a1bd-24cd41dc3f7f",
+          "weight": 0.0,
+          "type": 99902,
+          "parentId": "7bf36f28-16ae-430d-9859-34dd957192ab",
+          "enabled": true,
+          "index": 1
+         }
+        ],
+        "id": "7bf36f28-16ae-430d-9859-34dd957192ab",
+        "weight": 0.0,
+        "type": 120,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "8ebef279-4fbb-4802-8217-7b9f46c0c669",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "%user% has added '%rawInput%' to the wheel text file",
+        "autoType": true,
+        "id": "fbe1a7b3-4309-43dd-ac07-0aea613d674e",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "c7d3fc37-8d50-41ab-8460-d1763d2bdae4",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 3
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   },
+   {
+    "id": "8f7869f0-1f6e-4ba7-a85d-a4b073d68588",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Clear Custom Entries",
+    "group": "Spinning Prize Wheel - Custom",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "5cee5372-01ae-455e-92a7-af705c7bf318",
+      "id": "b50d2d49-ffe4-4af3-9d86-349ee12c2cf5",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Use this action to clear the text file",
+      "color": "",
+      "id": "c1376018-fc6e-4df8-94e6-233e744c7df2",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "a5ccc41e-4102-497d-aef0-995489d1de24",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "ClearTextFile",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "clearSuccess",
+        "id": "bc5ace83-1409-4776-b750-fc7698edc68a",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "input": "%clearSuccess%",
+        "operation": 0,
+        "value": "False",
+        "autoType": true,
+        "subActions": [
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "3c528568-1350-4b8b-83c4-0010411c4c79",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "652360ad-6834-40f7-aff5-89390c065587",
+            "enabled": true,
+            "index": 0
+           },
+           {
+            "id": "ad77930d-4482-433a-a3f0-32943275835e",
+            "weight": 0.0,
+            "type": 124,
+            "parentId": "652360ad-6834-40f7-aff5-89390c065587",
+            "enabled": true,
+            "index": 1
+           }
+          ],
+          "id": "652360ad-6834-40f7-aff5-89390c065587",
+          "weight": 0.0,
+          "type": 99901,
+          "parentId": "ea5533c9-e746-4bd8-91e0-557fc0b884ee",
+          "enabled": true,
+          "index": 0
+         },
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "7acb5adc-f31e-46fc-bb63-6fa6eebcfdbe",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "dfbad32f-7b55-4dae-9723-c1c739ff2003",
+            "enabled": true,
+            "index": 0
+           }
+          ],
+          "id": "dfbad32f-7b55-4dae-9723-c1c739ff2003",
+          "weight": 0.0,
+          "type": 99902,
+          "parentId": "ea5533c9-e746-4bd8-91e0-557fc0b884ee",
+          "enabled": true,
+          "index": 1
+         }
+        ],
+        "id": "ea5533c9-e746-4bd8-91e0-557fc0b884ee",
+        "weight": 0.0,
+        "type": 120,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "93020127-dc82-4ec7-a485-e6ca2384bc2d",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "The entries in the text file have been cleared!",
+        "autoType": true,
+        "id": "6423c85d-fc54-466f-8611-bb12f3249dd2",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "635887fc-debe-43db-b428-8019eeda8179",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   },
+   {
+    "id": "00f38a51-9f60-46b5-93c3-aae9b111ba7c",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Clear Entries",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "ca667d6a-62ac-4f71-985d-9187d4a6db41",
+      "id": "2b4a4697-34b8-482e-96f9-efdd96428526",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Use this action to clear the entries user group",
+      "color": "",
+      "id": "d5863150-bae2-403e-b1fa-b84e4e053131",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "240cdb26-6af6-42a5-812e-e45a62d4c6fa",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "ClearEntriesGroup",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "clearSuccess",
+        "id": "dbede8a2-4fff-439d-9309-7f8f0af1b1cf",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "input": "%clearSuccess%",
+        "operation": 0,
+        "value": "False",
+        "autoType": true,
+        "subActions": [
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "1dfca530-e098-4bf5-a1e6-89c228d043bc",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "36729cdd-5234-4ff1-8815-ae3af8b9f6fa",
+            "enabled": true,
+            "index": 0
+           },
+           {
+            "id": "9f46bafc-6595-444f-8ba8-a797357b0584",
+            "weight": 0.0,
+            "type": 124,
+            "parentId": "36729cdd-5234-4ff1-8815-ae3af8b9f6fa",
+            "enabled": true,
+            "index": 1
+           }
+          ],
+          "id": "36729cdd-5234-4ff1-8815-ae3af8b9f6fa",
+          "weight": 0.0,
+          "type": 99901,
+          "parentId": "8de47e6b-c73b-4afe-81a1-1c76f85f98d5",
+          "enabled": true,
+          "index": 0
+         },
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "ea7e72cc-8a8c-493f-98f6-3d2d2e98c835",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "e2960180-a273-446a-9f75-69b67ee7c695",
+            "enabled": true,
+            "index": 0
+           }
+          ],
+          "id": "e2960180-a273-446a-9f75-69b67ee7c695",
+          "weight": 0.0,
+          "type": 99902,
+          "parentId": "8de47e6b-c73b-4afe-81a1-1c76f85f98d5",
+          "enabled": true,
+          "index": 1
+         }
+        ],
+        "id": "8de47e6b-c73b-4afe-81a1-1c76f85f98d5",
+        "weight": 0.0,
+        "type": 120,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "3ff237af-7faa-4a99-8a25-a5a32f7db53a",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "The %entriesGroupName% group has been cleared!",
+        "autoType": true,
+        "id": "7853bd3f-878d-4fab-88b5-e4f94663ac4c",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "577646f6-1fc7-4045-af86-29c632596f9f",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   },
+   {
+    "id": "53591331-45c6-4f8e-aa62-87cd5884fcac",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Clear Winners",
+    "group": "Spinning Prize Wheel - User Group",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "2cff364f-2a26-4357-ba99-98ea27c6b7b4",
+      "id": "9b698724-7269-4876-971b-156b16a7dab7",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "Use this action to clear the winners user group",
+      "color": "",
+      "id": "d02d9ebd-55b1-4f36-ac60-2af818df672a",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "1f5b540f-079d-439e-939f-546902ac8854",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "ClearWinnersGroup",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "clearSuccess",
+        "id": "0b116751-5a28-4b52-9033-174a8adb68ab",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "input": "%clearSuccess%",
+        "operation": 0,
+        "value": "False",
+        "autoType": true,
+        "subActions": [
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "e4651931-5af3-4331-91c1-574cf4e17fe4",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "d6822df9-f947-432f-a4d4-c39fbf8de65c",
+            "enabled": true,
+            "index": 0
+           },
+           {
+            "id": "9f4f6be9-6efe-4360-8899-7b55c4b3de26",
+            "weight": 0.0,
+            "type": 124,
+            "parentId": "d6822df9-f947-432f-a4d4-c39fbf8de65c",
+            "enabled": true,
+            "index": 1
+           }
+          ],
+          "id": "d6822df9-f947-432f-a4d4-c39fbf8de65c",
+          "weight": 0.0,
+          "type": 99901,
+          "parentId": "56350d87-9118-49e4-ad06-b8be18fe0eeb",
+          "enabled": true,
+          "index": 0
+         },
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "93288efa-09c5-44b1-b64f-9599847e6eb4",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "ccb768cf-b97f-4513-94b4-14bf6afe80a0",
+            "enabled": true,
+            "index": 0
+           }
+          ],
+          "id": "ccb768cf-b97f-4513-94b4-14bf6afe80a0",
+          "weight": 0.0,
+          "type": 99902,
+          "parentId": "56350d87-9118-49e4-ad06-b8be18fe0eeb",
+          "enabled": true,
+          "index": 1
+         }
+        ],
+        "id": "56350d87-9118-49e4-ad06-b8be18fe0eeb",
+        "weight": 0.0,
+        "type": 120,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "3b761d10-512f-44fc-9e5f-f5c46b253e3c",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "The %winningGroupName% group has been cleared!",
+        "autoType": true,
+        "id": "f072bd09-942b-4a5e-ae44-a35e5a9f40ea",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "c6893fde-f8d5-401c-8ea9-b62e47264d5e",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "d00d32c3-c35d-4048-aa65-3a251e2952b4",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   },
+   {
+    "id": "a40036a3-9bec-4b0b-9bfd-7d7cacc0e635",
+    "queue": null,
+    "enabled": true,
+    "excludeFromHistory": false,
+    "excludeFromPending": false,
+    "name": "Spinning Prize Wheel Remove Custom Entry",
+    "group": "Spinning Prize Wheel - Custom",
+    "alwaysRun": false,
+    "randomAction": false,
+    "concurrent": false,
+    "triggers": [
+     {
+      "commandId": "f088d93c-03e7-4235-9628-c858cff3c71c",
+      "id": "edcc4752-ff7d-485d-b8ed-9435569bfe37",
+      "type": 401,
+      "enabled": true,
+      "exclusions": []
+     }
+    ],
+    "subActions": [
+     {
+      "value": "This action takes %rawInput% and appends it as a line to the names.txt file",
+      "color": "",
+      "id": "b537090a-586c-4635-81db-d640cf5dfc3f",
+      "weight": 0.0,
+      "type": 1009,
+      "parentId": null,
+      "enabled": true,
+      "index": 0
+     },
+     {
+      "name": "Execute",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "actionId": "b72d6aa7-b2d8-4077-b74e-b33dac12350e",
+        "runImmedately": true,
+        "id": "3a12edbb-00d8-4ee9-9573-6fc9bb19e35c",
+        "weight": 0.0,
+        "type": 4,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "RemoveFromTextFile",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "removeTextSuccess",
+        "id": "3c560c27-321a-49d2-87e6-f55b15161c84",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "input": "%removeTextSuccess%",
+        "operation": 0,
+        "value": "True",
+        "autoType": true,
+        "subActions": [
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "dd362e75-a443-4974-9166-29049d0897a1",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "62263a66-67bf-4430-861f-08630332952a",
+            "enabled": true,
+            "index": 0
+           }
+          ],
+          "id": "62263a66-67bf-4430-861f-08630332952a",
+          "weight": 0.0,
+          "type": 99901,
+          "parentId": "eb0602d7-f5d4-49c2-8b31-343340cf497c",
+          "enabled": true,
+          "index": 0
+         },
+         {
+          "random": false,
+          "subActions": [
+           {
+            "actionId": "00000000-0000-0000-0000-000000000000",
+            "runImmedately": true,
+            "id": "7d82c875-0a0e-4551-8aa5-7fbbb0d3b04d",
+            "weight": 0.0,
+            "type": 4,
+            "parentId": "546dd3a1-b97a-46ae-8184-58d98e865c09",
+            "enabled": true,
+            "index": 0
+           },
+           {
+            "id": "31adf7b9-121c-48a2-b521-28960f621c36",
+            "weight": 0.0,
+            "type": 124,
+            "parentId": "546dd3a1-b97a-46ae-8184-58d98e865c09",
+            "enabled": true,
+            "index": 1
+           }
+          ],
+          "id": "546dd3a1-b97a-46ae-8184-58d98e865c09",
+          "weight": 0.0,
+          "type": 99902,
+          "parentId": "eb0602d7-f5d4-49c2-8b31-343340cf497c",
+          "enabled": true,
+          "index": 1
+         }
+        ],
+        "id": "eb0602d7-f5d4-49c2-8b31-343340cf497c",
+        "weight": 0.0,
+        "type": 120,
+        "parentId": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "ccf71670-8c29-4560-9c8b-22e8a8824fd7",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 1
+     },
+     {
+      "name": "Chat Message",
+      "color": null,
+      "random": false,
+      "subActions": [
+       {
+        "value": "Customize your message here",
+        "color": "",
+        "id": "143c8ff0-ed0f-4014-8a8a-a9a72b507812",
+        "weight": 0.0,
+        "type": 1009,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 0
+       },
+       {
+        "variableName": "message",
+        "value": "%user% has removed '%rawInput%' from the wheel text file",
+        "autoType": true,
+        "id": "60ba4c03-6829-41b3-967b-25a7bc672fb9",
+        "weight": 0.0,
+        "type": 123,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 1
+       },
+       {
+        "executeCodeId": "5be61e54-79bf-4f5c-a2b1-042ab1682d0d",
+        "method": "SendMessageToPlatform",
+        "runOnUiThread": false,
+        "saveResultToVariable": true,
+        "saveToVariable": "messageSuccess",
+        "id": "643d518a-0459-4930-ad7d-f1e7b6850dfc",
+        "weight": 0.0,
+        "type": 99998,
+        "parentId": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+        "enabled": true,
+        "index": 2
+       }
+      ],
+      "id": "cb17d6c7-b5f5-419b-901d-285fd2b9e304",
+      "weight": 0.0,
+      "type": 99900,
+      "parentId": null,
+      "enabled": true,
+      "index": 2
+     }
+    ],
+    "collapsedGroups": [
+     "ccf71670-8c29-4560-9c8b-22e8a8824fd7"
+    ]
+   }
+  ],
+  "queues": [
+   {
+    "id": "9125a937-7147-4651-9ebb-b6d694d82837",
+    "blocking": true,
+    "name": "Spinning Prize Wheel"
+   },
+   {
+    "id": "f34965c8-cc9e-41c8-b178-2b45e8075189",
+    "blocking": true,
+    "name": "Spinning Prize Wheel Winner"
+   }
+  ],
+  "commands": [
+   {
+    "id": "c880f7ab-ee3b-4505-9aeb-65a5b21cbd68",
+    "name": "Spin the Wheel (Custom)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!spinCustom\r\n!customSpin\r\n!spinw\r\n!wspin",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!spinCustom, !customSpin, !spinw, !wspin"
+   },
+   {
+    "id": "0cd64d51-4c47-4d40-a641-a26c293f6791",
+    "name": "Spinning Prize Wheel Winner Claim",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!claim",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!claim"
+   },
+   {
+    "id": "18746c7c-cc54-4673-bc60-b4bfffba754f",
+    "name": "Spinning Prize Wheel Add Entry (User)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!enter",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 60,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!enter"
+   },
+   {
+    "id": "4437b7c4-878f-49b2-8cba-59d66994eaeb",
+    "name": "Spinning Prize Wheel Open User Entries",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!openEntries\r\n!entriesOpen",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!openEntries, !entriesOpen"
+   },
+   {
+    "id": "8a2ae13c-40b7-40cd-abe2-73875103613e",
+    "name": "Spinning Prize Wheel Remove Entry (User)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!unEnter\r\n!removeEntry",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": true,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 5,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!unEnter, !removeEntry"
+   },
+   {
+    "id": "f4960921-1e8c-4f28-9174-393c1172314a",
+    "name": "Spinning Prize Wheel Close User Entries",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!closeEntries\r\n!entriesClose",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!closeEntries, !entriesClose"
+   },
+   {
+    "id": "99cdd9c1-2883-4c84-ad86-fea7259a5306",
+    "name": "Spin the Wheel (User)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!userSpin\r\n!spinUser\r\n!uSpin\r\n!spinU",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!userSpin, !spinUser, !uSpin, !spinU"
+   },
+   {
+    "id": "bfa804f5-d028-4565-ae85-b5dac7472bcb",
+    "name": "Spinning Prize Wheel Add Entry (Custom)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!entryTextAdd\r\n!addTextEntry\r\n!addCustom\r\n!customAdd",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - Custom",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!entryTextAdd, !addTextEntry, !addCustom, !customAdd"
+   },
+   {
+    "id": "5cee5372-01ae-455e-92a7-af705c7bf318",
+    "name": "Spinning Prize Wheel Clear Custom Entries",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!clearTextFile\r\n!clearCustom",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - Custom",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!clearTextFile, !clearCustom"
+   },
+   {
+    "id": "ca667d6a-62ac-4f71-985d-9187d4a6db41",
+    "name": "Spinning Prize Wheel Clear User Entries",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!clearUserEntries\r\n!clearUser",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!clearUserEntries, !clearUser"
+   },
+   {
+    "id": "2cff364f-2a26-4357-ba99-98ea27c6b7b4",
+    "name": "Spinning Prize Wheel Clear User Winners",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!clearUserWinners",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - User Group",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!clearUserWinners"
+   },
+   {
+    "id": "f088d93c-03e7-4235-9628-c858cff3c71c",
+    "name": "Spinning Prize Wheel Remove Entry (Custom)",
+    "enabled": false,
+    "include": true,
+    "mode": 0,
+    "command": "!entryTextRemove\r\n!removeTextEntry\r\n!removeCustom\r\n!customRemove",
+    "regexExplicitCapture": false,
+    "location": 0,
+    "ignoreBotAccount": true,
+    "ignoreInternal": false,
+    "sources": 2098177,
+    "persistCounter": false,
+    "persistUserCounter": false,
+    "caseSensitive": false,
+    "globalCooldown": 0,
+    "userCooldown": 0,
+    "group": "Spinning Prize Wheel - Custom",
+    "grantType": 0,
+    "permittedUsers": [],
+    "permittedGroups": [
+     "Moderators"
+    ],
+    "_uiIwwMNAAL8h4D3YWTFGiJcGDYdb": "!entryTextRemove, !removeTextEntry, !removeCustom, !customRemove"
+   }
+  ],
+  "websocketServers": [],
+  "websocketClients": [],
+  "timers": []
+ },
+ "version": 24,
+ "exportedFrom": "1.0.7",
+ "minimumVersion": "1.0.0-alpha.1"
+}

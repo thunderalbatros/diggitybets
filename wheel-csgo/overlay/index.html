@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giveaway Wheel — diggitybets</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fixed 500x500 design canvas, auto-scaled to whatever size the browser source / window has -->
+  <div id="stage" class="stage">
+    <div id="flash" class="flash"></div>
+    <div id="rays" class="rays"></div>
+
+    <!-- Giveaway vertical square reel -->
+    <div id="ruleta" class="ruleta">
+      <div class="degradado arr"></div>
+      <div class="degradado aba"></div>
+      <div class="marcador"></div>
+      <div id="pista" class="pista"></div>
+    </div>
+
+    <!-- Synchronized Result Celebration Modal -->
+    <div id="resultModal" class="result-modal oculto">
+      <div class="result-glow"></div>
+      <div class="result-pill">🏆 WINNER SELECTED</div>
+      <div class="result-avatar-wrap">
+        <img id="resultAvatar" class="result-avatar" src="" alt="Winner Avatar" />
+        <div id="resultAvatarInitials" class="result-avatar-initials">?</div>
+      </div>
+      <div id="resultName" class="result-name">@Winner</div>
+      <div class="result-claim">⏱️ 20s to claim in Kick chat!</div>
+    </div>
+  </div>
+
+  <!-- Shown only outside OBS (or with ?controls=1) so the live stream never shows buttons -->
+  <div id="controls" class="controls oculto">
+    <button id="btnPick" class="btn btn-gold" title="Pick a real winner among chatters of the last 90 seconds">🎰 PICK WINNER</button>
+    <button id="btnDemo" class="btn btn-ghost" title="Full test with fake names (no chat message)">🧪 DEMO</button>
+  </div>
+  <div id="estado" class="estado">Connecting to Streamer.bot…</div>
+
+  <!-- Vendored local dependencies (fully offline for OBS Studio) -->
+  <script src="config.js"></script>
+  <script src="libs/streamerbot-client.js"></script>
+  <script src="libs/confetti.browser.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "hunthub-core",
+  "version": "1.0.0",
+  "description": "HuntHub Core Service - Real-time Kick Event Ingestor, Overlay Hub & Points Engine",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "test": "node --experimental-strip-types test/stage1.test.ts && node --experimental-strip-types test/stage2.test.ts && node --experimental-strip-types test/stage2-e2e.test.ts && node --experimental-strip-types test/stage3.test.ts && node --experimental-strip-types test/stage4-tiers.test.ts",
+    "test:stage1": "node --experimental-strip-types test/stage1.test.ts",
+    "test:stage2": "node --experimental-strip-types test/stage2.test.ts && node --experimental-strip-types test/stage2-e2e.test.ts",
+    "test:stage3": "node --experimental-strip-types test/stage3.test.ts",
+    "test:stage4": "node --experimental-strip-types test/stage4-tiers.test.ts",
+    "sim": "node --experimental-strip-types src/simulator/chat-sim.ts"
+  },
+  "keywords": [
+    "kick",
+    "streaming",
+    "casino-streamer",
+    "overlays",
+    "bonus-hunt",
+    "tournaments"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

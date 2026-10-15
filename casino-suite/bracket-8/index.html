@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>8-Slot Tournament Bracket Overlay — diggitybets</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="tournament-container">
+    <!-- Header -->
+    <header class="tournament-header glass-panel">
+      <div class="trophy-badge">🏆 SLOT TOURNAMENT</div>
+      <div id="tournamentStage" class="badge-gold">QUARTERFINALS</div>
+      <div class="rules-hint">15 SPINS / BONUS BUY PER MATCH · HIGHER MULTIPLIER ADVANCES</div>
+    </header>
+
+    <!-- Main Bracket Tree -->
+    <main class="bracket-tree-wrapper">
+      <!-- Round 1: Quarterfinals (4 matches) -->
+      <section class="bracket-round">
+        <div class="round-title">QUARTERFINALS</div>
+        <div class="matches-col">
+          <!-- QF 1 -->
+          <div class="match-box glass-panel" id="m1">
+            <div class="match-slot" id="m1-s1"><span class="slot-name">1. Gates of Olympus</span><span class="slot-score" id="m1-s1-score">-</span></div>
+            <div class="match-slot" id="m1-s2"><span class="slot-name">2. Sweet Bonanza</span><span class="slot-score" id="m1-s2-score">-</span></div>
+          </div>
+          <!-- QF 2 -->
+          <div class="match-box glass-panel" id="m2">
+            <div class="match-slot" id="m2-s1"><span class="slot-name">3. Sugar Rush</span><span class="slot-score" id="m2-s1-score">-</span></div>
+            <div class="match-slot" id="m2-s2"><span class="slot-name">4. Big Bass Bonanza</span><span class="slot-score" id="m2-s2-score">-</span></div>
+          </div>
+          <!-- QF 3 -->
+          <div class="match-box glass-panel" id="m3">
+            <div class="match-slot" id="m3-s1"><span class="slot-name">5. Wanted Dead or Wild</span><span class="slot-score" id="m3-s1-score">-</span></div>
+            <div class="match-slot" id="m3-s2"><span class="slot-name">6. Chaos Crew 2</span><span class="slot-score" id="m3-s2-score">-</span></div>
+          </div>
+          <!-- QF 4 -->
+          <div class="match-box glass-panel" id="m4">
+            <div class="match-slot" id="m4-s1"><span class="slot-name">7. San Quentin</span><span class="slot-score" id="m4-s1-score">-</span></div>
+            <div class="match-slot" id="m4-s2"><span class="slot-name">8. Mental</span><span class="slot-score" id="m4-s2-score">-</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Round 2: Semifinals (2 matches) -->
+      <section class="bracket-round">
+        <div class="round-title">SEMIFINALS</div>
+        <div class="matches-col semi-col">
+          <!-- SF 1 -->
+          <div class="match-box glass-panel" id="m5">
+            <div class="match-slot" id="m5-s1"><span class="slot-name">Winner QF 1</span><span class="slot-score" id="m5-s1-score">-</span></div>
+            <div class="match-slot" id="m5-s2"><span class="slot-name">Winner QF 2</span><span class="slot-score" id="m5-s2-score">-</span></div>
+          </div>
+          <!-- SF 2 -->
+          <div class="match-box glass-panel" id="m6">
+            <div class="match-slot" id="m6-s1"><span class="slot-name">Winner QF 3</span><span class="slot-score" id="m6-s1-score">-</span></div>
+            <div class="match-slot" id="m6-s2"><span class="slot-name">Winner QF 4</span><span class="slot-score" id="m6-s2-score">-</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Round 3: Grand Final (1 match) -->
+      <section class="bracket-round">
+        <div class="round-title text-gold">GRAND FINAL</div>
+        <div class="matches-col final-col">
+          <!-- Final -->
+          <div class="match-box glass-panel final-box" id="m7">
+            <div class="match-slot" id="m7-s1"><span class="slot-name">Finalist 1</span><span class="slot-score" id="m7-s1-score">-</span></div>
+            <div class="match-slot" id="m7-s2"><span class="slot-name">Finalist 2</span><span class="slot-score" id="m7-s2-score">-</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Champion Pedestal -->
+      <section class="bracket-round champ-round">
+        <div class="round-title text-gold">CHAMPION</div>
+        <div class="champ-pedestal glass-panel" id="champBox">
+          <div class="crown-icon">👑</div>
+          <div id="champName" class="champ-name">TO BE DECIDED</div>
+          <div class="champ-sub text-gold">SLOT TOURNAMENT WINNER</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../shared/libs/confetti.browser.min.js"></script>
+  <script src="../shared/libs/streamerbot-client.js"></script>
+  <script src="../shared/sound.js"></script>
+  <script src="../shared/bus.js"></script>
+  <script src="bracket.js"></script>
+</body>
+</html>

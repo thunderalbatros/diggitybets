@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HuntHub — 1v1 Slot Battle Overlay</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../data/curated_slots.js"></script>
+  <script src="libs/anime.min.js"></script>
+  <script src="libs/confetti.browser.min.js"></script>
+  <script src="libs/lucide.min.js"></script>
+</head>
+<body>
+  <div id="stage-wrapper">
+    <!-- Battle Arena (Minimalist — Image 3 Layout) -->
+    <main class="battle-arena">
+      <!-- Player A (Cyan Corner) -->
+      <section class="player-card corner-cyan" id="card-player-a">
+        <div class="card-glow"></div>
+        <div class="corner-tag">BLUE CORNER</div>
+
+        <!-- Avatar / Monogram Header -->
+        <div class="player-header">
+          <div class="avatar-box" id="avatar-a">
+            <span class="avatar-monogram" id="monogram-a">?</span>
+          </div>
+          <div class="player-meta">
+            <h2 class="player-name" id="name-a">Waiting for Player...</h2>
+            <span class="player-status" id="slot-tag-a">!battle &lt;slot&gt; in chat</span>
+          </div>
+        </div>
+
+        <!-- Slot Showcase -->
+        <div class="slot-display">
+          <div class="slot-cover" id="cover-a">
+            <div class="cover-placeholder" id="placeholder-a">
+              <span class="cover-icon">🎰</span>
+              <span class="cover-title" id="slot-name-a">No Slot Selected</span>
+              <span class="cover-provider" id="slot-provider-a">PRAGMATIC / HACKSAW / NOLIMIT</span>
+            </div>
+            <img id="slot-img-a" class="slot-real-img" src="" alt="Slot A" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Multiplier & Payout Gauge -->
+        <div class="score-gauge">
+          <div class="gauge-header">
+            <span class="gauge-label">FINAL MULTIPLIER</span>
+            <span class="gauge-payout" id="payout-a">$0.00 USD</span>
+          </div>
+          <div class="gauge-value" id="mult-a">0.00<span class="mult-x">x</span></div>
+          <div class="gauge-meter">
+            <div class="meter-bar" id="meter-bar-a" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Winner Ribbon -->
+        <div class="winner-ribbon" id="ribbon-a">
+          <span class="ribbon-icon">👑</span>
+          <span class="ribbon-text">WINNER!</span>
+        </div>
+      </section>
+
+      <!-- Center VS Emblem -->
+      <div class="vs-center">
+        <div class="vs-burst"></div>
+        <div class="vs-circle">
+          <span class="vs-text">VS</span>
+        </div>
+        <div class="vs-subtext" id="vs-subtext">LIVE DUEL</div>
+      </div>
+
+      <!-- Player B (Crimson Corner) -->
+      <section class="player-card corner-crimson" id="card-player-b">
+        <div class="card-glow"></div>
+        <div class="corner-tag">RED CORNER</div>
+
+        <!-- Avatar / Monogram Header -->
+        <div class="player-header">
+          <div class="avatar-box" id="avatar-b">
+            <span class="avatar-monogram" id="monogram-b">?</span>
+          </div>
+          <div class="player-meta">
+            <h2 class="player-name" id="name-b">Waiting for Player...</h2>
+            <span class="player-status" id="slot-tag-b">!battle &lt;slot&gt; in chat</span>
+          </div>
+        </div>
+
+        <!-- Slot Showcase -->
+        <div class="slot-display">
+          <div class="slot-cover" id="cover-b">
+            <div class="cover-placeholder" id="placeholder-b">
+              <span class="cover-icon">🎰</span>
+              <span class="cover-title" id="slot-name-b">No Slot Selected</span>
+              <span class="cover-provider" id="slot-provider-b">PRAGMATIC / HACKSAW / NOLIMIT</span>
+            </div>
+            <img id="slot-img-b" class="slot-real-img" src="" alt="Slot B" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Multiplier & Payout Gauge -->
+        <div class="score-gauge">
+          <div class="gauge-header">
+            <span class="gauge-label">FINAL MULTIPLIER</span>
+            <span class="gauge-payout" id="payout-b">$0.00 USD</span>
+          </div>
+          <div class="gauge-value" id="mult-b">0.00<span class="mult-x">x</span></div>
+          <div class="gauge-meter">
+            <div class="meter-bar" id="meter-bar-b" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Winner Ribbon -->
+        <div class="winner-ribbon" id="ribbon-b">
+          <span class="ribbon-icon">👑</span>
+          <span class="ribbon-text">WINNER!</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Fullscreen Casino Universe Winner Celebration Modal -->
+    <div class="victory-modal" id="victory-modal">
+      <div class="modal-card">
+        <div class="modal-chips-row">🪙 💰 👑 💰 🪙</div>
+        <div class="modal-subtitle">DUEL WINNER!</div>
+        <h1 class="modal-winner" id="modal-winner-name">@LuckyStriker</h1>
+        <div class="modal-stat" id="modal-stat">Multiplier: 3.41x</div>
+        <div class="modal-slot-title" id="modal-slot-title">Wanted Dead or a Wild</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
