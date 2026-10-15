@@ -29,7 +29,7 @@ function copyRecursive(src, dest) {
 }
 
 // 2. Copy core web assets
-console.log('• Copying index.html, favicon.ico and site assets...');
+console.log('• Copying index.html and site assets...');
 fs.copyFileSync(path.join(root, 'index.html'), path.join(dist, 'index.html'));
 if (fs.existsSync(path.join(root, 'favicon.ico'))) {
   fs.copyFileSync(path.join(root, 'favicon.ico'), path.join(dist, 'favicon.ico'));

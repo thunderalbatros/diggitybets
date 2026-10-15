@@ -352,12 +352,11 @@ class StakeOriginalsController {
         const payouts = this.plinkoPayouts[this.plinkoRisk] || this.plinkoPayouts.high;
         const multiplier = payouts[finalBin] !== undefined ? payouts[finalBin] : 1.0;
 
-        const canvas = document.getElementById('plinko-canvas');
-        const cx = canvas ? (canvas.width / 2) : 380;
+        const cx = 380;
 
         this.plinkoActiveBalls.push({
           x: cx,
-          y: 18,
+          y: 10,
           targetBin: finalBin,
           path: path,
           step: 0,
@@ -381,8 +380,8 @@ class StakeOriginalsController {
 
     const rowSpacing = 46;
     const colSpacing = 58;
-    const startY = 36;
-    const cx = canvas.width / 2;
+    const startY = 20;
+    const cx = 380;
 
     const animate = () => {
       if (this.plinkoActiveBalls.length === 0) {
@@ -465,40 +464,70 @@ class StakeOriginalsController {
     const canvas = document.getElementById('plinko-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
 
-    // Background
+    // 1. HiDPI / Retina Sharp Multiplier
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const logicalW = 760;
+    const logicalH = 580;
+
+    if (canvas.width !== logicalW * dpr || canvas.height !== logicalH * dpr) {
+      canvas.width = logicalW * dpr;
+      canvas.height = logicalH * dpr;
+    }
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // 2. Seamless Background
     ctx.fillStyle = '#0f212e';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, logicalW, logicalH);
 
     const rows = this.plinkoRows;
-    const startY = 36;
+    const startY = 20; // Symmetrically centered vertically
     const rowSpacing = 46;
     const colSpacing = 58;
 
-    // Draw Pegs (White glowing pins)
+    // 3. Draw Pegs with Subtle White Neon Glow + Sharp Core
     for (let r = 0; r <= rows; r++) {
-      const rowStartX = w / 2 - (r * colSpacing) / 2;
+      const rowStartX = logicalW / 2 - (r * colSpacing) / 2;
       const y = startY + r * rowSpacing;
 
       for (let c = 0; c <= r; c++) {
         const x = rowStartX + c * colSpacing;
+
+        // Subtle White Neon Ambient Halo behind each pin
+        const halo = ctx.createRadialGradient(x, y, 1, x, y, 13);
+        halo.addColorStop(0, 'rgba(255, 255, 255, 0.40)');
+        halo.addColorStop(0.35, 'rgba(215, 235, 255, 0.16)');
+        halo.addColorStop(0.7, 'rgba(180, 215, 255, 0.05)');
+        halo.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.beginPath();
+        ctx.arc(x, y, 13, 0, Math.PI * 2);
+        ctx.fillStyle = halo;
+        ctx.fill();
+
+        // High-Resolution Sharp Core Pin
         ctx.beginPath();
         ctx.arc(x, y, 4.5, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-        ctx.shadowBlur = 5;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+        ctx.shadowBlur = 6;
         ctx.fill();
         ctx.shadowBlur = 0;
+
+        // Micro 3D specular highlight for tactile pearl appearance
+        ctx.beginPath();
+        ctx.arc(x - 1, y - 1, 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fill();
       }
     }
 
-    // Draw Multiplier Bins
+    // 4. Draw Multiplier Bins
     const payouts = this.plinkoPayouts[this.plinkoRisk] || this.plinkoPayouts.high;
     const binCount = rows + 1;
     const bucketY = startY + rows * rowSpacing + 22;
-    const bucketStartX = w / 2 - (rows * colSpacing) / 2;
+    const bucketStartX = logicalW / 2 - (rows * colSpacing) / 2;
 
     const getBinColor = (idx, total) => {
       const mid = (total - 1) / 2;
@@ -513,10 +542,13 @@ class StakeOriginalsController {
       const bx = bucketStartX + idx * colSpacing - colSpacing / 2;
       const binColor = getBinColor(idx, binCount);
 
+      ctx.shadowColor = binColor;
+      ctx.shadowBlur = 8;
       ctx.fillStyle = binColor;
       ctx.beginPath();
       ctx.roundRect(bx + 3, bucketY, colSpacing - 6, 30, [6]);
       ctx.fill();
+      ctx.shadowBlur = 0;
 
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 12px "Chakra Petch", sans-serif';
@@ -525,16 +557,24 @@ class StakeOriginalsController {
       ctx.fillText(`${m}x`, bx + colSpacing / 2, bucketY + 15);
     });
 
-    // Draw Active Balls
+    // 5. Draw Active Falling Balls with Gold Neon Glow
     this.plinkoActiveBalls.forEach(b => {
       ctx.beginPath();
       ctx.arc(b.x, b.y, 9, 0, Math.PI * 2);
       ctx.fillStyle = '#ffc000';
-      ctx.shadowColor = 'rgba(255, 192, 0, 0.8)';
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(255, 192, 0, 0.9)';
+      ctx.shadowBlur = 12;
       ctx.fill();
       ctx.shadowBlur = 0;
+
+      // Ball highlight
+      ctx.beginPath();
+      ctx.arc(b.x - 2.5, b.y - 2.5, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fill();
     });
+
+    ctx.restore();
   }
 
   // ==========================================

@@ -4957,6 +4957,8 @@ footer.site-footer {
   width: 100%;
   max-width: 760px;
   max-height: 480px;
+  aspect-ratio: 760 / 580;
+  object-fit: contain;
 }
 
 #crash-canvas {
