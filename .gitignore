@@ -35,6 +35,8 @@ data/*.dat*
 
 # Local UI Knowledge Base & Reference Repos (~1.2 GB, cloned locally for research)
 references/
+diggitybets-rebrand-toolkit/
+repomix-output.xml
 tools/audit/out/*.png
 tools/audit/out/*.json
 

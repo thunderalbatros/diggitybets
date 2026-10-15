@@ -174,6 +174,8 @@ class UserStoreController {
     avatarEls.forEach(el => {
       if (this.avatarType === 'img') {
         el.innerHTML = `<img src="${this.avatar}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
+      } else if (typeof window.getDeterministicAvatarSvg === 'function' && this.username) {
+        el.innerHTML = window.getDeterministicAvatarSvg(this.username, 32);
       } else {
         el.textContent = this.avatar;
       }
@@ -670,7 +672,7 @@ class UserStoreController {
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">${item.avatar}</span>
+            ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.casinoUser || item.kickUser, 28) : `<span style="font-size: 18px;">${item.avatar}</span>`}
             <div>
               <strong style="color: #ffffff; font-size: 13px;">${item.casinoUser || item.stakeUser}</strong>
               <div style="font-size: 11px; color: var(--text-dim);">${item.kickUser}</div>
