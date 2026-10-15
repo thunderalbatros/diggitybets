@@ -265,6 +265,13 @@
     - `provider-fallback` (Multi-LLM resilience chain: Groq -> Gemini -> OpenRouter)
     - `firecrawl` (Headless web scraping with zero CPU impact)
     - `agent-worktree` (Isolated sandboxed experiments in git worktrees)
+  - **Imported Canon Books, Masterclasses & Technical Biblias (`knowledge/`):**
+    - **`knowledge/ui_ux_design/`:** *Refactoring UI* (Adam Wathan & Steve Schoger), *Practical UI* (Adham Dannaway), *Laws of UX* (Jon Yablonski), *Designing with the Mind in Mind* (Jeff Johnson), *The Elements of Typographic Style* (Robert Bringhurst), *Design Systems* (Alla Kholmatova), and *Biblia 02: Efectos Visuales, Shaders y Glassmorphism Científico NN/g*.
+    - **`knowledge/motion_and_animation/`:** *The Illusion of Life: Disney 12 Animation Principles* (Thomas & Johnston), *Game Feel & Virtual Sensation* (Steve Swink), *Low-Level Graphics & GPU Shaders*, and *Biblias 01, 03 & 04 (Motion, 3D Blender/R3F, Lottie/Rive)*.
+    - **`knowledge/cybersecurity/`:** *Cybersecurity Master Protocol (Zero Trust & App Integrity)*, *Canon DevSecOps 2026*, *Anti-Bot Stealth Guide*, and *Stream Architecture & Vulnerability Defense*.
+    - **`knowledge/streaming_and_overlays/`:** *WebSockets Crash Course Masterclass* (Hussein Nasser: framing, pooling, heartbeat, low-latency streaming) and *Edge Audio Streaming SOTA*.
+    - **`knowledge/architecture_and_books/`:** *Clean Architecture* (Robert C. Martin), *The Pragmatic Programmer* (Thomas & Hunt), *Hooked* (Nir Eyal), *System Design Interview Vol. 2* (Alex Xu), *12-Factor AI Agents in Production*, and *Biblia Maestra de Planificación y Estética*.
+  - **RAG Pipeline Enhancements:** Recursive multi-depth directory indexing, YAML frontmatter stripping, 16-line context block extraction preserving code and tables, and resilient multi-model fallback (`qwen/qwen3.8-27b` -> `openai/gpt-oss-120b` -> `openai/gpt-oss-20b`).
   - **Context Compactor (`tools/intelligence/context_compactor.mjs`):** 60%-75% history token compaction preserving file diffs, Stake refer code, and invariants.
 - [x] **Kick Events & Store Master Plan V2.0:** Documented in [docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/KICK_EVENTS_AND_STORE_MASTER_PLAN_V2.md).
 - [x] **Guía de Uso Streamer:** Documented in [docs/INSTRUCCIONES_SUITE_COMPLETA.md](file:///c:/Users/tomas/Desktop/streamerbot/docs/INSTRUCCIONES_SUITE_COMPLETA.md).
