@@ -360,17 +360,16 @@ class TourneyOverlayApp {
       const winClass = isWinner ? 'winner' : (isLoser ? 'loser' : '');
       const crown = isWinner ? ' 👑' : '';
 
-      // Resolve slot cover art
-      let slotCover = p.slotImage;
-      if (!slotCover && window.HUNTHUB_CURATED_SLOTS && p.slotName) {
-        const found = window.HUNTHUB_CURATED_SLOTS.find(
-          (s) => s.name.toLowerCase() === p.slotName.toLowerCase() || s.name.toLowerCase().includes(p.slotName.toLowerCase())
-        );
-        if (found) slotCover = found.image;
+      // Resolve canonical slot cover art and name
+      let resolvedSlot = null;
+      if (window.SlotResolver) {
+        resolvedSlot = window.SlotResolver.resolve(p.slotName || p.slotImage || p, '../');
       }
+      const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || p.slotName || '';
+      const slotCover = (resolvedSlot && resolvedSlot.image) || p.slotImage;
 
       const imgHtml = slotCover
-        ? `<img src="${slotCover}" class="mini-slot-img" alt="${p.slotName}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">`
+        ? `<img src="${slotCover}" class="mini-slot-img" alt="${slotNameDisplay}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">`
         : `<div class="player-avatar">${initial}</div>`;
 
       return `
@@ -378,9 +377,9 @@ class TourneyOverlayApp {
           <div class="player-info">
             ${imgHtml}
             <div class="player-name-text">@${p.displayName || p.username}${crown}</div>
-            <span class="player-slot-name">${p.slotName ? `(${p.slotName})` : ''}</span>
+            <span class="player-slot-name">${slotNameDisplay ? `(${slotNameDisplay})` : ''}</span>
           </div>
-          <span class="player-score">${score !== undefined && score !== null ? `${score}x` : '-'}</span>
+          <span class="player-score">${score !== undefined && score !== null && Number(score) > 0 ? `${score}x` : (isWinner ? 'WINNER 🏆' : (isLoser ? 'LOSER' : '-'))}</span>
         </div>
       `;
     };
@@ -401,6 +400,13 @@ class TourneyOverlayApp {
   }
 
   triggerChampionCelebration(state) {
+    let resolvedChampSlot = null;
+    if (window.SlotResolver && state.champion) {
+      resolvedChampSlot = window.SlotResolver.resolve(state.champion.slotName || state.champion.slotImage || 'Wanted Dead or a Wild', '../');
+    }
+    const champSlotName = (resolvedChampSlot && resolvedChampSlot.name) || state.champion?.slotName || 'Wanted Dead or a Wild';
+    const champSlotImage = (resolvedChampSlot && resolvedChampSlot.image) || state.champion?.slotImage;
+
     // 1. Broadcast celebration to fullscreen overlay
     try {
       const bc = new BroadcastChannel('hunthub_celebration');
@@ -409,8 +415,8 @@ class TourneyOverlayApp {
         category: 'tournament',
         winner: state.champion,
         title: state.title,
-        slotName: state.champion?.slotName || 'Wanted Dead or a Wild',
-        slotImage: state.champion?.slotImage,
+        slotName: champSlotName,
+        slotImage: champSlotImage,
         multiplier: state.champion?.multiplier || 150.0,
         prizeText: state.prizeText || '1º: $150 · 2º: $50'
       };
@@ -426,7 +432,7 @@ class TourneyOverlayApp {
     // 3. Keep local modal banner for bracket view without blocking frame rate
     if (this.modal && state.champion) {
       this.champName.textContent = `@${state.champion.displayName || state.champion.username}`;
-      this.champSlot.textContent = `Winning Slot: ${state.champion.slotName || 'Wanted Dead or a Wild'}`;
+      this.champSlot.textContent = `Winning Slot: ${champSlotName}`;
       this.modal.classList.add('active');
 
       setTimeout(() => {

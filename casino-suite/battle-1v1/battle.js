@@ -14,6 +14,8 @@ const el = {
   f1Name: document.getElementById('f1Name'),
   f1Slot: document.getElementById('f1Slot'),
   f1Avatar: document.getElementById('f1Avatar'),
+  f1SlotImg: document.getElementById('f1SlotImg'),
+  f1SlotBadge: document.getElementById('f1SlotBadge'),
   f1HpBar: document.getElementById('f1HpBar'),
   f1HpText: document.getElementById('f1HpText'),
   f1Score: document.getElementById('f1Score'),
@@ -23,6 +25,8 @@ const el = {
   f2Name: document.getElementById('f2Name'),
   f2Slot: document.getElementById('f2Slot'),
   f2Avatar: document.getElementById('f2Avatar'),
+  f2SlotImg: document.getElementById('f2SlotImg'),
+  f2SlotBadge: document.getElementById('f2SlotBadge'),
   f2HpBar: document.getElementById('f2HpBar'),
   f2HpText: document.getElementById('f2HpText'),
   f2Score: document.getElementById('f2Score'),
@@ -37,17 +41,30 @@ const el = {
 
 function updateUI() {
   el.f1Name.textContent = state.f1.name;
-  el.f1Slot.textContent = state.f1.slot;
   if (state.f1.avatar) el.f1Avatar.src = state.f1.avatar;
+
+  el.f2Name.textContent = state.f2.name;
+  if (state.f2.avatar) el.f2Avatar.src = state.f2.avatar;
+
+  if (window.SlotResolver) {
+    const s1 = window.SlotResolver.resolve(state.f1.slot, '../../');
+    el.f1Slot.textContent = s1.name;
+    if (el.f1SlotImg) el.f1SlotImg.src = s1.image;
+    if (el.f1SlotBadge) el.f1SlotBadge.textContent = (s1.badge || s1.provider).toUpperCase();
+
+    const s2 = window.SlotResolver.resolve(state.f2.slot, '../../');
+    el.f2Slot.textContent = s2.name;
+    if (el.f2SlotImg) el.f2SlotImg.src = s2.image;
+    if (el.f2SlotBadge) el.f2SlotBadge.textContent = (s2.badge || s2.provider).toUpperCase();
+  } else {
+    el.f1Slot.textContent = state.f1.slot;
+    el.f2Slot.textContent = state.f2.slot;
+  }
 
   const f1Pct = Math.max(0, Math.min(100, (state.f1.hp / state.f1.maxHp) * 100));
   el.f1HpBar.style.width = `${f1Pct}%`;
   el.f1HpText.textContent = `${Math.round(state.f1.hp)} HP`;
   el.f1Score.textContent = `${state.f1.score.toFixed(1)}x`;
-
-  el.f2Name.textContent = state.f2.name;
-  el.f2Slot.textContent = state.f2.slot;
-  if (state.f2.avatar) el.f2Avatar.src = state.f2.avatar;
 
   const f2Pct = Math.max(0, Math.min(100, (state.f2.hp / state.f2.maxHp) * 100));
   el.f2HpBar.style.width = `${f2Pct}%`;

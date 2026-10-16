@@ -1,7 +1,7 @@
 # HuntHub — Project Status & Roadmap
 
-> **Current Phase:** Phase 1 (Research & Master Plan V2.0 Completed) $\rightarrow$ Ready for Gate 1 Approval & Stage 1 Execution  
-> **Last Updated:** 2026-10-13  
+> **Current Phase:** Phase 5 (Unified Slot Catalog & Exact Name-Image Match) COMPLETED $\rightarrow$ Ready for Production & Gate Approval  
+> **Last Updated:** 2026-10-16  
 > **Manager:** Antigravity Tech Lead  
 
 ---
@@ -317,6 +317,34 @@
     - Suite automatizada `core/test/phase2-admin-d1.test.ts` (100% aprobada).
     - Suite integral `tools/test_site.mjs` (100% aprobada con los 71 IDs).
     - Compilación de producción en `dist/` completada con éxito.
+- [x] **Stage 9 (Fase 3 — Modos Bonus Buy vs Spins y King of the Hill con Premio $20 USD):** COMPLETED & TESTED.
+  - **Selector de Modo ("BONUS_BUY" vs "SPINS"):** Switch interactivo en `#admin` (Pestaña 3), `BattleManager` y `TournamentManager`. Modo "BONUS_BUY" habilita campos numéricos de multiplicador para resolución matemática; modo "SPINS" activa botones directos en 1 clic ("Gana A" / "Gana B") y avance directo de llave en Torneo.
+  - **Modo King of the Hill (KotH):** Racha acumulativa (1 a 4 victorias) con retención de trono. Al ganar duelo, el Rey decide voluntariamente entre continuar defendiendo el trono o retirarse cobrando sus créditos.
+  - **Gran Premio $20 USD (Racha 4/4):** Al alcanzar 4 victorias consecutivas, se proclama Campeón Absoluto, se resetea el trono a 0/4 y se emite automáticamente la redención de $20 en `store_redemptions` con billeteras cripto para pago en 1 clic.
+  - **Pruebas:** Suite `core/test/phase3-koth-modes.test.ts` (100% aprobada).
+- [x] **Stage 10 (Fase 4 — Sincronización Exacta Wheel-Chat `spin_animation_complete`, Colas Dual y Rueda 90s):** COMPLETED & TESTED.
+  - **Colas Separadas `!battle <slot>` y `!tourney <slot>` en Wheel Dual:** Ingesta en tiempo real con validación Anti-Sybil/Shadowban, resolución canónica de slots contra catálogo oficial (`wheel-slots/catalog/slots.json`), y deduplicación por usuario.
+  - **Auto-Asignación Inteligente:** En modo `battle`, si hay un `reigningKing` activo, el ganador entra directo como Retador (Player B) sin desplazar al Rey; si el trono está vacío, asigna a Player A y luego a Player B. En modo `tourney`, inscribe al ganador automáticamente en el siguiente cupo disponible (1 a 8) de `TournamentManager`.
+  - **Rueda de 90s y Spotlight Recommender en Bonus Hunt:** Pool de espectadores orgánicos de los últimos 90 segundos con exclusión de spam de emotes Kick y cooldown de 10 minutos anti-repetición. El ganador pasa al estado `Spotlight Recommender` (60s) para recomendar slot vía `!slot`/`!hunt` o autocompletado en `#admin` Pestaña 2.
+  - **Handshake Exacto al Milisegundo (`spin_animation_complete`):** Retención de anuncio en `pendingChatAnnouncements` a T=0 con `spinId` único. En el milisegundo exacto en que la rueda frena en OBS/Web (`wheel-csgo`, `wheel-duo`, `wheel-slots`), despacha `POST /api/wheel/spin-complete` y evento WS. El bot dispara inmediatamente el mensaje en Kick chat con timer cancelado. Fallback de 7200ms con estricta idempotencia por si OBS está apagado.
+  - **Auditoría y Pruebas Unitarias:** Suite `core/test/phase4-wheels-sync.test.ts` (100% aprobada). Las 9 suites de pruebas de `core/` pasan al 100%. `tools/test_site.mjs` y `tools/build_dist.mjs` pasan al 100%.
+- [x] **Stage 11 (Fase 5 — Unificación del Catálogo de Slots y Coincidencia Exacta Nombre-Imagen en Tarjetas Grandes y Miniaturas):** COMPLETED & TESTED.
+  - **Motor Canónico Universal `SlotResolver` (Node.js & Navegador/OBS):**
+    - Creado `core/src/catalog/slot-resolver.ts` y `site/js/slot-resolver.js` operando con el mismo catálogo enriquecido y normalizador de rutas.
+    - Diccionario de alias coloquiales y nombres de chat (`wanted` $\to$ `Wanted Dead or a Wild`, `gates`/`olympus 1000` $\to$ `Gates of Olympus 1000`, `sweet bonanza` $\to$ `Sweet Bonanza 1000`, `zeus` $\to$ `Gates of Olympus 1000`, `rip city` $\to$ `RIP City`, etc.).
+    - Normalización inteligente de rutas relativas (`../public/slots/wanted.jpg` $\to$ `site/images/slots/wanted.jpg`) y soporte nativo para URLs CDN directas (`mediumrare.imgix.net`, `fan-cdn.nolimitcity.com`).
+    - Fallback elegante con monograma SVG procedural para slots no catalogadas (`../../site/images/slots/default-slot.svg`).
+  - **Coincidencia Exacta Nombre-Imagen en Todo el Ecosistema:**
+    - **1v1 Battles (`casino-suite/battle-1v1/`, `overlay-battle/`):** Resolución canónica y carga de carátula en alta definición con badge de proveedor para Player A y Player B.
+    - **8-Bracket Tourney (`overlay-tourney/`, `casino-suite/bracket-8/`, `site/js/tournament-prediction.js`):** Integración de carátulas 3:4 en el árbol de llaves y modal de campeón con fallback seguro `onerror`.
+    - **Community Bonus Hunt (`overlay-bonushunt/`, `site/js/bonushunt.js`):** Miniaturas de tabla (`bh-slot-thumb`), tarjetas de Best Win y Lucky Win sincronizadas con `SlotResolver`.
+    - **Wheels (`wheel-duo/`, `wheel-slots/`, `wheel-csgo/`):** Normalización de carátulas en riel de slots y modal emergente de victoria `#resultModal`.
+    - **Panel de Control `#admin` & Portal Web (`index.html`, `site/js/admin-hub.js`, `site/js/slots-explorer.js`):** Búsqueda con autocompletado en tiempo real sobre el catálogo unificado y carga garantizada de carátulas.
+  - **Pruebas Automatizadas y Distribución:**
+    - Suite de pruebas `core/test/phase5-slot-images.test.ts` (100% aprobada en sus 4 secciones).
+    - Las 10 suites de `core/` pasan al 100% (`npm test`).
+    - `node tools/test_site.mjs` pasa al 100% (71 IDs interactivos validados).
+    - `node tools/build_dist.mjs` genera exitosamente la distribución de producción en `dist/` (1,078 archivos, 27.00 MB).
 
 ---
 

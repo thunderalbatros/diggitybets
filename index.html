@@ -1123,6 +1123,9 @@
           <button type="button" class="tourney-tab-btn" id="tab-tourney-standings">
             <span>📊</span> Live Standings & Podium
           </button>
+          <button type="button" class="tourney-tab-btn" id="tab-tourney-koth">
+            <span>👑</span> King of the Hill (1v1)
+          </button>
         </div>
       </div>
 
@@ -1152,6 +1155,113 @@
       <!-- View 2: Live Transparency Standings & Scoreboard Panel -->
       <div id="tourney-standings-panel" style="display: none;">
         <!-- Rendered dynamically by tournament-prediction.js -->
+      </div>
+
+      <!-- View 3: King of the Hill (1v1 Battle Arena) Panel -->
+      <div id="tourney-koth-panel" style="display: none;">
+        <div class="tourney-prediction-container" style="max-width: 900px; margin: 0 auto;">
+          <div class="profile-glass-card" style="padding: 24px; border: 1px solid rgba(255, 215, 0, 0.3); background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.08), rgba(0, 0, 0, 0.5));">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+                  <span>👑</span> KING OF THE HILL ARENA
+                </h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                  1v1 Battle Throne · Win 4 duels in a row to capture the <strong>$20.00 CASH PRIZE</strong>!
+                </p>
+              </div>
+              <span class="reward-badge-pill" id="public-koth-streak-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold); font-size: 12px; padding: 4px 12px;">
+                STREAK: 0/4
+              </span>
+            </div>
+
+            <!-- Streak Progress Bar -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+              <div id="pub-koth-step-1" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 1</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">1/4</div>
+                <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
+              </div>
+              <div id="pub-koth-step-2" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 2</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">2/4</div>
+                <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
+              </div>
+              <div id="pub-koth-step-3" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 3</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">3/4</div>
+                <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
+              </div>
+              <div id="pub-koth-step-4" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,215,0,0.1); border: 1px dashed var(--gold);">
+                <div style="font-size: 10px; color: var(--gold); font-weight: 900;">GRAND CHAMPION</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: var(--gold); font-size: 14px;">4/4</div>
+                <div style="font-size: 10px; color: #53fc18; font-weight: 800; margin-top: 2px;">$20.00 CASH</div>
+              </div>
+            </div>
+
+            <!-- Two Fighter Slots Display -->
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; margin-bottom: 20px;">
+              <!-- Blue Corner: King -->
+              <div style="padding: 16px; background: rgba(0, 100, 255, 0.08); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
+                <div>
+                  <span class="reward-badge-pill" style="font-size: 9px; color: var(--cyan); border-color: var(--cyan); margin-bottom: 6px;">👑 REIGNING KING (BLUE)</span>
+                  <div id="pub-koth-king-avatar" style="font-size: 28px; margin-bottom: 4px;">👑</div>
+                  <div id="pub-koth-king-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: #ffffff;">No Reigning King</div>
+                </div>
+                <!-- Slot Cover Showcase -->
+                <div style="margin: 10px 0; width: 100%; max-width: 140px; position: relative;">
+                  <img id="pub-koth-king-slot-img" src="https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format" alt="King Slot" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0, 150, 255, 0.4); box-shadow: 0 4px 14px rgba(0,0,0,0.5);">
+                  <span id="pub-koth-king-slot-badge" class="badge-tag" style="position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(0,0,0,0.8); border: 1px solid var(--cyan); color: var(--cyan);">HACKSAW</span>
+                </div>
+                <div>
+                  <div id="pub-koth-king-slot" style="font-size: 13px; font-weight: 700; color: var(--gold); margin-top: 2px;">Throne Open for Challengers</div>
+                  <div id="pub-koth-king-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: var(--cyan); margin-top: 4px;">0.00x</div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 20px; font-weight: 900; color: var(--text-dim);">VS</div>
+
+              <!-- Red Corner: Challenger -->
+              <div style="padding: 16px; background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
+                <div>
+                  <span class="reward-badge-pill" style="font-size: 9px; color: #ff6b8b; border-color: #ff6b8b; margin-bottom: 6px;">⚔️ CHALLENGER (RED)</span>
+                  <div id="pub-koth-chal-avatar" style="font-size: 28px; margin-bottom: 4px;">🥊</div>
+                  <div id="pub-koth-chal-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: #ffffff;">Awaiting Challenger</div>
+                </div>
+                <!-- Slot Cover Showcase -->
+                <div style="margin: 10px 0; width: 100%; max-width: 140px; position: relative;">
+                  <img id="pub-koth-chal-slot-img" src="https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format" alt="Challenger Slot" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255, 42, 95, 0.4); box-shadow: 0 4px 14px rgba(0,0,0,0.5);">
+                  <span id="pub-koth-chal-slot-badge" class="badge-tag" style="position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(0,0,0,0.8); border: 1px solid #ff6b8b; color: #ff6b8b;">PRAGMATIC</span>
+                </div>
+                <div>
+                  <div id="pub-koth-chal-slot" style="font-size: 13px; font-weight: 700; color: var(--text-dim); margin-top: 2px;">Type !battle &lt;slot&gt; in chat</div>
+                  <div id="pub-koth-chal-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #ff6b8b; margin-top: 4px;">0.00x</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- King Decision Box (Visible if logged-in user is the King & awaiting decision) -->
+            <div id="pub-koth-king-actions" style="display: none; padding: 14px; background: rgba(255, 215, 0, 0.12); border: 1px solid var(--gold); border-radius: 8px; text-align: center; margin-bottom: 12px;">
+              <div style="font-weight: 900; color: var(--gold); font-size: 13px; margin-bottom: 8px;">
+                👑 YOU ARE THE REIGNING KING! CHOOSE YOUR MOVE:
+              </div>
+              <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn-stake-primary" id="btn-pub-koth-continue" style="padding: 8px 18px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 900;">
+                  ⚔️ Defend Throne (Go for Next Win / $20)
+                </button>
+                <button type="button" class="btn-chat-toggle" id="btn-pub-koth-retire" style="padding: 8px 18px; font-size: 12px; color: var(--gold); border-color: var(--gold);">
+                  💰 Cashout & Retire Now
+                </button>
+              </div>
+            </div>
+
+            <!-- Rules & Chat Command Helper -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; gap: 8px;">
+              <div>💬 Join via Kick chat: <code style="color: var(--cyan); font-family: monospace;">!battle &lt;slot name&gt;</code></div>
+              <div>👑 King decisions via chat: <code style="color: var(--kick-green); font-family: monospace;">!continue</code> or <code style="color: var(--gold); font-family: monospace;">!retire</code></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2088,10 +2198,20 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
           <!-- 2. 8-Bracket Tourney Control -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 class="profile-card-title"><span>🏆</span> 8-BRACKET TOURNAMENT CONTROL</h3>
               <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">LOBBY OPEN</span>
             </div>
+
+            <!-- Tourney Game Mode Switcher -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 11px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px;">GAME MODE:</span>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn-stake-primary" id="btn-admin-tourney-mode-buy" style="padding: 4px 10px; font-size: 11px;">🎁 Bonus Buy</button>
+                <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 4px 10px; font-size: 11px;">🎰 Spins</button>
+              </div>
+            </div>
+
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
               Manage the 8 tournament competitors, advance match winners through Quarterfinals and Semifinals, and crown the Grand Champion.
             </p>
@@ -2102,20 +2222,60 @@
               <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
             </div>
 
-            <div id="admin-tourney-rounds-container" style="max-height: 280px; overflow-y: auto;">
+            <div id="admin-tourney-rounds-container" style="max-height: 320px; overflow-y: auto;">
               <!-- Rendered dynamically -->
             </div>
           </div>
 
           <!-- 3. 1v1 Battle Control -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 class="profile-card-title"><span>⚔️</span> 1V1 BATTLE LIVE CONTROLLER</h3>
               <span class="reward-badge-pill" id="admin-battle-status-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">READY</span>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-              Manage Player A (Blue) vs Player B (Red), enter spin multipliers or buy payouts, and declare the live duel winner.
-            </p>
+
+            <!-- Battle Game Mode Switcher -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 11px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px;">GAME MODE:</span>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn-stake-primary" id="btn-admin-battle-mode-buy" style="padding: 4px 10px; font-size: 11px;">🎁 Bonus Buy</button>
+                <button type="button" class="btn-stake-secondary" id="btn-admin-battle-mode-spins" style="padding: 4px 10px; font-size: 11px;">🎰 Spins</button>
+              </div>
+            </div>
+
+            <!-- King of the Hill HUD Deck -->
+            <div id="admin-battle-koth-deck" style="padding: 10px 12px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="font-size: 11px; font-weight: 900; color: var(--gold); display: flex; align-items: center; gap: 6px;">
+                  <span>👑</span> KING OF THE HILL (MAX 4 WINS / $20)
+                </div>
+                <span class="reward-badge-pill" id="admin-koth-streak-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">STREAK: 0/4</span>
+              </div>
+              <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <div id="koth-pill-1" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">1/4</div>
+                <div id="koth-pill-2" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">2/4</div>
+                <div id="koth-pill-3" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">3/4</div>
+                <div id="koth-pill-4" class="koth-streak-step" style="flex: 1.2; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px dashed rgba(255,215,0,0.4);">4/4 ($20 PRIZE)</div>
+              </div>
+              <div id="admin-koth-king-info" style="font-size: 11px; color: #ffffff; margin-bottom: 6px;">
+                Reigning King: <span id="admin-koth-king-name" style="color: var(--cyan); font-weight: 700;">None (Throne Open)</span>
+              </div>
+              <!-- King Decision Buttons (shown on wins 1, 2, 3) -->
+              <div id="admin-koth-decision-box" style="display: none; gap: 8px; margin-top: 8px;">
+                <button type="button" class="btn-stake-primary" id="btn-admin-koth-continue" style="flex: 1; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                  👑 King Continues (Defend Throne)
+                </button>
+                <button type="button" class="btn-chat-toggle" id="btn-admin-koth-retire" style="flex: 1; padding: 6px 10px; font-size: 11px; color: var(--gold); border-color: var(--gold);">
+                  💰 King Retires / Cashout
+                </button>
+              </div>
+              <!-- King Champion 4-Streak Banner (shown on win 4) -->
+              <div id="admin-koth-champion-box" style="display: none; padding: 8px; background: rgba(83, 252, 24, 0.15); border: 1px solid var(--kick-green); border-radius: 6px; text-align: center;">
+                <div style="font-weight: 900; color: #53fc18; font-size: 12px;">🎉 4-STREAK KING OF THE HILL CHAMPION! $20 CASH PRIZE!</div>
+                <div style="font-size: 11px; color: #ffffff; margin-top: 4px;">Prize logged to Tab 1 Store Redemptions Queue for 1-click payout.</div>
+                <button type="button" class="btn-stake-primary" id="btn-admin-koth-new-game" style="margin-top: 6px; padding: 4px 12px; font-size: 11px;">👑 Start New King of the Hill</button>
+              </div>
+            </div>
 
             <div style="display: flex; gap: 8px; margin-bottom: 14px;">
               <button type="button" class="btn-stake-primary" id="btn-admin-open-battle" style="flex: 1; padding: 8px 12px; font-size: 12px;">Open Battle</button>
@@ -2123,18 +2283,39 @@
               <button type="button" class="btn-chat-toggle" id="btn-admin-reset-battle" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
             </div>
 
+            <!-- Two Competitors Cards -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-              <div style="padding: 12px; background: rgba(0, 100, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 8px;">
-                <div style="font-size: 11px; font-weight: 800; color: var(--cyan); margin-bottom: 4px;">PLAYER A (BLUE)</div>
+              <div id="admin-card-player-a" style="padding: 12px; background: rgba(0, 100, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 8px; transition: opacity 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 11px; font-weight: 800; color: var(--cyan);">PLAYER A (BLUE)</span>
+                  <span id="admin-battle-badge-a" class="reward-badge-pill" style="display: none; font-size: 9px;"></span>
+                </div>
                 <div id="admin-battle-player-a-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerA</div>
-                <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT ($):</label>
-                <input type="number" id="admin-battle-payout-a" class="slots-search-input" value="150.0" style="padding: 4px 8px; font-size: 12px;">
+                <div id="admin-battle-buy-inputs-a">
+                  <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT / MULTIPLIER ($ / X):</label>
+                  <input type="number" id="admin-battle-payout-a" class="slots-search-input" value="2.01" step="0.01" style="padding: 4px 8px; font-size: 12px;">
+                </div>
+                <div id="admin-battle-spins-actions-a" style="display: none; margin-top: 8px;">
+                  <button type="button" class="btn-stake-primary" id="btn-admin-winner-a" style="width: 100%; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #00e5ff 0%, #0077ff 100%); color: #fff; font-weight: 900;">
+                    🏆 Winner (Player A)
+                  </button>
+                </div>
               </div>
-              <div style="padding: 12px; background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 8px;">
-                <div style="font-size: 11px; font-weight: 800; color: #ff6b8b; margin-bottom: 4px;">PLAYER B (RED)</div>
+              <div id="admin-card-player-b" style="padding: 12px; background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 8px; transition: opacity 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #ff6b8b;">PLAYER B (RED)</span>
+                  <span id="admin-battle-badge-b" class="reward-badge-pill" style="display: none; font-size: 9px;"></span>
+                </div>
                 <div id="admin-battle-player-b-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerB</div>
-                <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT ($):</label>
-                <input type="number" id="admin-battle-payout-b" class="slots-search-input" value="85.0" style="padding: 4px 8px; font-size: 12px;">
+                <div id="admin-battle-buy-inputs-b">
+                  <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT / MULTIPLIER ($ / X):</label>
+                  <input type="number" id="admin-battle-payout-b" class="slots-search-input" value="1.01" step="0.01" style="padding: 4px 8px; font-size: 12px;">
+                </div>
+                <div id="admin-battle-spins-actions-b" style="display: none; margin-top: 8px;">
+                  <button type="button" class="btn-stake-primary" id="btn-admin-winner-b" style="width: 100%; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #ff2a5f 0%, #ff6b8b 100%); color: #fff; font-weight: 900;">
+                    🏆 Winner (Player B)
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2296,6 +2477,7 @@
 
   <!-- Data & Application Controllers -->
   <script src="data/curated_slots.js"></script>
+  <script src="site/js/slot-resolver.js"></script>
   <script src="site/js/vendor/confetti.browser.js"></script>
   <script src="site/js/vendor/countUp.umd.js"></script>
   <script src="site/js/audio.js"></script>

@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 
+export type TourneyGameMode = 'BONUS_BUY' | 'SPINS';
+
 export interface TourneyParticipant {
   id: string;
   kickId: number;
@@ -7,6 +9,8 @@ export interface TourneyParticipant {
   displayName: string;
   avatar: string;
   slotName: string;
+  slotProvider?: string;
+  slotImage?: string;
   seed: number;
 }
 
@@ -19,6 +23,7 @@ export interface TourneyMatch {
   score1: number;
   score2: number;
   winner: TourneyParticipant | null;
+  loser?: TourneyParticipant | null;
   status: 'PENDING' | 'RUNNING' | 'FINISHED';
 }
 
@@ -28,6 +33,7 @@ export interface TournamentState {
   id: string;
   title: string;
   status: TournamentStatus;
+  gameMode: TourneyGameMode;
   betPerRound: number;
   prizeText: string;
   participants: TourneyParticipant[];
@@ -50,6 +56,7 @@ export class TournamentManager {
       id: crypto.randomUUID(),
       title: '8-Bracket Slot Championship',
       status: 'IDLE',
+      gameMode: 'BONUS_BUY',
       betPerRound: 10,
       prizeText: '1st: $150 · 2nd: $50',
       participants: [],
@@ -72,14 +79,15 @@ export class TournamentManager {
         score1: 0,
         score2: 0,
         winner: null,
+        loser: null,
         status: 'PENDING',
       });
     }
     // 2 Semifinals (Round 2: m5, m6)
-    matches.push({ id: 'm5', round: 2, matchNumber: 5, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' });
-    matches.push({ id: 'm6', round: 2, matchNumber: 6, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' });
+    matches.push({ id: 'm5', round: 2, matchNumber: 5, player1: null, player2: null, score1: 0, score2: 0, winner: null, loser: null, status: 'PENDING' });
+    matches.push({ id: 'm6', round: 2, matchNumber: 6, player1: null, player2: null, score1: 0, score2: 0, winner: null, loser: null, status: 'PENDING' });
     // 1 Grand Final (Round 3: m7)
-    matches.push({ id: 'm7', round: 3, matchNumber: 7, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' });
+    matches.push({ id: 'm7', round: 3, matchNumber: 7, player1: null, player2: null, score1: 0, score2: 0, winner: null, loser: null, status: 'PENDING' });
 
     return matches;
   }
@@ -88,11 +96,23 @@ export class TournamentManager {
     return { ...this.state };
   }
 
-  public openLobby(title?: string, betPerRound: number = 10, prizeText?: string): TournamentState {
+  public setGameMode(mode: TourneyGameMode): TournamentState {
+    this.state.gameMode = mode;
+    this.emitChange();
+    return this.getState();
+  }
+
+  public openLobby(
+    title?: string,
+    betPerRound: number = 10,
+    prizeText?: string,
+    gameMode?: TourneyGameMode
+  ): TournamentState {
     this.state = {
       id: crypto.randomUUID(),
       title: title || '8-Bracket Slot Championship',
       status: 'LOBBY',
+      gameMode: gameMode || this.state.gameMode,
       betPerRound,
       prizeText: prizeText || '1st: $150 · 2nd: $50',
       participants: [],
@@ -106,7 +126,7 @@ export class TournamentManager {
 
   public joinLobby(
     user: { id: string; kickId: number; username: string; displayName?: string; avatar?: string },
-    slotName: string = 'Random Slot'
+    slotInput: string | { name: string; provider?: string; image?: string } = 'Random Slot'
   ): { success: boolean; joinedCount: number; error?: string } {
     if (this.state.status !== 'LOBBY' && this.state.status !== 'IDLE') {
       return { success: false, joinedCount: this.state.participants.length, error: 'Tournament is not in lobby status.' };
@@ -124,6 +144,10 @@ export class TournamentManager {
       return { success: false, joinedCount: 8, error: 'Tournament is full (8/8).' };
     }
 
+    const slotName = typeof slotInput === 'string' ? slotInput : (slotInput.name || 'Random Slot');
+    const slotProvider = typeof slotInput === 'string' ? 'Casino' : (slotInput.provider || 'Casino');
+    const slotImage = typeof slotInput === 'string' ? '' : (slotInput.image || '');
+
     const participant: TourneyParticipant = {
       id: user.id,
       kickId: user.kickId,
@@ -131,12 +155,13 @@ export class TournamentManager {
       displayName: user.displayName || user.username,
       avatar: user.avatar || '',
       slotName,
+      slotProvider,
+      slotImage,
       seed: this.state.participants.length + 1,
     };
 
     this.state.participants.push(participant);
 
-    // If 8 participants joined, auto-seed and begin!
     if (this.state.participants.length === 8) {
       this.seedAndStart();
     } else {
@@ -185,42 +210,73 @@ export class TournamentManager {
 
     if (match.score1 >= match.score2) {
       match.winner = match.player1;
+      match.loser = match.player2;
     } else {
       match.winner = match.player2;
+      match.loser = match.player1;
     }
     match.status = 'FINISHED';
 
-    // Auto-advance winners to Semis or Final
+    this.advanceMatchWinner(matchId, match.winner);
+    this.emitChange();
+    return this.getState();
+  }
+
+  public setMatchWinnerDirectly(
+    matchId: string,
+    winnerSelector: 'player1' | 'player2' | number | string
+  ): TournamentState {
+    const match = this.state.matches.find((m) => m.id === matchId);
+    if (!match) throw new Error(`Match ${matchId} not found.`);
+    if (!match.player1 || !match.player2) throw new Error(`Match ${matchId} players not determined yet.`);
+
+    const isP1 =
+      winnerSelector === 'player1' ||
+      winnerSelector === match.player1.kickId ||
+      winnerSelector === match.player1.id ||
+      winnerSelector === match.player1.username;
+
+    if (isP1) {
+      match.winner = match.player1;
+      match.loser = match.player2;
+    } else {
+      match.winner = match.player2;
+      match.loser = match.player1;
+    }
+    match.status = 'FINISHED';
+
+    this.advanceMatchWinner(matchId, match.winner);
+    this.emitChange();
+    return this.getState();
+  }
+
+  private advanceMatchWinner(matchId: string, winner: TourneyParticipant): void {
     const m = this.state.matches;
 
     // Quarters -> Semis
-    if (matchId === 'm1') { m[4].player1 = match.winner; }
-    if (matchId === 'm2') { m[4].player2 = match.winner; }
-    if (matchId === 'm3') { m[5].player1 = match.winner; }
-    if (matchId === 'm4') { m[5].player2 = match.winner; }
+    if (matchId === 'm1') { m[4].player1 = winner; }
+    if (matchId === 'm2') { m[4].player2 = winner; }
+    if (matchId === 'm3') { m[5].player1 = winner; }
+    if (matchId === 'm4') { m[5].player2 = winner; }
 
     // If both players in semi ready, set status RUNNING
     if (m[4].player1 && m[4].player2 && m[4].status === 'PENDING') m[4].status = 'RUNNING';
     if (m[5].player1 && m[5].player2 && m[5].status === 'PENDING') m[5].status = 'RUNNING';
 
     // Semis -> Final
-    if (matchId === 'm5') { m[6].player1 = match.winner; }
-    if (matchId === 'm6') { m[6].player2 = match.winner; }
+    if (matchId === 'm5') { m[6].player1 = winner; }
+    if (matchId === 'm6') { m[6].player2 = winner; }
 
     if (m[6].player1 && m[6].player2 && m[6].status === 'PENDING') m[6].status = 'RUNNING';
 
     // Grand Final Winner = Champion!
     if (matchId === 'm7') {
-      this.state.champion = match.winner;
+      this.state.champion = winner;
       this.state.status = 'FINISHED';
     }
-
-    this.emitChange();
-    return this.getState();
   }
 
   public toBracketsViewerData(): Record<string, unknown> {
-    // Generates json structure compatible with brackets-viewer.js
     const participantRows = this.state.participants.map((p) => ({
       id: p.kickId,
       tournament_id: 1,

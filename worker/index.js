@@ -590,7 +590,112 @@ export default {
       }
     }
 
-    // 21. Default 404 for unknown API routes
+    // 21. Battle & Tournament Edge Endpoints
+    if (url.pathname === '/api/battle/state' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        state: {
+          id: 'worker_battle',
+          status: 'LOBBY',
+          gameMode: 'BONUS_BUY',
+          betAmount: 10,
+          prizeText: '$50 Prize Pool',
+          playerA: null,
+          playerB: null,
+          winner: null,
+          kothActive: true,
+          reigningKing: null,
+          currentStreak: 0,
+          maxStreak: 4,
+          kothPrizeAmount: 20,
+          awaitingKingDecision: false
+        }
+      }), { headers: corsHeaders });
+    }
+
+    if (url.pathname.startsWith('/api/battle/') && request.method === 'POST') {
+      return new Response(JSON.stringify({ status: 'ok', success: true }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/tourney/state' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        state: {
+          id: 'worker_tourney',
+          title: '8-Bracket Slot Championship',
+          status: 'LOBBY',
+          gameMode: 'BONUS_BUY',
+          betPerRound: 10,
+          prizeText: '1st: $150 · 2nd: $50',
+          participants: [],
+          matches: []
+        },
+        viewerData: null
+      }), { headers: corsHeaders });
+    }
+
+    if (url.pathname.startsWith('/api/tourney/') && request.method === 'POST') {
+      return new Response(JSON.stringify({ status: 'ok', success: true }), { headers: corsHeaders });
+    }
+
+    // 22. Phase 4 Wheels & Spotlight Edge Endpoints
+    if (url.pathname === '/api/wheel/spin-complete' && request.method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        return new Response(JSON.stringify({
+          success: true,
+          spinId: body.spinId || null,
+          dispatched: true,
+          timestamp: Date.now()
+        }), { headers: corsHeaders });
+      } catch (_) {
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      }
+    }
+
+    if (url.pathname === '/api/wheel/duo/queues' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        battleQueue: [],
+        tourneyQueue: [],
+        mode: 'battle',
+        counts: { battle: 0, tourney: 0 }
+      }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/wheel/duo/mode' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      return new Response(JSON.stringify({ success: true, mode: body.mode || 'battle' }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/wheel/duo/spin' && request.method === 'POST') {
+      return new Response(JSON.stringify({
+        success: true,
+        spinId: 'edge_spin_' + Date.now(),
+        winner: null,
+        mode: 'battle'
+      }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/hunt/spotlight' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        active: false,
+        username: null,
+        expiresAt: 0,
+        remainingSeconds: 0
+      }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/hunt/spotlight/clear' && request.method === 'POST') {
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/wheel/csgo/active-pool' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        windowSeconds: 90,
+        count: 0,
+        chatters: []
+      }), { headers: corsHeaders });
+    }
+
+    // 23. Default 404 for unknown API routes
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
       headers: corsHeaders

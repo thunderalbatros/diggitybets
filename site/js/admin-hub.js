@@ -37,6 +37,21 @@ class AdminHubController {
       { chatter: 'RoyalFlush', slot: 'Zeus vs Hades', provider: 'Pragmatic', icon: '⚔️' }
     ];
     this.duoMode = 'battle';
+    this.tourneyMode = 'BONUS_BUY';
+    this.battleMode = 'BONUS_BUY';
+
+    // King of the Hill (KotH) State
+    this.kothState = {
+      active: true,
+      king: null,
+      streak: 0,
+      maxStreak: 4,
+      awaitingDecision: false
+    };
+    try {
+      const savedKoth = localStorage.getItem('hunthub_koth_state');
+      if (savedKoth) this.kothState = JSON.parse(savedKoth);
+    } catch (_) {}
 
     // CS:GO 90s Window Active Chatters
     this.recentChatters = new Map();
@@ -79,6 +94,14 @@ class AdminHubController {
 
       try {
         this.channelSlotWheel = new BroadcastChannel('slot_wheel_bus');
+      } catch (_) {}
+
+      try {
+        this.channelBattle = new BroadcastChannel('hunthub_battle');
+      } catch (_) {}
+
+      try {
+        this.channelTourney = new BroadcastChannel('hunthub_tourney');
       } catch (_) {}
     }
   }
@@ -1117,7 +1140,7 @@ class AdminHubController {
           return;
         }
 
-        const slots = window.HUNTHUB_CURATED_SLOTS || [];
+        const slots = window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : (window.HUNTHUB_CURATED_SLOTS || []);
         const matches = slots.filter(s => s.name.toLowerCase().includes(q) || s.provider.toLowerCase().includes(q)).slice(0, 8);
 
         if (matches.length === 0) {
@@ -1127,7 +1150,7 @@ class AdminHubController {
 
         dropdown.innerHTML = matches.map(s => `
           <div class="slot-autocomplete-item" data-id="${s.id}" data-name="${s.name}" data-provider="${s.provider}" data-img="${s.image}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
-            <img src="${s.image}" alt="${s.name}" style="width: 34px; height: 34px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='site/images/slots/wanted-dead-or-a-wild.svg';">
+            <img src="${s.image}" alt="${s.name}" style="width: 34px; height: 34px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
             <div style="flex: 1;">
               <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${s.name}</div>
               <div style="font-size: 11px; color: var(--gold);">${s.provider} · Max: ${s.maxWin || '10,000x'}</div>
@@ -1173,14 +1196,15 @@ class AdminHubController {
         let slots = [];
         try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (e) {}
 
+        const resolved = window.SlotResolver ? window.SlotResolver.resolve(this.selectedSlot || slotName) : null;
         const newBonus = {
-          id: this.selectedSlot ? this.selectedSlot.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          name: slotName,
-          provider: this.selectedSlot ? this.selectedSlot.provider : 'Provider',
+          id: resolved ? resolved.id : (this.selectedSlot ? this.selectedSlot.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-')),
+          name: resolved ? resolved.name : slotName,
+          provider: resolved ? (resolved.badge || resolved.provider) : (this.selectedSlot ? this.selectedSlot.provider : 'Casino Slot'),
           bet: bet || 2.0,
           payout: 0,
           caller: caller.startsWith('@') ? caller : '@' + caller,
-          image: this.selectedSlot ? this.selectedSlot.image : 'site/images/slots/wanted-dead-or-a-wild.svg'
+          image: resolved ? resolved.image : (this.selectedSlot ? this.selectedSlot.image : 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format')
         };
 
         slots.push(newBonus);
@@ -1220,12 +1244,12 @@ class AdminHubController {
     if (btnDemo) {
       btnDemo.onclick = () => {
         const demoBonuses = [
-          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'site/images/slots/wanted-dead-or-a-wild.svg' },
-          { id: 'gates-of-olympus', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'site/images/slots/gates-of-olympus.svg' },
-          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'site/images/slots/le-bandit.svg' },
-          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'site/images/slots/san-quentin-xways.svg' },
-          { id: 'sweet-bonanza', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'site/images/slots/sweet-bonanza.svg' },
-          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Stake Originals', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'site/images/slots/ghost-rush.svg' }
+          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format' },
+          { id: 'gates-of-olympus', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format' },
+          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec?w=180&h=236&fit=min&auto=format' },
+          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png' },
+          { id: 'sweet-bonanza', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'https://mediumrare.imgix.net/2be43834316fa71dc75a5960ce01783f98292f9d854e4881f215099fbcfe327c?w=180&h=236&fit=min&auto=format' },
+          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Stake Originals', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=180&h=236&fit=min&auto=format' }
         ];
         localStorage.setItem('hunthub_hunt_slots', JSON.stringify(demoBonuses));
         localStorage.setItem('hunthub_hunt_active', 'true');
@@ -1307,6 +1331,32 @@ class AdminHubController {
         }
       };
     }
+
+    // Phase 4: Sync spotlight recommender from 90s CS:GO wheel draw
+    this.checkSpotlightRecommender();
+    setInterval(() => this.checkSpotlightRecommender(), 4000);
+  }
+
+  async checkSpotlightRecommender() {
+    try {
+      const res = await fetch('/api/hunt/spotlight');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.active && data.username) {
+          const inputCaller = document.getElementById('admin-hunt-caller-input');
+          if (inputCaller && (!inputCaller.value || inputCaller.value.trim() === '')) {
+            inputCaller.value = `@${data.username}`;
+            if (window.sonner) {
+              window.sonner.toast({
+                title: 'Spotlight Recommender Active! 🎯',
+                message: `@${data.username} chosen from 90s chatter pool. Type !slot or enter above!`,
+                type: 'gold'
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   renderBonusHuntAdmin() {
@@ -1334,7 +1384,7 @@ class AdminHubController {
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">#${idx + 1}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <img src="${s.image}" alt="${s.name}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='site/images/slots/wanted-dead-or-a-wild.svg';">
+              <img src="${s.image}" alt="${s.name}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
               <div>
                 <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
                 <div style="font-size: 11px; color: var(--text-dim);">${s.provider}</div>
@@ -1393,6 +1443,15 @@ class AdminHubController {
     const btnOpen = document.getElementById('btn-admin-open-tourney');
     const btnDemo = document.getElementById('btn-admin-demo-tourney');
     const btnReset = document.getElementById('btn-admin-reset-tourney');
+    const btnModeBuy = document.getElementById('btn-admin-tourney-mode-buy');
+    const btnModeSpins = document.getElementById('btn-admin-tourney-mode-spins');
+
+    if (btnModeBuy) {
+      btnModeBuy.onclick = () => this.setTourneyMode('BONUS_BUY');
+    }
+    if (btnModeSpins) {
+      btnModeSpins.onclick = () => this.setTourneyMode('SPINS');
+    }
 
     if (btnOpen) {
       btnOpen.onclick = () => {
@@ -1403,7 +1462,17 @@ class AdminHubController {
           badge.style.color = 'var(--kick-green)';
           badge.style.borderColor = 'var(--kick-green)';
         }
-        if (window.sonner) window.sonner.toast({ title: 'Tournament Opened! 🏆', message: 'Predictions unlocked.', type: 'green' });
+        try {
+          fetch('/api/tourney/open', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameMode: this.tourneyMode })
+          });
+        } catch (_) {}
+        if (this.channelTourney) {
+          this.channelTourney.postMessage({ action: 'open_tourney', mode: this.tourneyMode });
+        }
+        if (window.sonner) window.sonner.toast({ title: 'Tournament Opened! 🏆', message: `Predictions unlocked in ${this.tourneyMode} mode.`, type: 'green' });
       };
     }
 
@@ -1436,9 +1505,48 @@ class AdminHubController {
           window.tournamentPrediction.predictions = { semi1_a: null, semi1_b: null, semi2_a: null, semi2_b: null, final_a: null, final_b: null, champion: null };
           window.tournamentPrediction.renderBracket();
         }
+        try {
+          fetch('/api/tourney/reset', { method: 'POST' });
+        } catch (_) {}
+        if (this.channelTourney) {
+          this.channelTourney.postMessage({ action: 'reset_tourney' });
+        }
         this.renderTournamentAdmin();
         if (window.sonner) window.sonner.toast({ title: 'Bracket Reset ↩️', message: 'Fresh bracket ready.', type: 'default' });
       };
+    }
+  }
+
+  setTourneyMode(mode) {
+    this.tourneyMode = mode;
+    const btnBuy = document.getElementById('btn-admin-tourney-mode-buy');
+    const btnSpins = document.getElementById('btn-admin-tourney-mode-spins');
+    if (btnBuy && btnSpins) {
+      if (mode === 'BONUS_BUY') {
+        btnBuy.className = 'btn-stake-primary';
+        btnSpins.className = 'btn-stake-secondary';
+      } else {
+        btnBuy.className = 'btn-stake-secondary';
+        btnSpins.className = 'btn-stake-primary';
+      }
+    }
+    try {
+      fetch('/api/tourney/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameMode: mode })
+      });
+    } catch (_) {}
+    if (this.channelTourney) {
+      this.channelTourney.postMessage({ action: 'set_mode', mode });
+    }
+    this.renderTournamentAdmin();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `Tournament Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : 'Spins 🎰'}`,
+        message: mode === 'BONUS_BUY' ? 'Multiplier comparisons enabled.' : '1-click winner resolution active.',
+        type: 'cyan'
+      });
     }
   }
 
@@ -1449,25 +1557,80 @@ class AdminHubController {
     let pred = {};
     try { pred = JSON.parse(localStorage.getItem('hunthub_tourney_pred') || '{}'); } catch (e) {}
 
+    const isSpins = this.tourneyMode === 'SPINS';
+
+    const matches = [
+      { id: 'm1', round: 'semi1_a', label: 'Match 1', p1: 'Wanted Dead', id1: 'wanted-dead-or-a-wild', p2: 'Rip City', id2: 'rip-city', defScore1: 2.01, defScore2: 1.01 },
+      { id: 'm2', round: 'semi1_b', label: 'Match 2', p1: 'Gates 1000', id1: 'gates-of-olympus', p2: 'Sugar Rush', id2: 'sugar-rush', defScore1: 2.45, defScore2: 0.85 },
+      { id: 'm3', round: 'semi2_a', label: 'Match 3', p1: 'Le Bandit', id1: 'le-bandit', p2: 'Chaos Crew 2', id2: 'chaos-crew-2', defScore1: 3.10, defScore2: 1.20 },
+      { id: 'm4', round: 'semi2_b', label: 'Match 4', p1: 'San Quentin', id1: 'san-quentin-xways', p2: 'Zeus vs Hades', id2: 'zeus-vs-hades', defScore1: 1.80, defScore2: 0.95 },
+    ];
+
     container.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 11px; font-weight: 800; color: var(--cyan);">QUARTERFINALS ADVANCE:</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi1_a" data-winner="wanted-dead-or-a-wild" style="padding: 6px; font-size: 11px;">
-            Match 1: Wanted Dead ✓
-          </button>
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi1_b" data-winner="gates-of-olympus" style="padding: 6px; font-size: 11px;">
-            Match 2: Gates 1000 ✓
-          </button>
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi2_a" data-winner="le-bandit" style="padding: 6px; font-size: 11px;">
-            Match 3: Le Bandit ✓
-          </button>
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="semi2_b" data-winner="san-quentin-xways" style="padding: 6px; font-size: 11px;">
-            Match 4: San Quentin ✓
-          </button>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 11px; font-weight: 800; color: var(--cyan); display: flex; justify-content: space-between;">
+          <span>QUARTERFINALS (${isSpins ? 'SPINS 1-CLICK' : 'BONUS BUY MULTIPLIERS'}):</span>
+          <span style="color: var(--gold);">${isSpins ? 'Click 🏆 to advance winner' : 'Auto-compares multipliers'}</span>
         </div>
 
-        <div style="font-size: 11px; font-weight: 800; color: var(--gold); margin-top: 8px;">SEMIFINALS & CHAMPION:</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${matches.map(m => {
+            const currentWinner = pred[m.round];
+            const isP1Winner = currentWinner === m.id1;
+            const isP2Winner = currentWinner === m.id2;
+
+            return `
+              <div class="admin-tourney-match-box" style="padding: 8px 10px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 10px; font-weight: 800; color: var(--text-dim);">${m.label}</span>
+                  ${currentWinner ? `<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">ADVANCED: ${currentWinner}</span>` : ''}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;">
+                  <!-- Competitor 1 -->
+                  <div style="padding: 6px; background: rgba(0,100,255,0.08); border: 1px solid ${isP1Winner ? 'var(--kick-green)' : (isP2Winner ? 'rgba(255,255,255,0.04)' : 'rgba(0,150,255,0.2)')}; border-radius: 6px; opacity: ${isP2Winner ? '0.45' : '1'};">
+                    <div style="font-weight: 700; font-size: 11px; color: ${isP1Winner ? 'var(--kick-green)' : '#ffffff'};">${m.p1}</div>
+                    ${!isSpins ? `
+                      <div style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                        <input type="number" step="0.01" class="slots-search-input match-score-input" id="score-${m.id}-1" value="${m.defScore1}" style="width: 60px; padding: 2px 4px; font-size: 11px;">
+                        <span style="font-size: 10px; color: var(--text-dim);">x</span>
+                      </div>
+                    ` : `
+                      <button type="button" class="btn-stake-secondary btn-tourney-spins-winner" data-match="${m.id}" data-round="${m.round}" data-winner="${m.id1}" data-loser="${m.id2}" data-label="${m.p1}" style="margin-top: 4px; width: 100%; padding: 3px 6px; font-size: 10px; ${isP1Winner ? 'background: var(--kick-green); color: #000; font-weight: 900;' : ''}">
+                        🏆 Winner
+                      </button>
+                    `}
+                  </div>
+
+                  <span style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VS</span>
+
+                  <!-- Competitor 2 -->
+                  <div style="padding: 6px; background: rgba(255,42,95,0.08); border: 1px solid ${isP2Winner ? 'var(--kick-green)' : (isP1Winner ? 'rgba(255,255,255,0.04)' : 'rgba(255,42,95,0.2)')}; border-radius: 6px; opacity: ${isP1Winner ? '0.45' : '1'};">
+                    <div style="font-weight: 700; font-size: 11px; color: ${isP2Winner ? 'var(--kick-green)' : '#ffffff'};">${m.p2}</div>
+                    ${!isSpins ? `
+                      <div style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                        <input type="number" step="0.01" class="slots-search-input match-score-input" id="score-${m.id}-2" value="${m.defScore2}" style="width: 60px; padding: 2px 4px; font-size: 11px;">
+                        <span style="font-size: 10px; color: var(--text-dim);">x</span>
+                      </div>
+                    ` : `
+                      <button type="button" class="btn-stake-secondary btn-tourney-spins-winner" data-match="${m.id}" data-round="${m.round}" data-winner="${m.id2}" data-loser="${m.id1}" data-label="${m.p2}" style="margin-top: 4px; width: 100%; padding: 3px 6px; font-size: 10px; ${isP2Winner ? 'background: var(--kick-green); color: #000; font-weight: 900;' : ''}">
+                        🏆 Winner
+                      </button>
+                    `}
+                  </div>
+                </div>
+
+                ${!isSpins ? `
+                  <button type="button" class="btn-stake-primary btn-calc-match-winner" data-match="${m.id}" data-round="${m.round}" data-id1="${m.id1}" data-id2="${m.id2}" data-lbl1="${m.p1}" data-lbl2="${m.p2}" style="margin-top: 6px; width: 100%; padding: 4px 8px; font-size: 10px;">
+                    Compare & Advance Higher Multiplier ✓
+                  </button>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div style="font-size: 11px; font-weight: 800; color: var(--gold); margin-top: 6px;">SEMIFINALS & GRAND CHAMPION:</div>
         <div style="display: flex; gap: 6px;">
           <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="final_a" data-winner="gates-of-olympus" style="flex: 1; padding: 6px; font-size: 11px;">
             Semi 1: Gates 1000 ✓
@@ -1482,6 +1645,95 @@ class AdminHubController {
       </div>
     `;
 
+    // Bind BONUS_BUY multiplier comparison buttons
+    container.querySelectorAll('.btn-calc-match-winner').forEach(b => {
+      b.onclick = () => {
+        const mid = b.dataset.match;
+        const round = b.dataset.round;
+        const id1 = b.dataset.id1;
+        const id2 = b.dataset.id2;
+        const lbl1 = b.dataset.lbl1;
+        const lbl2 = b.dataset.lbl2;
+
+        const val1 = parseFloat(document.getElementById(`score-${mid}-1`)?.value || '0');
+        const val2 = parseFloat(document.getElementById(`score-${mid}-2`)?.value || '0');
+
+        const winnerId = val1 >= val2 ? id1 : id2;
+        const winnerLbl = val1 >= val2 ? lbl1 : lbl2;
+        const winningScore = Math.max(val1, val2);
+        const losingScore = Math.min(val1, val2);
+
+        pred[round] = winnerId;
+        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
+        if (window.tournamentPrediction) {
+          window.tournamentPrediction.predictions = pred;
+          window.tournamentPrediction.renderBracket();
+        }
+
+        try {
+          fetch('/api/tourney/result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matchId: mid, score1: val1, score2: val2 })
+          });
+        } catch (_) {}
+
+        if (this.channelTourney) {
+          this.channelTourney.postMessage({ action: 'match_result', matchId: mid, score1: val1, score2: val2, winner: winnerId });
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (window.sonner) {
+          window.sonner.toast({
+            title: `${winnerLbl} Advances! (${winningScore.toFixed(2)}x vs ${losingScore.toFixed(2)}x) 🏆`,
+            message: `Advanced to ${round}.`,
+            type: 'green'
+          });
+        }
+        this.renderTournamentAdmin();
+      };
+    });
+
+    // Bind SPINS 1-click winner buttons
+    container.querySelectorAll('.btn-tourney-spins-winner').forEach(b => {
+      b.onclick = () => {
+        const mid = b.dataset.match;
+        const round = b.dataset.round;
+        const winner = b.dataset.winner;
+        const label = b.dataset.label;
+
+        pred[round] = winner;
+        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
+        if (window.tournamentPrediction) {
+          window.tournamentPrediction.predictions = pred;
+          window.tournamentPrediction.renderBracket();
+        }
+
+        try {
+          fetch('/api/tourney/result-spins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matchId: mid, winnerSelector: winner })
+          });
+        } catch (_) {}
+
+        if (this.channelTourney) {
+          this.channelTourney.postMessage({ action: 'match_winner_spins', matchId: mid, winner });
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (window.sonner) {
+          window.sonner.toast({
+            title: `${label} Won Spins Duel! 🏆`,
+            message: `Rival marked as LOSER. Advanced to ${round}.`,
+            type: 'green'
+          });
+        }
+        this.renderTournamentAdmin();
+      };
+    });
+
+    // Bind Semis and Champion buttons
     container.querySelectorAll('.btn-adv-tourney').forEach(b => {
       b.onclick = () => {
         const round = b.dataset.round;
@@ -1495,22 +1747,62 @@ class AdminHubController {
         if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
         if (round === 'champion' && typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
         if (window.sonner) window.sonner.toast({ title: 'Bracket Advanced! 🏆', message: `${winner} advanced in ${round}.`, type: 'green' });
+        this.renderTournamentAdmin();
       };
     });
   }
 
-  // 1v1 Battle Controls
+  // 1v1 Battle Controls & King of the Hill Controller
   setupBattleAdmin() {
-    const btnResolve = document.getElementById('btn-admin-resolve-battle');
+    const btnOpen = document.getElementById('btn-admin-open-battle');
     const btnDemo = document.getElementById('btn-admin-demo-battle');
     const btnReset = document.getElementById('btn-admin-reset-battle');
+    const btnResolveBuy = document.getElementById('btn-admin-resolve-battle');
+    const btnWinnerA = document.getElementById('btn-admin-winner-a');
+    const btnWinnerB = document.getElementById('btn-admin-winner-b');
+    const btnModeBuy = document.getElementById('btn-admin-battle-mode-buy');
+    const btnModeSpins = document.getElementById('btn-admin-battle-mode-spins');
+
+    // KotH Decision & Action Buttons
+    const btnKothContinue = document.getElementById('btn-admin-koth-continue');
+    const btnKothRetire = document.getElementById('btn-admin-koth-retire');
+    const btnKothNewGame = document.getElementById('btn-admin-koth-new-game');
+
+    if (btnModeBuy) btnModeBuy.onclick = () => this.setBattleMode('BONUS_BUY');
+    if (btnModeSpins) btnModeSpins.onclick = () => this.setBattleMode('SPINS');
+
+    if (btnOpen) {
+      btnOpen.onclick = () => {
+        const pB = document.getElementById('admin-battle-player-b-name');
+        if (pB) pB.textContent = '@Challenger (Waiting...)';
+        try {
+          fetch('/api/battle/open', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ betAmount: 10, gameMode: this.battleMode })
+          });
+        } catch (_) {}
+        if (window.sonner) window.sonner.toast({ title: '1v1 Battle Lobby Open ⚔️', message: 'Waiting for challenger via wheel or chat.', type: 'green' });
+      };
+    }
 
     if (btnDemo) {
       btnDemo.onclick = () => {
         const pA = document.getElementById('admin-battle-player-a-name');
         const pB = document.getElementById('admin-battle-player-b-name');
-        if (pA) pA.textContent = '@NachoGamer (Wanted Dead)';
-        if (pB) pB.textContent = '@SlotKing21 (Gates 1000)';
+        if (pA) pA.textContent = '@LuckyStriker (Wanted Dead)';
+        if (pB) pB.textContent = '@VegasKing (Gates 1000)';
+
+        const cardA = document.getElementById('admin-card-player-a');
+        const cardB = document.getElementById('admin-card-player-b');
+        if (cardA) cardA.style.opacity = '1';
+        if (cardB) cardB.style.opacity = '1';
+
+        const bA = document.getElementById('admin-battle-badge-a');
+        const bB = document.getElementById('admin-battle-badge-b');
+        if (bA) bA.style.display = 'none';
+        if (bB) bB.style.display = 'none';
+
         if (window.sonner) window.sonner.toast({ title: 'Battle Lobby Loaded ⚔️', message: '2 fighters ready.', type: 'cyan' });
       };
     }
@@ -1519,38 +1811,399 @@ class AdminHubController {
       btnReset.onclick = () => {
         const payA = document.getElementById('admin-battle-payout-a');
         const payB = document.getElementById('admin-battle-payout-b');
-        if (payA) payA.value = '0.0';
-        if (payB) payB.value = '0.0';
-        if (window.sonner) window.sonner.toast({ title: 'Battle Reset ↩️', message: 'Payouts cleared.', type: 'default' });
+        if (payA) payA.value = '2.01';
+        if (payB) payB.value = '1.01';
+
+        const cardA = document.getElementById('admin-card-player-a');
+        const cardB = document.getElementById('admin-card-player-b');
+        if (cardA) cardA.style.opacity = '1';
+        if (cardB) cardB.style.opacity = '1';
+
+        const bA = document.getElementById('admin-battle-badge-a');
+        const bB = document.getElementById('admin-battle-badge-b');
+        if (bA) bA.style.display = 'none';
+        if (bB) bB.style.display = 'none';
+
+        try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
+        if (window.sonner) window.sonner.toast({ title: 'Battle Reset ↩️', message: 'Cleared fighters and payouts.', type: 'default' });
       };
     }
 
-    if (btnResolve) {
-      btnResolve.onclick = () => {
+    // BONUS_BUY resolution (compares payA vs payB)
+    if (btnResolveBuy) {
+      btnResolveBuy.onclick = () => {
         const payA = parseFloat(document.getElementById('admin-battle-payout-a')?.value || '0');
         const payB = parseFloat(document.getElementById('admin-battle-payout-b')?.value || '0');
         const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
         const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
 
-        let winner = '';
-        if (payA > payB) {
-          winner = `${nameA} Wins with $${payA.toFixed(2)} vs $${payB.toFixed(2)}!`;
-        } else if (payB > payA) {
-          winner = `${nameB} Wins with $${payB.toFixed(2)} vs $${payA.toFixed(2)}!`;
-        } else {
-          winner = `Tie Game ($${payA.toFixed(2)} each)!`;
-        }
+        const winnerSlot = payA > payB ? 'A' : (payB > payA ? 'B' : 'A');
+        const winningName = winnerSlot === 'A' ? nameA : nameB;
+        const losingName = winnerSlot === 'A' ? nameB : nameA;
+        const winScore = Math.max(payA, payB);
+        const loseScore = Math.min(payA, payB);
 
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
-        if (typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 80 });
-        if (window.sonner) {
-          window.sonner.toast({
-            title: '1v1 Battle Resolved! ⚔️',
-            message: winner,
-            type: 'gold'
-          });
-        }
+        this.applyBattleResolution(winnerSlot, winningName, losingName, `${winScore.toFixed(2)}x vs ${loseScore.toFixed(2)}x`);
       };
+    }
+
+    // SPINS 1-click winner buttons
+    if (btnWinnerA) {
+      btnWinnerA.onclick = () => {
+        const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
+        const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
+        this.applyBattleResolution('A', nameA, nameB, '1-Click Spins Victory');
+      };
+    }
+
+    if (btnWinnerB) {
+      btnWinnerB.onclick = () => {
+        const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
+        const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
+        this.applyBattleResolution('B', nameB, nameA, '1-Click Spins Victory');
+      };
+    }
+
+    // KotH Decision buttons
+    if (btnKothContinue) {
+      btnKothContinue.onclick = () => this.kothContinue();
+    }
+
+    if (btnKothRetire) {
+      btnKothRetire.onclick = () => this.kothRetire();
+    }
+
+    if (btnKothNewGame) {
+      btnKothNewGame.onclick = () => this.kothNewGame();
+    }
+
+    this.renderKothDeck();
+  }
+
+  setBattleMode(mode) {
+    this.battleMode = mode;
+    const btnBuy = document.getElementById('btn-admin-battle-mode-buy');
+    const btnSpins = document.getElementById('btn-admin-battle-mode-spins');
+    if (btnBuy && btnSpins) {
+      if (mode === 'BONUS_BUY') {
+        btnBuy.className = 'btn-stake-primary';
+        btnSpins.className = 'btn-stake-secondary';
+      } else {
+        btnBuy.className = 'btn-stake-secondary';
+        btnSpins.className = 'btn-stake-primary';
+      }
+    }
+
+    const buyA = document.getElementById('admin-battle-buy-inputs-a');
+    const buyB = document.getElementById('admin-battle-buy-inputs-b');
+    const btnResolveBuy = document.getElementById('btn-admin-resolve-battle');
+    const spinsA = document.getElementById('admin-battle-spins-actions-a');
+    const spinsB = document.getElementById('admin-battle-spins-actions-b');
+
+    if (mode === 'BONUS_BUY') {
+      if (buyA) buyA.style.display = 'block';
+      if (buyB) buyB.style.display = 'block';
+      if (btnResolveBuy) btnResolveBuy.style.display = 'block';
+      if (spinsA) spinsA.style.display = 'none';
+      if (spinsB) spinsB.style.display = 'none';
+    } else {
+      if (buyA) buyA.style.display = 'none';
+      if (buyB) buyB.style.display = 'none';
+      if (btnResolveBuy) btnResolveBuy.style.display = 'none';
+      if (spinsA) spinsA.style.display = 'block';
+      if (spinsB) spinsB.style.display = 'block';
+    }
+
+    try {
+      fetch('/api/battle/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameMode: mode })
+      });
+    } catch (_) {}
+
+    if (this.channelBattle) {
+      this.channelBattle.postMessage({ action: 'set_mode', mode });
+    }
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `1v1 Battle Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : 'Spins 🎰'}`,
+        message: mode === 'BONUS_BUY' ? 'Multiplier numeric fields visible.' : '1-click direct winner buttons active.',
+        type: 'cyan'
+      });
+    }
+  }
+
+  applyBattleResolution(winnerSlot, winningName, losingName, scoreDetail) {
+    const cardA = document.getElementById('admin-card-player-a');
+    const cardB = document.getElementById('admin-card-player-b');
+    const badgeA = document.getElementById('admin-battle-badge-a');
+    const badgeB = document.getElementById('admin-battle-badge-b');
+
+    if (winnerSlot === 'A') {
+      if (cardA) cardA.style.opacity = '1';
+      if (cardB) cardB.style.opacity = '0.45';
+      if (badgeA) {
+        badgeA.textContent = '✓ WINNER';
+        badgeA.style.background = 'rgba(83, 252, 24, 0.2)';
+        badgeA.style.borderColor = 'var(--kick-green)';
+        badgeA.style.color = 'var(--kick-green)';
+        badgeA.style.display = 'inline-block';
+      }
+      if (badgeB) {
+        badgeB.textContent = '✕ LOSER (DISQUALIFIED)';
+        badgeB.style.background = 'rgba(255, 42, 95, 0.2)';
+        badgeB.style.borderColor = 'var(--magenta)';
+        badgeB.style.color = 'var(--magenta)';
+        badgeB.style.display = 'inline-block';
+      }
+    } else {
+      if (cardB) cardB.style.opacity = '1';
+      if (cardA) cardA.style.opacity = '0.45';
+      if (badgeB) {
+        badgeB.textContent = '✓ WINNER';
+        badgeB.style.background = 'rgba(83, 252, 24, 0.2)';
+        badgeB.style.borderColor = 'var(--kick-green)';
+        badgeB.style.color = 'var(--kick-green)';
+        badgeB.style.display = 'inline-block';
+      }
+      if (badgeA) {
+        badgeA.textContent = '✕ LOSER (DISQUALIFIED)';
+        badgeA.style.background = 'rgba(255, 42, 95, 0.2)';
+        badgeA.style.borderColor = 'var(--magenta)';
+        badgeA.style.color = 'var(--magenta)';
+        badgeA.style.display = 'inline-block';
+      }
+    }
+
+    // King of the Hill progression
+    if (this.kothState.active) {
+      const cleanWinningUser = winningName.split(' ')[0].replace(/^@/, '');
+      const isSameKing = this.kothState.king && this.kothState.king.toLowerCase() === cleanWinningUser.toLowerCase();
+
+      if (isSameKing) {
+        this.kothState.streak += 1;
+      } else {
+        this.kothState.king = cleanWinningUser;
+        this.kothState.streak = 1;
+      }
+
+      if (this.kothState.streak >= this.kothState.maxStreak) {
+        this.kothState.awaitingDecision = false;
+        this.awardKothGrandPrize(this.kothState.king);
+      } else {
+        this.kothState.awaitingDecision = true;
+      }
+
+      localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+      this.renderKothDeck();
+    }
+
+    // Sync to backend / overlays
+    try {
+      if (this.battleMode === 'SPINS') {
+        fetch('/api/battle/resolve-spins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ winnerSlot })
+        });
+      } else {
+        fetch('/api/battle/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ winnerSlot })
+        });
+      }
+    } catch (_) {}
+
+    if (this.channelBattle) {
+      this.channelBattle.postMessage({
+        action: 'resolve_battle',
+        winner: winnerSlot,
+        winningName,
+        losingName,
+        kothStreak: this.kothState.streak
+      });
+    }
+
+    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `${winningName} Won Duel! ⚔️`,
+        message: `${scoreDetail}. Rival ${losingName} disqualified.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  awardKothGrandPrize(kingUsername) {
+    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+    if (typeof window.confetti === 'function') {
+      window.confetti({ particleCount: 120, spread: 90 });
+    }
+
+    let claims = [];
+    try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (_) {}
+
+    const newRedemption = {
+      id: 'koth_prize_' + Date.now(),
+      kick_username: kingUsername,
+      username: kingUsername,
+      voucher_title: 'King of the Hill - $20 Cashout (4 Streak Champion)',
+      voucherTitle: 'King of the Hill - $20 Cashout (4 Streak Champion)',
+      cost_points: 0,
+      cost: 0,
+      status: 'PENDING',
+      timestamp: Date.now(),
+      created_at: Math.floor(Date.now() / 1000),
+      avatar: '👑'
+    };
+
+    claims.unshift(newRedemption);
+    localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
+
+    try {
+      fetch('/api/store/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kickUsername: kingUsername,
+          voucherKey: 'koth_4_streak_champion',
+          voucherTitle: 'King of the Hill - $20 Cashout (4 Streak Champion)',
+          costPoints: 0
+        })
+      });
+    } catch (_) {}
+
+    this.renderKPIs();
+    this.renderClaimsQueue();
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: '👑 4-STREAK KING OF THE HILL CHAMPION! $20 CASH!',
+        message: `@${kingUsername} captured the throne! $20 prize logged to Tab 1 with 1-click crypto wallets.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  kothContinue() {
+    this.kothState.awaitingDecision = false;
+    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+
+    const pA = document.getElementById('admin-battle-player-a-name');
+    const pB = document.getElementById('admin-battle-player-b-name');
+    if (pA) pA.textContent = `@${this.kothState.king} (Reigning King)`;
+    if (pB) pB.textContent = '@Challenger (Waiting for Wheel...)';
+
+    const cardA = document.getElementById('admin-card-player-a');
+    const cardB = document.getElementById('admin-card-player-b');
+    if (cardA) cardA.style.opacity = '1';
+    if (cardB) cardB.style.opacity = '1';
+
+    const bA = document.getElementById('admin-battle-badge-a');
+    const bB = document.getElementById('admin-battle-badge-b');
+    if (bA) bA.style.display = 'none';
+    if (bB) bB.style.display = 'none';
+
+    try {
+      fetch('/api/battle/koth/decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'continue' })
+      });
+    } catch (_) {}
+
+    if (this.channelBattle) {
+      this.channelBattle.postMessage({ action: 'koth_continue', king: this.kothState.king, streak: this.kothState.streak });
+    }
+
+    this.renderKothDeck();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `👑 King @${this.kothState.king} Defends Throne!`,
+        message: `Current Streak: ${this.kothState.streak}/4. Challenger seat opened.`,
+        type: 'green'
+      });
+    }
+  }
+
+  kothRetire() {
+    const retired = this.kothState.king;
+    const streak = this.kothState.streak;
+
+    this.kothState.king = null;
+    this.kothState.streak = 0;
+    this.kothState.awaitingDecision = false;
+    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+
+    const pA = document.getElementById('admin-battle-player-a-name');
+    const pB = document.getElementById('admin-battle-player-b-name');
+    if (pA) pA.textContent = '@PlayerA';
+    if (pB) pB.textContent = '@PlayerB';
+
+    const cardA = document.getElementById('admin-card-player-a');
+    const cardB = document.getElementById('admin-card-player-b');
+    if (cardA) cardA.style.opacity = '1';
+    if (cardB) cardB.style.opacity = '1';
+
+    const bA = document.getElementById('admin-battle-badge-a');
+    const bB = document.getElementById('admin-battle-badge-b');
+    if (bA) bA.style.display = 'none';
+    if (bB) bB.style.display = 'none';
+
+    try {
+      fetch('/api/battle/koth/decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'retire' })
+      });
+    } catch (_) {}
+
+    if (this.channelBattle) {
+      this.channelBattle.postMessage({ action: 'koth_retire', retiredKing: retired, streak });
+    }
+
+    this.renderKothDeck();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `💰 King @${retired} Cashed Out!`,
+        message: `Retired with ${streak} victory(s). Throne is open for new contenders.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  kothNewGame() {
+    this.kothState.king = null;
+    this.kothState.streak = 0;
+    this.kothState.awaitingDecision = false;
+    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+
+    const pA = document.getElementById('admin-battle-player-a-name');
+    const pB = document.getElementById('admin-battle-player-b-name');
+    if (pA) pA.textContent = '@PlayerA';
+    if (pB) pB.textContent = '@PlayerB';
+
+    const cardA = document.getElementById('admin-card-player-a');
+    const cardB = document.getElementById('admin-card-player-b');
+    if (cardA) cardA.style.opacity = '1';
+    if (cardB) cardB.style.opacity = '1';
+
+    const bA = document.getElementById('admin-battle-badge-a');
+    const bB = document.getElementById('admin-battle-badge-b');
+    if (bA) bA.style.display = 'none';
+    if (bB) bB.style.display = 'none';
+
+    try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
+    this.renderKothDeck();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: '👑 Fresh King of the Hill Game Ready!',
+        message: 'Throne and streak reset to 0/4.',
+        type: 'cyan'
+      });
     }
   }
 
@@ -1646,6 +2299,29 @@ class AdminHubController {
     if (btnDemoSlot) {
       btnDemoSlot.onclick = () => this.spinSlotWheel(true);
     }
+
+    // Phase 4: Periodic sync of Duo-Wheel queues with server live state
+    this.syncDuoQueues();
+    setInterval(() => this.syncDuoQueues(), 4000);
+  }
+
+  async syncDuoQueues() {
+    try {
+      const res = await fetch('/api/wheel/duo/queues');
+      if (res.ok) {
+        const data = await res.json();
+        const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
+        if (q && q.length > 0) {
+          this.duoPool = q.map(e => ({
+            chatter: e.username,
+            slot: e.slotName,
+            provider: e.slotProvider,
+            icon: '🎰'
+          }));
+          this.renderDuoQueue();
+        }
+      }
+    } catch (_) {}
   }
 
   setDuoMode(mode) {
@@ -1675,6 +2351,12 @@ class AdminHubController {
     if (this.channelDuo) {
       this.channelDuo.postMessage({ action: 'set_mode', mode: this.duoMode, ts: Date.now() });
     }
+    fetch('/api/wheel/duo/mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: this.duoMode })
+    }).catch(() => {});
+    this.syncDuoQueues();
     if (window.sonner) window.sonner.toast({ title: `Duo-Wheel Mode: ${mode.toUpperCase()} 🔄`, message: 'Synced to OBS overlay.', type: 'cyan' });
   }
 
@@ -1719,6 +2401,13 @@ class AdminHubController {
     try {
       localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify({ action: 'spin', mode: this.duoMode, winner, ts: Date.now() }));
     } catch (_) {}
+
+    // Trigger server-side spin draw
+    fetch('/api/wheel/duo/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: this.duoMode })
+    }).catch(() => {});
 
     if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') {
       window.soundEngine.playDiceRoll();

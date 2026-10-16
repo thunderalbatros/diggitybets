@@ -682,6 +682,41 @@ export class HuntHubDatabase {
     }
   }
 
+  public createKothPrizeRedemption(
+    user: { id?: string; kickId?: number; username: string; displayName?: string },
+    prizeTitle: string = 'King of the Hill - $20 Cashout (4 Streak Champion)'
+  ): StoreRedemptionRow {
+    let dbUser: UserRow | null = null;
+    if (user.id) {
+      dbUser = this.getUserById(user.id);
+    }
+    if (!dbUser && user.kickId) {
+      dbUser = this.getUserByKickId(user.kickId);
+    }
+    if (!dbUser) {
+      dbUser = this.upsertUser(user.kickId || Math.floor(Math.random() * 900000 + 100000), user.username, user.displayName);
+    }
+
+    const id = crypto.randomUUID();
+    const now = Math.floor(Date.now() / 1000);
+
+    this.db.prepare(`
+      INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
+      VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+    `).run(id, dbUser.id, user.username, prizeTitle, 0, now);
+
+    const list = this.getStoreRedemptions();
+    return list.find(r => r.id === id) || {
+      id,
+      user_id: dbUser.id,
+      kick_username: user.username,
+      voucher_title: prizeTitle,
+      cost_points: 0,
+      status: 'PENDING',
+      created_at: now
+    };
+  }
+
   public getStoreRedemptions(status?: string): StoreRedemptionRow[] {
     let sql = `
       SELECT 

@@ -1,6 +1,8 @@
 import http from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { verifyKickWebhook } from '../ingestor/rsa-verify.ts';
 import { KickWatchdog } from '../ingestor/kick-watchdog.ts';
 import type { KickChatMessage } from '../ingestor/kick-pusher.ts';
@@ -10,7 +12,38 @@ import type { KickChatClient } from '../outbound/kick-chat.ts';
 import type { BattleManager } from '../battles/battle-manager.ts';
 import type { TournamentManager } from '../tournament/tournament-manager.ts';
 import type { BonusHuntManager } from '../bonushunt/bonushunt-manager.ts';
+import { slotResolver } from '../catalog/slot-resolver.ts';
 import { config } from '../config.ts';
+
+export interface DuoQueueEntry {
+  kickId: number;
+  username: string;
+  displayName: string;
+  avatar: string;
+  slotName: string;
+  slotProvider: string;
+  slotImage: string;
+  joinedAt: number;
+}
+
+export interface SpotlightRecommender {
+  username: string;
+  displayName: string;
+  kickId: number;
+  selectedAt: number;
+  expiresAt: number;
+}
+
+export interface PendingChatAnnouncement {
+  spinId: string;
+  wheelType?: 'csgo' | 'duo' | 'slots';
+  winner?: any;
+  message: string;
+  timer: any;
+  dispatched: boolean;
+  createdAt: number;
+  onDispatch?: (msg: string) => void;
+}
 
 export interface OverlayServerOptions {
   port: number;
@@ -78,6 +111,13 @@ export class OverlayServer {
   public tournamentManager: TournamentManager | null = null;
   public bonusHuntManager: BonusHuntManager | null = null;
 
+  private battleQueue: DuoQueueEntry[] = [];
+  private tourneyQueue: DuoQueueEntry[] = [];
+  private duoWheelMode: 'battle' | 'tourney' = 'battle';
+  private spotlightRecommender: SpotlightRecommender | null = null;
+  private pendingChatAnnouncements = new Map<string, PendingChatAnnouncement>();
+  private slotsIndex: Array<{ name: string; provider: string; image: string }> = [];
+
   constructor(opts: OverlayServerOptions) {
     this.spinHandler = opts.onSpinTrigger || null;
     this.slotSpinHandler = opts.onSlotSpinTrigger || null;
@@ -86,6 +126,7 @@ export class OverlayServer {
     this.battleManager = opts.battleManager || null;
     this.tournamentManager = opts.tournamentManager || null;
     this.bonusHuntManager = opts.bonusHuntManager || null;
+    this.initSlotsCatalog();
 
     this.server = http.createServer(async (req, res) => {
       const url = new URL(req.url || '/', `http://${req.headers.host}`);
@@ -897,13 +938,27 @@ export class OverlayServer {
         return;
       }
 
+      if (url.pathname === '/api/battle/mode' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.battleManager && (body.gameMode === 'BONUS_BUY' || body.gameMode === 'SPINS')) {
+            this.battleManager.setGameMode(body.gameMode);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
+        });
+        return;
+      }
+
       if (url.pathname === '/api/battle/open' && req.method === 'POST') {
         let b = '';
         req.on('data', (c) => (b += c));
         req.on('end', () => {
           const body = b ? JSON.parse(b) : {};
           if (this.battleManager) {
-            this.battleManager.openLobby(Number(body.betAmount) || 10, body.prizeText || '$50.00 POOL');
+            this.battleManager.openLobby(Number(body.betAmount) || 10, body.prizeText || '$50.00 POOL', body.gameMode);
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
@@ -929,7 +984,11 @@ export class OverlayServer {
         req.on('end', () => {
           const body = b ? JSON.parse(b) : {};
           if (this.battleManager && body.playerSlot) {
-            this.battleManager.setPlayerPayout(body.playerSlot, Number(body.winAmount) || 0);
+            if (body.multiplier !== undefined) {
+              this.battleManager.setPlayerMultiplier(body.playerSlot, Number(body.multiplier) || 0);
+            } else {
+              this.battleManager.setPlayerPayout(body.playerSlot, Number(body.winAmount) || 0);
+            }
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
@@ -940,7 +999,23 @@ export class OverlayServer {
       if (url.pathname === '/api/battle/resolve' && req.method === 'POST') {
         if (this.battleManager) {
           try {
-            this.battleManager.resolveBattle();
+            const state = this.battleManager.resolveBattle();
+            if (state.currentStreak === 4 && state.lastWinnerPrizeAwarded && state.reigningKing) {
+              if (this.db) {
+                this.db.createKothPrizeRedemption(state.reigningKing);
+              }
+              this.broadcast({
+                type: 'koth_champion',
+                king: state.reigningKing,
+                streak: 4,
+                prize: '$20.00 CASH PRIZE',
+              });
+              if (this.chatClient) {
+                this.chatClient.sendMessage(
+                  `👑 ¡INCREÍBLE! @${state.reigningKing.displayName} logró 4 VICTORIAS CONSECUTIVAS en King of the Hill y se lleva el premio máximo de $20.00 CASH! 💰🎉`
+                );
+              }
+            }
           } catch (e: any) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: e.message }));
@@ -949,6 +1024,77 @@ export class OverlayServer {
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
+        return;
+      }
+
+      if (url.pathname === '/api/battle/resolve-spins' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.battleManager && (body.winnerSlot === 'A' || body.winnerSlot === 'B')) {
+            try {
+              const state = this.battleManager.resolveWinnerDirectly(body.winnerSlot);
+              if (state.currentStreak === 4 && state.lastWinnerPrizeAwarded && state.reigningKing) {
+                if (this.db) {
+                  this.db.createKothPrizeRedemption(state.reigningKing);
+                }
+                this.broadcast({
+                  type: 'koth_champion',
+                  king: state.reigningKing,
+                  streak: 4,
+                  prize: '$20.00 CASH PRIZE',
+                });
+                if (this.chatClient) {
+                  this.chatClient.sendMessage(
+                    `👑 ¡INCREÍBLE! @${state.reigningKing.displayName} logró 4 VICTORIAS CONSECUTIVAS en King of the Hill y se lleva el premio máximo de $20.00 CASH! 💰🎉`
+                  );
+                }
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ status: 'ok', state }));
+              return;
+            } catch (e: any) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: e.message }));
+              return;
+            }
+          }
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing or invalid winnerSlot (must be "A" or "B")' }));
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/battle/koth/decision' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.battleManager) {
+            if (body.decision === 'continue') {
+              this.battleManager.kingDecideContinue();
+            } else if (body.decision === 'retire') {
+              this.battleManager.kingDecideRetire();
+            }
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/battle/koth/toggle' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.battleManager && typeof body.active === 'boolean') {
+            this.battleManager.setKothActive(body.active);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
+        });
         return;
       }
 
@@ -991,13 +1137,27 @@ export class OverlayServer {
         return;
       }
 
+      if (url.pathname === '/api/tourney/mode' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.tournamentManager && (body.gameMode === 'BONUS_BUY' || body.gameMode === 'SPINS')) {
+            this.tournamentManager.setGameMode(body.gameMode);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', state: this.tournamentManager?.getState() }));
+        });
+        return;
+      }
+
       if (url.pathname === '/api/tourney/open' && req.method === 'POST') {
         let b = '';
         req.on('data', (c) => (b += c));
         req.on('end', () => {
           const body = b ? JSON.parse(b) : {};
           if (this.tournamentManager) {
-            this.tournamentManager.openLobby(body.title, Number(body.betPerRound) || 10, body.prizeText);
+            this.tournamentManager.openLobby(body.title, Number(body.betPerRound) || 10, body.prizeText, body.gameMode);
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'ok', state: this.tournamentManager?.getState() }));
@@ -1027,6 +1187,26 @@ export class OverlayServer {
           if (this.tournamentManager && body.matchId) {
             try {
               this.tournamentManager.setMatchResult(body.matchId, Number(body.score1) || 0, Number(body.score2) || 0);
+            } catch (err: any) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: err.message }));
+              return;
+            }
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', state: this.tournamentManager?.getState() }));
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/tourney/result-spins' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (this.tournamentManager && body.matchId && body.winnerSelector) {
+            try {
+              this.tournamentManager.setMatchWinnerDirectly(body.matchId, body.winnerSelector);
             } catch (err: any) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: err.message }));
@@ -1179,16 +1359,82 @@ export class OverlayServer {
         return;
       }
 
-      // --- Duo-Wheel Spin Endpoint ---
-      if (url.pathname === '/api/spin-duo' && req.method === 'POST') {
+      // --- Exact Handshake Spin Complete Endpoint ---
+      if (url.pathname === '/api/wheel/spin-complete' && req.method === 'POST') {
         let b = '';
         req.on('data', (c) => (b += c));
         req.on('end', () => {
           const body = b ? JSON.parse(b) : {};
-          this.broadcast({ action: 'spin_duo', mode: body.mode || 'battle' });
+          const spinId = body.spinId;
+          const dispatched = spinId ? this.dispatchPendingAnnouncement(spinId, 'API_COMPLETE') : false;
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'duo_spin_broadcast' }));
+          res.end(JSON.stringify({ success: true, dispatched, status: dispatched ? 'dispatched' : 'already_handled_or_not_found', spinId }));
         });
+        return;
+      }
+
+      // --- Wheel Duo Queues & Modes ---
+      if (url.pathname === '/api/wheel/duo/queues' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          battleQueue: this.getBattleQueue(),
+          tourneyQueue: this.getTourneyQueue(),
+          mode: this.getDuoWheelMode()
+        }));
+        return;
+      }
+
+      if (url.pathname === '/api/wheel/duo/mode' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          if (body.mode === 'battle' || body.mode === 'tourney') {
+            this.setDuoWheelMode(body.mode);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, status: 'ok', mode: this.getDuoWheelMode() }));
+        });
+        return;
+      }
+
+      if ((url.pathname === '/api/wheel/duo/spin' || url.pathname === '/api/spin-duo') && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          const body = b ? JSON.parse(b) : {};
+          const result = this.spinDuoWheel(body.mode);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        });
+        return;
+      }
+
+      // --- Community Bonus Hunt Spotlight Recommender ---
+      if (url.pathname === '/api/hunt/spotlight' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ spotlight: this.getSpotlightRecommender() }));
+        return;
+      }
+
+      if (url.pathname === '/api/hunt/spotlight/clear' && req.method === 'POST') {
+        this.clearSpotlightRecommender();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'cleared' }));
+        return;
+      }
+
+      // --- CS:GO 90s Active Chatters Pool ---
+      if (url.pathname === '/api/wheel/csgo/active-pool' && req.method === 'GET') {
+        const windowMs = Number(url.searchParams.get('windowMs')) || 90000;
+        const chatters = this.getActiveChatters(windowMs);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          windowSeconds: Math.round(windowMs / 1000),
+          count: chatters.length,
+          chatters: chatters.map((c: any) => c.login || c.username || c),
+          activeChatters: chatters
+        }));
         return;
       }
 
@@ -1231,7 +1477,16 @@ export class OverlayServer {
           } else if (payload.action === 'spin_slot' && this.slotSpinHandler) {
             this.slotSpinHandler(payload.category || 'all', Boolean(payload.demo));
           } else if (payload.action === 'spin_duo') {
-            this.broadcast({ action: 'spin_duo', mode: payload.mode || 'battle' });
+            this.spinDuoWheel(payload.mode || 'battle');
+          } else if (payload.action === 'spin_animation_complete' && payload.spinId) {
+            this.dispatchPendingAnnouncement(payload.spinId, 'WS_ANIMATION_COMPLETE');
+          } else if (payload.action === 'get_duo_queues') {
+            ws.send(JSON.stringify({
+              action: 'duo_queues',
+              battleQueue: this.battleQueue,
+              tourneyQueue: this.tourneyQueue,
+              mode: this.duoWheelMode
+            }));
           } else if (payload.action === 'get_battle_state' && this.battleManager) {
             ws.send(JSON.stringify({ action: 'battle_state', state: this.battleManager.getState() }));
           } else if (payload.action === 'get_tourney_state' && this.tournamentManager) {
@@ -1300,6 +1555,25 @@ export class OverlayServer {
     }
   }
 
+  public recordChatterActivity(username: string, message?: string, kickId?: number, avatar?: string): boolean {
+    const rawContent = message || '';
+    if (rawContent) {
+      const stripped = rawContent.replace(/:[a-zA-Z0-9_\-]+:/g, ' ').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
+      if (stripped.length < 2) {
+        return false;
+      }
+    }
+    const clean = username.toLowerCase().replace(/^@/, '');
+    const id = kickId || Math.floor(Math.random() * 100000) + 1;
+    this.activeChatters.set(clean, {
+      display: username,
+      avatar: avatar || '',
+      kickId: id,
+      ts: Date.now(),
+    });
+    return true;
+  }
+
   public recordChatter(msg: KickChatMessage): void {
     const rawContent = msg.content || '';
     // Filter Kick emotes :name: (e.g. :pepega:, :kekw:)
@@ -1333,14 +1607,19 @@ export class OverlayServer {
     }
   }
 
-  public getActiveChatters(windowMs: number = 90000): Array<{ login: string; display: string; avatar: string; kickId: number }> {
+  public getActiveChatters(windowMs: number = 90000): any {
     const now = Date.now();
-    const result: Array<{ login: string; display: string; avatar: string; kickId: number }> = [];
+    const result: any = [];
     for (const [login, data] of this.activeChatters.entries()) {
       if (now - data.ts <= windowMs) {
-        result.push({ login, display: data.display, avatar: data.avatar, kickId: data.kickId });
+        result.push({ login, username: login, display: data.display, avatar: data.avatar, kickId: data.kickId });
       }
     }
+    // Backward-compatibility: allow pool.includes('username') directly in tests/callers
+    result.includes = function(username: string): boolean {
+      const target = String(username).toLowerCase().replace(/^@/, '');
+      return this.some((c: any) => (c.login || c.username || '').toLowerCase() === target);
+    };
     return result;
   }
 
@@ -1351,6 +1630,347 @@ export class OverlayServer {
         client.send(json);
       }
     }
+  }
+
+  // --- Canonical Slot Catalog & Resolver ---
+  private initSlotsCatalog(): void {
+    try {
+      const p = path.resolve(process.cwd(), 'wheel-slots', 'catalog', 'slots.json');
+      if (fs.existsSync(p)) {
+        const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (Array.isArray(raw)) {
+          this.slotsIndex = raw.map((s: any) => ({
+            name: s.name,
+            provider: s.provider || 'Casino',
+            image: s.image || '',
+          }));
+        }
+      }
+    } catch (_) {}
+  }
+
+  public resolveCanonicalSlot(query: string): { name: string; provider: string; image: string } {
+    const res = slotResolver.resolve(query);
+    return {
+      name: res.name,
+      provider: res.provider,
+      image: res.image,
+    };
+  }
+
+  // --- Wheel Duo Queues Management ---
+  public addBattleQueueEntry(
+    entry: DuoQueueEntry | string,
+    slotQuery?: string
+  ): { success: boolean; position: number; updated: boolean; entry: DuoQueueEntry } {
+    let resolved: DuoQueueEntry;
+    if (typeof entry === 'string') {
+      const canonical = this.resolveCanonicalSlot(slotQuery || '');
+      resolved = {
+        userId: 'user_' + entry.toLowerCase(),
+        kickId: Math.floor(Math.random() * 100000) + 1,
+        username: entry,
+        displayName: entry,
+        slotName: canonical.name,
+        slotProvider: canonical.provider,
+        slotImage: canonical.image,
+        joinedAt: Date.now(),
+      };
+    } else {
+      resolved = entry;
+    }
+
+    const idx = this.battleQueue.findIndex(
+      (e) => (resolved.kickId && e.kickId === resolved.kickId) || e.username.toLowerCase() === resolved.username.toLowerCase()
+    );
+    if (idx >= 0) {
+      this.battleQueue[idx].slotName = resolved.slotName;
+      this.battleQueue[idx].slotProvider = resolved.slotProvider;
+      this.battleQueue[idx].slotImage = resolved.slotImage;
+      this.battleQueue[idx].joinedAt = Date.now();
+      this.broadcastQueues();
+      return { success: true, position: idx + 1, updated: true, entry: this.battleQueue[idx] };
+    }
+    this.battleQueue.push(resolved);
+    this.broadcastQueues();
+    return { success: true, position: this.battleQueue.length, updated: false, entry: resolved };
+  }
+
+  public addTourneyQueueEntry(
+    entry: DuoQueueEntry | string,
+    slotQuery?: string
+  ): { success: boolean; position: number; updated: boolean; entry: DuoQueueEntry } {
+    let resolved: DuoQueueEntry;
+    if (typeof entry === 'string') {
+      const canonical = this.resolveCanonicalSlot(slotQuery || '');
+      resolved = {
+        userId: 'user_' + entry.toLowerCase(),
+        kickId: Math.floor(Math.random() * 100000) + 1,
+        username: entry,
+        displayName: entry,
+        slotName: canonical.name,
+        slotProvider: canonical.provider,
+        slotImage: canonical.image,
+        joinedAt: Date.now(),
+      };
+    } else {
+      resolved = entry;
+    }
+
+    const idx = this.tourneyQueue.findIndex(
+      (e) => (resolved.kickId && e.kickId === resolved.kickId) || e.username.toLowerCase() === resolved.username.toLowerCase()
+    );
+    if (idx >= 0) {
+      this.tourneyQueue[idx].slotName = resolved.slotName;
+      this.tourneyQueue[idx].slotProvider = resolved.slotProvider;
+      this.tourneyQueue[idx].slotImage = resolved.slotImage;
+      this.tourneyQueue[idx].joinedAt = Date.now();
+      this.broadcastQueues();
+      return { success: true, position: idx + 1, updated: true, entry: this.tourneyQueue[idx] };
+    }
+    this.tourneyQueue.push(resolved);
+    this.broadcastQueues();
+    return { success: true, position: this.tourneyQueue.length, updated: false, entry: resolved };
+  }
+
+  public getBattleQueue(): DuoQueueEntry[] {
+    return [...this.battleQueue];
+  }
+
+  public getTourneyQueue(): DuoQueueEntry[] {
+    return [...this.tourneyQueue];
+  }
+
+  public clearBattleQueue(): void {
+    this.battleQueue = [];
+    this.broadcastQueues();
+  }
+
+  public clearTourneyQueue(): void {
+    this.tourneyQueue = [];
+    this.broadcastQueues();
+  }
+
+  public setDuoWheelMode(mode: 'battle' | 'tourney'): void {
+    this.duoWheelMode = mode;
+    this.broadcast({ action: 'duo_mode_changed', mode });
+  }
+
+  public getDuoWheelMode(): 'battle' | 'tourney' {
+    return this.duoWheelMode;
+  }
+
+  public broadcastQueues(): void {
+    this.broadcast({
+      action: 'wheel_duo_queues',
+      battleQueue: this.battleQueue,
+      tourneyQueue: this.tourneyQueue,
+      mode: this.duoWheelMode,
+    });
+  }
+
+  // --- Wheel Duo Spin Execution ---
+  public spinDuoWheel(requestedMode?: 'battle' | 'tourney'): {
+    success: boolean;
+    spinId?: string;
+    mode?: string;
+    winner?: DuoQueueEntry;
+    error?: string;
+  } {
+    const mode = requestedMode || this.duoWheelMode;
+    const queue = mode === 'tourney' ? this.tourneyQueue : this.battleQueue;
+
+    let pool = [...queue];
+    if (pool.length === 0) {
+      pool = [
+        { kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', avatar: '', slotName: 'Wanted Dead or a Wild', slotProvider: 'Hacksaw', slotImage: '', joinedAt: Date.now() },
+        { kickId: 102, username: 'VegasKing', displayName: 'VegasKing', avatar: '', slotName: 'Gates of Olympus 1000', slotProvider: 'Pragmatic', slotImage: '', joinedAt: Date.now() },
+        { kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', avatar: '', slotName: 'San Quentin xWays', slotProvider: 'Nolimit City', slotImage: '', joinedAt: Date.now() },
+        { kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', avatar: '', slotName: 'Sugar Rush 1000', slotProvider: 'Pragmatic', slotImage: '', joinedAt: Date.now() },
+      ];
+    }
+
+    const winnerIdx = crypto.randomInt(0, pool.length);
+    const winner = pool[winnerIdx];
+    const spinId = crypto.randomUUID();
+
+    let announceMessage = '';
+    let assignedTarget = 'A';
+
+    if (mode === 'battle' && this.battleManager) {
+      const bState = this.battleManager.getState();
+      if (bState.kothActive && bState.reigningKing) {
+        assignedTarget = 'B';
+        this.battleManager.joinLobby(
+          { id: `u_${winner.kickId}`, kickId: winner.kickId, username: winner.username, displayName: winner.displayName, avatar: winner.avatar },
+          { name: winner.slotName, provider: winner.slotProvider, image: winner.slotImage }
+        );
+        announceMessage = `⚔️ [Wheel Dual] ¡@${winner.username} fue seleccionado con "${winner.slotName}" para retar al Rey @${bState.reigningKing.username}!`;
+      } else {
+        const targetSlot = !bState.playerA ? 'A' : 'B';
+        assignedTarget = targetSlot;
+        this.battleManager.joinLobby(
+          { id: `u_${winner.kickId}`, kickId: winner.kickId, username: winner.username, displayName: winner.displayName, avatar: winner.avatar },
+          { name: winner.slotName, provider: winner.slotProvider, image: winner.slotImage }
+        );
+        announceMessage = `⚔️ [Wheel Dual] ¡@${winner.username} fue asignado a la Batalla 1v1 con "${winner.slotName}" (Esquina ${targetSlot === 'A' ? 'Azul' : 'Roja'})!`;
+      }
+
+      const qIdx = this.battleQueue.findIndex(
+        (e) => e.kickId === winner.kickId || e.username.toLowerCase() === winner.username.toLowerCase()
+      );
+      if (qIdx >= 0) this.battleQueue.splice(qIdx, 1);
+      this.broadcastQueues();
+    } else if (mode === 'tourney' && this.tournamentManager) {
+      this.tournamentManager.joinLobby(
+        { id: `u_${winner.kickId}`, kickId: winner.kickId, username: winner.username, displayName: winner.displayName, avatar: winner.avatar },
+        winner.slotName
+      );
+      const seedCount = this.tournamentManager.getState().participants.length;
+      assignedTarget = `SEED_${seedCount}`;
+      announceMessage = `🏆 [Wheel Dual] ¡@${winner.username} ingresó al Torneo 8-Bracket con "${winner.slotName}" (Cupo #${seedCount}/8)!`;
+
+      const qIdx = this.tourneyQueue.findIndex(
+        (e) => e.kickId === winner.kickId || e.username.toLowerCase() === winner.username.toLowerCase()
+      );
+      if (qIdx >= 0) this.tourneyQueue.splice(qIdx, 1);
+      this.broadcastQueues();
+    }
+
+    this.registerPendingAnnouncement(spinId, 'duo', winner, announceMessage, 7200);
+
+    this.broadcast({
+      action: 'spin_duo',
+      spinId,
+      mode,
+      winner,
+      pool,
+      target: assignedTarget,
+      timestamp: Date.now(),
+    });
+
+    return {
+      success: true,
+      spinId,
+      mode,
+      winner,
+      assignedTo: assignedTarget === 'B' ? 'playerB' : (assignedTarget === 'A' ? 'playerA' : 'tourney_lobby'),
+      target: assignedTarget
+    };
+  }
+
+  // --- Community Bonus Hunt Spotlight Recommender ---
+  public setSpotlightRecommender(
+    user: { username: string; displayName?: string; kickId?: number } | string,
+    durationSeconds: number = 60
+  ): SpotlightRecommender {
+    const username = typeof user === 'string' ? user : user.username;
+    const displayName = typeof user === 'string' ? user : (user.displayName || user.username);
+    const kickId = typeof user === 'string' ? 0 : (user.kickId || 0);
+    this.spotlightRecommender = {
+      username,
+      displayName,
+      kickId,
+      selectedAt: Date.now(),
+      expiresAt: Date.now() + (durationSeconds * 1000),
+    };
+    this.broadcast({
+      action: 'spotlight_recommender',
+      spotlight: this.spotlightRecommender,
+    });
+    return this.spotlightRecommender;
+  }
+
+  public getSpotlightRecommender(): SpotlightRecommender | null {
+    if (this.spotlightRecommender && Date.now() > this.spotlightRecommender.expiresAt) {
+      this.spotlightRecommender = null;
+    }
+    return this.spotlightRecommender;
+  }
+
+  public clearSpotlightRecommender(): void {
+    this.spotlightRecommender = null;
+    this.broadcast({ action: 'spotlight_cleared' });
+  }
+
+  // --- Exact Millisecond Handshake (spin_animation_complete) ---
+  public registerPendingAnnouncement(
+    spinId: string,
+    wheelTypeOrMessage: 'csgo' | 'duo' | 'slots' | string,
+    winnerOrOnDispatch?: any,
+    messageOrFallbackMs?: string | number,
+    fallbackMs: number = 7200
+  ): void {
+    let wheelType: 'csgo' | 'duo' | 'slots' = 'duo';
+    let winner: any = null;
+    let message = '';
+    let effectiveFallback = fallbackMs;
+    let onDispatch: ((msg: string) => void) | undefined = undefined;
+
+    if (wheelTypeOrMessage === 'csgo' || wheelTypeOrMessage === 'duo' || wheelTypeOrMessage === 'slots') {
+      wheelType = wheelTypeOrMessage;
+      winner = winnerOrOnDispatch;
+      message = typeof messageOrFallbackMs === 'string' ? messageOrFallbackMs : '';
+      if (typeof fallbackMs === 'number') effectiveFallback = fallbackMs;
+    } else {
+      // (spinId, message, onDispatch, fallbackMs)
+      message = String(wheelTypeOrMessage);
+      if (typeof winnerOrOnDispatch === 'function') {
+        onDispatch = winnerOrOnDispatch;
+      }
+      if (typeof messageOrFallbackMs === 'number') {
+        effectiveFallback = messageOrFallbackMs;
+      }
+    }
+
+    const timer = setTimeout(() => {
+      this.dispatchPendingAnnouncement(spinId, 'TIMEOUT_FALLBACK');
+    }, effectiveFallback);
+
+    this.pendingChatAnnouncements.set(spinId, {
+      spinId,
+      wheelType,
+      winner,
+      message,
+      timer,
+      dispatched: false,
+      createdAt: Date.now(),
+      onDispatch,
+    });
+  }
+
+  public dispatchPendingAnnouncement(spinId: string, reason: string = 'CLIENT_COMPLETE'): boolean {
+    const item = this.pendingChatAnnouncements.get(spinId);
+    if (!item || item.dispatched) return false;
+
+    item.dispatched = true;
+    clearTimeout(item.timer);
+
+    console.log(`[SpinHandshake] Dispatching chat announcement for spin ${spinId} (reason: ${reason})`);
+    if (item.onDispatch) {
+      try { item.onDispatch(item.message); } catch (_) {}
+    }
+    if (this.chatClient && item.message) {
+      this.chatClient.sendMessage(item.message);
+    }
+
+    this.broadcast({
+      action: 'spin_animation_finalized',
+      spinId,
+      reason,
+      winner: item.winner,
+    });
+
+    this.pendingChatAnnouncements.delete(spinId);
+    return true;
+  }
+
+  public getPendingAnnouncementsCount(): number {
+    return this.pendingChatAnnouncements.size;
+  }
+
+  public getPendingAnnouncement(spinId: string): PendingChatAnnouncement | undefined {
+    return this.pendingChatAnnouncements.get(spinId);
   }
 
   public close(): void {

@@ -29,6 +29,7 @@ class DuoWheelApp {
     this.toastTitle = document.getElementById('toast-title');
     this.toastChatter = document.getElementById('toast-chatter');
     this.toastSlot = document.getElementById('toast-slot');
+    this.currentSpinId = null;
 
     try {
       const savedMode = localStorage.getItem('hunthub_duo_mode');
@@ -134,11 +135,27 @@ class DuoWheelApp {
     const wsUrl = 'ws://127.0.0.1:3001/';
     try {
       this.ws = new WebSocket(wsUrl);
+      this.ws.onopen = () => {
+        if (this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ action: 'get_duo_queues' }));
+        }
+      };
       this.ws.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
           if (payload.action === 'spin_duo') {
-            this.spin(payload.mode);
+            this.spin(payload.mode, payload.spinId, payload.winner);
+          } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
+            const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
+            if (q && q.length > 0) {
+              this.pool = q.map((item) => ({
+                chatter: item.username,
+                slot: item.slotName,
+                provider: item.slotProvider,
+                icon: '🎰',
+              }));
+              this.renderTrack();
+            }
           }
         } catch {}
       };
@@ -171,6 +188,13 @@ class DuoWheelApp {
   }
 
   assignRandomSlot() {
+    if (window.SlotResolver) {
+      const cat = window.SlotResolver.getCuratedCatalog();
+      if (cat && cat.length > 0) {
+        const s = cat[Math.floor(Math.random() * cat.length)];
+        return { slot: s.name, provider: s.provider, icon: '🎰' };
+      }
+    }
     const curated = window.HUNTHUB_CURATED_SLOTS || [];
     if (window.SLOT_TIERS && typeof window.SLOT_TIERS.pickWeightedSlot === 'function' && curated.length > 0) {
       const s = window.SLOT_TIERS.pickWeightedSlot(curated);
@@ -231,6 +255,9 @@ class DuoWheelApp {
 
   resolveSlotDetails(slotName) {
     if (!slotName) return { name: 'Unknown Slot', provider: 'Casino', image: '' };
+    if (window.SlotResolver) {
+      return window.SlotResolver.resolve(slotName, '../');
+    }
     const curated = window.HUNTHUB_CURATED_SLOTS || [];
     const normalized = slotName.trim().toLowerCase();
     const found = curated.find((s) => s.name.toLowerCase() === normalized || s.name.toLowerCase().includes(normalized));
@@ -268,9 +295,11 @@ class DuoWheelApp {
     }
   }
 
-  spin(mode) {
+  spin(mode, spinId, forcedWinner) {
     if (this.isSpinning) return;
     if (mode) this.setMode(mode);
+
+    this.currentSpinId = spinId || ('spin_duo_' + Date.now());
 
     this.isSpinning = true;
     if (this.directSpinBtn) {
@@ -280,9 +309,27 @@ class DuoWheelApp {
     }
     this.toastEl.classList.remove('active');
 
-    // Pick random winner index
-    const winnerIdx = Math.floor(Math.random() * this.pool.length);
-    const winnerItem = this.pool[winnerIdx];
+    // Pick winner index
+    let winnerIdx = -1;
+    let winnerItem = null;
+    if (forcedWinner) {
+      const targetName = typeof forcedWinner === 'string' ? forcedWinner : (forcedWinner.username || forcedWinner.chatter);
+      winnerIdx = this.pool.findIndex(p => (p.chatter || '').toLowerCase() === (targetName || '').toLowerCase());
+      if (winnerIdx === -1 && typeof forcedWinner === 'object') {
+        this.pool.push({
+          chatter: forcedWinner.username || forcedWinner.chatter,
+          slot: forcedWinner.slotName || forcedWinner.slot || 'Wanted Dead or a Wild',
+          provider: forcedWinner.slotProvider || forcedWinner.provider || 'Hacksaw',
+          icon: '🎰'
+        });
+        winnerIdx = this.pool.length - 1;
+        this.renderTrack();
+      }
+    }
+    if (winnerIdx === -1) {
+      winnerIdx = Math.floor(Math.random() * this.pool.length);
+    }
+    winnerItem = this.pool[winnerIdx] || this.pool[0];
 
     // Card height + margin = 96px
     const cardHeight = 96;
@@ -328,6 +375,22 @@ class DuoWheelApp {
       this.directSpinBtn.innerHTML = '<span>🎰</span> SPIN DUO WHEEL';
     }
     this.playWinFanfare();
+
+    // Send spin_animation_complete handshake to backend for instant synchronized chat announcement
+    if (this.currentSpinId) {
+      const finishedSpinId = this.currentSpinId;
+      this.currentSpinId = null;
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send(JSON.stringify({ action: 'spin_animation_complete', spinId: finishedSpinId }));
+        } catch (_) {}
+      }
+      fetch('/api/wheel/spin-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spinId: finishedSpinId }),
+      }).catch(() => {});
+    }
 
     if (window.confetti) {
       window.confetti({
