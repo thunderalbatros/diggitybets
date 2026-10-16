@@ -37,6 +37,9 @@ data/*.dat*
 references/
 diggitybets-rebrand-toolkit/
 repomix-output.xml
+arquitectura_diggitybets.txt
+repos_clonados.txt
+core/test/*.db
 tools/audit/out/*.png
 tools/audit/out/*.json
 

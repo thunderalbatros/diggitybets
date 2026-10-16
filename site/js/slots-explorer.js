@@ -14,7 +14,9 @@ class SlotsExplorerController {
   }
 
   init() {
-    if (window.HUNTHUB_CURATED_SLOTS && Array.isArray(window.HUNTHUB_CURATED_SLOTS)) {
+    if (window.SlotResolver) {
+      this.slots = window.SlotResolver.getCuratedCatalog();
+    } else if (window.HUNTHUB_CURATED_SLOTS && Array.isArray(window.HUNTHUB_CURATED_SLOTS)) {
       this.slots = window.HUNTHUB_CURATED_SLOTS;
     } else {
       console.warn('HUNTHUB_CURATED_SLOTS not found on window, awaiting script load');

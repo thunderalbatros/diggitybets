@@ -156,11 +156,20 @@ function executeChatterDraw(demo: boolean) {
     }
   }
 
+  const spinId = crypto.randomUUID();
   const winner = selectionPool[winnerIdx];
   recentWinners.set(winner.login, now);
 
+  // Set as Spotlight Recommender for Community Bonus Hunt (60s)
+  overlayServer.setSpotlightRecommender({
+    username: winner.login,
+    displayName: winner.display,
+    kickId: winner.kickId,
+  });
+
   const payload = {
     evento: 'sorteo',
+    spinId,
     id: now,
     demo,
     ganador: winner.login,
@@ -178,15 +187,18 @@ function executeChatterDraw(demo: boolean) {
   console.log(`[Draw] Winner selected: @${winner.display} (${demo ? 'DEMO' : 'LIVE'} - Pool: ${pool.length}, Eligible: ${selectionPool.length})`);
   console.log(`[Draw] Provably Fair Hash: ${serverSeedHash}`);
 
+  // Register pending handshake announcement (dispatched on spin_animation_complete or 7.2s fallback)
+  if (!demo) {
+    const announceMsg = `@${winner.display} has won, have 60 seconds to claim, type !slot <name> or !hunt <name> in chat ! 🎯`;
+    overlayServer.registerPendingAnnouncement(spinId, 'csgo', winner, announceMsg, 7200);
+  }
+
   // Broadcast to OBS overlay
   overlayServer.broadcast(payload);
 
-  // Announce in Kick chat after reel spin finishes (8.5s)
   setTimeout(() => {
-    const announceMsg = `@${winner.display} has won, have 20 seconds to claim, type something in chat !`;
-    chatClient.sendMessage(announceMsg);
     isChatterDrawBusy = false;
-  }, 8500);
+  }, 7500);
 }
 
 function getDemoPool() {
@@ -223,9 +235,11 @@ function executeSlotDraw(rawCat: string = 'all', demo: boolean = false) {
   isSlotDrawBusy = true;
   const idx = crypto.randomInt(0, pool.length);
   const winner = pool[idx];
+  const spinId = crypto.randomUUID();
 
   const payload = {
     evento: 'sorteo_slot',
+    spinId,
     id: Date.now(),
     categoria: category,
     ganador: winner,
@@ -233,18 +247,15 @@ function executeSlotDraw(rawCat: string = 'all', demo: boolean = false) {
 
   console.log(`[SlotWheel] Spun (${category}): ${winner.name} (${winner.provider})`);
 
+  if (!demo) {
+    const msg = `🎰 [Slot Wheel] The wheel landed on: ${winner.name} (${winner.provider}) — Max Win: ${winner.maxWin}! Good luck on the hunt! 🍀`;
+    overlayServer.registerPendingAnnouncement(spinId, 'slots', winner, msg, 7200);
+  }
+
   // Broadcast to OBS Slot Wheel overlay
   overlayServer.broadcast(payload);
 
-  if (demo) {
-    setTimeout(() => { isSlotDrawBusy = false; }, 7500);
-    return;
-  }
-
-  // Announce in chat after 7.5s animation
   setTimeout(() => {
-    const msg = `🎰 [Slot Wheel] The wheel landed on: ${winner.name} (${winner.provider}) — Max Win: ${winner.maxWin}! Good luck on the hunt! 🍀`;
-    chatClient.sendMessage(msg);
     isSlotDrawBusy = false;
   }, 7500);
 }
@@ -336,45 +347,147 @@ pusherClient.onCommand(({ command, args, sender, messageId }) => {
       return;
     }
 
-    const slotName = args.join(' ').trim();
-    if (slotName) {
+    const slotQuery = args.join(' ').trim();
+    if (slotQuery) {
+      const canon = overlayServer.resolveCanonicalSlot(slotQuery);
+      const spotlight = overlayServer.getSpotlightRecommender();
+      const isSpotlightUser = spotlight && (
+        spotlight.kickId === sender.id ||
+        spotlight.username.toLowerCase() === sender.username.toLowerCase()
+      );
+
       bonusHuntManager.addBonus(
-        { name: slotName },
+        { name: canon.name, provider: canon.provider, image: canon.image },
         { username: sender.username, kickId: sender.id },
         1.0
       );
-      chatClient.sendMessage(`💎 @${sender.username} agregó "${slotName}" a la Bonus Hunt (Bono #${bonusHuntManager.getState().bonuses.length})!`);
+
+      if (isSpotlightUser) {
+        overlayServer.clearSpotlightRecommender();
+        chatClient.sendMessage(`🎯 [Spotlight Recommender] @${sender.username} eligió "${canon.name}" (${canon.provider}) para la Bonus Hunt (Bono #${bonusHuntManager.getState().bonuses.length})!`);
+      } else {
+        chatClient.sendMessage(`💎 @${sender.username} agregó "${canon.name}" a la Bonus Hunt (Bono #${bonusHuntManager.getState().bonuses.length})!`);
+      }
     }
   }
 
-  // --- 1v1 Battles ---
+  // --- 1v1 Battles & King of the Hill (Dual-Wheel Queue) ---
   if (command === 'battle' || command === 'duelo') {
     if ((isMod || isStreamer) && args[0] === 'open') {
       const bet = Number(args[1]) || 10;
       battleManager.openLobby(bet, `$${bet * 5} Prize Pool`);
-      chatClient.sendMessage(`⚔️ ¡Lobby de Batalla 1v1 ABIERTO! Buy-in: $${bet}. Escribí !battle <nombre slot> para entrar!`);
+      chatClient.sendMessage(`⚔️ ¡Lobby de Batalla 1v1 ABIERTO! Buy-in: $${bet}. Escribí !battle <nombre slot> para entrar a la rueda!`);
       return;
     }
     if ((isMod || isStreamer) && args[0] === 'reset') {
       battleManager.reset();
-      chatClient.sendMessage(`⚔️ Batalla 1v1 reseteada por el streamer.`);
+      overlayServer.clearBattleQueue();
+      chatClient.sendMessage(`⚔️ Batalla 1v1 y cola de rueda reseteadas por el streamer.`);
       return;
     }
-    const slotName = args.join(' ').trim() || 'Wanted Dead or a Wild';
-    const joinResult = battleManager.joinLobby(
-      { id: `k_${sender.id}`, kickId: sender.id, username: sender.username },
-      { name: slotName }
+
+    // Anti-Sybil / shadowban check
+    const user = db.getUserByKickId(sender.id) || db.upsertUser(sender.id, sender.username);
+    if (user.is_shadowbanned === 1 || user.risk_score >= 75) {
+      console.warn(`[Anti-Sybil] Ignored !battle from flagged user @${sender.username}`);
+      return;
+    }
+
+    const slotQuery = args.join(' ').trim() || 'Wanted Dead or a Wild';
+    const canonSlot = overlayServer.resolveCanonicalSlot(slotQuery);
+
+    const qRes = overlayServer.addBattleQueueEntry({
+      kickId: sender.id,
+      username: sender.username,
+      displayName: sender.identity?.username || sender.username,
+      avatar: sender.identity?.profile_pic || '',
+      slotName: canonSlot.name,
+      slotProvider: canonSlot.provider,
+      slotImage: canonSlot.image,
+      joinedAt: Date.now(),
+    });
+
+    if (qRes.updated) {
+      chatClient.sendMessage(`⚔️ @${sender.username} actualizó su slot a "${canonSlot.name}" en la cola de la Wheel Dual!`);
+    } else {
+      chatClient.sendMessage(`⚔️ @${sender.username} ingresó a la cola de Batalla con "${canonSlot.name}" (Posición #${qRes.position} en la rueda)!`);
+    }
+  }
+
+  // --- 8-Bracket Tournament (Dual-Wheel Queue) ---
+  if (command === 'tourney' || command === 'torneo') {
+    if ((isMod || isStreamer) && args[0] === 'open') {
+      const title = args.slice(1).join(' ') || '8-Bracket Slot Championship';
+      tournamentManager.openLobby(title, 10, '1st: $150 · 2nd: $50');
+      chatClient.sendMessage(`🏆 ¡Lobby de Torneo ABIERTO! Escribí !tourney <nombre slot> para entrar a la rueda!`);
+      return;
+    }
+    if ((isMod || isStreamer) && args[0] === 'reset') {
+      tournamentManager.reset();
+      overlayServer.clearTourneyQueue();
+      chatClient.sendMessage(`🏆 Torneo y cola de rueda reseteados por el streamer.`);
+      return;
+    }
+
+    // Anti-Sybil / shadowban check
+    const user = db.getUserByKickId(sender.id) || db.upsertUser(sender.id, sender.username);
+    if (user.is_shadowbanned === 1 || user.risk_score >= 75) {
+      console.warn(`[Anti-Sybil] Ignored !tourney from flagged user @${sender.username}`);
+      return;
+    }
+
+    const slotQuery = args.join(' ').trim() || 'Gates of Olympus 1000';
+    const canonSlot = overlayServer.resolveCanonicalSlot(slotQuery);
+
+    const qRes = overlayServer.addTourneyQueueEntry({
+      kickId: sender.id,
+      username: sender.username,
+      displayName: sender.identity?.username || sender.username,
+      avatar: sender.identity?.profile_pic || '',
+      slotName: canonSlot.name,
+      slotProvider: canonSlot.provider,
+      slotImage: canonSlot.image,
+      joinedAt: Date.now(),
+    });
+
+    if (qRes.updated) {
+      chatClient.sendMessage(`🏆 @${sender.username} actualizó su slot a "${canonSlot.name}" en la cola del Torneo!`);
+    } else {
+      chatClient.sendMessage(`🏆 @${sender.username} ingresó a la cola del Torneo con "${canonSlot.name}" (Posición #${qRes.position} en la rueda)!`);
+    }
+  }
+
+  // --- King of the Hill: Continue / Defend Throne ---
+  if (command === 'continue' || command === 'defend' || command === 'seguir' || command === 'defender') {
+    const bState = battleManager.getState();
+    const isKing = bState.reigningKing && (
+      bState.reigningKing.kickId === sender.id ||
+      bState.reigningKing.username.toLowerCase() === sender.username.toLowerCase()
     );
-    if (joinResult.success) {
-      const corner = joinResult.playerSlot === 'A' ? 'Azul' : 'Roja';
-      chatClient.sendMessage(`⚔️ @${sender.username} se unió a la Batalla 1v1 con ${slotName} (Esquina ${corner})!`);
-      if (battleManager.getState().status === 'READY') {
-        const pA = battleManager.getState().playerA;
-        const pB = battleManager.getState().playerB;
-        chatClient.sendMessage(
-          `🔥 ¡DUELO CONFIRMADO! @${pA?.displayName} (${pA?.slotName}) VS @${pB?.displayName} (${pB?.slotName})! ¡Que gane el mayor multiplicador!`
-        );
-      }
+    if (bState.awaitingKingDecision && (isKing || isStreamer || isMod)) {
+      battleManager.kingDecideContinue();
+      const kingName = bState.reigningKing?.displayName || sender.username;
+      chatClient.sendMessage(
+        `👑 ¡El Rey @${kingName} DECIDIÓ DEFENDER EL TRONO (Racha: ${bState.currentStreak}/4)! ¡Que pase el próximo retador con !battle! ⚔️`
+      );
+      return;
+    }
+  }
+
+  // --- King of the Hill: Retire / Cashout ---
+  if (command === 'retire' || command === 'cashout' || command === 'retirarse' || command === 'cobrar') {
+    const bState = battleManager.getState();
+    const isKing = bState.reigningKing && (
+      bState.reigningKing.kickId === sender.id ||
+      bState.reigningKing.username.toLowerCase() === sender.username.toLowerCase()
+    );
+    if (bState.awaitingKingDecision && (isKing || isStreamer || isMod)) {
+      const res = battleManager.kingDecideRetire();
+      const kingName = res.retiredKing?.displayName || sender.username;
+      chatClient.sendMessage(
+        `💰 ¡El Rey @${kingName} SE RETIRA y cobra su racha de ${res.streak} victoria(s)! ¡El trono de King of the Hill queda libre! 👑`
+      );
+      return;
     }
   }
 
@@ -391,13 +504,14 @@ pusherClient.onCommand(({ command, args, sender, messageId }) => {
       chatClient.sendMessage(`🏆 Torneo 8-Bracket reseteado por el streamer.`);
       return;
     }
-    const slotName = args.join(' ').trim() || 'Random Slot';
+    const rawSlot = args.join(' ').trim() || 'Gates of Olympus 1000';
+    const canonSlot = overlayServer.resolveCanonicalSlot(rawSlot);
     const joinResult = tournamentManager.joinLobby(
       { id: `k_${sender.id}`, kickId: sender.id, username: sender.username },
-      slotName
+      { name: canonSlot.name, provider: canonSlot.provider, image: canonSlot.image }
     );
     if (joinResult.success) {
-      chatClient.sendMessage(`🏆 @${sender.username} inscripto al Torneo con ${slotName} (${joinResult.joinedCount}/8 cupos)!`);
+      chatClient.sendMessage(`🏆 @${sender.username} inscripto al Torneo con "${canonSlot.name}" (${canonSlot.provider}) (${joinResult.joinedCount}/8 cupos)!`);
       if (tournamentManager.getState().status === 'IN_PROGRESS') {
         chatClient.sendMessage(`🔥 ¡TORNEO COMPLETO (8/8)! Cuadro generado criptográficamente. ¡Arrancan los Cuartos de Final! 🍀`);
       }

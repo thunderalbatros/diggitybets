@@ -82,14 +82,15 @@ class BattleOverlayApp {
       };
     }
 
-    // Resolve slot cover art if missing
-    if (player && !player.slotImage && window.HUNTHUB_CURATED_SLOTS) {
-      const found = window.HUNTHUB_CURATED_SLOTS.find(
-        (s) => s.name.toLowerCase() === (player.slotName || '').toLowerCase()
-      );
-      if (found) {
-        player.slotImage = found.image;
-        player.slotProvider = found.provider;
+    // Resolve slot cover art canonically
+    if (player) {
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player.slotImage || player, '../') : null;
+      if (canon) {
+        player.slotName = canon.name;
+        player.slotProvider = canon.provider;
+        if (!player.slotImage || player.slotImage.startsWith('../')) {
+          player.slotImage = canon.image;
+        }
       }
     }
 
@@ -392,41 +393,70 @@ class BattleOverlayApp {
       return;
     }
 
-    dom.nameEl.textContent = `@${player.displayName || player.username}`;
-    dom.tagEl.textContent = `Slot: ${player.slotName}`;
-    dom.monogramEl.textContent = (player.displayName || player.username).charAt(0).toUpperCase();
-    dom.slotNameEl.textContent = player.slotName;
-    dom.slotProvEl.textContent = player.slotProvider || 'Casino Slot';
+    const canon = (window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player.slotImage || player, '../') : null) || {
+      name: player.slotName,
+      provider: player.slotProvider || 'Casino Slot',
+      image: player.slotImage || ''
+    };
 
-    // Real image or curated catalog lookup
-    let slotImg = player.slotImage;
-    if (!slotImg && window.HUNTHUB_CURATED_SLOTS && player.slotName) {
-      const found = window.HUNTHUB_CURATED_SLOTS.find(
-        (s) => s.name.toLowerCase() === player.slotName.toLowerCase() || s.name.toLowerCase().includes(player.slotName.toLowerCase())
-      );
-      if (found) slotImg = found.image;
-    }
+    dom.nameEl.textContent = `@${player.displayName || player.username}`;
+    dom.tagEl.textContent = `Slot: ${canon.name}`;
+    dom.monogramEl.textContent = (player.displayName || player.username).charAt(0).toUpperCase();
+    dom.slotNameEl.textContent = canon.name;
+    dom.slotProvEl.textContent = canon.provider;
+
+    let slotImg = (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(player.slotImage || canon.image, '../') : (player.slotImage || canon.image));
 
     if (slotImg) {
       dom.imgEl.src = slotImg;
       dom.imgEl.style.display = 'block';
+      dom.imgEl.onerror = () => {
+        dom.imgEl.src = 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
+      };
     } else {
       dom.imgEl.style.display = 'none';
     }
 
     // Multiplier & meter
+    const isSpins = this.currentState && this.currentState.gameMode === 'SPINS';
     const mult = Number(player.multiplier || 0);
-    dom.multEl.innerHTML = `${mult.toFixed(2)}<span class="mult-x">x</span>`;
-    dom.payoutEl.textContent = `$${Number(player.winAmount || 0).toFixed(2)} USD`;
 
-    // Gauge calculation (max 100x = 100%)
-    const pct = Math.min(100, Math.max(0, (mult / 50) * 100));
-    dom.meterEl.style.width = `${pct}%`;
+    if (isSpins) {
+      dom.multEl.innerHTML = player.result === 'WINNER' ? `WINNER!` : (player.result === 'LOSER' ? `LOSER` : `READY`);
+      dom.payoutEl.textContent = '1-CLICK SPINS DUEL';
+      dom.meterEl.style.width = player.result === 'WINNER' ? '100%' : '0%';
+    } else {
+      dom.multEl.innerHTML = `${mult.toFixed(2)}<span class="mult-x">x</span>`;
+      dom.payoutEl.textContent = `$${Number(player.winAmount || 0).toFixed(2)} USD`;
+      // Gauge calculation (max 100x = 100%)
+      const pct = Math.min(100, Math.max(0, (mult / 50) * 100));
+      dom.meterEl.style.width = `${pct}%`;
+    }
 
-    if (dom.isWinner) {
+    // King of the Hill Streak Badge
+    if (this.currentState && this.currentState.kothActive && this.currentState.reigningKing) {
+      if (this.currentState.reigningKing.kickId === player.kickId) {
+        dom.tagEl.innerHTML = `👑 KING · STREAK ${this.currentState.currentStreak}/4 · $20 PRIZE`;
+        dom.tagEl.style.color = 'var(--gold, #ffd700)';
+      }
+    }
+
+    // Winner & Loser styling
+    if (dom.isWinner || player.result === 'WINNER') {
       dom.ribbonEl.classList.add('active');
+      if (dom.nameEl.closest('.player-card')) {
+        dom.nameEl.closest('.player-card').style.opacity = '1';
+      }
+    } else if (player.result === 'LOSER') {
+      dom.ribbonEl.classList.remove('active');
+      if (dom.nameEl.closest('.player-card')) {
+        dom.nameEl.closest('.player-card').style.opacity = '0.45';
+      }
     } else {
       dom.ribbonEl.classList.remove('active');
+      if (dom.nameEl.closest('.player-card')) {
+        dom.nameEl.closest('.player-card').style.opacity = '1';
+      }
     }
   }
 
@@ -435,19 +465,22 @@ class BattleOverlayApp {
     if (state.winner === 'A') winnerObj = state.playerA;
     else if (state.winner === 'B') winnerObj = state.playerB;
 
+    const isKothChampion = state.currentStreak === 4;
+
     // 1. Broadcast celebration to fullscreen overlay
     try {
       const bc = new BroadcastChannel('hunthub_celebration');
       const payload = {
         type: 'CELEBRATION',
-        category: 'Victory',
+        category: isKothChampion ? 'KingOfTheHill' : 'Victory',
         winner: winnerObj,
         winnerSide: state.winner,
         slotName: winnerObj?.slotName || 'Casino Slot',
         slotImage: winnerObj?.slotImage,
         multiplier: winnerObj?.multiplier || 0,
         winAmount: winnerObj?.winAmount || 0,
-        prizeText: state.prizeText || '$50.00 USD'
+        prizeText: isKothChampion ? '$20.00 CASH PRIZE (4-STREAK CHAMPION)' : (state.prizeText || '$50.00 USD'),
+        kothStreak: state.currentStreak
       };
       bc.postMessage(payload);
       localStorage.setItem('hunthub_celebration_event', JSON.stringify(payload));
@@ -461,11 +494,23 @@ class BattleOverlayApp {
     // 3. Keep local modal for 1v1 card view
     if (winnerObj && this.modal) {
       if (this.modalWinner) this.modalWinner.textContent = `@${winnerObj.displayName || winnerObj.username}`;
+      const modalSubtitle = this.modal.querySelector('.modal-subtitle');
+      if (modalSubtitle) {
+        modalSubtitle.textContent = isKothChampion
+          ? '👑 4-STREAK KING OF THE HILL CHAMPION!'
+          : 'DUEL WINNER!';
+      }
       const modalSlot = document.getElementById('modal-slot-title');
       if (modalSlot) modalSlot.textContent = winnerObj.slotName || 'Casino Slot';
       if (this.modalStat) {
-        const mult = Number(winnerObj.multiplier || 0);
-        this.modalStat.textContent = mult > 0 ? `Multiplier: ${mult.toFixed(2)}x` : 'WINNER!';
+        if (isKothChampion) {
+          this.modalStat.textContent = '🏆 WON $20.00 CASH PRIZE!';
+        } else if (state.gameMode === 'SPINS') {
+          this.modalStat.textContent = '🏆 SPINS DUEL WINNER!';
+        } else {
+          const mult = Number(winnerObj.multiplier || 0);
+          this.modalStat.textContent = mult > 0 ? `Multiplier: ${mult.toFixed(2)}x` : 'WINNER!';
+        }
       }
       this.modal.classList.add('active');
 

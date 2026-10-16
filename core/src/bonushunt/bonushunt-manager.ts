@@ -304,7 +304,7 @@ export class BonusHuntManager {
   }
 
   private emitChange(): void {
-    if (this.onStateChange) {
+    if (this.onStateChange && typeof this.onStateChange === 'function') {
       this.onStateChange(this.getState());
     }
   }

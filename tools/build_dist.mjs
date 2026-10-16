@@ -42,8 +42,20 @@ fs.mkdirSync(path.join(dist, 'data'), { recursive: true });
 if (fs.existsSync(path.join(root, 'data', 'curated_slots.js'))) {
   fs.copyFileSync(path.join(root, 'data', 'curated_slots.js'), path.join(dist, 'data', 'curated_slots.js'));
 }
+if (fs.existsSync(path.join(root, 'data', 'curated_slots.json'))) {
+  fs.copyFileSync(path.join(root, 'data', 'curated_slots.json'), path.join(dist, 'data', 'curated_slots.json'));
+}
 if (fs.existsSync(path.join(root, 'data', 'slot_tiers.js'))) {
   fs.copyFileSync(path.join(root, 'data', 'slot_tiers.js'), path.join(dist, 'data', 'slot_tiers.js'));
+}
+
+// 3.5 Copy overlays and casino suite for OBS Browser Sources
+console.log('• Copying overlays & casino suite...');
+const overlayDirs = ['casino-suite', 'overlay-battle', 'overlay-tourney', 'overlay-bonushunt', 'wheel-duo', 'wheel-slots', 'wheel-csgo'];
+for (const d of overlayDirs) {
+  if (fs.existsSync(path.join(root, d))) {
+    copyRecursive(path.join(root, d), path.join(dist, d));
+  }
 }
 
 // 4. Map Stake Originals direct assets (/assets/, /dino-assets/)

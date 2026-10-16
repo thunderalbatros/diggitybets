@@ -21,6 +21,10 @@
             <span id="f1Name" class="fighter-name">FIGHTER RED</span>
             <span id="f1Slot" class="fighter-slot">Wanted Dead or a Wild</span>
           </div>
+          <div class="slot-cover-wrap" style="width: 54px; height: 72px; position: relative; border-radius: 6px; overflow: hidden; margin-left: auto; border: 1px solid rgba(255,42,95,0.4); flex-shrink: 0;">
+            <img id="f1SlotImg" src="" style="width: 100%; height: 100%; object-fit: cover;">
+            <span id="f1SlotBadge" style="position: absolute; bottom: 0; left: 0; right: 0; font-size: 8px; text-align: center; background: rgba(0,0,0,0.85); color: #ff2a5f; font-weight: 800;">HACKSAW</span>
+          </div>
         </div>
         <!-- Health Bar -->
         <div class="hp-track">
@@ -43,6 +47,10 @@
       <!-- Blue Corner (Fighter 2) -->
       <div class="fighter-side blue-side">
         <div class="fighter-info right-align">
+          <div class="slot-cover-wrap" style="width: 54px; height: 72px; position: relative; border-radius: 6px; overflow: hidden; margin-right: auto; border: 1px solid rgba(0,229,255,0.4); flex-shrink: 0;">
+            <img id="f2SlotImg" src="" style="width: 100%; height: 100%; object-fit: cover;">
+            <span id="f2SlotBadge" style="position: absolute; bottom: 0; left: 0; right: 0; font-size: 8px; text-align: center; background: rgba(0,0,0,0.85); color: var(--cyan); font-weight: 800;">PRAGMATIC</span>
+          </div>
           <div class="name-box right-align">
             <span id="f2Name" class="fighter-name">FIGHTER BLUE</span>
             <span id="f2Slot" class="fighter-slot">Gates of Olympus</span>
@@ -79,6 +87,8 @@
   <script src="../shared/libs/streamerbot-client.js"></script>
   <script src="../shared/sound.js"></script>
   <script src="../shared/bus.js"></script>
+  <script src="../shared/slots-catalog.js"></script>
+  <script src="../../site/js/slot-resolver.js"></script>
   <script src="battle.js"></script>
 </body>
 </html>

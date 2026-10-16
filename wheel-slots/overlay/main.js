@@ -47,6 +47,9 @@
   let client = null;
   let hideTimer = null;
   let currentCategory = 'all';
+  let currentSpinId = null;
+  let directWs = null;
+  let hubWs = null;
   const seenIds = new Set();
 
   // Full catalog and filtered views
@@ -243,8 +246,9 @@
     const color = getProviderColor(slot.category);
     const badgeText = slot.badge || (slot.category === 'stake' ? 'ONLY ON STAKE' : slot.provider.toUpperCase());
 
-    const imgTag = slot.image
-      ? `<img class="slot-thumb" src="${esc(slot.image)}" alt="${esc(slot.name)}" loading="lazy" referrerpolicy="no-referrer" data-slot="${esc(slot.id || slot.name)}">`
+    const imgUrl = (window.SlotResolver && slot.image) ? window.SlotResolver.resolveSlotImageUrl(slot.image) : slot.image;
+    const imgTag = imgUrl
+      ? `<img class="slot-thumb" src="${esc(imgUrl)}" alt="${esc(slot.name)}" loading="lazy" referrerpolicy="no-referrer" data-slot="${esc(slot.id || slot.name)}" onerror="this.onerror=null;this.src='../../site/images/slots/default-slot.svg';">`
       : fallbackCoverHTML(slot);
 
     return `
@@ -334,8 +338,12 @@
     // Winner can be provided in payload or chosen via Tier-Weighted RNG
     let winner = payload.ganador;
     if (typeof winner === 'string') {
-      const found = pool.find((s) => (s.id || s.name).toLowerCase() === winner.toLowerCase() || s.name.toLowerCase() === winner.toLowerCase());
-      if (found) winner = found;
+      if (window.SlotResolver) {
+        winner = window.SlotResolver.resolve(winner);
+      } else {
+        const found = pool.find((s) => (s.id || s.name).toLowerCase() === winner.toLowerCase() || s.name.toLowerCase() === winner.toLowerCase());
+        if (found) winner = found;
+      }
     }
     if (!winner || typeof winner !== 'object') {
       if (window.SLOT_TIERS && typeof window.SLOT_TIERS.pickWeightedSlot === 'function') {
@@ -346,6 +354,7 @@
     }
 
     busy = true;
+    currentSpinId = payload.spinId || payload.id || null;
     clearTimeout(hideTimer);
     resetReveal();
 
@@ -408,6 +417,23 @@
     stage.classList.add('revealed');
     card?.classList.add('ganadora');
 
+    // Handshake: Notify server that wheel deceleration finished for instant, millisecond-accurate chat announcement
+    if (currentSpinId) {
+      const finishedSpinId = currentSpinId;
+      currentSpinId = null;
+      if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+        try { hubWs.send(JSON.stringify({ action: 'spin_animation_complete', spinId: finishedSpinId })); } catch (_) {}
+      }
+      if (directWs && directWs.readyState === WebSocket.OPEN) {
+        try { directWs.send(JSON.stringify({ action: 'spin_animation_complete', spinId: finishedSpinId })); } catch (_) {}
+      }
+      fetch('/api/wheel/spin-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spinId: finishedSpinId }),
+      }).catch(() => {});
+    }
+
     // Victory celebration + SYNCHRONIZED ON-SCREEN RESULT MODAL
     Sfx.fanfare(0.35);
     Sfx.sparkle(0.45);
@@ -420,9 +446,11 @@
       if (modal && resTitle) {
         resTitle.textContent = winner.name || 'Selected Slot';
         resProvider.textContent = `${winner.provider || 'Casino'} · ${winner.maxWin || 'Max Win'}`;
-        if (winner.image) {
-          resCover.src = winner.image;
-        }
+        const coverUrl = (window.SlotResolver && winner.image)
+          ? window.SlotResolver.resolveSlotImageUrl(winner.image)
+          : (winner.image || '../../site/images/slots/default-slot.svg');
+        resCover.src = coverUrl;
+        resCover.onerror = () => { resCover.src = '../../site/images/slots/default-slot.svg'; };
         modal.classList.remove('oculto');
       }
 
@@ -530,6 +558,7 @@
     try {
       const url = `ws://${CFG.host}:${CFG.port}${CFG.endpoint}`;
       const ws = new WebSocket(url);
+      directWs = ws;
       ws.onopen = () => {
         dbg('Direct WebSocket connected to', url);
         setStatus('● Connected to Streamer.bot', '#00e676');
@@ -574,6 +603,22 @@
     client.on('Custom.Event', (evt) => onMessage(evt));
     client.on('Custom.CodeEvent', (evt) => onMessage(evt));
     client.on('Raw.Action', (evt) => onMessage(evt));
+
+    // Connect to HuntHub Core WebSocket hub (port 3001) as well
+    try {
+      const hubPort = window.location.port || '3001';
+      const hubHost = window.location.hostname || '127.0.0.1';
+      hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
+      hubWs.onmessage = (ev) => {
+        try {
+          const payload = JSON.parse(ev.data);
+          onMessage(payload);
+        } catch {}
+      };
+      hubWs.onopen = () => {
+        if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
+      };
+    } catch {}
   }
 
   /* ---------------- Interactive Controls ---------------- */

@@ -336,13 +336,23 @@ class BonusHuntOverlayApp {
 
     // Highlights
     if (m.bestWin) {
-      this.bestWinGame.textContent = m.bestWin.slotName;
+      let bwName = m.bestWin.slotName;
+      if (window.SlotResolver) {
+        const res = window.SlotResolver.resolve(m.bestWin.slotName || m.bestWin, '../');
+        if (res && res.name) bwName = res.name;
+      }
+      this.bestWinGame.textContent = bwName;
       this.bestWinCaller.textContent = `Call by @${m.bestWin.callerUsername}`;
       this.bestWinPayout.textContent = `$${Number(m.bestWin.payout).toFixed(2)}`;
       this.bestWinMult.textContent = `${Number(m.bestWin.multiplier).toFixed(2)}x`;
     }
     if (m.luckyWin) {
-      this.luckyWinGame.textContent = m.luckyWin.slotName;
+      let lwName = m.luckyWin.slotName;
+      if (window.SlotResolver) {
+        const res = window.SlotResolver.resolve(m.luckyWin.slotName || m.luckyWin, '../');
+        if (res && res.name) lwName = res.name;
+      }
+      this.luckyWinGame.textContent = lwName;
       this.luckyWinCaller.textContent = `Call by @${m.luckyWin.callerUsername}`;
       this.luckyWinPayout.textContent = `$${Number(m.luckyWin.payout).toFixed(2)}`;
       this.luckyWinMult.textContent = `${Number(m.luckyWin.multiplier).toFixed(2)}x`;
@@ -380,16 +390,16 @@ class BonusHuntOverlayApp {
         OPENED: '<span class="row-status-pill st-opened">OPENED ✓</span>',
       };
 
-      let resolvedImg = b.slotImage;
-      if (!resolvedImg && window.HUNTHUB_CURATED_SLOTS && b.slotName) {
-        const found = window.HUNTHUB_CURATED_SLOTS.find(
-          (s) => s.name.toLowerCase() === b.slotName.toLowerCase() || s.name.toLowerCase().includes(b.slotName.toLowerCase())
-        );
-        if (found) resolvedImg = found.image;
+      let resolvedSlot = null;
+      if (window.SlotResolver) {
+        resolvedSlot = window.SlotResolver.resolve(b.slotName || b.slotImage || b, '../');
       }
+      const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || 'Unknown Slot';
+      const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || 'Casino';
+      const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage;
 
-      const imgHtml = resolvedImg
-        ? `<img class="slot-thumb-img" src="${resolvedImg}" alt="${b.slotName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-thumb-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`
+      const imgHtml = slotImgSrc
+        ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="${slotNameDisplay}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-thumb-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`
         : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
 
       row.innerHTML = `
@@ -399,8 +409,8 @@ class BonusHuntOverlayApp {
             ${imgHtml}
           </div>
           <div class="slot-titles">
-            <span class="slot-main-title">${b.slotName}</span>
-            <span class="slot-provider-badge">${b.slotProvider || 'Casino'}</span>
+            <span class="slot-main-title">${slotNameDisplay}</span>
+            <span class="slot-provider-badge">${slotProviderDisplay}</span>
           </div>
         </div>
         <span class="row-caller">@${b.callerUsername || 'Streamer'}</span>

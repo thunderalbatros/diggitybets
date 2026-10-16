@@ -177,27 +177,24 @@ class BonusHuntController {
       const tr = document.createElement('tr');
       const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
       const isOpened = s.payout > 0;
-      let imgSrc = s.image;
-      if (!imgSrc || imgSrc.includes('mediumrare')) {
-        imgSrc = `site/images/slots/${s.id}.svg`;
-      }
-      if (window.HUNTHUB_CURATED_SLOTS) {
-        const found = window.HUNTHUB_CURATED_SLOTS.find(
-          cs => cs.id === s.id || cs.name.toLowerCase() === s.name.toLowerCase()
-        );
-        if (found && found.image) imgSrc = found.image;
-      }
-      if (!imgSrc) imgSrc = `site/images/slots/${s.id}.svg`;
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : {
+        name: s.name,
+        provider: s.provider || 'Provider',
+        image: s.image || 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format'
+      };
+      const imgSrc = window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s.image || canon.image) : (s.image || canon.image);
+      const slotName = canon.name || s.name;
+      const slotProvider = canon.provider || s.provider || 'Provider';
 
       tr.className = isOpened ? 'bh-row-opened' : 'bh-row-pending';
       tr.innerHTML = `
         <td class="bh-td-num">#${idx + 1}</td>
         <td class="bh-td-slot">
           <div class="bh-slot-info">
-            <img class="bh-slot-thumb" src="${imgSrc}" alt="${s.name}" onerror="this.onerror=null; this.src='site/images/slots/' + (s.id || 'wanted-dead-or-a-wild') + '.svg';">
+            <img class="bh-slot-thumb" src="${imgSrc}" alt="${slotName}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
             <div>
-              <span class="bh-slot-name">${s.name}</span>
-              <span class="bh-slot-provider">${s.provider || 'Provider'}</span>
+              <span class="bh-slot-name">${slotName}</span>
+              <span class="bh-slot-provider">${slotProvider}</span>
             </div>
           </div>
         </td>
