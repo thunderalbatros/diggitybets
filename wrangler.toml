@@ -5,6 +5,10 @@ compatibility_date = "2026-10-14"
 # 100% Free Plan Configuration (100,000 req/day, $0 cost permanently, zero credit card)
 workers_dev = true
 
+# Build step so Cloudflare Workers Builds & local wrangler deploy always generate ./dist
+[build]
+command = "node tools/build_dist.mjs"
+
 # Cloudflare Workers Static Assets: serves dist/ directly with SPA fallback
 [assets]
 directory = "./dist"
@@ -14,11 +18,11 @@ not_found_handling = "single-page-application"
 [observability]
 enabled = true
 
-# Cloudflare D1 Serverless SQLite (100% Free Tier: 5M reads/day, 100k writes/day, 5GB storage, $0 permanent)
-[[d1_databases]]
-binding = "DB"
-database_name = "hunthub_production"
-database_id = "hunthub-d1-db"
+# Cloudflare D1 Serverless SQLite (bound via Cloudflare Dashboard or valid UUID; worker/index.js includes automatic in-memory fallback when unbound)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "hunthub_production"
+# database_id = "YOUR_D1_UUID"
 
 # Secrets to be configured via `npx wrangler secret put <KEY>` or Cloudflare Dashboard:
 # - KICK_CLIENT_ID
