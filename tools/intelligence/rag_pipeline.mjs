@@ -111,8 +111,9 @@ function createDocumentChunks(filePath) {
   const isCanon = filePath.includes('knowledge');
   const category = isCanon ? 'canon' : 'general';
 
-  // If file is small (< 15 KB), index it as a single coherent document
-  if (cleanText.length <= 15_000) {
+  // If file is very small (< 1,500 chars) and has no subheadings, index as single chunk
+  const sections = cleanText.split(/\n(?=#{1,3}\s+)/);
+  if (cleanText.length <= 1500 || sections.length <= 1) {
     return [{
       id: rel,
       source: `local://${rel}`,
@@ -124,9 +125,8 @@ function createDocumentChunks(filePath) {
     }];
   }
 
-  // Large document: Chunk intelligently by Markdown headings (#, ##, ###)
+  // Chunk intelligently by Markdown headings (#, ##, ###)
   const chunks = [];
-  const sections = cleanText.split(/\n(?=#{1,3}\s+)/);
 
   sections.forEach((sec, idx) => {
     const headingMatch = sec.match(/^#{1,3}\s+(.+)/);
@@ -206,7 +206,6 @@ export function getOrBuildMiniSearchIndex(force = false) {
   const searchDirs = [
     path.join(ROOT, 'knowledge'),
     path.join(ROOT, 'docs'),
-    path.join(ROOT, 'research'),
     path.join(ROOT, 'references')
   ];
 
@@ -224,7 +223,7 @@ export function getOrBuildMiniSearchIndex(force = false) {
   if (MiniSearchClass) {
     const mini = new MiniSearchClass({
       fields: ['title', 'section', 'text'],
-      storeFields: ['id', 'source', 'title', 'section', 'category', 'snippet'],
+      storeFields: ['id', 'source', 'title', 'section', 'category', 'snippet', 'text'],
       searchOptions: {
         boost: { title: 3, section: 2, text: 1 },
         boostDocument: (docId, term, doc) => (doc && doc.category === 'canon' ? 2.5 : 1.0),
@@ -285,7 +284,25 @@ export async function queryKnowledge(query, limit = 8) {
     'does', 'the', 'and', 'for', 'with', 'from', 'about', 'work', 'works', 'enseña'
   ]);
   const significantTerms = qTerms.filter(t => !stopWords.has(t));
-  const effectiveQuery = significantTerms.length > 0 ? significantTerms.join(' ') : qClean;
+  let effectiveQuery = significantTerms.length > 0 ? significantTerms.join(' ') : qClean;
+
+  // 0. Query Expansion & Canonical Translation with Vertex AI / Gemini
+  let canonicalQuery = '';
+  let expandedTerms = [];
+  try {
+    const { expandAndCanonicalizeQuery } = await import('./vertex_ai_bridge.mjs');
+    const exp = await expandAndCanonicalizeQuery(query);
+    if (exp) {
+      if (exp.canonicalTerms && Array.isArray(exp.canonicalTerms)) {
+        expandedTerms = exp.canonicalTerms;
+      }
+      if (exp.canonicalEnglishQuery) {
+        canonicalQuery = exp.canonicalEnglishQuery;
+      }
+    }
+  } catch (_) {}
+
+  const searchQuery = [effectiveQuery, canonicalQuery, ...expandedTerms].filter(Boolean).join(' ');
   const rankedLists = [];
 
   // 1. Local Lexical Search via MiniSearch BM25
@@ -294,7 +311,7 @@ export async function queryKnowledge(query, limit = 8) {
 
   if (indexData.mini) {
     try {
-      const searchRes = indexData.mini.search(effectiveQuery, {
+      const searchRes = indexData.mini.search(searchQuery, {
         combineWith: 'OR',
         fuzzy: 0.2,
         prefix: true,
@@ -306,6 +323,7 @@ export async function queryKnowledge(query, limit = 8) {
         source: r.source,
         title: r.title,
         snippet: r.snippet,
+        text: r.text || r.snippet,
         score: r.score
       }));
     } catch (_) {}
@@ -386,67 +404,142 @@ export async function queryKnowledge(query, limit = 8) {
     }
   }
 
-  // 3. Fused Ranking using Reciprocal Rank Fusion (RRF)
-  const fused = reciprocalRankFusion(rankedLists, 60);
-  return fused.slice(0, limit);
-}
-
-/**
- * Fast LLM Synthesis with Groq (Llama-3.3-70b in ~400ms)
- * @param {string} question - Question to synthesize
- * @param {Array} knowledgeList - Recovered context nodes
- */
-export async function synthesizeAnswer(question, knowledgeList = []) {
-  if (!GROQ_API_KEY) {
-    return 'Groq API Key not configured. Returning raw knowledge snippets.';
-  }
-
-  const contextText = knowledgeList.map((k, idx) => 
-    `[Source ${idx + 1}: ${k.title} (${k.source})]\n${k.snippet}`
-  ).join('\n\n');
-
-  const candidateModels = [
-    'qwen/qwen3.8-27b',
-    'openai/gpt-oss-120b',
-    'openai/gpt-oss-20b'
-  ];
-
-  for (const model of candidateModels) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are the Antigravity Lead Architect for HuntHub/DiggityBets. Answer the user question concisely in Argentine Spanish based strictly on the provided Centinela and Yendo RAG knowledge sources. Do not invoke tools or JSON function calls. Output pure markdown text and cite the specific sources used.'
-            },
-            {
-              role: 'user',
-              content: `KNOWLEDGE CONTEXT:\n${contextText}\n\nQUESTION: ${question}`
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 650
-        })
+  // 3. Dense Vector Search via Centinela Studio Bridge (Cosine similarity on 3,608 points)
+  try {
+    const p = 'file:///C:/Users/tomas/.zcode/workspace/default/centinela-studio/tools/kb-search.mjs';
+    const centinela = await import(p);
+    if (centinela && typeof centinela.searchKb === 'function') {
+      const densePromise = centinela.searchKb(env, 'centinela_knowledge', effectiveQuery, {
+        mode: 'rerank',
+        limit: 10
       });
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ hits: [] }), 3000));
+      const denseRes = await Promise.race([densePromise, timeoutPromise]);
 
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
-      } else if (res.status === 429) {
-        continue;
+      if (denseRes && denseRes.hits && denseRes.hits.length > 0) {
+        const denseList = denseRes.hits.map(h => ({
+          id: `qdrant://centinela_dense/${h.id || h.payload?.source}`,
+          source: h.payload?.source || 'centinela_knowledge',
+          title: h.payload?.heading || h.payload?.title || String(h.payload?.source || '').slice(0, 80),
+          snippet: (h.payload?.text || '').slice(0, 450),
+          text: h.payload?.text || '',
+          score: h.score
+        }));
+        rankedLists.push(denseList);
+      }
+    }
+  } catch (_) {}
+
+  // 4. Fused Ranking using Reciprocal Rank Fusion (RRF)
+  const fused = reciprocalRankFusion(rankedLists, 60);
+
+  // 5. Layer 3: SOTA 2026 Listwise Semantic Reranker (Groq / Vertex AI)
+  let reranked = fused;
+  try {
+    const { rerankCandidatesWithAI } = await import('./vertex_ai_bridge.mjs');
+    if (typeof rerankCandidatesWithAI === 'function' && fused.length > 0) {
+      reranked = await rerankCandidatesWithAI(query, fused.slice(0, 15));
+    }
+  } catch (_) {}
+
+  // 6. Layer 4: Corrective RAG (CRAG Loop)
+  // If top candidate has low confidence (< 0.55) or no candidates recovered, trigger live web search
+  const topCandidate = reranked[0];
+  const hasHighConfidence = topCandidate && (
+    topCandidate.rerankScore !== undefined 
+      ? topCandidate.rerankScore >= 0.55 
+      : (topCandidate.score > 0.85 || (topCandidate.rrfScore && topCandidate.rrfScore > 0.035))
+  );
+
+  if (!hasHighConfidence || reranked.length === 0) {
+    try {
+      const { searchWeb } = await import('./serper_researcher.mjs');
+      const webQuery = canonicalQuery || query;
+      const webData = await searchWeb(webQuery, 4);
+      const organic = webData.organic || [];
+      if (organic.length > 0) {
+        const webCandidates = organic.map((item, idx) => ({
+          id: `web://${item.link}`,
+          source: item.link,
+          title: `[Web Search] ${item.title}`,
+          snippet: item.snippet || '',
+          text: `[Live Web Search Source: ${item.title} (${item.link})]\n${item.snippet || ''}`,
+          rerankScore: 0.95 - (idx * 0.05),
+          isWebFallback: true
+        }));
+        reranked = [...webCandidates, ...reranked];
       }
     } catch (_) {}
   }
 
-  return 'Context retrieved successfully via MiniSearch & Qdrant RRF. All Groq models currently busy.';
+  return reranked.slice(0, limit);
+}
+
+/**
+ * High-Intelligence Synthesis: GCP Vertex AI Gemini 2.5 Flash (Primary) + Groq LPU Fallback
+ * @param {string} question - Question to synthesize
+ * @param {Array} knowledgeList - Recovered context nodes
+ */
+export async function synthesizeAnswer(question, knowledgeList = []) {
+  const isWebAugmented = knowledgeList.some(k => k.isWebFallback);
+  const contextText = knowledgeList.map((k, idx) => 
+    `[Source ${idx + 1}: ${k.title} (${k.source})]\n${k.text || k.snippet}`
+  ).join('\n\n');
+
+  const systemPrompt = `You are the Antigravity Lead Architect for HuntHub/DiggityBets.
+Answer the user question concisely, authoritatively, and thoroughly in Argentine Spanish based on the provided technical context.
+When live web search sources ([Live Web Search Source]) are provided, synthesize the latest live information directly to answer the question accurately.
+Do not invoke tools or JSON function calls. Output pure markdown text and cite the specific sources used.`;
+  const userPrompt = `KNOWLEDGE CONTEXT:\n${contextText}\n\nQUESTION: ${question}`;
+
+  const webTag = isWebAugmented ? '\n\n*(Augmentado vía Corrective RAG · Google Search fallback)*' : '';
+
+  // 1. Primary: GCP Vertex AI Gemini 2.5 Flash
+  try {
+    const { generateWithVertex } = await import('./vertex_ai_bridge.mjs');
+    const vertexAnswer = await generateWithVertex(userPrompt, systemPrompt);
+    if (vertexAnswer && vertexAnswer.trim().length > 10) {
+      return vertexAnswer + '\n\n*(Sintetizado con Google Cloud Vertex AI · Gemini 2.5 Flash)*' + webTag;
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Groq Ultra-Fast LPU (active 2026 models)
+  if (GROQ_API_KEY) {
+    const candidateModels = [
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b',
+      'openai/gpt-oss-120b'
+    ];
+
+    for (const model of candidateModels) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.2,
+            max_tokens: 750
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content + `\n\n*(Sintetizado con Groq LPU · ${model})*` + webTag;
+        }
+      } catch (_) {}
+    }
+  }
+
+  return 'Context retrieved successfully via MiniSearch & Qdrant RRF. All LLM providers currently busy.';
 }
 
 /**

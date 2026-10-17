@@ -38,7 +38,7 @@ window.switchView = function(targetId) {
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
+  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -63,6 +63,11 @@ window.switchView = function(targetId) {
     }
   }
 
+  // If navigating to 1v1 Battle Arena, refresh KOTH state
+  if (targetId === '#battle' && window.tournamentPrediction && typeof window.tournamentPrediction.renderKoth === 'function') {
+    window.tournamentPrediction.renderKoth();
+  }
+
   // Update navigation tabs
   const navLinks = document.querySelectorAll('.nav-link-btn');
   navLinks.forEach(link => {
@@ -78,6 +83,7 @@ window.switchView = function(targetId) {
   const titles = {
     '#watch': '📺 LIVE STREAM / SOCIALS',
     '#house-games': '🕹️ HOUSE GAMES & MINI-CASINO',
+    '#battle': '⚔️ 1v1 BATTLE & KING OF THE HILL',
     '#tournament': '🏆 8-BRACKET TOURNAMENT',
     '#bonushunt': '💎 BONUS HUNT TRACKER',
     '#store': '🎁 REWARDS STORE & RAFFLES',

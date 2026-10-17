@@ -137,6 +137,54 @@
   };
 
   // ========================================================
+  // 2.1 KINETIC TYPOGRAPHY: DECRYPTED / SCRAMBLE TEXT (Anime.js v4 & React Bits Style)
+  // ========================================================
+  window.scrambleText = function (elOrId, targetText, options = {}) {
+    const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return;
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = targetText;
+      return;
+    }
+
+    const chars = options.characters || '0123456789$!#%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const duration = options.duration || 650;
+    const finalStr = String(targetText);
+    const start = performance.now();
+
+    function frame(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out expo
+      const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const revealedCount = Math.floor(easedProgress * finalStr.length);
+
+      let output = '';
+      for (let i = 0; i < finalStr.length; i++) {
+        if (i < revealedCount) {
+          output += finalStr[i];
+        } else if (finalStr[i] === ' ') {
+          output += ' ';
+        } else {
+          output += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+
+      el.textContent = output;
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = finalStr;
+        if (typeof options.onComplete === 'function') options.onComplete();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  };
+
+  // ========================================================
   // 3. ZERO-CONFIG FLIP ANIMATION ENGINE (AutoAnimate Style)
   // ========================================================
   const flipCoords = new WeakMap();

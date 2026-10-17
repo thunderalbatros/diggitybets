@@ -486,9 +486,317 @@ class HuntHubAudio {
     osc3.start(t3);
     osc3.stop(t3 + 0.04);
   }
+
+  /**
+   * Procedural Brass / Trumpet Note Synthesizer
+   * Emulates acoustic lip-buzz & brass resonance using:
+   * - Dual detuned sawtooth waves (+-7 cents) + sub-triangle warm body
+   * - Fast-opening resonant lowpass formant filter (mouthpiece attack bite)
+   * - Delayed natural vibrato LFO (5.3 Hz)
+   */
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (this.muted || !this.ctx) return;
+    const t = startTime;
+    const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(volume * this.volume, t);
+
+    // 1. Resonant Formant Filter (Acoustic Bell & Lip Buzz)
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.setValueAtTime(3.6, t);
+
+    // Dynamic Filter Envelope (Brass bite / blat on onset)
+    const minCutoff = Math.max(320, freq * 1.2);
+    const peakCutoff = Math.min(6800, freq * 5.4);
+    const sustainCutoff = Math.min(4200, freq * 3.2);
+
+    filter.frequency.setValueAtTime(minCutoff, t);
+    filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+    filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+    // 2. Dual Sawtooth Oscillators (Detuned Brass Pair)
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'sawtooth';
+
+    osc1.frequency.setValueAtTime(freq, t);
+    osc2.frequency.setValueAtTime(freq, t);
+    osc1.detune.setValueAtTime(-7, t);
+    osc2.detune.setValueAtTime(7, t);
+
+    // 3. Warm Sub-Body (Triangle)
+    const subOsc = this.ctx.createOscillator();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(freq * 0.5, t);
+    const subGain = this.ctx.createGain();
+    subGain.gain.setValueAtTime(0.24, t);
+    subOsc.connect(subGain);
+    subGain.connect(filter);
+
+    // 4. Delayed Vibrato LFO for sustained notes (natural human embouchure)
+    if (!isStaccato && duration > 0.25) {
+      try {
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(5.3, t);
+
+        // Fade vibrato in after 160ms of note attack
+        lfoGain.gain.setValueAtTime(0, t);
+        lfoGain.gain.setValueAtTime(0, t + 0.16);
+        lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+
+        lfo.connect(osc1.frequency);
+        lfo.connect(osc2.frequency);
+        lfo.start(t + 0.16);
+        lfo.stop(t + duration + 0.1);
+      } catch (_) {}
+    }
+
+    // 5. Amplitude Envelope (ADSR)
+    const noteGain = this.ctx.createGain();
+    const attackTime = isStaccato ? 0.018 : 0.035;
+    const releaseTime = isStaccato ? 0.06 : 0.25;
+
+    noteGain.gain.setValueAtTime(0.001, t);
+    noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+    if (isStaccato) {
+      noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    } else {
+      noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+      noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+    }
+
+    // Graph Routing
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(noteGain);
+    noteGain.connect(masterGain);
+    masterGain.connect(this.ctx.destination);
+
+    // Transport Start & Stop
+    const stopTime = t + duration + releaseTime + 0.05;
+    osc1.start(t);
+    osc2.start(t);
+    subOsc.start(t);
+    osc1.stop(stopTime);
+    osc2.stop(stopTime);
+    subOsc.stop(stopTime);
+  }
+
+  /**
+   * Victorious Trumpet Fanfare (Grand Casino / Tournament Champion Fanfare)
+   * Key of D Major, Royal brass motif with climax 5-horn triumphant harmony.
+   * Zero external audio files required — 100% procedural Web Audio synthesis.
+   */
+  playVictoriousTrumpetFanfare() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+
+    // Motif Timeline (Royal Entrance in D Major)
+    // Notes: A4 (0.11s) -> A4 (0.11s) -> A4 (0.11s) -> D5 (0.36s) -> A4 (0.12s) -> D5 (0.18s) -> F#5 (0.22s) -> Grand Climax
+    const motif = [
+      { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
+      { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
+      { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 }, // A4 (ta)
+      { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 }, // D5 (TAAA)
+      { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 }, // A4 (ta)
+      { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 }, // D5 (taa)
+      { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 }, // F#5 (TAA!)
+    ];
+
+    motif.forEach(n => {
+      this.playBrassNote(n.freq, t + n.time, n.dur, n.vol, n.staccato);
+    });
+
+    // Grand Triumph Climax (Multi-Horn Chord at T + 1.42s)
+    const climaxTime = t + 1.42;
+    const chord = [
+      { freq: 293.66, dur: 1.25, vol: 0.34 }, // D4 (Trombone / Low Brass Foundation)
+      { freq: 440.00, dur: 1.30, vol: 0.36 }, // A4 (French Horn 5th)
+      { freq: 587.33, dur: 1.35, vol: 0.40 }, // D5 (Trumpet 2 Tonic)
+      { freq: 739.99, dur: 1.40, vol: 0.44 }, // F#5 (Trumpet 1 Major 3rd)
+      { freq: 880.00, dur: 1.45, vol: 0.48 }, // A5 (Lead Trumpet High Octave 5th)
+    ];
+
+    chord.forEach(c => {
+      this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+    });
+
+    // Accompanying Sub-Bass Impact at Climax
+    try {
+      const subOsc = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(95, climaxTime);
+      subOsc.frequency.exponentialRampToValueAtTime(32, climaxTime + 0.65);
+      subGain.gain.setValueAtTime(0.48 * this.volume, climaxTime);
+      subGain.gain.exponentialRampToValueAtTime(0.001, climaxTime + 0.70);
+      subOsc.connect(subGain);
+      subGain.connect(this.ctx.destination);
+      subOsc.start(climaxTime);
+      subOsc.stop(climaxTime + 0.75);
+    } catch (_) {}
+  }
+
+  /**
+   * Grand Jackpot: Victorious Trumpet Fanfare + Cascading Coin Rain
+   */
+  playJackpot() {
+    this.playVictoriousTrumpetFanfare();
+    if (typeof this.playCoins === 'function') {
+      setTimeout(() => this.playCoins(), 1400);
+      setTimeout(() => this.playCoins(), 1800);
+    }
+  }
+
+  /**
+   * Crisp Wheel / Dial Tick
+   */
+  playWheelTick() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1450, t);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.018);
+
+    gain.gain.setValueAtTime(0.24 * this.volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.022);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.024);
+  }
+
+  /**
+   * Countdown Heartbeat / Tension Tick
+   */
+  playCountdownTick(isFinal = false) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = isFinal ? 'square' : 'sine';
+    const freq = isFinal ? 1240 : 880;
+    osc.frequency.setValueAtTime(freq, t);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.04);
+
+    gain.gain.setValueAtTime((isFinal ? 0.32 : 0.18) * this.volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.055);
+  }
+
+  /**
+   * Subtle Haptic Click for Buttons & Predictions
+   */
+  playVoteClick() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1800, t);
+    osc.frequency.exponentialRampToValueAtTime(500, t + 0.012);
+
+    gain.gain.setValueAtTime(0.14 * this.volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.018);
+  }
+
+  /**
+   * Victorious Trumpet Fanfare (Synthesized Web Audio Brass)
+   * Plays a majestic C-major brass fanfare (C4 -> E4 -> G4 -> C5) with resonant harmonics.
+   */
+  playVictoryFanfare() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const notes = [
+      { f: 261.63, start: 0.00, dur: 0.13 }, // C4
+      { f: 329.63, start: 0.13, dur: 0.13 }, // E4
+      { f: 392.00, start: 0.26, dur: 0.15 }, // G4
+      { f: 523.25, start: 0.41, dur: 0.65 }  // High C5 finale
+    ];
+
+    notes.forEach((n) => {
+      const noteStart = t + n.start;
+      const noteEnd = noteStart + n.dur;
+
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const biquad = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(n.f, noteStart);
+
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(n.f * 1.004, noteStart);
+
+      biquad.type = 'lowpass';
+      biquad.frequency.setValueAtTime(1400, noteStart);
+      biquad.frequency.exponentialRampToValueAtTime(3800, noteStart + 0.03);
+      biquad.frequency.exponentialRampToValueAtTime(1800, noteEnd);
+
+      gain.gain.setValueAtTime(0.001, noteStart);
+      gain.gain.linearRampToValueAtTime(0.35 * this.volume, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.24 * this.volume, noteStart + 0.08);
+      gain.gain.setValueAtTime(0.24 * this.volume, noteEnd - 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteEnd + 0.05);
+
+      osc1.connect(biquad);
+      osc2.connect(biquad);
+      biquad.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc1.start(noteStart);
+      osc2.start(noteStart);
+      osc1.stop(noteEnd + 0.06);
+      osc2.stop(noteEnd + 0.06);
+    });
+  }
+
+  playVictoriousTrumpetFanfare() {
+    return this.playVictoryFanfare();
+  }
 }
 
 window.soundEngine = new HuntHubAudio();
+window.AudioEngine = window.soundEngine;
 
 // Ensure audio context resumes upon first user gesture
 if (typeof document !== 'undefined') {

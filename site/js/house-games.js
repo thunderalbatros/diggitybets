@@ -457,7 +457,11 @@ class StakeOriginalsController {
 
           if (window.soundEngine) {
             if (b.multiplier >= 10.0) {
-              window.soundEngine.playWin();
+              if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+                window.soundEngine.playVictoriousTrumpetFanfare();
+              } else {
+                window.soundEngine.playWin();
+              }
               if (typeof window.soundEngine.playCoins === 'function') {
                 window.soundEngine.playCoins();
               }
@@ -796,7 +800,13 @@ class StakeOriginalsController {
     const winAmount = this.capGrossPayout(this.minesBet, this.minesBet * this.minesCurrentMultiplier);
     this.adjustBalance(winAmount);
 
-    if (window.soundEngine) window.soundEngine.playWin();
+    if (window.soundEngine) {
+      if (this.minesCurrentMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+        window.soundEngine.playVictoriousTrumpetFanfare();
+      } else {
+        window.soundEngine.playWin();
+      }
+    }
     if (window.pfEngine) window.pfEngine.nextNonce();
 
     const startBtn = document.getElementById('mines-btn-start');
@@ -1103,7 +1113,13 @@ class StakeOriginalsController {
     const winAmount = this.capGrossPayout(this.crashBet, this.crashBet * this.crashCurrentMultiplier);
     this.adjustBalance(winAmount);
 
-    if (window.soundEngine) window.soundEngine.playWin();
+    if (window.soundEngine) {
+      if (this.crashCurrentMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+        window.soundEngine.playVictoriousTrumpetFanfare();
+      } else {
+        window.soundEngine.playWin();
+      }
+    }
 
     const cashoutBtn = document.getElementById('crash-btn-cashout');
     const startBtn = document.getElementById('crash-btn-start');
@@ -1352,7 +1368,13 @@ class StakeOriginalsController {
       if (isWin) {
         const payout = this.capGrossPayout(bet, bet * this.diceMultiplier);
         this.adjustBalance(payout);
-        if (window.soundEngine) window.soundEngine.playWin();
+        if (window.soundEngine) {
+          if (this.diceMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+            window.soundEngine.playVictoriousTrumpetFanfare();
+          } else {
+            window.soundEngine.playWin();
+          }
+        }
         this.showToast(`🎯 Rolled ${rollResult.toFixed(2)}! Won +${payout} $DIG (${this.diceMultiplier.toFixed(4)}x)!`, 'win');
       } else {
         if (window.soundEngine) window.soundEngine.playBust();

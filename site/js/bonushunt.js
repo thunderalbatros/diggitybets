@@ -29,72 +29,30 @@ class BonusHuntController {
     this.verifierMode = 'keno'; // 'keno' or 'mines'
   }
 
-  loadInitialHuntSlots() {
-    const verifiedDefaults = [
-      { 
-        id: 'wanted-dead-or-a-wild', 
-        name: 'Wanted Dead or a Wild', 
-        provider: 'Hacksaw Gaming', 
-        bet: 2.0, 
-        payout: 246.80, 
-        caller: '@NachoGamer', 
-        image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' 
-      },
-      { 
-        id: 'gates-of-olympus-1000', 
-        name: 'Gates of Olympus 1000', 
-        provider: 'Pragmatic Play', 
-        bet: 2.0, 
-        payout: 312.00, 
-        caller: '@SlotKing21', 
-        image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' 
-      },
-      { 
-        id: 'le-bandit', 
-        name: 'Le Bandit', 
-        provider: 'Hacksaw Gaming', 
-        bet: 0.20, 
-        payout: 71.20, 
-        caller: '@DiggityFan', 
-        image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' 
-      },
-      { 
-        id: 'san-quentin-xways', 
-        name: 'San Quentin xWays', 
-        provider: 'Nolimit City', 
-        bet: 2.0, 
-        payout: 0, 
-        caller: '@AgusKick', 
-        image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' 
-      },
-      { 
-        id: 'sweet-bonanza-1000', 
-        name: 'Sweet Bonanza 1000', 
-        provider: 'Pragmatic Play', 
-        bet: 2.0, 
-        payout: 0, 
-        caller: '@Valen99', 
-        image: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' 
-      },
-      { 
-        id: 'sugar-rush-1000', 
-        name: 'Sugar Rush 1000', 
-        provider: 'Pragmatic Play', 
-        bet: 2.0, 
-        payout: 0, 
-        caller: '@StakeHunter', 
-        image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' 
-      }
-    ];
+  isDemoUser(u) {
+    if (!u) return false;
+    const clean = String(u).trim().toLowerCase().replace(/^@/, '');
+    const demo = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
+      'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar', 'catlover'
+    ]);
+    return demo.has(clean);
+  }
 
-    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
+  loadInitialHuntSlots() {
     const saved = localStorage.getItem('hunthub_hunt_slots');
     if (saved !== null) {
       try { 
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          if (parsed.length === 0) return [];
-          const healed = parsed.map(s => {
+          const filtered = parsed.filter(s => !this.isDemoUser(s.caller));
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem('hunthub_hunt_slots', JSON.stringify(filtered));
+          }
+          if (filtered.length === 0) return [];
+          const healed = filtered.map(s => {
             if (window.SlotResolver && s && (s.name || s.slotName)) {
               const canon = window.SlotResolver.resolve(s.name || s.slotName);
               if (canon && canon.image) {
@@ -104,52 +62,46 @@ class BonusHuntController {
             }
             return s;
           });
-          localStorage.setItem('hunthub_hunt_slots', JSON.stringify(healed));
           return healed;
         }
       } catch (e) {}
     }
 
-    if (purged) return [];
-    localStorage.setItem('hunthub_hunt_slots', JSON.stringify(verifiedDefaults));
-    return verifiedDefaults;
+    return [];
   }
 
   loadInitialGuesses() {
-    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
     const saved = localStorage.getItem('hunthub_hunt_guesses');
     if (saved !== null) {
       try { 
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(g => !this.isDemoUser(g.user || g.username));
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(filtered));
+          }
+          return filtered;
+        }
       } catch (e) {}
     }
-    if (purged) return [];
-
-    return [
-      { user: '@NachoGamer', guess: 1620, time: '14:22' },
-      { user: '@SlotKing21', guess: 1840, time: '14:25' },
-      { user: '@KickViewer01', guess: 1450, time: '14:27' },
-      { user: '@CryptoSpin', guess: 2100, time: '14:31' }
-    ];
+    return [];
   }
 
   loadInitialSlotRequests() {
-    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
     const saved = localStorage.getItem('hunthub_slot_requests');
     if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(r => !this.isDemoUser(r.caller));
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem('hunthub_slot_requests', JSON.stringify(filtered));
+          }
+          return filtered;
+        }
       } catch (e) {}
     }
-    if (purged) return [];
-    return [
-      { name: 'San Quentin xWays', provider: 'Nolimit City', caller: '@AgusKick', image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
-      { name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
-      { name: 'Le Bandit', provider: 'Hacksaw Gaming', caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
-      { name: 'Rip City', provider: 'Hacksaw Gaming', caller: '@CatLover', image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' }
-    ];
+    return [];
   }
 
   init() {

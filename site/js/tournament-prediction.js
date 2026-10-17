@@ -37,14 +37,7 @@ class TournamentPredictionController {
     this.activeView = 'bracket'; // 'bracket' or 'standings'
 
     // Community participants for live transparency scoreboard
-    this.communityStandings = [
-      { username: '@SlotKing21', isSub: true, championPick: 'gates-of-olympus', score: 6, accuracy: 85.7, status: 'Leading 🥇' },
-      { username: '@NachoGamer', isSub: true, championPick: 'wanted-dead-or-a-wild', score: 5, accuracy: 71.4, status: 'Top 3 🥈' },
-      { username: '@DiggityFan', isSub: false, championPick: 'le-bandit', score: 5, accuracy: 71.4, status: 'Top 3 🥉' },
-      { username: '@StakeHunter', isSub: true, championPick: 'ghost-rush', score: 4, accuracy: 57.1, status: 'Active' },
-      { username: '@AgusKick', isSub: false, championPick: 'san-quentin-xways', score: 3, accuracy: 42.8, status: 'Active' },
-      { username: '@Valen99', isSub: false, championPick: 'sweet-bonanza', score: 3, accuracy: 42.8, status: 'Active' }
-    ];
+    this.communityStandings = [];
   }
 
   init() {
@@ -74,15 +67,13 @@ class TournamentPredictionController {
   initViewTabs() {
     const tabBracket = document.getElementById('tab-tourney-bracket');
     const tabStandings = document.getElementById('tab-tourney-standings');
-    const tabKoth = document.getElementById('tab-tourney-koth');
     const panelBracket = document.getElementById('tourney-bracket-panel');
     const panelStandings = document.getElementById('tourney-standings-panel');
-    const panelKoth = document.getElementById('tourney-koth-panel');
 
     const switchTab = (activeTab, activePanel, viewName) => {
       this.activeView = viewName;
-      [tabBracket, tabStandings, tabKoth].forEach(t => t?.classList.remove('active'));
-      [panelBracket, panelStandings, panelKoth].forEach(p => { if (p) p.style.display = 'none'; });
+      [tabBracket, tabStandings].forEach(t => t?.classList.remove('active'));
+      [panelBracket, panelStandings].forEach(p => { if (p) p.style.display = 'none'; });
 
       activeTab?.classList.add('active');
       if (activePanel) activePanel.style.display = 'block';
@@ -97,13 +88,6 @@ class TournamentPredictionController {
       tabStandings.addEventListener('click', () => {
         switchTab(tabStandings, panelStandings, 'standings');
         this.renderStandings();
-      });
-    }
-
-    if (tabKoth) {
-      tabKoth.addEventListener('click', () => {
-        switchTab(tabKoth, panelKoth, 'koth');
-        this.renderKoth();
       });
     }
   }
@@ -423,10 +407,22 @@ class TournamentPredictionController {
           window.soundEngine.playWin();
         }
       }
+      if (typeof window.fireCasinoConfetti === 'function') {
+        window.fireCasinoConfetti({ particleCount: 55 });
+      }
+
       this.updateStatusBanner();
       this.renderStandings();
 
-      alert(`Bracket locked! ${currentUser} selected ${this.getSlotName(this.predictions.champion)} to win the championship!`);
+      if (window.sonner) {
+        window.sonner.toast({
+          title: '🏆 Bracket Locked!',
+          message: `${currentUser} selected ${this.getSlotName(this.predictions.champion)} to win!`,
+          type: 'gold'
+        });
+      } else {
+        alert(`Bracket locked! ${currentUser} selected ${this.getSlotName(this.predictions.champion)} to win the championship!`);
+      }
     });
   }
 
@@ -462,7 +458,20 @@ class TournamentPredictionController {
     // Sort descending by score
     list.sort((a, b) => b.score - a.score);
 
-    const leader = list[0] || { username: '@SlotKing21', score: 6, accuracy: 85.7, championPick: 'gates-of-olympus' };
+    if (list.length === 0) {
+      panel.innerHTML = `
+        <div style="text-align: center; padding: 48px 20px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; margin-top: 10px;">
+          <div style="font-size: 36px; margin-bottom: 10px;">📊</div>
+          <div style="font-family: var(--font-display); font-weight: 800; font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Tournament Predictions Yet</div>
+          <p style="font-size: 13px; color: var(--text-muted); max-width: 460px; margin: 0 auto; line-height: 1.5;">
+            Predictions open when a new 8-bracket tournament is scheduled. Spectators will appear here on the live transparency scoreboard once picks are locked.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    const leader = list[0];
 
     panel.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -544,23 +553,164 @@ class TournamentPredictionController {
     `;
   }
 
-  renderKoth() {
-    let koth = { active: true, king: null, streak: 0, maxStreak: 4, prize: 20, awaitingDecision: false };
+  getEmptyCornerPlaceholderSvg(corner) {
+    const color = corner === 'B' ? '#ff2a5f' : '#00e5ff';
+    const label = corner === 'B' ? 'EMPTY B' : 'EMPTY A';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 236"><rect width="180" height="236" rx="14" fill="#070a12" stroke="${color}" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="6 4"/><text x="90" y="112" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="900" font-size="44" fill="${color}" fill-opacity="0.45">?</text><text x="90" y="152" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="800" font-size="14" fill="#64748b" letter-spacing="1.5">${label}</text></svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  showAnnouncement(htmlContent, tone = 'gold', durationMs = 4500) {
+    const banner = document.getElementById('pub-koth-announcement-banner');
+    if (!banner) return;
+    if (!htmlContent) {
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'block';
+    banner.innerHTML = htmlContent;
+    if (tone === 'gold') {
+      banner.style.border = '1px solid var(--gold)';
+      banner.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(83, 252, 24, 0.16))';
+      banner.style.color = '#fff';
+      banner.style.boxShadow = '0 0 24px rgba(255, 215, 0, 0.35)';
+    } else if (tone === 'cyan') {
+      banner.style.border = '1px solid #00e5ff';
+      banner.style.background = 'linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(15, 23, 42, 0.9))';
+      banner.style.color = '#fff';
+      banner.style.boxShadow = '0 0 20px rgba(0, 229, 255, 0.3)';
+    } else {
+      banner.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+      banner.style.background = 'rgba(0, 0, 0, 0.4)';
+      banner.style.color = 'var(--text-dim)';
+      banner.style.boxShadow = 'none';
+    }
+
+    if (this.announcementTimer) clearTimeout(this.announcementTimer);
+    if (durationMs > 0) {
+      this.announcementTimer = setTimeout(() => {
+        banner.style.display = 'none';
+      }, durationMs);
+    }
+  }
+
+  triggerGrandChampionCelebration(winnerName, prize = 20) {
+    const bannerHtml = `👑🏆 <strong>GRAND CHAMPION!</strong> <span style="color:var(--gold);">@${winnerName}</span> conquered 4 duels and captured the <strong style="color:#53fc18;">$${prize}.00 CASH PRIZE</strong>! 🎉`;
+    this.showAnnouncement(bannerHtml, 'gold', 5500);
+
+    if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
+      window.soundEngine.playVictoryFanfare();
+    } else if (window.soundEngine && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+      window.soundEngine.playVictoriousTrumpetFanfare();
+    }
+
+    if (typeof window.confetti === 'function') {
+      window.confetti({ particleCount: 140, spread: 100, origin: { y: 0.6 } });
+    }
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `👑 Grand Champion @${winnerName} won $${prize}!`,
+        message: `4/4 consecutive victories completed! Both corners cleared for new contenders.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  triggerCashoutCelebration(retiredKing, prize, streak) {
+    const bannerHtml = `💰 <strong>WINNER CASHOUT!</strong> <span style="color:var(--gold);">@${retiredKing}</span> cashed out <strong style="color:#53fc18;">$${prize}.00 CASH</strong> (${streak}/4 wins)! The throne is now vacant!`;
+    this.showAnnouncement(bannerHtml, 'gold', 4500);
+
+    if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
+      window.soundEngine.playVictoryFanfare();
+    } else if (window.soundEngine && typeof window.soundEngine.playJackpot === 'function') {
+      window.soundEngine.playJackpot();
+    }
+
+    if (typeof window.confetti === 'function') {
+      window.confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+    }
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `💰 @${retiredKing} cashed out $${prize}!`,
+        message: `Throne relinquished after ${streak} victory(s). Corners cleared for new players.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  triggerContinueAnnouncement(kingName, streak) {
+    const bannerHtml = `⚔️ <strong>THRONE DEFENDED!</strong> <span style="color:#00e5ff;">@${kingName}</span> chose <code>!continue</code> (Streak ${streak}/4)! Awaiting challenger in Red Corner...`;
+    this.showAnnouncement(bannerHtml, 'cyan', 4000);
+
+    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
+      window.soundEngine.playWin();
+    }
+  }
+
+  renderKoth(stateUpdate = null) {
+    let koth = { active: true, king: null, kingSlot: '', streak: 0, maxStreak: 4, prize: 20, awaitingDecision: false };
     try {
       const saved = localStorage.getItem('hunthub_koth_state');
-      if (saved) koth = JSON.parse(saved);
+      if (saved) koth = { ...koth, ...JSON.parse(saved) };
     } catch (_) {}
+
+    let battle = null;
+    if (stateUpdate && (stateUpdate.playerA !== undefined || stateUpdate.status)) {
+      battle = stateUpdate;
+    } else {
+      try {
+        const savedB = localStorage.getItem('hunthub_battle_state');
+        if (savedB) battle = JSON.parse(savedB);
+      } catch (_) {}
+    }
+
+    // Inspect Control Panel inputs if present in current document
+    const cpUserA = (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '');
+    const cpSlotA = (document.getElementById('cp-battle-slot-a')?.value || '').trim();
+    const cpUserB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
+    const cpSlotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
+
+    // Determine Corner A (King / Blue Corner)
+    let pAName = (battle && battle.playerA && battle.playerA.username)
+      ? battle.playerA.username
+      : (cpUserA || koth.king || '');
+    pAName = String(pAName).trim().replace(/^@/, '');
+    let pASlot = (battle && battle.playerA && (battle.playerA.slotName || battle.playerA.slot))
+      ? (battle.playerA.slotName || battle.playerA.slot)
+      : (cpSlotA || koth.kingSlot || '');
+
+    // Determine Corner B (Challenger / Red Corner)
+    let pBName = (battle && battle.playerB && battle.playerB.username)
+      ? battle.playerB.username
+      : (cpUserB || koth.challenger || '');
+    pBName = String(pBName).trim().replace(/^@/, '');
+    let pBSlot = (battle && battle.playerB && (battle.playerB.slotName || battle.playerB.slot))
+      ? (battle.playerB.slotName || battle.playerB.slot)
+      : (cpSlotB || koth.chalSlot || '');
+
+    // Guard against duplication
+    if (pAName && pBName && pAName.toLowerCase() === pBName.toLowerCase()) {
+      pBName = '';
+      pBSlot = '';
+    }
+
+    // Current Streak (0..4)
+    const streak = (battle && typeof battle.currentStreak === 'number')
+      ? Math.min(4, Math.max(0, battle.currentStreak))
+      : Math.min(4, Math.max(0, koth.streak || 0));
 
     const badge = document.getElementById('public-koth-streak-badge');
     if (badge) {
-      badge.textContent = `STREAK: ${koth.streak}/${koth.maxStreak}`;
+      badge.textContent = `STREAK: ${streak}/${koth.maxStreak || 4}`;
     }
 
     // Update streak steps 1..4
     for (let i = 1; i <= 4; i++) {
       const stepEl = document.getElementById(`pub-koth-step-${i}`);
       if (!stepEl) continue;
-      if (i <= koth.streak) {
+      if (i <= streak) {
         stepEl.style.background = i === 4 ? 'rgba(83, 252, 24, 0.2)' : 'rgba(0, 229, 255, 0.15)';
         stepEl.style.borderColor = i === 4 ? '#53fc18' : 'var(--cyan)';
         stepEl.style.boxShadow = i === 4 ? '0 0 12px rgba(83,252,24,0.3)' : '0 0 8px rgba(0,229,255,0.2)';
@@ -571,46 +721,148 @@ class TournamentPredictionController {
       }
     }
 
-    // King info & slot resolution
+    // ==========================================
+    // 1. CORNER A: BLUE / REIGNING KING
+    // ==========================================
+    const kingAvatarEl = document.getElementById('pub-koth-king-avatar');
     const kingNameEl = document.getElementById('pub-koth-king-name');
     const kingSlotEl = document.getElementById('pub-koth-king-slot');
     const kingScoreEl = document.getElementById('pub-koth-king-score');
     const kingSlotImg = document.getElementById('pub-koth-king-slot-img');
     const kingSlotBadge = document.getElementById('pub-koth-king-slot-badge');
 
-    if (kingNameEl) {
-      kingNameEl.textContent = koth.king ? `@${koth.king}` : 'No Reigning King';
+    if (pAName) {
+      if (kingAvatarEl) {
+        kingAvatarEl.textContent = '👑';
+        kingAvatarEl.style.opacity = '1';
+      }
+      if (kingNameEl) {
+        kingNameEl.textContent = `@${pAName}`;
+        kingNameEl.style.color = '#ffffff';
+      }
+
+      const metaA = window.SlotResolver ? window.SlotResolver.resolve(pASlot || 'Wanted Dead or a Wild') : null;
+      const slotDisplayName = metaA?.name || pASlot || 'Selected Slot';
+      const providerName = (metaA?.provider || 'Casino').toUpperCase();
+      const slotImgUrl = metaA?.image || battle?.playerA?.slotImage || '';
+
+      if (kingSlotEl) {
+        kingSlotEl.textContent = slotDisplayName;
+        kingSlotEl.style.color = 'var(--gold)';
+      }
+      if (kingScoreEl) {
+        kingScoreEl.textContent = streak > 0 ? `${streak} Streak 🔥` : 'Contender (Blue)';
+        kingScoreEl.style.color = 'var(--cyan)';
+      }
+      if (kingSlotImg) {
+        kingSlotImg.src = slotImgUrl;
+        kingSlotImg.onerror = () => {
+          kingSlotImg.src = this.getEmptyCornerPlaceholderSvg('A');
+        };
+      }
+      if (kingSlotBadge) {
+        kingSlotBadge.style.display = 'block';
+        kingSlotBadge.textContent = providerName;
+      }
+    } else {
+      // Corner A is Empty
+      if (kingAvatarEl) {
+        kingAvatarEl.textContent = '👑';
+        kingAvatarEl.style.opacity = '0.35';
+      }
+      if (kingNameEl) {
+        kingNameEl.textContent = 'No Reigning King';
+        kingNameEl.style.color = 'var(--text-dim)';
+      }
+      if (kingSlotEl) {
+        kingSlotEl.textContent = 'Throne Open for Challengers';
+        kingSlotEl.style.color = 'var(--text-dim)';
+      }
+      if (kingScoreEl) {
+        kingScoreEl.textContent = '0 Wins';
+        kingScoreEl.style.color = 'var(--cyan)';
+      }
+      if (kingSlotImg) {
+        kingSlotImg.src = this.getEmptyCornerPlaceholderSvg('A');
+      }
+      if (kingSlotBadge) {
+        kingSlotBadge.style.display = 'none';
+      }
     }
 
-    const kingSlotQuery = koth.kingSlot || (koth.king ? 'Wanted Dead or a Wild' : 'Wanted Dead or a Wild');
-    const kingCanon = window.SlotResolver ? window.SlotResolver.resolve(kingSlotQuery) : null;
-    if (kingSlotEl) {
-      kingSlotEl.textContent = koth.king && kingCanon ? kingCanon.name : (koth.king ? `Defending Champion (${koth.streak}/4 Wins)` : 'Throne Open for Challengers');
-    }
-    if (kingScoreEl) {
-      kingScoreEl.textContent = koth.streak > 0 ? `${koth.streak} Streak 🔥` : '0 Wins';
-    }
-    if (kingSlotImg && kingCanon) {
-      kingSlotImg.src = kingCanon.image;
-    }
-    if (kingSlotBadge && kingCanon) {
-      kingSlotBadge.textContent = (kingCanon.provider || 'HACKSAW').toUpperCase();
-    }
-
-    // Challenger slot resolution if active
+    // ==========================================
+    // 2. CORNER B: RED / CHALLENGER
+    // ==========================================
+    const chalAvatarEl = document.getElementById('pub-koth-chal-avatar');
+    const chalNameEl = document.getElementById('pub-koth-chal-name');
+    const chalSlotEl = document.getElementById('pub-koth-chal-slot');
+    const chalScoreEl = document.getElementById('pub-koth-chal-score');
     const chalSlotImg = document.getElementById('pub-koth-chal-slot-img');
     const chalSlotBadge = document.getElementById('pub-koth-chal-slot-badge');
-    const chalSlotEl = document.getElementById('pub-koth-chal-slot');
-    const chalCanon = window.SlotResolver ? window.SlotResolver.resolve(koth.chalSlot || 'Gates of Olympus 1000') : null;
-    if (chalCanon) {
-      if (chalSlotImg) chalSlotImg.src = chalCanon.image;
-      if (chalSlotBadge) chalSlotBadge.textContent = (chalCanon.provider || 'PRAGMATIC').toUpperCase();
-      if (chalSlotEl && koth.challenger) chalSlotEl.textContent = chalCanon.name;
+
+    if (pBName) {
+      if (chalAvatarEl) {
+        chalAvatarEl.textContent = '🥊';
+        chalAvatarEl.style.opacity = '1';
+      }
+      if (chalNameEl) {
+        chalNameEl.textContent = `@${pBName}`;
+        chalNameEl.style.color = '#ffffff';
+      }
+
+      const metaB = window.SlotResolver ? window.SlotResolver.resolve(pBSlot || 'Gates of Olympus 1000') : null;
+      const slotDisplayName = metaB?.name || pBSlot || 'Selected Slot';
+      const providerName = (metaB?.provider || 'Casino').toUpperCase();
+      const slotImgUrl = metaB?.image || battle?.playerB?.slotImage || '';
+
+      if (chalSlotEl) {
+        chalSlotEl.textContent = slotDisplayName;
+        chalSlotEl.style.color = 'var(--text-dim)';
+      }
+      if (chalScoreEl) {
+        const multVal = battle?.playerB?.multiplier;
+        chalScoreEl.textContent = multVal ? `${Number(multVal).toFixed(2)}x` : 'Challenger Ready 🥊';
+        chalScoreEl.style.color = '#ff6b8b';
+      }
+      if (chalSlotImg) {
+        chalSlotImg.src = slotImgUrl;
+        chalSlotImg.onerror = () => {
+          chalSlotImg.src = this.getEmptyCornerPlaceholderSvg('B');
+        };
+      }
+      if (chalSlotBadge) {
+        chalSlotBadge.style.display = 'block';
+        chalSlotBadge.textContent = providerName;
+      }
+    } else {
+      // Corner B is Empty
+      if (chalAvatarEl) {
+        chalAvatarEl.textContent = '🥊';
+        chalAvatarEl.style.opacity = '0.35';
+      }
+      if (chalNameEl) {
+        chalNameEl.textContent = 'Awaiting Challenger';
+        chalNameEl.style.color = 'var(--text-dim)';
+      }
+      if (chalSlotEl) {
+        chalSlotEl.textContent = 'Type !battle <slot> in chat';
+        chalSlotEl.style.color = 'var(--text-dim)';
+      }
+      if (chalScoreEl) {
+        chalScoreEl.textContent = '—';
+        chalScoreEl.style.color = '#ff6b8b';
+      }
+      if (chalSlotImg) {
+        chalSlotImg.src = this.getEmptyCornerPlaceholderSvg('B');
+      }
+      if (chalSlotBadge) {
+        chalSlotBadge.style.display = 'none';
+      }
     }
 
     // King decision actions (if current viewer is the King and awaiting decision)
     const currentUser = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '').toLowerCase();
-    const kingUser = (koth.king || '').replace(/^@/, '').toLowerCase();
+    const kingUser = (pAName || koth.king || '').replace(/^@/, '').toLowerCase();
     const actionBox = document.getElementById('pub-koth-king-actions');
 
     if (actionBox) {
@@ -639,28 +891,42 @@ class TournamentPredictionController {
         let koth = { active: true, king: null, streak: 0, maxStreak: 4, prize: 20, awaitingDecision: false };
         try {
           const saved = localStorage.getItem('hunthub_koth_state');
-          if (saved) koth = JSON.parse(saved);
+          if (saved) koth = { ...koth, ...JSON.parse(saved) };
         } catch (_) {}
         koth.awaitingDecision = false;
+        koth.challenger = null;
+        koth.chalSlot = '';
         localStorage.setItem('hunthub_koth_state', JSON.stringify(koth));
 
+        // Update battle state: Player A remains, Player B is cleared
+        let battle = null;
         try {
-          const channel = new BroadcastChannel('hunthub_battle_bus');
-          channel.postMessage({ action: 'koth_continue', king: koth.king, streak: koth.streak });
+          battle = JSON.parse(localStorage.getItem('hunthub_battle_state') || 'null');
+          if (battle) {
+            battle.playerB = null;
+            battle.status = 'LOBBY';
+            localStorage.setItem('hunthub_battle_state', JSON.stringify(battle));
+          }
         } catch (_) {}
 
+        const eventData = { action: 'koth_continue', type: 'koth_continue', king: koth.king, streak: koth.streak, ts: Date.now() };
+        try {
+          const ch1 = new BroadcastChannel('hunthub_battle');
+          ch1.postMessage(eventData);
+        } catch (_) {}
+        try {
+          const ch2 = new BroadcastChannel('hunthub_battle_bus');
+          ch2.postMessage(eventData);
+        } catch (_) {}
+
+        window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: eventData }));
+        this.triggerContinueAnnouncement(koth.king || 'Champion', koth.streak);
         this.renderKoth();
-        if (window.soundEngine) {
-          if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-            window.soundEngine.playVictoriousTrumpetFanfare();
-          } else if (typeof window.soundEngine.playWin === 'function') {
-            window.soundEngine.playWin();
-          }
-        }
+
         if (window.sonner) {
           window.sonner.toast({
             title: '👑 Throne Defended!',
-            message: `You decided to continue! Challenger seat is open. Current streak: ${koth.streak}/4.`,
+            message: `Continuing in Blue Corner! Challenger seat is open. Current streak: ${koth.streak}/4.`,
             type: 'green'
           });
         }
@@ -680,50 +946,106 @@ class TournamentPredictionController {
         let koth = { active: true, king: null, streak: 0, maxStreak: 4, prize: 20, awaitingDecision: false };
         try {
           const saved = localStorage.getItem('hunthub_koth_state');
-          if (saved) koth = JSON.parse(saved);
+          if (saved) koth = { ...koth, ...JSON.parse(saved) };
         } catch (_) {}
-        const retiredKing = koth.king;
-        const streak = koth.streak;
+        const retiredKing = koth.king || 'Player';
+        const streak = koth.streak || 1;
+        const prizeAmount = Math.min(20, streak * 5);
+
         koth.king = null;
+        koth.kingSlot = '';
+        koth.challenger = null;
+        koth.chalSlot = '';
         koth.streak = 0;
         koth.awaitingDecision = false;
         localStorage.setItem('hunthub_koth_state', JSON.stringify(koth));
 
+        // Clear battle state
         try {
-          const channel = new BroadcastChannel('hunthub_battle_bus');
-          channel.postMessage({ action: 'koth_retire', retiredKing, streak });
+          const resetState = {
+            id: 'battle_lobby',
+            status: 'LOBBY',
+            kothActive: true,
+            currentStreak: 0,
+            reigningKing: null,
+            playerA: null,
+            playerB: null,
+            winner: null,
+            ts: Date.now()
+          };
+          localStorage.setItem('hunthub_battle_state', JSON.stringify(resetState));
         } catch (_) {}
 
-        this.renderKoth();
-        if (window.soundEngine) {
-          if (typeof window.soundEngine.playJackpot === 'function') {
-            window.soundEngine.playJackpot();
-          } else if (typeof window.soundEngine.playChip === 'function') {
-            window.soundEngine.playChip();
-          }
-        }
-        if (window.sonner) {
-          window.sonner.toast({
-            title: '💰 Throne Relinquished / Cashout',
-            message: `You retired with ${streak} victory(s). The throne is now open.`,
-            type: 'gold'
-          });
-        }
+        const eventData = { action: 'koth_cashout', type: 'koth_cashout', retiredKing, streak, prizeAmount, ts: Date.now() };
+        try {
+          const ch1 = new BroadcastChannel('hunthub_battle');
+          ch1.postMessage(eventData);
+        } catch (_) {}
+        try {
+          const ch2 = new BroadcastChannel('hunthub_battle_bus');
+          ch2.postMessage(eventData);
+        } catch (_) {}
+
+        window.dispatchEvent(new CustomEvent('hunthub:battle-celebration', { detail: eventData }));
+        this.triggerCashoutCelebration(retiredKing, prizeAmount, streak);
+        setTimeout(() => this.renderKoth(), 4000);
       });
     }
   }
 
   listenToEvents() {
-    try {
-      const channel = new BroadcastChannel('hunthub_battle_bus');
-      channel.onmessage = () => {
+    const handleEvent = (data) => {
+      if (!data) return;
+      const action = data.action || data.type;
+
+      if (action === 'koth_grand_champion' || (action === 'resolve_battle' && (data.kothStreak >= 4 || data.streak >= 4))) {
+        const winner = (data.king || data.winningName || 'Champion').replace(/^@/, '');
+        this.triggerGrandChampionCelebration(winner, data.prize || 20);
+        setTimeout(() => this.renderKoth(), 4800);
+      } else if (action === 'koth_cashout' || action === 'koth_retire') {
+        const retired = (data.retiredKing || data.king || 'Player').replace(/^@/, '');
+        const prize = data.prizeAmount || data.prize || 5;
+        const streak = data.streak || 1;
+        this.triggerCashoutCelebration(retired, prize, streak);
+        setTimeout(() => this.renderKoth(), 4200);
+      } else if (action === 'koth_continue') {
+        const king = (data.king || 'King').replace(/^@/, '');
+        const streak = data.streak || 1;
+        this.triggerContinueAnnouncement(king, streak);
         this.renderKoth();
-      };
+      } else if (action === 'resolve_battle') {
+        const winner = (data.winningName || 'Player').replace(/^@/, '');
+        const streak = data.kothStreak || data.streak || 1;
+        if (streak < 4) {
+          this.showAnnouncement(`👑 <strong>ROUND WON!</strong> <span style="color:#00e5ff;">@${winner}</span> takes the throne (Streak ${streak}/4)! Decision: <code>!continue</code> or <code>!cashout</code>`, 'cyan', 4000);
+          if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
+            window.soundEngine.playWin();
+          }
+        }
+        this.renderKoth();
+      } else {
+        this.renderKoth(data.state || data);
+      }
+    };
+
+    try {
+      this.bcBattle = new BroadcastChannel('hunthub_battle');
+      this.bcBattle.onmessage = (e) => handleEvent(e.data);
     } catch (_) {}
 
+    try {
+      this.bcBattleBus = new BroadcastChannel('hunthub_battle_bus');
+      this.bcBattleBus.onmessage = (e) => handleEvent(e.data);
+    } catch (_) {}
+
+    window.addEventListener('hunthub:battle-sync', (e) => handleEvent(e.detail));
+    window.addEventListener('hunthub:battle-celebration', (e) => handleEvent(e.detail));
+
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hunthub_koth_state') {
+      if (e.key === 'hunthub_koth_state' || e.key === 'hunthub_battle_state' || e.key === 'hunthub_battle_assign') {
         this.renderKoth();
+      } else if (e.key === 'hunthub_koth_event' && e.newValue) {
+        try { handleEvent(JSON.parse(e.newValue)); } catch (_) {}
       }
     });
   }

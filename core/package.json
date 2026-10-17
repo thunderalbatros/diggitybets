@@ -18,7 +18,10 @@
     "test:phase5": "node --experimental-strip-types test/phase5-slot-images.test.ts",
     "test:phase6": "node --experimental-strip-types test/phase6-economy-store.test.ts",
     "test:phase7": "node --experimental-strip-types test/phase7-overlays-obs.test.ts",
-    "sim": "node --experimental-strip-types src/simulator/chat-sim.ts"
+    "sim": "node --experimental-strip-types src/simulator/chat-sim.ts",
+    "guard:console": "node ../tools/guardrails/check-console-log.js",
+    "guard:config": "node ../tools/guardrails/config-protection.js",
+    "guard:all": "node ../tools/guardrails/config-protection.js && node ../tools/guardrails/check-console-log.js && npm test"
   },
   "keywords": [
     "kick",
@@ -31,6 +34,7 @@
   "author": "Antigravity",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "minisearch": "^7.2.0",
     "ws": "^8.22.0",
     "youtube-transcript": "^1.3.1"

@@ -1054,7 +1054,13 @@ class UserStoreController {
             window.adminHub.addRedemptionClaim(this.username, itemName, cost, this.avatar, this.isSub);
           }
 
-          if (window.soundEngine) window.soundEngine.playWin();
+          if (window.soundEngine) {
+            if (typeof window.soundEngine.playJackpot === 'function') {
+              window.soundEngine.playJackpot();
+            } else {
+              window.soundEngine.playWin();
+            }
+          }
           if (window.sonner) {
             window.sonner.toast({
               title: 'Voucher Redeemed! 🎁',
