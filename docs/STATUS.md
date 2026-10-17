@@ -1,7 +1,7 @@
 # HuntHub — Project Status & Roadmap
 
-> **Current Phase:** Phase 5 (Unified Slot Catalog & Exact Name-Image Match) COMPLETED $\rightarrow$ Ready for Production & Gate Approval  
-> **Last Updated:** 2026-10-16  
+> **Current Phase:** Phase 7 (Final Phase: OBS Overlays Visual Evolution, Cross-Process OBS Sync & Final Visual Audit) COMPLETED (100% Project Completion — 12/12 Test Suites Green)  
+> **Last Updated:** 2026-10-17  
 > **Manager:** Antigravity Tech Lead  
 
 ---
@@ -345,16 +345,66 @@
     - Las 10 suites de `core/` pasan al 100% (`npm test`).
     - `node tools/test_site.mjs` pasa al 100% (71 IDs interactivos validados).
     - `node tools/build_dist.mjs` genera exitosamente la distribución de producción en `dist/` (1,078 archivos, 27.00 MB).
+- [x] **Stage 12 (Fase 6 — Economía Calibrada `$DIG`, Precios/Stock Semanal con Reset Lunes en `#store`, Límites en `#house-games` y Logo SVG de Stake):** COMPLETED & TESTED.
+  - **Emisión Controlada con "Live-Stream Gate" (`100 $DIG / hora` máx cuando el stream está en vivo):**
+    - **Chat-to-Earn (`recordChatEarn` / `recordChatter`):** `+5 $DIG` cada 5 minutos (`cooldown = 300_000 ms`) con mensaje orgánico (filtrando emotes `:emote:`) = máx `60 $DIG/h`.
+    - **Watch-to-Earn (`POST /api/watch/heartbeat` / `recordWatchHeartbeat`):** `+10 $DIG` cada 15 minutos (`cooldown = 900_000 ms`) en `#watch` para usuarios logueados = máx `40 $DIG/h`.
+    - **Channel Points Bridge (`processChannelPointRedemption` / `handleChannelPointRedemption`):** Ajustado `creditAmount` a `100 $DIG` con límite estricto de 1 canje por sesión de stream por usuario (`sessionLimitReached`).
+  - **Escala de Precios, Stock Semanal y Reset Automático los Lunes en `#store` (`index.html`, `site/js/user-store.js`, `database.ts`, `worker/index.js`):**
+    - `Weekly Raffle ($100 Bonus Buy Split)`: **`50 $DIG` / ticket** (Stock ilimitado; sorteo cada domingo en vivo).
+    - `VIP Streamer Discord Role`: **`400 $DIG`** (Límite estricto de 1 canje por cuenta).
+    - `Guaranteed 1v1 Battle Entry`: **`700 $DIG`** Regular / **`500 $DIG`** Stake VIP (`weeklyStockLimit = 6` por semana, cooldown de 14 días por usuario).
+    - `Guaranteed 8-Bracket Tourney Entry`: **`1,000 $DIG`** Regular / **`800 $DIG`** Stake VIP (`weeklyStockLimit = 6` por semana; los otros 2 cupos se sortean en chat).
+    - `$20 Bonus Buy Split Profit (50/50)`: **`1,500 $DIG`** Regular / **`1,200 $DIG`** Stake VIP automático con `stake_verified === 1` bajo código `diggitybets` (`weeklyStockLimit = 3` por semana, Max Split Cap $100 USD).
+    - **Reinicio Semanal Cada Lunes (00:00 UTC):** Cálculo ISO-8601 en base de datos (`week_number`) y sincronización en cliente (`getIsoWeekKey`), reseteando automáticamente el stock a 6, 6 y 3 cada inicio de semana.
+    - Píldoras dinámicas `.store-stock-pill` (`WEEKLY STOCK: X / Y AVAILABLE` / `SOLD OUT THIS WEEK`) y bloqueo automático del botón `Redeem` cuando el stock llega a 0.
+  - **Blindaje Anti-Exploit en `#house-games` (`site/js/house-games.js`, `site/js/provably-fair.js`, `database.ts`):**
+    - Conectados los 9 juegos al saldo real `$DIG` con **RTP `95.00%` (5% House Edge)**, **`MAX BET = 50 $DIG`** y **`MAX WIN CAP = 500 $DIG`** neto por tirada (`capGrossPayout`).
+  - **Logo Vectorial `<svg>` de Stake 100% Transparente (`#watch`, `#profile`, `#admin`):**
+    - Reemplazado el PNG rasterizado (`site/images/stake-promo-logo.png` con recuadro `#1a2c38`) por un `<svg class="social-logo-img social-logo-stake">` vectorial limpio con `fill="#ffffff"` y punto verde oficial `#00e701`.
+  - **Pruebas Automatizadas:**
+    - Creada Suite 11 `core/test/phase6-economy-store.test.ts` (100% aprobada).
+    - Las 11 suites de `core/` pasan al 100% (`npm test`) y `node tools/test_site.mjs` valida los 71 IDs interactivos.
+- [x] **Stage 13 (Fase 7 — Evolución Visual de las Overlays de OBS con `references/`, Sincronización Cross-Process OBS Browser Source, Auditoría Visual y Build Final):** COMPLETED & TESTED.
+  - **Indexación de `references/` en el Omni-RAG (`tools/intelligence/rag_pipeline.mjs`):**
+    - Incorporado el escaneo recursivo de `references/` (`.md`, `.tsx`, `.ts`, `.jsx`, `.js`, `.css` hasta profundidad 5) conservando intacta la conexión a Qdrant Cloud y Groq.
+  - **Evolución de `wheel-csgo/` (`wheel-csgo/overlay/style.css`, `wheel-csgo/overlay/main.js`):**
+    - Estética CS2/Stake adaptada de `references/CS2_Case_Overlay/` y `references/clones/casino-case-opening/src/pages/SpinCase/`: barra inferior de rareza cromática (`border-bottom: 5px solid var(--rareza)` + bloom radial), curva de desaceleración con suspenso *near-miss* (`cubic-bezier(0.12, 0.99, 0.24, 1)`), deflexión elástica de la púa central (`.needle-peg-deflect` / `@keyframes pegDeflect`) sincronizada con `scheduleTicks()`, y revelación desencriptada `decryptTextReveal` (`DecryptedText` de `references/clones/react-bits`) del `@username` ganador.
+  - **Evolución de `wheel-duo/` (`wheel-duo/index.html`, `wheel-duo/style.css`, `wheel-duo/main.js`):**
+    - Tarjetas duales rediseñadas (`references/clones/grow-game`, `OptionWheel`, `BorderGlow`): avatar determinista/Kick a la izquierda + carátula real verificada `3:4` (`.slot-cover-thumb` `aspect-ratio: 3 / 4`) a la derecha, transición animada (`.mode-switching`) entre `⚔️ 1v1 BATTLE` y `🏆 8-BRACKET TOURNEY`, contador en vivo `#duo-queue-counter` (`.atlas-queue-badge` de `references/TheAtlas-Queue`) y borde cónico dorado `.winner-border-glow`.
+  - **Evolución de `overlay-battle/` (`overlay-battle/index.html`, `overlay-battle/style.css`, `overlay-battle/main.js`):**
+    - Tarjetas grandes de enfrentamiento con reflejo holográfico `.holo-foil-glare` (`HoloCard` / `ReflectiveCard`), badges superiores de modo (`#mode-badge-a`, `#mode-badge-b`, `#vs-mode-badge`: `BONUS BUY` vs `SPINS`), barra de impacto con rastro secundario (*ghost damage bar* `#ghost-bar-a`, `#ghost-bar-b` animada con WAAPI `animateGhostImpactBar()`), y medidor visual de racha **King of the Hill (`STREAK 1/4` a `4/4 · $20 PRIZE`)** envolviendo al Rey actual con el anillo de energía `.electric-border-ring` (`ElectricBorder`).
+  - **Evolución de `overlay-bonushunt/` (`overlay-bonushunt/style.css`, `overlay-bonushunt/main.js`):**
+    - Aplicado Glassmorphism Científico de `knowledge/ui_ux_design/Biblia_02_Efectos_Visuales_Skia.md` (`rgba(20, 20, 20, 0.75)` + micro-borde especular `1px solid rgba(255, 255, 255, 0.08)` + `backdrop-filter: blur(14px)`).
+    - Rodillos numéricos `animateNumberFlow()` (`number-flow` / `countup-js`) en los 4 KPIs superiores (`Start Cost`, `Total Paid Out`, `Req Avg X`, `Run Avg X`), efecto `border-trail` dorado (`@keyframes borderTrailSpin`) en el bono abriéndose en vivo (`.status-opening`), mini-tarjetas `3:4` verificadas, y auto-scroll vertical continuo suave (*ticker loop* `.ticker-loop-active`) cuando hay `> 8` bonos cargados.
+  - **Sincronización Total con OBS Browser Source & Botones `[ 📋 Copy OBS Browser URL ]` en `#admin`:**
+    - Sincronización cross-process en `<50ms` mediante WebSocket (`ws://127.0.0.1:3001`) y `/api/sync/state` (`overlay_sync_event`) en las 7 overlays (`overlay-battle`, `overlay-bonushunt`, `overlay-tourney`, `overlay-celebration`, `wheel-csgo`, `wheel-duo`, `wheel-slots`).
+    - Botones `[ 📋 Copy OBS Browser URL (1920x1080) ]` y `[ 📋 Copy OBS Browser URL (620x620) ]` en `#admin` Pestañas 3 y 4 listos para pegar en OBS Studio.
+  - **Auditoría Visual, Suite 12 y Build Final:**
+    - Actualizado `tools/audit/visual_audit.mjs` con vista `admin`, regla `raw-os-emoji` y regla `sibling-overlap`.
+    - Creada Suite 12 `core/test/phase7-overlays-obs.test.ts` (**12/12 suites en verde** en `core/`).
+    - `node tools/test_site.mjs` (**71/71 IDs en verde**) y `node tools/build_dist.mjs` (**1,078 archivos compilados en `dist/`**).
+- [x] **Stage 14 (Refinamientos de UI/UX, Código Oficial `DIGGITY`, Logo Subido de Stake, Barra Superior 2x con `$DIG` Centrado y Verificación por `bet_id`):** COMPLETED & TESTED.
+  - **Código Oficial de Referido `DIGGITY`:** Actualizado en `#watch` (`USE CODE: DIGGITY`), `#store`, `#leaderboard`, `#profile` y `#admin`.
+  - **Logo Oficial de Stake (`site/images/stake-official-logo.png`):** Integrado el archivo PNG oficial provisto por el usuario en `#watch`, `#profile` y `#admin`.
+  - **Sistema Universal de Verificación por `bet_id` + Botón `Check Status` (`#btn-check-stake-status`):**
+    - `parseStakeBetInput` soporta enlaces completos (`https://stake.com/casino/home?iid=house%3A524922477701&modal=bet&source=link_shared`), IDs con prefijo (`casino:524922477701`, `house:524922477701`) e IDs con puntos del modal (`524.922.477.701`).
+    - Multiplicador entero aleatorio de 5 a 6 dígitos (`10,000x` a `999,999x`) en Limbo (`$0.00` bet) con recordatorio de desactivar **Ghost Mode (Modo Oculto)** en Stake.
+    - Endpoint `GET /api/stake/status` y botón `🔄 Check Status` activo que consulta el estado en vivo, acredita `+250 $DIG` al aprobarse y activa el badge `✓ VERIFIED` (`#auth-stake-verified-badge` en barra superior y `#prof-stake-status-badge` en perfil).
+  - **Animación de Flotación Limpia en `$100 Bonus Buy Split` (`#store`):** Eliminada la deformación 3D (`rotateX`/`rotateY`) sobre `.store-voucher-card`, aplicando flotación vertical pura (`translateY(-6px)`).
+  - **Barra Superior (`.site-topbar`) al 100% de Tamaño + `$DIG` Simétrico en el Centro + `Profile` a la Derecha del Nombre:**
+    - Altura duplicada (`156px` en desktop), píldora `.user-balance-pill` (`🪙 0 $DIG`) centrada simétricamente (`left: 50%; transform: translate(-50%, -50%)`), y botón `#topbar-profile-link` (`👤 Profile`) ubicado a la derecha del nombre de cuenta y del badge `✓ VERIFIED`.
 
 ---
 
 ## 3. Active Squads & Next Stage
-- **Squad 0 (Manager):** Solicit Gate approval from user.
-- **Squad 4 & 5 (Frontend & Visuals):** Ready for Stage 3 (Community Bonus Hunt tracker & Guess the Final Balance overlay).
+- **All Phases & Refinements (Stages 1 to 14): 100% COMPLETED & VERIFIED.**
+- Ready for live production streaming on `https://kick.com/diggitybets` and deployment to `https://diggitybets.vip` via `PUBLICAR_EN_CLOUDFLARE.bat`.
 
 ---
 
 ## 4. Risks & Mitigations
 - **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
-- **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, procedural Web Audio (≤3% CPU in OBS).
+- **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, WAAPI/CSS compositor animations, procedural Web Audio (≤3% CPU in OBS).
 - **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.
+

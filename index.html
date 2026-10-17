@@ -86,7 +86,7 @@
          MAIN VIEWPORT CONTAINER (Top Utility Header + Views)
          ======================================================== -->
     <div class="main-viewport-container">
-      <!-- Top Utility Header (Profile, Points Balance, Kick Auth) -->
+      <!-- Top Utility Header (Logo Left, Centered $DIG Balance, Account + Verified Badge + Profile Right) -->
       <header class="site-topbar">
         <div class="topbar-left">
           <button type="button" class="sidebar-mobile-toggle" id="btn-toggle-sidebar" aria-label="Toggle Navigation">
@@ -98,20 +98,16 @@
           <span id="topbar-active-title" style="display: none;"><span class="view-title-text"></span></span>
         </div>
 
-        <div class="topbar-right">
-          <!-- Profile Section Link (Moved to top-right per user request) -->
-          <a href="#profile" class="nav-link-btn btn-top-profile" data-target="#profile" id="topbar-profile-link" title="User Profile & Verification">
-            <span class="top-profile-icon">👤</span>
-            <span class="top-profile-text">Profile</span>
-          </a>
-
-          <!-- User $DIG Points Balance Pill -->
+        <div class="topbar-center">
+          <!-- User $DIG Points Balance Pill (Symmetrically Centered in Viewport) -->
           <div class="user-balance-pill" title="$DIG Points Balance (Earned organically in Kick chat)">
             <span class="coin-icon">🪙</span>
             <span class="user-balance-val">0</span>
             <span class="currency-label">$DIG</span>
           </div>
+        </div>
 
+        <div class="topbar-right">
           <!-- Auth Guest Panel (Link Kick) -->
           <div id="auth-guest-panel" style="display: flex; align-items: center;">
             <button type="button" class="btn-header-cta" id="btn-kick-login" title="Link Kick.com account">
@@ -130,6 +126,15 @@
             <span id="auth-admin-badge" class="reward-badge-pill" style="display: none; background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); font-size: 11px;">👑 STREAMER</span>
             <button type="button" class="btn-chat-toggle btn-auth-logout" id="btn-kick-logout" title="Sign Out">✕</button>
           </div>
+
+          <!-- Stake Account Verified Badge in Topbar -->
+          <span id="auth-stake-verified-badge" class="reward-badge-pill stake-verified-top-badge" style="display: none; background: rgba(83, 252, 24, 0.22); border-color: var(--kick-green); color: var(--kick-green); font-weight: 900;" title="Stake Account Verified (Code: DIGGITY)">✓ VERIFIED</span>
+
+          <!-- Profile Section Link (Placed to the right of Account Name per user request) -->
+          <a href="#profile" class="nav-link-btn btn-top-profile" data-target="#profile" id="topbar-profile-link" title="User Profile & Verification">
+            <span class="top-profile-icon">👤</span>
+            <span class="top-profile-text">Profile</span>
+          </a>
         </div>
       </header>
 
@@ -208,13 +213,13 @@
             <div style="font-family: var(--font-display); font-weight: 800; color: #e1306c;">@diggity.bets ↗</div>
           </a>
 
-          <a href="https://stake.com/?offer=diggity&c=i2mVktNM" target="_blank" rel="noopener noreferrer" class="module-card social-card-stake" style="text-decoration: none;">
+          <a href="https://stake.com/?offer=diggity&c=DIGGITY" target="_blank" rel="noopener noreferrer" class="module-card social-card-stake" style="text-decoration: none;">
             <div>
-              <div class="social-icon-wrap" style="background: rgba(26, 44, 56, 0.6); padding: 6px; border-radius: 8px;">
-                <img src="site/images/stake-promo-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake" style="max-height: 38px; width: auto; object-fit: contain;">
+              <div class="social-icon-wrap" style="background: transparent; padding: 0;">
+                <img src="site/images/stake-official-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake">
               </div>
-              <h3 class="module-name">USE CODE: DIGGITYBETS</h3>
-              <p class="module-desc">Play slots & Stake Originals under our official code. Instant rakeback, VIP race eligibility, and exclusive rewards.</p>
+              <h3 class="module-name">USE CODE: DIGGITY</h3>
+              <p class="module-desc">Play slots & Stake Originals under our official code DIGGITY. Instant rakeback, VIP race eligibility, and exclusive rewards.</p>
             </div>
             <div style="font-family: var(--font-display); font-weight: 800; color: var(--gold);">stake.com/?offer=diggity ↗</div>
           </a>
@@ -236,7 +241,7 @@
             <span>🕹️</span> <span class="brand-diggity-text">DIGGITY</span> ORIGINALS <span class="accent">HOUSE GAMES</span>
           </h2>
           <span class="reward-badge-pill" style="border-color: rgba(255,255,255,0.15); color: #94a3b8; font-size: 11px;">
-            9 Provably Fair Games · 99% RTP
+            9 Provably Fair Games · 95.00% RTP · Max Bet 50 $DIG · Max Win 500 $DIG
           </span>
         </div>
 
@@ -1383,19 +1388,20 @@
       </div>
 
       <!-- Weekly Raffle Hero Voucher Ticket -->
-      <div class="raffle-hero-card store-voucher-card voucher-gold">
+      <div class="raffle-hero-card store-voucher-card voucher-gold" data-store-key="weekly_raffle">
         <div class="voucher-cutout voucher-cutout-top"></div>
         <div class="voucher-cutout voucher-cutout-bottom"></div>
         <div class="voucher-main">
           <div class="voucher-badge-row">
             <span class="reward-badge-pill">WEEKLY STREAM DRAW</span>
+            <span class="store-stock-pill unlimited" data-stock-pill="weekly_raffle">UNLIMITED WEEKLY STOCK · SUNDAY DRAW</span>
             <span class="voucher-series">SERIES #001 · PROVABLY FAIR</span>
           </div>
           <h3 class="voucher-hero-title">
-            🎟️ Weekly raffle $100 bonus buy split profit (rolled every Sunday)
+            🎟️ Weekly Raffle ($100 Bonus Buy Split)
           </h3>
           <p class="voucher-desc">
-            Drawn live on Kick every Sunday. Winner splits 50% net profit from the streamer's $100 bonus buy. Each ticket costs 50 $DIG points. All winners are verified provably fair via HMAC-SHA256 commit-reveal.
+            Drawn live on Kick every Sunday. Winner splits 50% net profit from the streamer's $100 bonus buy. Each ticket costs 50 $DIG points (unlimited stock). All winners are verified provably fair via HMAC-SHA256 commit-reveal.
           </p>
           <div class="voucher-meta-row">
             <span class="meta-item">⚡ Instant Verification</span>
@@ -1411,8 +1417,8 @@
 
         <div class="voucher-stub">
           <div class="voucher-stub-header">ENTRY PASS</div>
-          <div class="store-item-cost voucher-stub-cost">50 $DIG</div>
-          <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-buy-raffle-ticket" data-cost="50" data-item="Weekly Raffle Ticket">
+          <div class="store-item-cost voucher-stub-cost" data-cost-display="weekly_raffle">50 $DIG</div>
+          <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-buy-raffle-ticket" data-key="weekly_raffle" data-cost="50" data-item="Weekly Raffle ($100 Bonus Buy Split)">
             Buy Ticket 🎟️
           </button>
         </div>
@@ -1420,87 +1426,87 @@
 
       <!-- Store Catalog Grid (Animated Luxury Voucher Cards with Hover Levitation Physics) -->
       <div class="store-grid">
-        <!-- Voucher 1: VIP Discord Role -->
-        <div class="store-item-card store-voucher-card voucher-cyan">
+        <!-- Voucher 1: VIP Streamer Discord Role -->
+        <div class="store-item-card store-voucher-card voucher-cyan" data-store-key="vip_discord">
           <div class="voucher-cutout voucher-cutout-top"></div>
           <div class="voucher-cutout voucher-cutout-bottom"></div>
           <div class="voucher-main">
             <div class="voucher-badge-row">
               <span class="store-item-badge">VIP REWARD</span>
-              <span class="voucher-series">PASS #002</span>
+              <span class="store-stock-pill" data-stock-pill="vip_discord">LIMIT: 1 PER ACCOUNT</span>
             </div>
             <h4 class="store-item-title voucher-title">👑 VIP Streamer Discord Role</h4>
-            <p class="store-item-desc voucher-desc">Unlock private Discord lounge, custom colored badge, and early notification pings for bonus hunts.</p>
-            <div class="voucher-meta-tag">✨ Lifetime Discord Privileges</div>
+            <p class="store-item-desc voucher-desc">Unlock private Discord lounge, custom colored badge, and early notification pings for bonus hunts. Deliverable 1 time per account.</p>
+            <div class="voucher-meta-tag">✨ Lifetime Discord Privileges · 1x Per Account</div>
           </div>
           <div class="voucher-perforation"></div>
           <div class="voucher-stub">
             <div class="voucher-stub-header">REDEEM</div>
-            <div class="store-item-cost voucher-stub-cost">250 $DIG</div>
-            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="250" data-item="VIP Discord Role">Redeem</button>
+            <div class="store-item-cost voucher-stub-cost" data-cost-display="vip_discord">400 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-key="vip_discord" data-cost="400" data-item="VIP Streamer Discord Role">Redeem</button>
           </div>
         </div>
 
-        <!-- Voucher 2: Guaranteed tourney entry -->
-        <div class="store-item-card store-voucher-card voucher-green">
-          <div class="voucher-cutout voucher-cutout-top"></div>
-          <div class="voucher-cutout voucher-cutout-bottom"></div>
-          <div class="voucher-main">
-            <div class="voucher-badge-row">
-              <span class="store-item-badge">TOURNAMENT</span>
-              <span class="voucher-series">PASS #003</span>
-            </div>
-            <h4 class="store-item-title voucher-title">🏆 Guaranteed tourney entry</h4>
-            <p class="store-item-desc voucher-desc">Guaranteed reserved seed in the next live 8-bracket stream tournament. Compete head-to-head for bonus rewards!</p>
-            <div class="voucher-meta-tag">⚔️ Live 8-Bracket Bracket Seed</div>
-          </div>
-          <div class="voucher-perforation"></div>
-          <div class="voucher-stub">
-            <div class="voucher-stub-header">REDEEM</div>
-            <div class="store-item-cost voucher-stub-cost">180 $DIG</div>
-            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="180" data-item="Guaranteed Tourney Entry">Redeem</button>
-          </div>
-        </div>
-
-        <!-- Voucher 3: Guaranteed 1v1 battle entry -->
-        <div class="store-item-card store-voucher-card voucher-gold">
+        <!-- Voucher 2: Guaranteed 1v1 Battle Entry -->
+        <div class="store-item-card store-voucher-card voucher-gold" data-store-key="battle_entry">
           <div class="voucher-cutout voucher-cutout-top"></div>
           <div class="voucher-cutout voucher-cutout-bottom"></div>
           <div class="voucher-main">
             <div class="voucher-badge-row">
               <span class="store-item-badge">BATTLE DUEL</span>
-              <span class="voucher-series">PASS #004</span>
+              <span class="store-stock-pill" data-stock-pill="battle_entry" data-weekly-limit="6">WEEKLY STOCK: 6 / 6 AVAILABLE</span>
             </div>
-            <h4 class="store-item-title voucher-title">⚔️ Guaranteed 1v1 battle entry</h4>
-            <p class="store-item-desc voucher-desc">Guaranteed slot in the spectator 1v1 duel overlay on stream. Challenge another chatter live on Kick!</p>
-            <div class="voucher-meta-tag">⚡ Immediate 1v1 Overlay Entry</div>
+            <h4 class="store-item-title voucher-title">⚔️ Guaranteed 1v1 Battle Entry</h4>
+            <p class="store-item-desc voucher-desc">Guaranteed slot in the spectator 1v1 duel overlay on stream (6 guaranteed entries per week · 14-day cooldown per user).</p>
+            <div class="voucher-meta-tag">⚡ Immediate 1v1 Overlay Entry · 14d Cooldown</div>
           </div>
           <div class="voucher-perforation"></div>
           <div class="voucher-stub">
             <div class="voucher-stub-header">REDEEM</div>
-            <div class="store-item-cost voucher-stub-cost">100 $DIG</div>
-            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="100" data-item="Guaranteed 1v1 Battle Entry">Redeem</button>
+            <div class="store-item-cost voucher-stub-cost" data-cost-display="battle_entry">700 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-key="battle_entry" data-cost="700" data-regular-cost="700" data-vip-cost="500" data-weekly-limit="6" data-cooldown-days="14" data-item="Guaranteed 1v1 Battle Entry">Redeem</button>
           </div>
         </div>
 
-        <!-- Voucher 4: $20 bonus buy split profit -->
-        <div class="store-item-card store-voucher-card voucher-magenta">
+        <!-- Voucher 3: Guaranteed 8-Bracket Tourney Entry -->
+        <div class="store-item-card store-voucher-card voucher-green" data-store-key="tourney_entry">
           <div class="voucher-cutout voucher-cutout-top"></div>
           <div class="voucher-cutout voucher-cutout-bottom"></div>
           <div class="voucher-main">
             <div class="voucher-badge-row">
-              <span class="store-item-badge">EXCLUSIVE</span>
-              <span class="voucher-series">PASS #005</span>
+              <span class="store-item-badge">TOURNAMENT</span>
+              <span class="store-stock-pill" data-stock-pill="tourney_entry" data-weekly-limit="6">WEEKLY STOCK: 6 / 6 AVAILABLE</span>
             </div>
-            <h4 class="store-item-title voucher-title">💎 $20 bonus buy split profit</h4>
-            <p class="store-item-desc voucher-desc">The streamer buys a $20 bonus buy on your chosen slot live on Kick. Any net profit is split 50/50 out-of-band directly to you!</p>
-            <div class="voucher-meta-tag">💰 50% Real Net Profit Split</div>
+            <h4 class="store-item-title voucher-title">🏆 Guaranteed 8-Bracket Tourney Entry</h4>
+            <p class="store-item-desc voucher-desc">Guaranteed reserved seed in the next live 8-bracket stream tournament (max 6 store entries per week; the other 2 spots are drawn from Kick chat).</p>
+            <div class="voucher-meta-tag">⚔️ Live 8-Bracket Seed · 6 Store / 2 Chat</div>
           </div>
           <div class="voucher-perforation"></div>
           <div class="voucher-stub">
             <div class="voucher-stub-header">REDEEM</div>
-            <div class="store-item-cost voucher-stub-cost">600 $DIG</div>
-            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-cost="600" data-item="$20 Bonus Buy Split Profit">Redeem</button>
+            <div class="store-item-cost voucher-stub-cost" data-cost-display="tourney_entry">1,000 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" data-key="tourney_entry" data-cost="1000" data-regular-cost="1000" data-vip-cost="800" data-weekly-limit="6" data-item="Guaranteed 8-Bracket Tourney Entry">Redeem</button>
+          </div>
+        </div>
+
+        <!-- Voucher 4: $20 Bonus Buy Split Profit (50/50) -->
+        <div class="store-item-card store-voucher-card voucher-magenta" data-store-key="bonus_split_20">
+          <div class="voucher-cutout voucher-cutout-top"></div>
+          <div class="voucher-cutout voucher-cutout-bottom"></div>
+          <div class="voucher-main">
+            <div class="voucher-badge-row">
+              <span class="store-item-badge">EXCLUSIVE SPLIT</span>
+              <span class="store-stock-pill" data-stock-pill="bonus_split_20" data-weekly-limit="3">WEEKLY STOCK: 3 / 3 AVAILABLE</span>
+            </div>
+            <h4 class="store-item-title voucher-title">💎 $20 Bonus Buy Split Profit (50/50)</h4>
+            <p class="store-item-desc voucher-desc">The streamer buys a $20 bonus buy on your chosen slot live on Kick. 50/50 net profit split (Max Split Cap $100 USD). Automatic 1,200 $DIG VIP price if verified on Stake under code DIGGITY!</p>
+            <div class="voucher-meta-tag" id="bonus-split-vip-tag">💰 1,500 $DIG Regular · ⚡ 1,200 $DIG Stake VIP · Max Split Cap $100 USD</div>
+          </div>
+          <div class="voucher-perforation"></div>
+          <div class="voucher-stub">
+            <div class="voucher-stub-header">REDEEM</div>
+            <div class="store-item-cost voucher-stub-cost" id="bonus-split-cost-display" data-cost-display="bonus_split_20">1,500 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-redeem-bonus-split" data-key="bonus_split_20" data-cost="1500" data-regular-cost="1500" data-vip-cost="1200" data-weekly-limit="3" data-max-split-cap="100" data-item="$20 Bonus Buy Split Profit (50/50)">Redeem</button>
           </div>
         </div>
       </div>
@@ -1515,7 +1521,7 @@
           <h2 class="section-title">
             <span>📊</span> MONTHLY WAGER <span class="accent">LEADERBOARD</span>
           </h2>
-          <p class="section-subtitle">Play on Stake with affiliate code <strong>diggitybets</strong> · Live wager tracking and automated payouts</p>
+          <p class="section-subtitle">Play on Stake with affiliate code <strong>DIGGITY</strong> · Live wager tracking and automated payouts</p>
         </div>
         <div class="roadmap-badge-pill">
           🚀 BACKLOG / OFFICIAL LAUNCH COMING SOON
@@ -1616,27 +1622,27 @@
       <div class="section-header-row">
         <div>
           <h2 class="section-title"><span>👤</span> VIEWER PROFILE & <span class="accent">STAKE AFFILIATE VERIFICATION</span></h2>
-          <p class="section-subtitle">Customize your avatar, verify your Stake affiliate account (code: diggitybets), link Discord, and set crypto payout addresses</p>
+          <p class="section-subtitle">Customize your avatar, verify your Stake affiliate account (code: DIGGITY), link Discord, and set crypto payout addresses</p>
         </div>
-        <span id="prof-stake-status-badge" class="reward-badge-pill" style="border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">UNVERIFIED AFFILIATE</span>
+        <span id="prof-stake-status-badge" class="reward-badge-pill prof-stake-status-badge-mirror" style="border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">UNVERIFIED AFFILIATE</span>
       </div>
 
       <div class="profile-layout-grid">
         <!-- Card 1: Stake Account & Affiliate Verification (Outlaw Rewards Style - Primary) -->
         <div class="profile-glass-card" id="stake-verification-card" style="grid-column: 1 / -1; border-color: rgba(83, 252, 24, 0.4); box-shadow: 0 0 24px rgba(83, 252, 24, 0.08);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 32px; width: auto; object-fit: contain;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <img src="site/images/stake-official-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake" style="height: 36px; width: auto; object-fit: contain;">
               <div>
-                <h3 class="profile-card-title" style="margin: 0; font-size: 18px; color: #ffffff;">Link your Stake account (Code: diggitybets)</h3>
+                <h3 class="profile-card-title" style="margin: 0; font-size: 18px; color: #ffffff;">Link your Stake account (Code: DIGGITY)</h3>
                 <p style="font-size: 12px; color: #cbd5e1; margin: 4px 0 0 0;">
-                  Place a free Limbo bet with an amount of 0 to verify your Stake account under referral code diggitybets. Each Stake account can be linked to only one Kick account.
+                  Place a free Limbo bet with an amount of 0 to verify your Stake account under referral code <strong>DIGGITY</strong>. Each Stake account can be linked to only one Kick account.
                 </p>
               </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <span class="badge-soon" style="background: rgba(83, 252, 24, 0.15); color: var(--kick-green); border-color: var(--kick-green); font-size: 11px;">CODE: DIGGITYBETS</span>
-              <span id="prof-stake-status-badge" class="reward-badge-pill" style="border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">UNVERIFIED AFFILIATE</span>
+              <span class="badge-soon" style="background: rgba(83, 252, 24, 0.15); color: var(--kick-green); border-color: var(--kick-green); font-size: 11px;">CODE: DIGGITY</span>
+              <span class="reward-badge-pill prof-stake-status-badge-mirror" style="border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">UNVERIFIED AFFILIATE</span>
             </div>
           </div>
 
@@ -1674,9 +1680,9 @@
                 VERIFICATION STEPS:
               </div>
               <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: #cbd5e1; line-height: 1.6;">
-                <li>Open Limbo on Stake while signed in to your account.</li>
+                <li>Open Limbo on Stake while signed in under code <strong>DIGGITY</strong> (disable <em>Ghost Mode / Modo Oculto</em> in Stake Preferences so your username is visible on the bet).</li>
                 <li>Set Bet Amount to <strong>0</strong> and Target Multiplier to <strong id="totp-step-target" style="color: #53fc18;">994932</strong>, then place the bet.</li>
-                <li>Open that bet in your history and copy its ID or share link.</li>
+                <li>Open that bet in your history and copy its Bet ID (e.g. <code>casino:524922477701</code>) or share link.</li>
               </ol>
             </div>
 
@@ -1685,8 +1691,8 @@
               <a href="https://stake.com/casino/games/limbo" target="_blank" rel="noopener noreferrer" class="btn-game-action primary" style="padding: 8px 16px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
                 Open Limbo on Stake ↗
               </a>
-              <a href="https://stake.com/?offer=diggity&c=diggitybets" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 8px 14px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-                Sign up with code diggitybets ↗
+              <a href="https://stake.com/?offer=diggity&c=DIGGITY" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 8px 14px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Sign up with code DIGGITY ↗
               </a>
             </div>
           </div>
@@ -1994,7 +2000,7 @@
           <!-- DECK 1C: STAKE AFFILIATE VERIFICATIONS AUDIT QUEUE -->
           <div class="profile-glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-              <h3 class="profile-card-title"><span>🎰</span> STAKE VERIFICATION QUEUE (Code: diggitybets)</h3>
+              <h3 class="profile-card-title"><span>🎰</span> STAKE VERIFICATION QUEUE (Code: DIGGITY)</h3>
               <button type="button" class="btn-stake-secondary" id="btn-refresh-stake-admin-queue" style="padding: 4px 10px; font-size: 11px;">
                 🔄 Refresh
               </button>
@@ -2028,13 +2034,13 @@
           <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="site/images/stake-promo-logo.png" alt="Stake" style="height: 24px; width: auto; object-fit: contain;">
+                <img src="site/images/stake-official-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake" style="height: 28px; width: auto; object-fit: contain;">
                 <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--kick-green); margin: 0;">
                   STAKE PARTNERS REFERRALS & BULK SYNC
                 </h3>
               </div>
               <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                Cross-check viewers against your official Stake Affiliate campaign dashboard (code: <strong>diggitybets</strong>).
+                Cross-check viewers against your official Stake Affiliate campaign dashboard (code: <strong>DIGGITY</strong>).
               </p>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -2132,7 +2138,9 @@
                 Search catalog slots, add callers, record live payouts, calculate average multiplier, and resolve Guess The Balance winners.
               </p>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-bonushunt" data-obs-path="/overlay-bonushunt/index.html" data-obs-size="1920x1080" style="padding: 6px 12px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
+              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-celebration" data-obs-path="/overlay-celebration/index.html" data-obs-size="1920x1080" style="padding: 6px 12px; font-size: 11px; border-color: rgba(255, 215, 0, 0.45); color: var(--gold);">📋 Copy Celebration URL (1920x1080)</button>
               <button type="button" class="btn-stake-primary" id="btn-admin-start-hunt" style="padding: 6px 14px; font-size: 12px;">Start New Hunt</button>
               <button type="button" class="btn-stake-secondary" id="btn-admin-demo-hunt" style="padding: 6px 12px; font-size: 12px;">🎲 Load 12 Demo Bonuses</button>
               <button type="button" class="btn-chat-toggle" id="btn-admin-reset-hunt" style="padding: 6px 12px; font-size: 12px; color: var(--magenta);">Reset Hunt</button>
@@ -2198,9 +2206,12 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
           <!-- 2. 8-Bracket Tourney Control -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <h3 class="profile-card-title"><span>🏆</span> 8-BRACKET TOURNAMENT CONTROL</h3>
-              <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">LOBBY OPEN</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-tourney" data-obs-path="/overlay-tourney/index.html" data-obs-size="1920x1080" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
+                <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">LOBBY OPEN</span>
+              </div>
             </div>
 
             <!-- Tourney Game Mode Switcher -->
@@ -2229,9 +2240,12 @@
 
           <!-- 3. 1v1 Battle Control -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <h3 class="profile-card-title"><span>⚔️</span> 1V1 BATTLE LIVE CONTROLLER</h3>
-              <span class="reward-badge-pill" id="admin-battle-status-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">READY</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-battle" data-obs-path="/overlay-battle/index.html" data-obs-size="1920x1080" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
+                <span class="reward-badge-pill" id="admin-battle-status-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">READY</span>
+              </div>
             </div>
 
             <!-- Battle Game Mode Switcher -->
@@ -2333,9 +2347,12 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
           <!-- 1. Wheel Dual (wheel-duo) -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
               <h3 class="profile-card-title"><span>🎰</span> WHEEL DUAL (DUO-WHEEL)</h3>
               <span class="reward-badge-pill" id="admin-duo-mode-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">1V1 BATTLE</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-duo" data-obs-path="/wheel-duo/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
             </div>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
               Syncs chatter and slot machine together. Dispatches winner automatically to free seat in battle or tourney.
@@ -2366,9 +2383,12 @@
 
           <!-- 2. CS:GO Active Chatter Wheel (wheel-csgo) -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
               <h3 class="profile-card-title"><span>🎯</span> CS:GO ACTIVE CHATTER WHEEL</h3>
               <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">90s WINDOW</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-csgo" data-obs-path="/wheel-csgo/overlay/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
             </div>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
               Selects organic chatters active in the last 90 seconds (emote spam stripped) as Spotlight Recommenders.
@@ -2392,9 +2412,12 @@
 
           <!-- 3. Random Slot Wheel (wheel-slots) -->
           <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
               <h3 class="profile-card-title"><span>🎰</span> RANDOM SLOT WHEEL</h3>
               <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold);">4,889 SLOTS</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-slots" data-obs-path="/wheel-slots/overlay/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
             </div>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
               60 FPS roulette weighted with Provider TIERS (Stake Exclusives 6.25x, Pragmatic/Hacksaw 4.5x).

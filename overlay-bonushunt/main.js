@@ -144,6 +144,8 @@ class BonusHuntOverlayApp {
             this.handleStateUpdate(payload.state);
           } else if (payload.action === 'hunt_state') {
             this.handleStateUpdate(payload.state);
+          } else if (payload.targetOverlay === 'overlay-bonushunt' && payload.state) {
+            this.handleStateUpdate(payload.state);
           }
         } catch (e) {
           console.warn('[Bonus Hunt Overlay] Error parsing message:', e);
@@ -158,6 +160,49 @@ class BonusHuntOverlayApp {
         setTimeout(() => this.initWebSocket(), delay);
       };
     } catch {}
+
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    if (!this._syncIntervalStarted) {
+      this._syncIntervalStarted = true;
+      setInterval(async () => {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const huntState = data?.overlays?.bonushunt;
+          if (huntState && JSON.stringify(huntState) !== JSON.stringify(this.currentState)) {
+            this.handleStateUpdate(huntState);
+          }
+        } catch {}
+      }, 1500);
+    }
+  }
+
+  animateNumberFlow(el, targetVal, prefix = '', suffix = '', decimals = 2) {
+    if (!el) return;
+    const end = Number(targetVal) || 0;
+    const prev = Number(el.dataset.numVal ?? end);
+    el.dataset.numVal = String(end);
+    if (Math.abs(end - prev) < 0.005) {
+      el.textContent = `${prefix}${end.toFixed(decimals)}${suffix}`;
+      return;
+    }
+    const startTime = performance.now();
+    const duration = 520;
+    el.classList.add('number-flow-rolling');
+    const step = (now) => {
+      const p = Math.min(1, (now - startTime) / duration);
+      const ease = 1 - Math.pow(1 - p, 3);
+      const val = prev + (end - prev) * ease;
+      el.textContent = `${prefix}${val.toFixed(decimals)}${suffix}`;
+      if (p < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = `${prefix}${end.toFixed(decimals)}${suffix}`;
+        el.classList.remove('number-flow-rolling');
+      }
+    };
+    requestAnimationFrame(step);
   }
 
   loadInitialDemo() {
@@ -319,13 +364,13 @@ class BonusHuntOverlayApp {
     }
 
     const m = state.metrics || {};
-    if (this.startCostEl) this.startCostEl.textContent = `$${Number(m.startCost || state.startCost || 0).toFixed(2)}`;
+    this.animateNumberFlow(this.startCostEl, m.startCost || state.startCost || 0, '$', '', 2);
     if (this.bonusesCountEl) this.bonusesCountEl.textContent = `${m.openedBonuses || 0} / ${m.totalBonuses || 0}`;
     if (this.remainingCountEl) this.remainingCountEl.textContent = `${m.remainingBonuses || 0} remaining`;
-    if (this.reqAvgXEl) this.reqAvgXEl.textContent = `${Number(m.reqAverageX || 0).toFixed(2)}x`;
+    this.animateNumberFlow(this.reqAvgXEl, m.reqAverageX || 0, '', 'x', 2);
     if (this.reqAvgDollarsEl) this.reqAvgDollarsEl.textContent = `$${Number(m.reqAvgDollars || 0).toFixed(2)} / bonus`;
-    if (this.runAvgXEl) this.runAvgXEl.textContent = `${Number(m.runAverageX || 0).toFixed(2)}x`;
-    if (this.winningsEl) this.winningsEl.textContent = `$${Number(m.winnings || 0).toFixed(2)}`;
+    this.animateNumberFlow(this.runAvgXEl, m.runAverageX || 0, '', 'x', 2);
+    this.animateNumberFlow(this.winningsEl, m.winnings || 0, '$', '', 2);
 
     if (this.profitEl) {
       const prof = Number(m.profit || 0);
@@ -374,53 +419,78 @@ class BonusHuntOverlayApp {
     }
   }
 
+  buildBonusRowElement(b, idx) {
+    const row = document.createElement('div');
+    const isOpening = b.status === 'OPENING';
+    const isOpened = b.status === 'OPENED';
+    row.className = `bonus-row ${isOpening ? 'row-opening status-opening' : ''} ${isOpened ? 'row-opened' : ''}`;
+
+    const statusMap = {
+      PENDING: '<span class="row-status-pill st-pending">PENDING</span>',
+      OPENING: '<span class="row-status-pill st-opening">OPENING ⚡</span>',
+      OPENED: '<span class="row-status-pill st-opened">OPENED ✓</span>',
+    };
+
+    let resolvedSlot = null;
+    if (window.SlotResolver) {
+      resolvedSlot = window.SlotResolver.resolve(b.slotName || b.slotImage || b, '../');
+    }
+    const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || 'Unknown Slot';
+    const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || 'Casino';
+    const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage;
+
+    const imgHtml = slotImgSrc
+      ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="${slotNameDisplay}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-thumb-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`
+      : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
+
+    row.innerHTML = `
+      <span class="row-num">${idx + 1}</span>
+      <div class="row-slot-box">
+        <div class="slot-thumb">
+          ${imgHtml}
+        </div>
+        <div class="slot-titles">
+          <span class="slot-main-title">${slotNameDisplay}</span>
+          <span class="slot-provider-badge">${slotProviderDisplay}</span>
+        </div>
+      </div>
+      <span class="row-caller">@${b.callerUsername || 'Streamer'}</span>
+      <span class="row-bet">$${Number(b.betSize || 1).toFixed(2)}</span>
+      <span class="row-payout">${isOpened ? `$${Number(b.payout || 0).toFixed(2)}` : '-'}</span>
+      <span class="row-mult">${isOpened ? `${Number(b.multiplier || 0).toFixed(2)}x` : '-'}</span>
+      ${statusMap[b.status] || statusMap.PENDING}
+    `;
+    return row;
+  }
+
   renderTable(bonuses) {
     if (!this.tableBodyEl) return;
     this.tableBodyEl.innerHTML = '';
 
+    const isTickerActive = Array.isArray(bonuses) && bonuses.length > 8;
+    this.tableBodyEl.classList.toggle('ticker-loop-active', isTickerActive);
+
+    const track = document.createElement('div');
+    track.className = 'ticker-scroll-track';
+    if (isTickerActive) {
+      const durationSec = Math.max(18, bonuses.length * 2.2);
+      this.tableBodyEl.style.setProperty('--ticker-duration', `${durationSec}s`);
+    }
+
     bonuses.forEach((b, idx) => {
-      const row = document.createElement('div');
-      const isOpening = b.status === 'OPENING';
-      const isOpened = b.status === 'OPENED';
-      row.className = `bonus-row ${isOpening ? 'row-opening' : ''} ${isOpened ? 'row-opened' : ''}`;
-
-      const statusMap = {
-        PENDING: '<span class="row-status-pill st-pending">PENDING</span>',
-        OPENING: '<span class="row-status-pill st-opening">OPENING ⚡</span>',
-        OPENED: '<span class="row-status-pill st-opened">OPENED ✓</span>',
-      };
-
-      let resolvedSlot = null;
-      if (window.SlotResolver) {
-        resolvedSlot = window.SlotResolver.resolve(b.slotName || b.slotImage || b, '../');
-      }
-      const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || 'Unknown Slot';
-      const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || 'Casino';
-      const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage;
-
-      const imgHtml = slotImgSrc
-        ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="${slotNameDisplay}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-thumb-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`
-        : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
-
-      row.innerHTML = `
-        <span class="row-num">${idx + 1}</span>
-        <div class="row-slot-box">
-          <div class="slot-thumb">
-            ${imgHtml}
-          </div>
-          <div class="slot-titles">
-            <span class="slot-main-title">${slotNameDisplay}</span>
-            <span class="slot-provider-badge">${slotProviderDisplay}</span>
-          </div>
-        </div>
-        <span class="row-caller">@${b.callerUsername || 'Streamer'}</span>
-        <span class="row-bet">$${Number(b.betSize || 1).toFixed(2)}</span>
-        <span class="row-payout">${isOpened ? `$${Number(b.payout || 0).toFixed(2)}` : '-'}</span>
-        <span class="row-mult">${isOpened ? `${Number(b.multiplier || 0).toFixed(2)}x` : '-'}</span>
-        ${statusMap[b.status] || statusMap.PENDING}
-      `;
-      this.tableBodyEl.appendChild(row);
+      track.appendChild(this.buildBonusRowElement(b, idx));
     });
+
+    // Duplicate items seamlessly when > 8 bonuses for continuous infinite vertical ticker loop
+    if (isTickerActive) {
+      bonuses.forEach((b, idx) => {
+        const clone = this.buildBonusRowElement(b, idx);
+        clone.dataset.tickerClone = 'true';
+        track.appendChild(clone);
+      });
+    }
+
+    this.tableBodyEl.appendChild(track);
   }
 
   triggerFinishCelebration(state) {

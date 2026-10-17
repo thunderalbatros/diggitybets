@@ -207,15 +207,25 @@ class TourneyOverlayApp {
         console.log('[Tourney Overlay] Connected to HuntHub Server on ' + wsUrl);
         this.reconnectAttempts = 0;
         this.ws.send(JSON.stringify({ action: 'get_tourney_state' }));
+        fetch(`http://127.0.0.1:${port}/api/sync/state`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((sync) => {
+            if (sync && sync.tourney && sync.tourney.participants && sync.tourney.participants.length > 0) {
+              this.handleStateUpdate(sync.tourney);
+            }
+          })
+          .catch(() => {});
       };
 
       this.ws.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
-          if (payload.type === 'tournament_update') {
+          if (payload.type === 'tournament_update' && payload.state) {
             this.handleStateUpdate(payload.state);
-          } else if (payload.action === 'tourney_state') {
+          } else if (payload.action === 'tourney_state' && payload.state) {
             this.handleStateUpdate(payload.state);
+          } else if (payload.type === 'overlay_sync_event' && payload.event && payload.event.target === 'overlay-tourney' && payload.event.state) {
+            this.handleStateUpdate(payload.event.state);
           }
         } catch (e) {
           console.warn('[Tourney Overlay] Error parsing message:', e);

@@ -502,13 +502,43 @@ class CelebrationOverlayApp {
     } catch (e) {}
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hunthub_celebration_trigger' && e.newValue) {
+      if ((e.key === 'hunthub_celebration_trigger' || e.key === 'hunthub_celebration_event') && e.newValue) {
         try {
           const data = JSON.parse(e.newValue);
           this.triggerCelebration(data);
         } catch (err) {}
       }
     });
+
+    // Cross-Process OBS Browser Source WebSocket + /api/sync/state Sync (<50ms)
+    this.initWebSocketSync();
+  }
+
+  initWebSocketSync() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const port = urlParams.get('port') || '3001';
+    const wsUrl = `ws://127.0.0.1:${port}/`;
+    try {
+      this.ws = new WebSocket(wsUrl);
+      this.ws.onopen = () => {
+        fetch(`http://127.0.0.1:${port}/api/sync/state`).catch(() => {});
+      };
+      this.ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'CELEBRATION') {
+            this.triggerCelebration(payload);
+          } else if (payload.type === 'overlay_sync_event' && payload.event) {
+            if (payload.event.type === 'CELEBRATION' || payload.event.target === 'overlay-celebration') {
+              this.triggerCelebration(payload.event.data || payload.event);
+            }
+          }
+        } catch {}
+      };
+      this.ws.onclose = () => {
+        setTimeout(() => this.initWebSocketSync(), 4000);
+      };
+    } catch {}
   }
 }
 

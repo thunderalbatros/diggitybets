@@ -153,6 +153,9 @@ class BattleOverlayApp {
     this.multA = document.getElementById('mult-a');
     this.payoutA = document.getElementById('payout-a');
     this.meterA = document.getElementById('meter-bar-a');
+    this.ghostBarA = document.getElementById('ghost-bar-a');
+    this.modeBadgeA = document.getElementById('mode-badge-a');
+    this.kothMeterA = document.getElementById('koth-meter-a');
     this.ribbonA = document.getElementById('ribbon-a');
     this.slotImgA = document.getElementById('slot-img-a');
 
@@ -166,15 +169,45 @@ class BattleOverlayApp {
     this.multB = document.getElementById('mult-b');
     this.payoutB = document.getElementById('payout-b');
     this.meterB = document.getElementById('meter-bar-b');
+    this.ghostBarB = document.getElementById('ghost-bar-b');
+    this.modeBadgeB = document.getElementById('mode-badge-b');
+    this.kothMeterB = document.getElementById('koth-meter-b');
     this.ribbonB = document.getElementById('ribbon-b');
     this.slotImgB = document.getElementById('slot-img-b');
 
     // Center VS & Modal
+    this.vsModeBadge = document.getElementById('vs-mode-badge');
+    this.vsKothPill = document.getElementById('vs-koth-pill');
     this.vsSubtext = document.getElementById('vs-subtext');
     this.modal = document.getElementById('victory-modal');
     this.modalWinner = document.getElementById('modal-winner-name');
     this.modalStat = document.getElementById('modal-stat');
     this.modalPrize = document.getElementById('modal-prize');
+  }
+
+  animateGhostImpactBar(ghostEl, meterEl, targetPct) {
+    if (!meterEl) return;
+    const prevWidth = parseFloat(meterEl.style.width || '0') || 0;
+    meterEl.style.width = `${targetPct}%`;
+    if (!ghostEl) return;
+    const burstWidth = Math.min(100, Math.max(targetPct + 14, prevWidth));
+    ghostEl.style.width = `${burstWidth}%`;
+    if (typeof ghostEl.animate === 'function') {
+      ghostEl.animate(
+        [
+          { width: `${prevWidth}%`, opacity: 0.95 },
+          { width: `${burstWidth}%`, opacity: 0.85, offset: 0.35 },
+          { width: `${targetPct}%`, opacity: 0.25 }
+        ],
+        {
+          duration: 820,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        }
+      );
+    } else {
+      ghostEl.style.width = `${targetPct}%`;
+    }
   }
 
   initAudio() {
@@ -283,6 +316,8 @@ class BattleOverlayApp {
             this.handleStateUpdate(payload.state);
           } else if (payload.action === 'battle_state') {
             this.handleStateUpdate(payload.state);
+          } else if (payload.targetOverlay === 'overlay-battle' && payload.state) {
+            this.handleStateUpdate(payload.state);
           }
         } catch (e) {
           console.warn('[Battle Overlay] Error parsing message:', e);
@@ -301,6 +336,22 @@ class BattleOverlayApp {
     } catch (e) {
       setTimeout(() => this.initWebSocket(), 3000);
     }
+
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    if (!this._syncIntervalStarted) {
+      this._syncIntervalStarted = true;
+      setInterval(async () => {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const battleState = data?.overlays?.battle;
+          if (battleState && JSON.stringify(battleState) !== JSON.stringify(this.currentState)) {
+            this.handleStateUpdate(battleState);
+          }
+        } catch {}
+      }, 1500);
+    }
   }
 
   handleStateUpdate(state) {
@@ -311,6 +362,20 @@ class BattleOverlayApp {
     // Header updates
     if (this.headerBet) this.headerBet.textContent = `$${Number(state.betAmount || 10).toFixed(2)}`;
     if (this.headerPrize) this.headerPrize.textContent = state.prizeText || '$50.00 POOL';
+
+    // Mode Badges (BONUS BUY vs SPINS)
+    const isSpins = state.gameMode === 'SPINS';
+    const modeLabel = isSpins ? 'SPINS' : 'BONUS BUY';
+    if (this.modeBadgeA) this.modeBadgeA.textContent = modeLabel;
+    if (this.modeBadgeB) this.modeBadgeB.textContent = modeLabel;
+    if (this.vsModeBadge) this.vsModeBadge.textContent = `${modeLabel} MODE`;
+
+    // Center King of the Hill Streak Pill
+    const streakVal = Number(state.currentStreak || 0);
+    if (this.vsKothPill) {
+      const kingName = state.reigningKing ? `@${state.reigningKing.displayName || state.reigningKing.username}` : 'OPEN THRONE';
+      this.vsKothPill.textContent = `👑 KOTH: ${kingName} · STREAK ${streakVal}/4 ($20 PRIZE)`;
+    }
 
     // Status Badge
     if (this.statusText) {
@@ -328,6 +393,7 @@ class BattleOverlayApp {
 
     // Render Player A
     this.renderPlayer(state.playerA, {
+      cardEl: this.cardA,
       nameEl: this.nameA,
       tagEl: this.tagA,
       monogramEl: this.monogramA,
@@ -336,6 +402,8 @@ class BattleOverlayApp {
       multEl: this.multA,
       payoutEl: this.payoutA,
       meterEl: this.meterA,
+      ghostEl: this.ghostBarA,
+      kothMeterEl: this.kothMeterA,
       ribbonEl: this.ribbonA,
       imgEl: this.slotImgA,
       isWinner: state.status === 'RESOLVED' && (state.winner === 'A' || state.winner === 'TIE'),
@@ -343,6 +411,7 @@ class BattleOverlayApp {
 
     // Render Player B
     this.renderPlayer(state.playerB, {
+      cardEl: this.cardB,
       nameEl: this.nameB,
       tagEl: this.tagB,
       monogramEl: this.monogramB,
@@ -351,6 +420,8 @@ class BattleOverlayApp {
       multEl: this.multB,
       payoutEl: this.payoutB,
       meterEl: this.meterB,
+      ghostEl: this.ghostBarB,
+      kothMeterEl: this.kothMeterB,
       ribbonEl: this.ribbonB,
       imgEl: this.slotImgB,
       isWinner: state.status === 'RESOLVED' && (state.winner === 'B' || state.winner === 'TIE'),
@@ -380,6 +451,8 @@ class BattleOverlayApp {
 
   renderPlayer(player, dom) {
     if (!player) {
+      if (dom.cardEl) dom.cardEl.classList.remove('koth-king-active');
+      if (dom.kothMeterEl) dom.kothMeterEl.style.display = 'none';
       dom.nameEl.textContent = 'Waiting for Player...';
       dom.tagEl.textContent = '!battle <slot> in chat';
       dom.monogramEl.textContent = '?';
@@ -387,7 +460,7 @@ class BattleOverlayApp {
       dom.slotProvEl.textContent = 'Pragmatic / Hacksaw / Nolimit';
       dom.multEl.innerHTML = `0.00<span class="mult-x">x</span>`;
       dom.payoutEl.textContent = '$0.00 USD';
-      dom.meterEl.style.width = '0%';
+      this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, 0);
       dom.ribbonEl.classList.remove('active');
       dom.imgEl.style.display = 'none';
       return;
@@ -417,28 +490,47 @@ class BattleOverlayApp {
       dom.imgEl.style.display = 'none';
     }
 
-    // Multiplier & meter
+    // Multiplier & meter with WAAPI Ghost Impact Bar
     const isSpins = this.currentState && this.currentState.gameMode === 'SPINS';
     const mult = Number(player.multiplier || 0);
 
     if (isSpins) {
       dom.multEl.innerHTML = player.result === 'WINNER' ? `WINNER!` : (player.result === 'LOSER' ? `LOSER` : `READY`);
       dom.payoutEl.textContent = '1-CLICK SPINS DUEL';
-      dom.meterEl.style.width = player.result === 'WINNER' ? '100%' : '0%';
+      this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, player.result === 'WINNER' ? 100 : 0);
     } else {
       dom.multEl.innerHTML = `${mult.toFixed(2)}<span class="mult-x">x</span>`;
       dom.payoutEl.textContent = `$${Number(player.winAmount || 0).toFixed(2)} USD`;
-      // Gauge calculation (max 100x = 100%)
+      // Gauge calculation (max 50x = 100%)
       const pct = Math.min(100, Math.max(0, (mult / 50) * 100));
-      dom.meterEl.style.width = `${pct}%`;
+      this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, pct);
     }
 
-    // King of the Hill Streak Badge
-    if (this.currentState && this.currentState.kothActive && this.currentState.reigningKing) {
-      if (this.currentState.reigningKing.kickId === player.kickId) {
-        dom.tagEl.innerHTML = `👑 KING · STREAK ${this.currentState.currentStreak}/4 · $20 PRIZE`;
-        dom.tagEl.style.color = 'var(--gold, #ffd700)';
+    // King of the Hill Streak Badge + ElectricBorder energy ring
+    const isReigningKing = Boolean(
+      this.currentState &&
+      this.currentState.kothActive &&
+      this.currentState.reigningKing &&
+      (this.currentState.reigningKing.kickId === player.kickId ||
+        (this.currentState.reigningKing.username || '').toLowerCase() === (player.username || '').toLowerCase())
+    );
+
+    if (isReigningKing) {
+      const streak = Number(this.currentState.currentStreak || 1);
+      dom.tagEl.innerHTML = `👑 KING · STREAK ${streak}/4 · $20 PRIZE`;
+      dom.tagEl.style.color = 'var(--gold, #ffd700)';
+      if (dom.cardEl) dom.cardEl.classList.add('koth-king-active');
+      if (dom.kothMeterEl) {
+        dom.kothMeterEl.style.display = 'flex';
+        dom.kothMeterEl.querySelectorAll('.koth-step').forEach((stepEl) => {
+          const stepNum = Number(stepEl.dataset.step || 0);
+          stepEl.classList.toggle('active', stepNum <= streak);
+        });
       }
+    } else {
+      dom.tagEl.style.color = '';
+      if (dom.cardEl) dom.cardEl.classList.remove('koth-king-active');
+      if (dom.kothMeterEl) dom.kothMeterEl.style.display = 'none';
     }
 
     // Winner & Loser styling

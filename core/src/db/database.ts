@@ -232,9 +232,9 @@ export class HuntHubDatabase {
 
 
     // Dynamic schema migrations for existing database instances
-    const safeAddColumn = (column: string, typeDef: string) => {
+    const safeAddColumn = (column: string, typeDef: string, table: string = 'users') => {
       try {
-        this.db.exec(`ALTER TABLE users ADD COLUMN ${column} ${typeDef};`);
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${typeDef};`);
       } catch (e) {
         // Column already exists, safe to ignore
       }
@@ -250,6 +250,139 @@ export class HuntHubDatabase {
     safeAddColumn('crypto_sol', 'TEXT');
     safeAddColumn('x_handle', 'TEXT');
     safeAddColumn('ig_handle', 'TEXT');
+    safeAddColumn('session_id', 'TEXT', 'redemptions');
+    safeAddColumn('item_key', 'TEXT', 'store_redemptions');
+    safeAddColumn('week_number', 'INTEGER', 'store_redemptions');
+  }
+
+  // --- Phase 6: Live-Stream Gate & Controlled Emission State ---
+  private streamLive: boolean = true;
+  private streamSessionId: string = 'session_live_default';
+  private chatEarnTracker = new Map<string, { lastAwardMs: number; windowStartMs: number; chatEarned: number }>();
+  private watchEarnTracker = new Map<string, { lastAwardMs: number; windowStartMs: number; watchEarned: number }>();
+
+  public setStreamLive(isLive: boolean, sessionId?: string): void {
+    this.streamLive = Boolean(isLive);
+    if (sessionId) {
+      this.streamSessionId = sessionId;
+    } else if (isLive && !this.streamSessionId) {
+      this.streamSessionId = `session_${Date.now()}`;
+    }
+  }
+
+  public isStreamLive(): boolean {
+    return this.streamLive;
+  }
+
+  public getStreamSessionId(): string {
+    return this.streamSessionId;
+  }
+
+  /**
+   * Chat-to-Earn: +5 $DIG every 5 minutes (cooldown = 300_000 ms) with organic message (filtering :emote:).
+   * Max 60 $DIG / hour from chat, gated by streamLive === true.
+   */
+  public recordChatEarn(
+    kickUserId: number,
+    username: string,
+    rawContent: string,
+    nowMs: number = Date.now()
+  ): { awarded: boolean; amount: number; newBalance: number; reason?: string } {
+    const user = this.upsertUser(kickUserId, username);
+    if (!this.streamLive) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'STREAM_OFFLINE' };
+    }
+
+    const stripped = (rawContent || '')
+      .replace(/:[a-zA-Z0-9_\-]+:/g, ' ')
+      .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
+    if (stripped.length < 2) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'EMOTE_OR_SPAM' };
+    }
+
+    const key = user.id;
+    let chatState = this.chatEarnTracker.get(key);
+    if (!chatState || nowMs - chatState.windowStartMs >= 3600_000) {
+      chatState = {
+        lastAwardMs: chatState ? chatState.lastAwardMs : -Infinity,
+        windowStartMs: nowMs,
+        chatEarned: 0
+      };
+    }
+
+    if (nowMs - chatState.lastAwardMs < 300_000) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'CHAT_COOLDOWN_5M' };
+    }
+
+    if (chatState.chatEarned + 5 > 60) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'CHAT_HOURLY_CAP_60' };
+    }
+
+    const watchState = this.watchEarnTracker.get(key);
+    const activeWatchEarned = (watchState && nowMs - watchState.windowStartMs < 3600_000) ? watchState.watchEarned : 0;
+    if (chatState.chatEarned + activeWatchEarned + 5 > 100) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'TOTAL_HOURLY_CAP_100' };
+    }
+
+    const credit = this.creditPoints(user.id, 5, 'CHAT_TO_EARN', undefined, { streamSessionId: this.streamSessionId });
+    chatState.lastAwardMs = nowMs;
+    chatState.chatEarned += 5;
+    this.chatEarnTracker.set(key, chatState);
+
+    return { awarded: true, amount: 5, newBalance: credit.newBalance };
+  }
+
+  /**
+   * Watch-to-Earn: +10 $DIG every 15 minutes (cooldown = 900_000 ms) in #watch for logged-in users.
+   * Max 40 $DIG / hour from watch, gated by streamLive === true.
+   */
+  public recordWatchHeartbeat(
+    userIdOrUsername: string,
+    nowMs: number = Date.now()
+  ): { awarded: boolean; amount: number; newBalance: number; reason?: string } {
+    if (!userIdOrUsername || !String(userIdOrUsername).trim()) {
+      return { awarded: false, amount: 0, newBalance: 0, reason: 'UNAUTHENTICATED' };
+    }
+
+    let user = this.getUserById(userIdOrUsername) || this.getUserByUsername(userIdOrUsername);
+    if (!user) {
+      user = this.upsertUser(Math.floor(nowMs / 1000) % 10000000 + 1000, userIdOrUsername);
+    }
+
+    if (!this.streamLive) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'STREAM_OFFLINE' };
+    }
+
+    const key = user.id;
+    let watchState = this.watchEarnTracker.get(key);
+    if (!watchState || nowMs - watchState.windowStartMs >= 3600_000) {
+      watchState = {
+        lastAwardMs: watchState ? watchState.lastAwardMs : -Infinity,
+        windowStartMs: nowMs,
+        watchEarned: 0
+      };
+    }
+
+    if (nowMs - watchState.lastAwardMs < 900_000) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'WATCH_COOLDOWN_15M' };
+    }
+
+    if (watchState.watchEarned + 10 > 40) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'WATCH_HOURLY_CAP_40' };
+    }
+
+    const chatState = this.chatEarnTracker.get(key);
+    const activeChatEarned = (chatState && nowMs - chatState.windowStartMs < 3600_000) ? chatState.chatEarned : 0;
+    if (watchState.watchEarned + activeChatEarned + 10 > 100) {
+      return { awarded: false, amount: 0, newBalance: user.points_balance, reason: 'TOTAL_HOURLY_CAP_100' };
+    }
+
+    const credit = this.creditPoints(user.id, 10, 'WATCH_TO_EARN', undefined, { streamSessionId: this.streamSessionId });
+    watchState.lastAwardMs = nowMs;
+    watchState.watchEarned += 10;
+    this.watchEarnTracker.set(key, watchState);
+
+    return { awarded: true, amount: 10, newBalance: credit.newBalance };
   }
 
   // --- User Operations ---
@@ -375,23 +508,41 @@ export class HuntHubDatabase {
     kickRewardId: string,
     kickUserId: number,
     username: string,
-    creditAmount: number
-  ): { alreadyProcessed: boolean; user: UserRow; newBalance: number } {
+    creditAmount: number = 100,
+    streamSessionId?: string
+  ): { alreadyProcessed: boolean; sessionLimitReached?: boolean; error?: string; user: UserRow; newBalance: number } {
     const existing = this.db.prepare('SELECT * FROM redemptions WHERE id = ?').get(redemptionId);
     if (existing) {
       const user = this.getUserByKickId(kickUserId)!;
-      return { alreadyProcessed: true, user, newBalance: user.points_balance };
+      return { alreadyProcessed: true, sessionLimitReached: false, user, newBalance: user.points_balance };
     }
 
     const user = this.upsertUser(kickUserId, username);
+    const effectiveSession = streamSessionId || this.streamSessionId || 'session_live_default';
+
+    // Max 1 channel points redemption per stream session per user
+    const existingSessionRedemption = this.db.prepare(
+      'SELECT id FROM redemptions WHERE kick_user_id = ? AND session_id = ? AND status = \'FULFILLED\' LIMIT 1'
+    ).get(kickUserId, effectiveSession);
+
+    if (existingSessionRedemption) {
+      return {
+        alreadyProcessed: false,
+        sessionLimitReached: true,
+        error: 'Max 1 channel points redemption per stream session',
+        user,
+        newBalance: user.points_balance
+      };
+    }
+
     const now = Math.floor(Date.now() / 1000);
 
     this.db.exec('BEGIN TRANSACTION;');
     try {
       this.db.prepare(`
-        INSERT INTO redemptions (id, kick_reward_id, user_id, kick_user_id, status, created_at)
-        VALUES (?, ?, ?, ?, 'FULFILLED', ?)
-      `).run(redemptionId, kickRewardId, user.id, kickUserId, now);
+        INSERT INTO redemptions (id, kick_reward_id, user_id, kick_user_id, status, created_at, session_id)
+        VALUES (?, ?, ?, ?, 'FULFILLED', ?, ?)
+      `).run(redemptionId, kickRewardId, user.id, kickUserId, now, effectiveSession);
 
       const newBalance = user.points_balance + creditAmount;
       const txId = crypto.randomUUID();
@@ -399,10 +550,10 @@ export class HuntHubDatabase {
       this.db.prepare(`
         INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
         VALUES (?, ?, ?, ?, 'CHANNEL_REWARD_REDEMPTION', ?, ?, ?)
-      `).run(txId, user.id, creditAmount, newBalance, redemptionId, JSON.stringify({ kickRewardId }), now);
+      `).run(txId, user.id, creditAmount, newBalance, redemptionId, JSON.stringify({ kickRewardId, sessionId: effectiveSession }), now);
 
       this.db.exec('COMMIT;');
-      return { alreadyProcessed: false, user: this.getUserById(user.id)!, newBalance };
+      return { alreadyProcessed: false, sessionLimitReached: false, user: this.getUserById(user.id)!, newBalance };
     } catch (err) {
       this.db.exec('ROLLBACK;');
       throw err;
@@ -639,46 +790,415 @@ export class HuntHubDatabase {
     }
   }
 
-  // --- Store Voucher Redemptions (Live Queue & Fulfillment) ---
+  // --- Store Voucher Redemptions (Live Queue, Weekly Stock, Cooldowns & VIP Discounts) ---
+
+  public resolveStoreCatalogItem(voucherTitleOrKey: string): {
+    key: string;
+    title: string;
+    regularCost: number;
+    vipCost: number;
+    weeklyStockLimit: number | null;
+    oneTimePerAccount: boolean;
+    cooldownDays: number;
+    maxSplitCapUsd: number | null;
+  } | null {
+    const raw = (voucherTitleOrKey || '').trim().toLowerCase();
+    if (!raw) return null;
+
+    if (raw === 'weekly_raffle' || raw.includes('raffle')) {
+      return {
+        key: 'weekly_raffle',
+        title: 'Weekly Raffle ($100 Bonus Buy Split)',
+        regularCost: 50,
+        vipCost: 50,
+        weeklyStockLimit: null,
+        oneTimePerAccount: false,
+        cooldownDays: 0,
+        maxSplitCapUsd: null
+      };
+    }
+    if (raw === 'vip_discord' || (raw.includes('vip') && raw.includes('discord'))) {
+      return {
+        key: 'vip_discord',
+        title: 'VIP Streamer Discord Role',
+        regularCost: 400,
+        vipCost: 400,
+        weeklyStockLimit: null,
+        oneTimePerAccount: true,
+        cooldownDays: 0,
+        maxSplitCapUsd: null
+      };
+    }
+    if (raw === 'battle_entry' || raw.includes('1v1') || (raw.includes('battle') && raw.includes('entry'))) {
+      return {
+        key: 'battle_entry',
+        title: 'Guaranteed 1v1 Battle Entry',
+        regularCost: 700,
+        vipCost: 500,
+        weeklyStockLimit: 6,
+        oneTimePerAccount: false,
+        cooldownDays: 14,
+        maxSplitCapUsd: null
+      };
+    }
+    if (raw === 'tourney_entry' || raw.includes('tourney') || raw.includes('8-bracket') || raw.includes('bracket')) {
+      return {
+        key: 'tourney_entry',
+        title: 'Guaranteed 8-Bracket Tourney Entry',
+        regularCost: 1000,
+        vipCost: 800,
+        weeklyStockLimit: 6,
+        oneTimePerAccount: false,
+        cooldownDays: 0,
+        maxSplitCapUsd: null
+      };
+    }
+    if (raw === 'bonus_split_20' || (raw.includes('20') && raw.includes('split')) || raw.includes('bonus buy split')) {
+      return {
+        key: 'bonus_split_20',
+        title: '$20 Bonus Buy Split Profit (50/50)',
+        regularCost: 1500,
+        vipCost: 1200,
+        weeklyStockLimit: 3,
+        oneTimePerAccount: false,
+        cooldownDays: 0,
+        maxSplitCapUsd: 100
+      };
+    }
+    return null;
+  }
+
+  public getStoreCatalogStatus(userIdOrUsername?: string, weekNumber?: number, nowSec: number = Math.floor(Date.now() / 1000)): Array<{
+    key: string;
+    title: string;
+    regularCost: number;
+    vipCost: number;
+    effectiveCost: number;
+    weeklyStockLimit: number | null;
+    usedThisWeek: number;
+    remainingStock: number | null;
+    soldOut: boolean;
+    oneTimePerAccount: boolean;
+    alreadyClaimedOneTime: boolean;
+    cooldownDays: number;
+    userOnCooldown: boolean;
+    maxSplitCapUsd: number | null;
+  }> {
+    let user: UserRow | null = null;
+    if (userIdOrUsername) {
+      user = this.getUserById(userIdOrUsername) || this.getUserByUsername(userIdOrUsername);
+    }
+    const isStakeVip = Boolean(user && user.stake_verified === 1);
+    const week = weekNumber || this.getWeekNumber(new Date(nowSec * 1000));
+
+    const keys = ['weekly_raffle', 'vip_discord', 'battle_entry', 'tourney_entry', 'bonus_split_20'];
+    const allRedemptions = this.db.prepare(
+      "SELECT * FROM store_redemptions WHERE status != 'REJECTED'"
+    ).all() as Array<StoreRedemptionRow & { item_key?: string; week_number?: number }>;
+
+    return keys.map(k => {
+      const cat = this.resolveStoreCatalogItem(k)!;
+      const effectiveCost = isStakeVip ? cat.vipCost : cat.regularCost;
+
+      const matching = allRedemptions.filter(r => {
+        if (r.item_key) return r.item_key === cat.key;
+        const resolved = this.resolveStoreCatalogItem(r.voucher_title);
+        return resolved?.key === cat.key;
+      });
+
+      const usedThisWeek = matching.filter(r => {
+        const rWeek = r.week_number || this.getWeekNumber(new Date((r.created_at || nowSec) * 1000));
+        return rWeek === week;
+      }).length;
+
+      const remainingStock = cat.weeklyStockLimit !== null
+        ? Math.max(0, cat.weeklyStockLimit - usedThisWeek)
+        : null;
+      const soldOut = remainingStock !== null && remainingStock <= 0;
+
+      const userMatches = user ? matching.filter(r => r.user_id === user!.id) : [];
+      const alreadyClaimedOneTime = cat.oneTimePerAccount && userMatches.length > 0;
+
+      let userOnCooldown = false;
+      if (cat.cooldownDays > 0 && userMatches.length > 0) {
+        const latestSec = Math.max(...userMatches.map(r => Number(r.created_at) || 0));
+        if (nowSec - latestSec < cat.cooldownDays * 86400) {
+          userOnCooldown = true;
+        }
+      }
+
+      return {
+        key: cat.key,
+        title: cat.title,
+        regularCost: cat.regularCost,
+        vipCost: cat.vipCost,
+        effectiveCost,
+        weeklyStockLimit: cat.weeklyStockLimit,
+        usedThisWeek,
+        remainingStock,
+        soldOut,
+        oneTimePerAccount: cat.oneTimePerAccount,
+        alreadyClaimedOneTime,
+        cooldownDays: cat.cooldownDays,
+        userOnCooldown,
+        maxSplitCapUsd: cat.maxSplitCapUsd
+      };
+    });
+  }
 
   public createStoreRedemption(
     userId: string,
     kickUsername: string,
     voucherTitle: string,
-    costPoints: number
-  ): { success: boolean; redemption?: StoreRedemptionRow; error?: string } {
+    costPoints?: number,
+    nowSec: number = Math.floor(Date.now() / 1000),
+    weekNumber?: number
+  ): { success: boolean; redemption?: StoreRedemptionRow; effectiveCost?: number; remainingStock?: number | null; error?: string } {
     const user = this.getUserById(userId);
     if (!user) return { success: false, error: 'User not found' };
-    if (user.points_balance < costPoints) {
-      return { success: false, error: `Insufficient balance: need ${costPoints} $DIG, have ${user.points_balance} $DIG` };
+
+    const catalogItem = this.resolveStoreCatalogItem(voucherTitle);
+    const week = weekNumber || this.getWeekNumber(new Date(nowSec * 1000));
+
+    let effectiveCost = typeof costPoints === 'number' && costPoints > 0
+      ? costPoints
+      : (catalogItem ? catalogItem.regularCost : 100);
+
+    if (catalogItem) {
+      // Automatic Stake VIP discount for verified affiliates across catalog items
+      if (user.stake_verified === 1 && catalogItem.vipCost < catalogItem.regularCost) {
+        if (costPoints === undefined || costPoints >= catalogItem.vipCost) {
+          effectiveCost = catalogItem.vipCost;
+        }
+      } else if (costPoints === undefined) {
+        effectiveCost = catalogItem.regularCost;
+      }
+
+      const statusList = this.getStoreCatalogStatus(user.id, week, nowSec);
+      const itemStatus = statusList.find(s => s.key === catalogItem.key);
+
+      if (itemStatus) {
+        if (itemStatus.alreadyClaimedOneTime) {
+          return {
+            success: false,
+            error: 'LIMIT REACHED: VIP Streamer Discord Role can only be redeemed 1 time per account.'
+          };
+        }
+        if (itemStatus.soldOut) {
+          return {
+            success: false,
+            remainingStock: 0,
+            error: `SOLD OUT THIS WEEK: Weekly stock limit (${catalogItem.weeklyStockLimit}/${catalogItem.weeklyStockLimit}) reached for ${catalogItem.title}.`
+          };
+        }
+        if (itemStatus.userOnCooldown) {
+          return {
+            success: false,
+            error: `COOLDOWN ACTIVE: ${catalogItem.title} has a ${catalogItem.cooldownDays}-day cooldown per user.`
+          };
+        }
+      }
+    }
+
+    if (user.points_balance < effectiveCost) {
+      return { success: false, error: `Insufficient balance: need ${effectiveCost} $DIG, have ${user.points_balance} $DIG` };
     }
 
     const id = crypto.randomUUID();
-    const now = Math.floor(Date.now() / 1000);
 
     this.db.exec('BEGIN TRANSACTION;');
     try {
-      const newBalance = user.points_balance - costPoints;
+      const newBalance = user.points_balance - effectiveCost;
       this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, userId);
 
       const txId = crypto.randomUUID();
       this.db.prepare(`
         INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
         VALUES (?, ?, ?, ?, 'STORE_VOUCHER_REDEMPTION', ?, ?, ?)
-      `).run(txId, userId, -costPoints, newBalance, id, JSON.stringify({ voucherTitle }), now);
+      `).run(
+        txId,
+        userId,
+        -effectiveCost,
+        newBalance,
+        id,
+        JSON.stringify({
+          voucherTitle,
+          itemKey: catalogItem?.key || null,
+          stakeVerifiedVipDiscount: Boolean(catalogItem && catalogItem.vipCost < catalogItem.regularCost && user.stake_verified === 1),
+          maxSplitCapUsd: catalogItem?.maxSplitCapUsd || null
+        }),
+        nowSec
+      );
 
       this.db.prepare(`
-        INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
-      `).run(id, userId, kickUsername, voucherTitle, costPoints, now);
+        INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at, item_key, week_number)
+        VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
+      `).run(id, userId, kickUsername, voucherTitle, effectiveCost, nowSec, catalogItem?.key || null, week);
 
       this.db.exec('COMMIT;');
       const list = this.getStoreRedemptions();
       const created = list.find(r => r.id === id);
-      return { success: true, redemption: created };
+      const updatedCatalog = catalogItem ? this.getStoreCatalogStatus(user.id, week, nowSec).find(s => s.key === catalogItem.key) : undefined;
+      return {
+        success: true,
+        redemption: created,
+        effectiveCost,
+        remainingStock: updatedCatalog ? updatedCatalog.remainingStock : null
+      };
     } catch (err: any) {
       this.db.exec('ROLLBACK;');
       return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Phase 6 House Games Anti-Exploit Engine:
+   * Connects the 9 House Games to real $DIG balance with:
+   * - RTP = 95.00% (5% House Edge)
+   * - MAX BET = 50 $DIG
+   * - MAX WIN CAP = 500 $DIG net profit per spin/round
+   */
+  public processHouseGameBet(
+    userIdOrUsername: string,
+    game: string,
+    betAmount: number,
+    rawMultiplier: number
+  ): {
+    success: boolean;
+    game: string;
+    betAmount: number;
+    rawPayout: number;
+    cappedPayout: number;
+    netProfit: number;
+    newBalance: number;
+    rtp: number;
+    maxBet: number;
+    maxWinCap: number;
+    error?: string;
+  } {
+    const RTP = 95.00;
+    const MAX_BET = 50;
+    const MAX_WIN_CAP = 500;
+
+    let user = this.getUserById(userIdOrUsername) || this.getUserByUsername(userIdOrUsername);
+    if (!user) {
+      return {
+        success: false,
+        game,
+        betAmount,
+        rawPayout: 0,
+        cappedPayout: 0,
+        netProfit: 0,
+        newBalance: 0,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP,
+        error: 'User not found'
+      };
+    }
+
+    if (!Number.isFinite(betAmount) || betAmount < 1) {
+      return {
+        success: false,
+        game,
+        betAmount,
+        rawPayout: 0,
+        cappedPayout: 0,
+        netProfit: 0,
+        newBalance: user.points_balance,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP,
+        error: 'MIN_BET_INVALID: Minimum bet is 1 $DIG'
+      };
+    }
+
+    if (betAmount > MAX_BET) {
+      return {
+        success: false,
+        game,
+        betAmount,
+        rawPayout: 0,
+        cappedPayout: 0,
+        netProfit: 0,
+        newBalance: user.points_balance,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP,
+        error: `MAX_BET_EXCEEDED: Maximum bet is ${MAX_BET} $DIG`
+      };
+    }
+
+    const cleanBet = Math.floor(betAmount);
+    if (user.points_balance < cleanBet) {
+      return {
+        success: false,
+        game,
+        betAmount: cleanBet,
+        rawPayout: 0,
+        cappedPayout: 0,
+        netProfit: 0,
+        newBalance: user.points_balance,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP,
+        error: `INSUFFICIENT_BALANCE: Need ${cleanBet} $DIG, have ${user.points_balance} $DIG`
+      };
+    }
+
+    const rawPayout = rawMultiplier > 0 ? Math.floor(cleanBet * rawMultiplier) : 0;
+    // Cap net profit at +500 $DIG (so gross payout is at most cleanBet + 500)
+    const maxGrossPayout = cleanBet + MAX_WIN_CAP;
+    const cappedPayout = rawPayout > 0 ? Math.min(rawPayout, maxGrossPayout) : 0;
+    const netProfit = cappedPayout - cleanBet;
+    const newBalance = user.points_balance + netProfit;
+    const now = Math.floor(Date.now() / 1000);
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      this.db.prepare('UPDATE users SET points_balance = ? WHERE id = ?').run(newBalance, user.id);
+      const txId = crypto.randomUUID();
+      this.db.prepare(`
+        INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at)
+        VALUES (?, ?, ?, ?, 'HOUSE_GAME_BET', ?, ?, ?)
+      `).run(
+        txId,
+        user.id,
+        netProfit,
+        newBalance,
+        game,
+        JSON.stringify({ game, betAmount: cleanBet, rawMultiplier, rawPayout, cappedPayout, netProfit, rtp: RTP }),
+        now
+      );
+      this.db.exec('COMMIT;');
+
+      return {
+        success: true,
+        game,
+        betAmount: cleanBet,
+        rawPayout,
+        cappedPayout,
+        netProfit,
+        newBalance,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP
+      };
+    } catch (err: any) {
+      this.db.exec('ROLLBACK;');
+      return {
+        success: false,
+        game,
+        betAmount: cleanBet,
+        rawPayout: 0,
+        cappedPayout: 0,
+        netProfit: 0,
+        newBalance: user.points_balance,
+        rtp: RTP,
+        maxBet: MAX_BET,
+        maxWinCap: MAX_WIN_CAP,
+        error: err.message
+      };
     }
   }
 
