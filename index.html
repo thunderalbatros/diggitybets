@@ -2629,13 +2629,14 @@
           </div>
 
           <!-- 7. Winner Celebration Transparent Overlay (Coins + Trumpets) -->
-          <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(245, 158, 11, 0.06)); border: 1px solid rgba(255, 215, 0, 0.55); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; grid-column: 1 / -1;">
+          <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(245, 158, 11, 0.06)); border: 1px solid rgba(255, 215, 0, 0.55); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; grid-column: 1 / -1; flex-wrap: wrap;">
             <div style="min-width: 0; flex: 1;">
-              <div style="font-size: 11px; font-weight: 900; color: var(--gold);">🎺 Winner Celebration Overlay — Falling Coins &amp; Trumpet Fanfare (1920x1080 Transparent · Always Active in OBS)</div>
+              <div style="font-size: 11px; font-weight: 900; color: var(--gold);">🎺 Winner Celebration Overlay — Trumpet Fanfare, Falling Coins &amp; Winner Avatar (1920x1080 Transparent · Always Active in OBS)</div>
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-celebration/index.html?obs=1</code>
             </div>
-            <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" id="cp-btn-test-celebration" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 10px; border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.12);">🎺 Test Celebration</button>
+            <div style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;">
+              <button type="button" id="cp-btn-test-celebration-partial" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 10px; border-color: #00e5ff; color: #00e5ff; background: rgba(0,229,255,0.12);">⚔️ Test Partial Win</button>
+              <button type="button" id="cp-btn-test-celebration" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 10px; border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.14);">👑 Test Grand Win (!cashout / $20 / Tourney)</button>
               <button type="button" id="btn-copy-obs-celebration" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-celebration/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
               <a href="/overlay-celebration/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
@@ -3069,23 +3070,23 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=21.0"></script>
-  <script src="site/js/slot-resolver.js?v=21.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=21.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=21.0"></script>
-  <script src="site/js/audio.js?v=21.0"></script>
-  <script src="site/js/provably-fair.js?v=21.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=21.0"></script>
-  <script src="site/js/avatar-generator.js?v=21.0"></script>
-  <script src="site/js/user-store.js?v=21.0"></script>
-  <script src="site/js/auth-oauth.js?v=21.0"></script>
-  <script src="site/js/admin-hub.js?v=21.0"></script>
-  <script src="site/js/house-games.js?v=21.0"></script>
-  <script src="site/js/tournament-prediction.js?v=21.0"></script>
-  <script src="site/js/bonushunt.js?v=21.0"></script>
-  <script src="site/js/motion-fx.js?v=21.0"></script>
-  <script src="site/js/sonner-toast.js?v=21.0"></script>
-  <script src="site/js/app.js?v=21.0"></script>
+  <script src="data/curated_slots.js?v=22.0"></script>
+  <script src="site/js/slot-resolver.js?v=22.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=22.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=22.0"></script>
+  <script src="site/js/audio.js?v=22.0"></script>
+  <script src="site/js/provably-fair.js?v=22.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=22.0"></script>
+  <script src="site/js/avatar-generator.js?v=22.0"></script>
+  <script src="site/js/user-store.js?v=22.0"></script>
+  <script src="site/js/auth-oauth.js?v=22.0"></script>
+  <script src="site/js/admin-hub.js?v=22.0"></script>
+  <script src="site/js/house-games.js?v=22.0"></script>
+  <script src="site/js/tournament-prediction.js?v=22.0"></script>
+  <script src="site/js/bonushunt.js?v=22.0"></script>
+  <script src="site/js/motion-fx.js?v=22.0"></script>
+  <script src="site/js/sonner-toast.js?v=22.0"></script>
+  <script src="site/js/app.js?v=22.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 
