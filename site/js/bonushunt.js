@@ -6,7 +6,7 @@
 
 class BonusHuntController {
   constructor() {
-    this.isActive = localStorage.getItem('hunthub_hunt_active') === 'true';
+    this.isActive = localStorage.getItem('hunthub_hunt_active') !== 'false';
     this.huntId = 'hunt_1';
     this.huntName = 'Community Bonus Hunt #12';
     this.startBalance = 1500;
@@ -77,9 +77,9 @@ class BonusHuntController {
       try { 
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(s => {
-            if (window.SlotResolver && s && s.name) {
-              const canon = window.SlotResolver.resolve(s.name);
+          const healed = parsed.map(s => {
+            if (window.SlotResolver && s && (s.name || s.slotName)) {
+              const canon = window.SlotResolver.resolve(s.name || s.slotName);
               if (canon && canon.image) {
                 s.image = canon.image;
                 if (!s.provider || s.provider === 'Provider') s.provider = canon.provider;
@@ -87,6 +87,8 @@ class BonusHuntController {
             }
             return s;
           });
+          localStorage.setItem('hunthub_hunt_slots', JSON.stringify(healed));
+          return healed;
         }
       } catch (e) {}
     }
@@ -162,8 +164,20 @@ class BonusHuntController {
     const remainingBetPool = remainingCount * 2.0;
     const reqAvg = remainingBetPool > 0 ? (remainingToBreakEven / remainingBetPool).toFixed(1) : '0.0';
 
-    if (costEl) costEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-    if (paidEl) paidEl.textContent = `$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (costEl) {
+      if (typeof window.animateNumber === 'function') {
+        window.animateNumber(costEl, totalCost, { prefix: '$', decimals: 2 });
+      } else {
+        costEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      }
+    }
+    if (paidEl) {
+      if (typeof window.animateNumber === 'function') {
+        window.animateNumber(paidEl, totalPaid, { prefix: '$', decimals: 2 });
+      } else {
+        paidEl.textContent = `$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      }
+    }
     if (openedEl) openedEl.textContent = `${openedCount} / ${this.slots.length}`;
     if (reqAvgEl) reqAvgEl.textContent = `${reqAvg}x`;
   }
@@ -192,16 +206,16 @@ class BonusHuntController {
       const tr = document.createElement('tr');
       const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
       const isOpened = s.payout > 0;
-      const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : {
-        name: s.name,
-        provider: s.provider || 'Provider',
-        image: s.image || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s.slotName || s) : {
+        name: s.name || s.slotName,
+        provider: s.provider || s.slotProvider || 'Provider',
+        image: s.image || s.slotImage || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
       };
       const imgSrc = canon.image || (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s) : s.image);
       const esc = window.escapeHTML || (x => x);
       const slotName = esc(canon.name || s.name || 'Slot');
       const slotProvider = esc(canon.provider || s.provider || 'Provider');
-      const callerName = esc(s.caller || '—');
+      const callerName = esc(s.caller || s.callerUsername || '—');
       const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
         ? window.SlotResolver.generateDataUriCard(canon.name || s.name || 'Slot', canon.provider || s.provider || 'Casino')
         : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
@@ -211,17 +225,17 @@ class BonusHuntController {
         <td class="bh-td-num">#${idx + 1}</td>
         <td class="bh-td-slot">
           <div class="bh-slot-info">
-            <img class="bh-slot-thumb" src="${imgSrc}" alt="" loading="lazy" onerror="this.onerror=null; this.src='${fallbackSvg}';">
+            <img class="bh-slot-thumb" src="${imgSrc}" alt="" loading="lazy" style="width: 42px; height: 55px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
             <div>
               <span class="bh-slot-name">${slotName}</span>
               <span class="bh-slot-provider">${slotProvider}</span>
             </div>
           </div>
         </td>
+        <td class="bh-td-caller">${callerName}</td>
         <td class="bh-td-bet">$${(s.bet || 2).toFixed(2)}</td>
         <td class="bh-td-payout">${isOpened ? `$${s.payout.toFixed(2)}` : '<span class="status-pending" style="color: var(--text-dim);">Pending</span>'}</td>
         <td class="bh-td-mult"><span class="bh-mult-pill ${isOpened ? (parseFloat(mult) >= 100 ? 'super' : 'normal') : ''}">${mult}</span></td>
-        <td class="bh-td-caller">${callerName}</td>
       `;
       tbody.appendChild(tr);
     });
