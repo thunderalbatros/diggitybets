@@ -2409,6 +2409,7 @@
             <span style="font-size: 0.78rem; color: var(--text-dim);">
               Active Chat Commands:
               <code style="color:#00e5ff;">!battle &lt;slot&gt;</code> ·
+              <code style="color:#c084fc;">!sr &lt;slot&gt;</code> ·
               <code style="color:#ffd700;">!tourney &lt;slot&gt;</code> ·
               <code style="color:#53fc18;">!guess &lt;amount&gt;</code> ·
               <code style="color:#38bdf8;">!continue</code> ·
@@ -2417,26 +2418,26 @@
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="text" id="cp-chat-user-input" class="form-input-dark" placeholder="@viewer" style="width: 130px; padding: 6px 10px; font-size: 12px;" value="@KickViewer" />
-            <input type="text" id="cp-chat-cmd-input" class="form-input-dark" placeholder="e.g. !battle Wanted Dead or a Wild" style="width: 240px; padding: 6px 10px; font-size: 12px;" />
+            <input type="text" id="cp-chat-cmd-input" class="form-input-dark" placeholder="e.g. !sr Gates of Olympus 1000" style="width: 240px; padding: 6px 10px; font-size: 12px;" />
             <button type="button" id="cp-btn-send-cmd" class="btn-stake-primary" style="padding: 6px 14px; font-size: 12px;">
               ⚡ Dispatch Command
             </button>
           </div>
         </div>
         <div id="cp-live-chat-log" style="font-family: var(--font-mono); font-size: 11px; color: #94a3b8; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; max-height: 68px; overflow-y: auto;">
-          [Kick Bridge] Listening for !battle, !tourney, !guess, !continue, and !cashout on kick.com/diggitybets...
+          [Kick Bridge] Listening for !battle, !sr, !tourney, !guess, !continue, and !cashout on kick.com/diggitybets...
         </div>
       </div>
 
       <!-- 1B. ACTIVE OBS OVERLAYS & LIVE TESTER URL DIRECTORY -->
-      <div class="glass-panel" style="padding: 16px 20px; margin-bottom: 20px; border-color: rgba(0, 229, 255, 0.35); background: rgba(6, 10, 19, 0.85);">
+      <div class="glass-panel" style="padding: 16px 20px; margin-bottom: 16px; border-color: rgba(0, 229, 255, 0.35); background: rgba(6, 10, 19, 0.85);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-family: var(--font-display); font-size: 13px; font-weight: 900; color: #00e5ff; letter-spacing: 0.6px;">
               🔗 ACTIVE OBS BROWSER SOURCE OVERLAYS &amp; LIVE TESTER URLS
             </span>
             <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: #53fc18; color: #53fc18; font-size: 10px; font-weight: 900;">
-              7 OVERLAYS ONLINE
+              8 OVERLAYS ONLINE
             </span>
           </div>
           <span style="font-size: 11px; color: var(--text-dim);">
@@ -2469,7 +2470,19 @@
             </div>
           </div>
 
-          <!-- 3. CS:GO Active Chatter Wheel -->
+          <!-- 3. Slot Requests Roulette (!sr) Overlay -->
+          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.42); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-size: 11px; font-weight: 800; color: #c084fc;">🎰 Slot Requests Roulette (!sr) (620x620)</div>
+              <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-slotrequests/index.html?obs=1</code>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button type="button" id="btn-copy-obs-slotrequests" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-slotrequests/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: #c084fc; color: #c084fc;">📋 Copy</button>
+              <a href="/overlay-slotrequests/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+            </div>
+          </div>
+
+          <!-- 4. CS:GO Active Chatter Wheel -->
           <div style="background: rgba(83, 252, 24, 0.06); border: 1px solid rgba(83, 252, 24, 0.28); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 11px; font-weight: 800; color: #53fc18;">🎯 CS:GO Active Chatter Wheel (620x620)</div>
@@ -2481,10 +2494,10 @@
             </div>
           </div>
 
-          <!-- 4. Random Slot Wheel -->
+          <!-- 5. Random Slot Wheel -->
           <div style="background: rgba(168, 85, 247, 0.06); border: 1px solid rgba(168, 85, 247, 0.28); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
             <div style="min-width: 0; flex: 1;">
-              <div style="font-size: 11px; font-weight: 800; color: #c084fc;">🎰 Random Slot Wheel (620x620)</div>
+              <div style="font-size: 11px; font-weight: 800; color: #c084fc;">🎲 Random Slot Catalog Wheel (620x620)</div>
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/wheel-slots/overlay/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
@@ -2493,7 +2506,7 @@
             </div>
           </div>
 
-          <!-- 5. 8-Bracket Tournament Overlay -->
+          <!-- 6. 8-Bracket Tournament Overlay -->
           <div style="background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.28); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 11px; font-weight: 800; color: var(--gold);">🏆 8-Bracket Tournament (1920x1080)</div>
@@ -2505,7 +2518,7 @@
             </div>
           </div>
 
-          <!-- 6. Community Bonus Hunt Overlay -->
+          <!-- 7. Community Bonus Hunt Overlay -->
           <div style="background: rgba(83, 252, 24, 0.06); border: 1px solid rgba(83, 252, 24, 0.28); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 11px; font-weight: 800; color: #53fc18;">💎 Community Bonus Hunt (1920x1080)</div>
@@ -2517,7 +2530,7 @@
             </div>
           </div>
 
-          <!-- 7. Winner Celebration Transparent Overlay (Coins + Trumpets) -->
+          <!-- 8. Winner Celebration Transparent Overlay (Coins + Trumpets) -->
           <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(245, 158, 11, 0.06)); border: 1px solid rgba(255, 215, 0, 0.55); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; grid-column: 1 / -1; flex-wrap: wrap;">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 11px; font-weight: 900; color: var(--gold);">🎺 Winner Celebration Overlay — Trumpet Fanfare, Falling Coins &amp; Winner Avatar (1920x1080 Transparent · Always Active in OBS)</div>
@@ -2533,11 +2546,52 @@
         </div>
       </div>
 
+      <!-- 1C. PERFORMANCE OPTIMIZER: PER-GAME ON/OFF POWER SWITCHES -->
+      <div class="glass-panel" style="padding: 12px 18px; margin-bottom: 20px; border-color: rgba(83, 252, 24, 0.32); background: rgba(8, 13, 24, 0.92);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-family: var(--font-display); font-size: 12px; font-weight: 900; color: #53fc18; letter-spacing: 0.6px;">
+              ⚡ PERFORMANCE &amp; CPU SAVER — GAME MODULE SWITCHES (ON / OFF)
+            </span>
+            <span style="font-size: 11px; color: var(--text-dim);">
+              Turn OFF games you aren't currently playing to pause their DOM/Canvas rendering and keep your notebook at 60 FPS.
+            </span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="battle" title="Toggle 1v1 Battle & King of the Hill">
+              <span class="cp-switch-dot"></span>
+              <span>⚔️ 1v1 Battle</span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="wheels" title="Toggle Dual Wheel & Overlay Wheels">
+              <span class="cp-switch-dot"></span>
+              <span>🎡 Dual &amp; Wheels</span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="slotrequests" title="Toggle Slot Requests (!sr) Roulette">
+              <span class="cp-switch-dot"></span>
+              <span>🎰 !sr Roulette</span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="bracket" title="Toggle 8-Bracket Tournament">
+              <span class="cp-switch-dot"></span>
+              <span>🏆 8-Bracket</span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="bonushunt" title="Toggle Community Bonus Hunt">
+              <span class="cp-switch-dot"></span>
+              <span>💎 Bonus Hunt</span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- 2. MAIN 2-COLUMN STREAMER OPERATIONS GRID: 1v1 BATTLE (KOTH) + WHEELS -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px; margin-bottom: 20px;">
 
         <!-- LEFT CARD: 1v1 BATTLE & KING OF THE HILL CONTROL PANEL -->
-        <div class="glass-panel" style="padding: 22px; border-color: rgba(0, 229, 255, 0.35);">
+        <div class="glass-panel" id="cp-module-card-battle" style="padding: 22px; border-color: rgba(0, 229, 255, 0.35);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0;">
@@ -2547,7 +2601,11 @@
                 Each win = <strong style="color: #53fc18;">$5 USD</strong> · Max 4 consecutive wins = <strong style="color: var(--gold);">$20 USD Cap</strong>
               </p>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="battle" style="padding: 4px 10px; font-size: 10px;">
+                <span class="cp-switch-dot"></span>
+                <strong class="cp-switch-state">ON</strong>
+              </button>
               <span id="cp-battle-streak-badge" class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 11px; font-weight: 900;">
                 👑 STREAK: 0/4 ($0)
               </span>
@@ -2560,130 +2618,136 @@
             </div>
           </div>
 
-          <!-- Announcement / Cashout / Winner Banner -->
-          <div id="cp-koth-banner" style="display: none; margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(83, 252, 24, 0.12)); border: 1px solid var(--gold); color: #fff; font-weight: 800; font-size: 13px; text-align: center;">
+          <div id="cp-module-standby-battle" class="cp-module-standby" style="display: none;">
+            ⚡ <strong>1v1 Battle &amp; King of the Hill is OFF (Standby)</strong> — Zero CPU/DOM usage. Click the <strong>ON/OFF</strong> switch above to activate.
           </div>
 
-          <!-- Corner A (Blue) & Corner B (Red) Auto-Filled Cards -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-            <!-- PLAYER A: BLUE CORNER (REIGNING KING / WINNER A) -->
-            <div id="cp-battle-card-a" style="background: rgba(0, 229, 255, 0.07); border: 2px solid rgba(0, 229, 255, 0.55); border-radius: 12px; padding: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: #00e5ff; letter-spacing: 0.8px;">
-                  🔵 PLAYER A (BLUE CORNER)
-                </span>
-                <span id="cp-king-tag-a" style="display: none; background: var(--gold); color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
-                  👑 KING
-                </span>
+          <div id="cp-module-body-battle">
+            <!-- Announcement / Cashout / Winner Banner -->
+            <div id="cp-koth-banner" style="display: none; margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(83, 252, 24, 0.12)); border: 1px solid var(--gold); color: #fff; font-weight: 800; font-size: 13px; text-align: center;">
+            </div>
+
+            <!-- Corner A (Blue) & Corner B (Red) Auto-Filled Cards -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+              <!-- PLAYER A: BLUE CORNER (REIGNING KING / WINNER A) -->
+              <div id="cp-battle-card-a" style="background: rgba(0, 229, 255, 0.07); border: 2px solid rgba(0, 229, 255, 0.55); border-radius: 12px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: #00e5ff; letter-spacing: 0.8px;">
+                    🔵 PLAYER A (BLUE CORNER)
+                  </span>
+                  <span id="cp-king-tag-a" style="display: none; background: var(--gold); color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
+                    👑 KING
+                  </span>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+                  <img id="cp-battle-img-a" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%2300e5ff%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%2300e5ff%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20A%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(0, 229, 255, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
+                  <div style="flex: 1; min-width: 0;">
+                    <input type="text" id="cp-battle-user-a" class="form-input-dark" placeholder="Waiting Winner A..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(0, 229, 255, 0.35);" />
+                    <input type="text" id="cp-battle-slot-a" class="form-input-dark" placeholder="Slot A (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
+                  </div>
+                </div>
               </div>
-              <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-                <img id="cp-battle-img-a" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%2300e5ff%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%2300e5ff%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20A%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(0, 229, 255, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
-                <div style="flex: 1; min-width: 0;">
-                  <input type="text" id="cp-battle-user-a" class="form-input-dark" placeholder="Waiting Winner A..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(0, 229, 255, 0.35);" />
-                  <input type="text" id="cp-battle-slot-a" class="form-input-dark" placeholder="Slot A (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
+
+              <!-- PLAYER B: RED CORNER (CHALLENGER B) -->
+              <div id="cp-battle-card-b" style="background: rgba(255, 42, 95, 0.07); border: 2px solid rgba(255, 42, 95, 0.55); border-radius: 12px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: #ff2a5f; letter-spacing: 0.8px;">
+                    🔴 PLAYER B (RED CORNER)
+                  </span>
+                  <span style="font-size: 10px; color: #fca5a5; font-weight: 700;">CHALLENGER</span>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+                  <img id="cp-battle-img-b" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%23ff2a5f%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%23ff2a5f%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20B%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255, 42, 95, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
+                  <div style="flex: 1; min-width: 0;">
+                    <input type="text" id="cp-battle-user-b" class="form-input-dark" placeholder="Waiting Winner B..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(255, 42, 95, 0.35);" />
+                    <input type="text" id="cp-battle-slot-b" class="form-input-dark" placeholder="Slot B (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- PLAYER B: RED CORNER (CHALLENGER B) -->
-            <div id="cp-battle-card-b" style="background: rgba(255, 42, 95, 0.07); border: 2px solid rgba(255, 42, 95, 0.55); border-radius: 12px; padding: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: #ff2a5f; letter-spacing: 0.8px;">
-                  🔴 PLAYER B (RED CORNER)
+            <!-- STREAMER'S ONLY MANUAL STEP: MULTIPLIERS OR 50 SPINS WIN / LOSE -->
+            <div style="background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 11px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 0.6px;">
+                  ⚡ Streamer Action (Multipliers or 50 Spins Win / Lose):
                 </span>
-                <span style="font-size: 10px; color: #fca5a5; font-weight: 700;">CHALLENGER</span>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="cp-mode-mult-btn" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px; border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.12);">
+                    💰 Bonus Buy (Mult)
+                  </button>
+                  <button type="button" id="cp-mode-spin-btn" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px;">
+                    🎰 Spins (1-Click)
+                  </button>
+                </div>
               </div>
-              <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-                <img id="cp-battle-img-b" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%23ff2a5f%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%23ff2a5f%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20B%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255, 42, 95, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
-                <div style="flex: 1; min-width: 0;">
-                  <input type="text" id="cp-battle-user-b" class="form-input-dark" placeholder="Waiting Winner B..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(255, 42, 95, 0.35);" />
-                  <input type="text" id="cp-battle-slot-b" class="form-input-dark" placeholder="Slot B (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
+
+              <!-- Bonus Buy Multiplier Mode -->
+              <div id="cp-mult-box" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+                <div>
+                  <label style="font-size: 10px; color: #00e5ff; font-weight: 800; display: block; margin-bottom: 4px;">BLUE (A) MULTIPLIER (x)</label>
+                  <input type="number" id="cp-battle-mult-a" class="form-input-dark" placeholder="e.g. 142.5" step="0.01" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 800;" />
+                </div>
+                <div>
+                  <label style="font-size: 10px; color: #ff2a5f; font-weight: 800; display: block; margin-bottom: 4px;">RED (B) MULTIPLIER (x)</label>
+                  <input type="number" id="cp-battle-mult-b" class="form-input-dark" placeholder="e.g. 88.2" step="0.01" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 800;" />
+                </div>
+                <button type="button" id="cp-btn-resolve-mult" class="btn-stake-primary" style="padding: 9px 16px; font-size: 12px; font-weight: 900; white-space: nowrap;">
+                  👑 DECLARE WINNER
+                </button>
+              </div>
+
+              <!-- Spins 1-Click Mode (50 Spins Profit / Loss: WIN / LOSE) -->
+              <div id="cp-spin-box" style="display: none; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 10px; padding: 10px;">
+                  <div style="font-size: 10px; font-weight: 900; color: #00e5ff; margin-bottom: 8px; letter-spacing: 0.5px;">
+                    🔵 BLUE (A) — 50 SPINS PROFIT / LOSS:
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" id="cp-btn-win-a" class="btn-stake-primary" style="flex: 1; background: linear-gradient(135deg, #10b981, #53fc18); color: #000; font-weight: 900; padding: 9px 10px; font-size: 12px;">
+                      🏆 WIN (A)
+                    </button>
+                    <button type="button" id="cp-btn-lose-a" class="btn-chat-toggle" style="flex: 1; border-color: #ef4444; color: #ef4444; font-weight: 900; padding: 9px 10px; font-size: 12px;">
+                      ❌ LOSE (A)
+                    </button>
+                  </div>
+                </div>
+                <div style="background: rgba(255, 42, 95, 0.06); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; padding: 10px;">
+                  <div style="font-size: 10px; font-weight: 900; color: #ff2a5f; margin-bottom: 8px; letter-spacing: 0.5px;">
+                    🔴 RED (B) — 50 SPINS PROFIT / LOSS:
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" id="cp-btn-win-b" class="btn-stake-primary" style="flex: 1; background: linear-gradient(135deg, #10b981, #53fc18); color: #000; font-weight: 900; padding: 9px 10px; font-size: 12px;">
+                      🏆 WIN (B)
+                    </button>
+                    <button type="button" id="cp-btn-lose-b" class="btn-chat-toggle" style="flex: 1; border-color: #ef4444; color: #ef4444; font-weight: 900; padding: 9px 10px; font-size: 12px;">
+                      ❌ LOSE (B)
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- STREAMER'S ONLY MANUAL STEP: MULTIPLIERS OR 50 SPINS WIN / LOSE -->
-          <div style="background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <span style="font-size: 11px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 0.6px;">
-                ⚡ Streamer Action (Multipliers or 50 Spins Win / Lose):
-              </span>
-              <div style="display: flex; gap: 6px;">
-                <button type="button" id="cp-mode-mult-btn" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px; border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.12);">
-                  💰 Bonus Buy (Mult)
-                </button>
-                <button type="button" id="cp-mode-spin-btn" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px;">
-                  🎰 Spins (1-Click)
-                </button>
-              </div>
-            </div>
-
-            <!-- Bonus Buy Multiplier Mode -->
-            <div id="cp-mult-box" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
-              <div>
-                <label style="font-size: 10px; color: #00e5ff; font-weight: 800; display: block; margin-bottom: 4px;">BLUE (A) MULTIPLIER (x)</label>
-                <input type="number" id="cp-battle-mult-a" class="form-input-dark" placeholder="e.g. 142.5" step="0.01" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 800;" />
-              </div>
-              <div>
-                <label style="font-size: 10px; color: #ff2a5f; font-weight: 800; display: block; margin-bottom: 4px;">RED (B) MULTIPLIER (x)</label>
-                <input type="number" id="cp-battle-mult-b" class="form-input-dark" placeholder="e.g. 88.2" step="0.01" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 800;" />
-              </div>
-              <button type="button" id="cp-btn-resolve-mult" class="btn-stake-primary" style="padding: 9px 16px; font-size: 12px; font-weight: 900; white-space: nowrap;">
-                👑 DECLARE WINNER
+            <!-- KING OF THE HILL COMMANDS (!continue / !cashout / Reset) -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="cp-btn-sync-cards" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">
+                🔄 Push Cards to Overlay
+              </button>
+              <button type="button" id="cp-btn-koth-continue" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18;">
+                ⚔️ !continue (Stay in A)
+              </button>
+              <button type="button" id="cp-btn-koth-cashout" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: var(--gold); color: var(--gold);">
+                💰 !cashout ($5/Win)
+              </button>
+              <button type="button" id="cp-btn-battle-clear" class="btn-chat-toggle" style="padding: 8px 12px; font-size: 11px; border-color: #ef4444; color: #ef4444;">
+                🗑️ Clear Both
               </button>
             </div>
-
-            <!-- Spins 1-Click Mode (50 Spins Profit / Loss: WIN / LOSE) -->
-            <div id="cp-spin-box" style="display: none; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div style="background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 10px; padding: 10px;">
-                <div style="font-size: 10px; font-weight: 900; color: #00e5ff; margin-bottom: 8px; letter-spacing: 0.5px;">
-                  🔵 BLUE (A) — 50 SPINS PROFIT / LOSS:
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <button type="button" id="cp-btn-win-a" class="btn-stake-primary" style="flex: 1; background: linear-gradient(135deg, #10b981, #53fc18); color: #000; font-weight: 900; padding: 9px 10px; font-size: 12px;">
-                    🏆 WIN (A)
-                  </button>
-                  <button type="button" id="cp-btn-lose-a" class="btn-chat-toggle" style="flex: 1; border-color: #ef4444; color: #ef4444; font-weight: 900; padding: 9px 10px; font-size: 12px;">
-                    ❌ LOSE (A)
-                  </button>
-                </div>
-              </div>
-              <div style="background: rgba(255, 42, 95, 0.06); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; padding: 10px;">
-                <div style="font-size: 10px; font-weight: 900; color: #ff2a5f; margin-bottom: 8px; letter-spacing: 0.5px;">
-                  🔴 RED (B) — 50 SPINS PROFIT / LOSS:
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <button type="button" id="cp-btn-win-b" class="btn-stake-primary" style="flex: 1; background: linear-gradient(135deg, #10b981, #53fc18); color: #000; font-weight: 900; padding: 9px 10px; font-size: 12px;">
-                    🏆 WIN (B)
-                  </button>
-                  <button type="button" id="cp-btn-lose-b" class="btn-chat-toggle" style="flex: 1; border-color: #ef4444; color: #ef4444; font-weight: 900; padding: 9px 10px; font-size: 12px;">
-                    ❌ LOSE (B)
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- KING OF THE HILL COMMANDS (!continue / !cashout / Reset) -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button type="button" id="cp-btn-sync-cards" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">
-              🔄 Push Cards to Overlay
-            </button>
-            <button type="button" id="cp-btn-koth-continue" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18;">
-              ⚔️ !continue (Stay in A)
-            </button>
-            <button type="button" id="cp-btn-koth-cashout" class="btn-chat-toggle" style="flex: 1; padding: 8px 10px; font-size: 11px; border-color: var(--gold); color: var(--gold);">
-              💰 !cashout ($5/Win)
-            </button>
-            <button type="button" id="cp-btn-battle-clear" class="btn-chat-toggle" style="padding: 8px 12px; font-size: 11px; border-color: #ef4444; color: #ef4444;">
-              🗑️ Clear Both
-            </button>
           </div>
         </div>
 
         <!-- RIGHT CARD: DUAL WHEEL (wheel-duo) + CS:GO WHEEL + SLOT WHEEL -->
-        <div class="glass-panel" style="padding: 22px; border-color: rgba(255, 215, 0, 0.35);">
+        <div class="glass-panel" id="cp-module-card-wheels" style="padding: 22px; border-color: rgba(255, 215, 0, 0.35);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0;">
@@ -2694,6 +2758,10 @@
               </p>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="wheels" style="padding: 4px 10px; font-size: 10px;">
+                <span class="cp-switch-dot"></span>
+                <strong class="cp-switch-state">ON</strong>
+              </button>
               <button type="button" id="cp-btn-obs-duo" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--gold); color: var(--gold);">
                 📋 OBS Duo URL
               </button>
@@ -2703,95 +2771,200 @@
             </div>
           </div>
 
-          <!-- TARGET CORNER INDICATOR (BLUE FOR A, RED FOR B) -->
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 10px 14px; border-radius: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 11px; color: var(--text-dim); font-weight: 700;">NEXT WHEEL SPIN TARGET:</span>
-              <span id="cp-wheel-target-pill" style="padding: 4px 12px; border-radius: 999px; font-family: var(--font-display); font-size: 11px; font-weight: 900; background: rgba(0, 229, 255, 0.18); border: 1px solid #00e5ff; color: #00e5ff;">
-                🔵 PLAYER A (BLUE CORNER)
-              </span>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button type="button" id="cp-btn-target-a" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #00e5ff; color: #00e5ff;">Target A</button>
-              <button type="button" id="cp-btn-target-b" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #ff2a5f; color: #ff2a5f;">Target B</button>
-            </div>
+          <div id="cp-module-standby-wheels" class="cp-module-standby" style="display: none;">
+            ⚡ <strong>Dual Wheel &amp; Overlay Wheels are OFF (Standby)</strong> — Zero CPU/DOM usage. Click the <strong>ON/OFF</strong> switch above to activate.
           </div>
 
-          <!-- SPIN DUO WHEEL BUTTON & MODE SWITCH -->
-          <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
-            <button type="button" id="cp-btn-spin-duo" class="btn-stake-primary" style="flex: 2; padding: 12px 16px; font-size: 13px; font-weight: 900;">
-              🎡 SPIN DUO WHEEL (Pick Winner &amp; Fill Corner)
-            </button>
-            <button type="button" id="cp-btn-duo-mode-battle" class="btn-chat-toggle" style="padding: 10px 12px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">
-              ⚔️ !battle Queue
-            </button>
-            <button type="button" id="cp-btn-duo-mode-tourney" class="btn-chat-toggle" style="padding: 10px 12px; font-size: 11px; border-color: var(--gold); color: var(--gold);">
-              🏆 !tourney Queue
-            </button>
-          </div>
-
-          <!-- ADD TO DUO WHEEL QUEUE MANUALLY -->
-          <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-            <input type="text" id="cp-duo-add-user" class="form-input-dark" placeholder="@username" style="flex: 1; min-width: 110px; padding: 7px 10px; font-size: 12px;" />
-            <input type="text" id="cp-duo-add-slot" class="form-input-dark" placeholder="Slot name (e.g. Gates of Olympus)" style="flex: 2; min-width: 160px; padding: 7px 10px; font-size: 12px;" />
-            <button type="button" id="cp-btn-duo-add" class="btn-chat-toggle" style="padding: 7px 12px; font-size: 11px; border-color: #53fc18; color: #53fc18;">
-              + Add to Wheel
-            </button>
-            <button type="button" id="cp-btn-duo-clear" class="btn-chat-toggle" style="padding: 7px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444;">
-              Clear Pool
-            </button>
-          </div>
-
-          <!-- ACTIVE DUO WHEEL POOL LIST -->
-          <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 10px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">
-              <span>Active Duo Wheel Pool (Winners are automatically removed on spin):</span>
-              <strong id="cp-duo-queue-count" style="color: #53fc18;">0 entries</strong>
+          <div id="cp-module-body-wheels">
+            <!-- TARGET CORNER INDICATOR (BLUE FOR A, RED FOR B) -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 10px 14px; border-radius: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; color: var(--text-dim); font-weight: 700;">NEXT WHEEL SPIN TARGET:</span>
+                <span id="cp-wheel-target-pill" style="padding: 4px 12px; border-radius: 999px; font-family: var(--font-display); font-size: 11px; font-weight: 900; background: rgba(0, 229, 255, 0.18); border: 1px solid #00e5ff; color: #00e5ff;">
+                  🔵 PLAYER A (BLUE CORNER)
+                </span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" id="cp-btn-target-a" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #00e5ff; color: #00e5ff;">Target A</button>
+                <button type="button" id="cp-btn-target-b" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #ff2a5f; color: #ff2a5f;">Target B</button>
+              </div>
             </div>
-            <div id="cp-duo-queue-list" style="display: flex; gap: 8px; flex-wrap: wrap; max-height: 92px; overflow-y: auto;">
-              <span style="font-size: 11px; color: var(--text-muted);">Waiting for !battle &lt;slot&gt; or !tourney &lt;slot&gt; in Kick chat...</span>
-            </div>
-          </div>
 
-          <!-- CS:GO ACTIVE CHATTER WHEEL & SLOT WHEEL FULL CONTROLS -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <!-- CS:GO Active Chatter Wheel Box -->
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(83, 252, 24, 0.22); border-radius: 10px; padding: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: 800; color: var(--kick-green);">🎯 CS:GO Chatter (<span id="admin-chatters-count">0</span>)</span>
-                <div style="display: flex; gap: 4px;">
-                  <button type="button" id="btn-admin-clear-cooldowns" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; color: var(--gold);">Reset CD</button>
-                  <button type="button" id="cp-btn-obs-csgo" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
-                  <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+            <!-- SPIN DUO WHEEL BUTTON & MODE SWITCH -->
+            <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+              <button type="button" id="cp-btn-spin-duo" class="btn-stake-primary" style="flex: 2; padding: 12px 16px; font-size: 13px; font-weight: 900;">
+                🎡 SPIN DUO WHEEL (Pick Winner &amp; Fill Corner)
+              </button>
+              <button type="button" id="cp-btn-duo-mode-battle" class="btn-chat-toggle" style="padding: 10px 12px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">
+                ⚔️ !battle Queue
+              </button>
+              <button type="button" id="cp-btn-duo-mode-tourney" class="btn-chat-toggle" style="padding: 10px 12px; font-size: 11px; border-color: var(--gold); color: var(--gold);">
+                🏆 !tourney Queue
+              </button>
+            </div>
+
+            <!-- ADD TO DUO WHEEL QUEUE MANUALLY -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="text" id="cp-duo-add-user" class="form-input-dark" placeholder="@username" style="flex: 1; min-width: 110px; padding: 7px 10px; font-size: 12px;" />
+              <input type="text" id="cp-duo-add-slot" class="form-input-dark" placeholder="Slot name (e.g. Gates of Olympus)" style="flex: 2; min-width: 160px; padding: 7px 10px; font-size: 12px;" />
+              <button type="button" id="cp-btn-duo-add" class="btn-chat-toggle" style="padding: 7px 12px; font-size: 11px; border-color: #53fc18; color: #53fc18;">
+                + Add to Wheel
+              </button>
+              <button type="button" id="cp-btn-duo-clear" class="btn-chat-toggle" style="padding: 7px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444;">
+                Clear Pool
+              </button>
+            </div>
+
+            <!-- ACTIVE DUO WHEEL POOL LIST -->
+            <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 10px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">
+                <span>Active Duo Wheel Pool (Winners are automatically removed on spin):</span>
+                <strong id="cp-duo-queue-count" style="color: #53fc18;">0 entries</strong>
+              </div>
+              <div id="cp-duo-queue-list" style="display: flex; gap: 8px; flex-wrap: wrap; max-height: 92px; overflow-y: auto;">
+                <span style="font-size: 11px; color: var(--text-muted);">Waiting for !battle &lt;slot&gt; or !tourney &lt;slot&gt; in Kick chat...</span>
+              </div>
+            </div>
+
+            <!-- CS:GO ACTIVE CHATTER WHEEL & SLOT WHEEL FULL CONTROLS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <!-- CS:GO Active Chatter Wheel Box -->
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(83, 252, 24, 0.22); border-radius: 10px; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 800; color: var(--kick-green);">🎯 CS:GO Chatter (<span id="admin-chatters-count">0</span>)</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" id="btn-admin-clear-cooldowns" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; color: var(--gold);">Reset CD</button>
+                    <button type="button" id="cp-btn-obs-csgo" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
+                    <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+                  </div>
+                </div>
+                <button type="button" id="cp-btn-spin-csgo" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: var(--kick-green); color: var(--kick-green); font-weight: 800; margin-bottom: 6px;">
+                  🎯 Spin CS:GO Active Chatter Wheel
+                </button>
+                <div id="admin-chatters-list" style="max-height: 58px; overflow-y: auto; font-size: 10px; color: var(--text-muted);">
+                  Listening for active chatters (90s window)...
                 </div>
               </div>
-              <button type="button" id="cp-btn-spin-csgo" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: var(--kick-green); color: var(--kick-green); font-weight: 800; margin-bottom: 6px;">
-                🎯 Spin CS:GO Active Chatter Wheel
-              </button>
-              <div id="admin-chatters-list" style="max-height: 58px; overflow-y: auto; font-size: 10px; color: var(--text-muted);">
-                Listening for active chatters (90s window)...
+
+              <!-- Random Slot Wheel Box -->
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #c084fc;">🎲 Random Slot Wheel</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" id="cp-btn-obs-slots" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
+                    <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+                  </div>
+                </div>
+                <select id="admin-slot-category-select" class="form-input-dark" style="width: 100%; margin-bottom: 6px; padding: 5px 8px; font-size: 11px;">
+                  <option value="all">ALL SLOTS (4,889)</option>
+                  <option value="stake">💎 ONLY ON STAKE</option>
+                  <option value="pragmatic">⚡ PRAGMATIC PLAY</option>
+                  <option value="hacksaw">🪚 HACKSAW GAMING</option>
+                  <option value="nolimit">💀 NOLIMIT CITY</option>
+                </select>
+                <button type="button" id="cp-btn-spin-slots" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: #a855f7; color: #c084fc; font-weight: 800;">
+                  🎲 Spin Random Slot Wheel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2B. DEDICATED SLOT REQUESTS ROULETTE (!sr <slot>) CONTROLLER CARD -->
+      <div class="glass-panel" id="cp-module-card-slotrequests" style="padding: 22px; margin-bottom: 20px; border-color: rgba(168, 85, 247, 0.45); background: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(9, 13, 24, 0.94));">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>🎰</span> SLOT REQUESTS &amp; ROULETTE (<code style="color:#c084fc; font-size: 0.95rem;">!sr &lt;slot&gt;</code>)
+            </h3>
+            <p style="font-size: 12px; color: var(--text-dim); margin: 2px 0 0 0;">
+              Automated <code style="color:#c084fc;">!sr &lt;slot&gt;</code> chat wheel · Displays <strong style="color:#ffd700;">@username + Slot Name</strong> on the wheel and reveals <strong style="color:#53fc18;">Winner Avatar + Username + Official Slot Card</strong>.
+            </p>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="slotrequests" style="padding: 4px 10px; font-size: 10px;">
+              <span class="cp-switch-dot"></span>
+              <strong class="cp-switch-state">ON</strong>
+            </button>
+            <button type="button" id="cp-btn-obs-sr" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-slotrequests/index.html" data-obs-size="620x620" style="font-size: 11px; padding: 5px 10px; border-color: #c084fc; color: #c084fc;">
+              📋 OBS !sr URL
+            </button>
+            <a href="/overlay-slotrequests/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+              ↗️ Open Overlay
+            </a>
+            <button type="button" class="btn-game-action primary" id="bh-btn-spin-wheel" style="padding: 7px 16px; font-size: 12px; font-weight: 900; background: linear-gradient(135deg, #00e5ff 0%, #9272ff 100%); border: none; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);">
+              🎡 Spin !sr Wheel!
+            </button>
+          </div>
+        </div>
+
+        <div id="cp-module-standby-slotrequests" class="cp-module-standby" style="display: none;">
+          ⚡ <strong>Slot Requests (!sr) Roulette is OFF (Standby)</strong> — Zero CPU/DOM usage. Click the <strong>ON/OFF</strong> switch above to activate.
+        </div>
+
+        <div id="cp-module-body-slotrequests">
+          <div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 18px; align-items: start;">
+            <!-- Column 1: Live Roulette Wheel Canvas (@username + Slot) -->
+            <div class="bh-wheel-canvas-box" style="position: relative; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <div class="bh-wheel-pointer"></div>
+              <canvas id="bh-wheel-canvas" width="250" height="250" style="border-radius: 50%; box-shadow: 0 0 24px rgba(0,0,0,0.85); background: #070913;"></canvas>
+            </div>
+
+            <!-- Column 2: Manual !sr Input & Active Queue -->
+            <div style="min-width: 240px;">
+              <form id="bh-sr-form" style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;" onsubmit="return false;">
+                <input type="text" id="bh-sr-user-input" class="form-input-dark" placeholder="@viewer" style="width: 105px; padding: 7px 10px; font-size: 12px;" />
+                <input type="text" id="bh-sr-input" class="form-input-dark" placeholder="Slot name (e.g. San Quentin, Gates 1000...)" style="flex: 1; min-width: 140px; padding: 7px 10px; font-size: 12px;" />
+                <button type="submit" class="btn-stake-primary" id="bh-sr-submit-btn" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+                  + Add !sr
+                </button>
+                <button type="button" class="btn-chat-toggle" id="bh-sr-clear-btn" style="padding: 7px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444;">
+                  Clear
+                </button>
+              </form>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); margin-bottom: 6px;">
+                <span>ACTIVE !SR QUEUE (<span id="bh-sr-count" style="color:#53fc18;">0</span> REQUESTS)</span>
+                <span style="font-size: 10px; color: #94a3b8;">Auto-fed by <code style="color:#c084fc;">!sr &lt;slot&gt;</code></span>
+              </div>
+              <div id="bh-sr-list" style="max-height: 185px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+                <!-- Rendered dynamically -->
               </div>
             </div>
 
-            <!-- Random Slot Wheel Box -->
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: 800; color: #c084fc;">🎰 Random Slot Wheel</span>
-                <div style="display: flex; gap: 4px;">
-                  <button type="button" id="cp-btn-obs-slots" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
-                  <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+            <!-- Column 3: Winner Showcase Card (Avatar + @Username + Slot Name & Official Slot Card) -->
+            <div id="cp-sr-winner-card" style="background: rgba(0, 0, 0, 0.45); border: 1.5px solid rgba(255, 215, 0, 0.45); border-radius: 14px; padding: 14px; min-width: 260px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: var(--gold); letter-spacing: 0.8px;">
+                  👑 SELECTED !SR WINNER
+                </span>
+                <span id="cp-sr-winner-status" style="font-size: 10px; color: #94a3b8; font-weight: 700;">Waiting for spin...</span>
+              </div>
+
+              <!-- Winner Viewer Row (Avatar + @Username) -->
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 10px; margin-bottom: 10px;">
+                <img id="cp-sr-winner-avatar" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2080%2080%22%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2240%22%20r%3D%2238%22%20fill%3D%22%230b1120%22%20stroke%3D%22%2300e5ff%22%20stroke-opacity%3D%220.4%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2247%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2222%22%20fill%3D%22%2300e5ff%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Winner Avatar" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #00e5ff; flex-shrink: 0; background: #0b1120;" />
+                <div style="min-width: 0; flex: 1;">
+                  <div style="font-size: 9.5px; color: #00e5ff; font-weight: 800; letter-spacing: 0.6px;">REQUESTED BY VIEWER</div>
+                  <div id="cp-sr-winner-user" style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">—</div>
                 </div>
               </div>
-              <select id="admin-slot-category-select" class="form-input-dark" style="width: 100%; margin-bottom: 6px; padding: 5px 8px; font-size: 11px;">
-                <option value="all">ALL SLOTS (4,889)</option>
-                <option value="stake">💎 ONLY ON STAKE</option>
-                <option value="pragmatic">⚡ PRAGMATIC PLAY</option>
-                <option value="hacksaw">🪚 HACKSAW GAMING</option>
-                <option value="nolimit">💀 NOLIMIT CITY</option>
-              </select>
-              <button type="button" id="cp-btn-spin-slots" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: #a855f7; color: #c084fc; font-weight: 800;">
-                🎰 Spin Random Slot Wheel
-              </button>
+
+              <!-- Winning Slot Card (180x236) + Slot Title -->
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <img id="cp-sr-winner-slot-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%23ffd700%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22118%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2236%22%20fill%3D%22%23ffd700%22%20fill-opacity%3D%220.45%22%3E%F0%9F%8E%B0%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Slot Card" style="width: 68px; height: 89px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1.5px solid var(--gold); background: #070a12; flex-shrink: 0; box-shadow: 0 6px 16px rgba(0,0,0,0.6);" />
+                <div style="min-width: 0; flex: 1;">
+                  <span id="cp-sr-winner-provider" style="display: inline-block; font-size: 9.5px; font-weight: 900; color: var(--gold); background: rgba(255,215,0,0.14); border: 1px solid rgba(255,215,0,0.4); padding: 2px 7px; border-radius: 4px; margin-bottom: 4px;">SLOT REQUEST</span>
+                  <div id="cp-sr-winner-slot-name" style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #ffffff; line-height: 1.2;">Spin the wheel to pick a slot!</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 6px;">
+                <button type="button" id="cp-sr-winner-add-hunt" class="btn-chat-toggle" style="flex: 1; padding: 6px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18; font-weight: 800;">
+                  + Add to Bonus Hunt
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2801,7 +2974,7 @@
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 20px;">
 
         <!-- 8-BRACKET TOURNAMENT FULL LIVE CONTROL -->
-        <div class="glass-panel" style="padding: 22px; border-color: rgba(255, 215, 0, 0.35);">
+        <div class="glass-panel" id="cp-module-card-bracket" style="padding: 22px; border-color: rgba(255, 215, 0, 0.35);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.12rem; font-weight: 900; color: var(--gold); margin: 0;">
@@ -2811,7 +2984,11 @@
                 Synced with <code style="color:var(--gold);">!tourney &lt;slot&gt;</code> chat entries (<strong id="cp-tourney-q-count" style="color:#fff;">0</strong> queued) &amp; Dual Wheel.
               </p>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="bracket" style="padding: 4px 10px; font-size: 10px;">
+                <span class="cp-switch-dot"></span>
+                <strong class="cp-switch-state">ON</strong>
+              </button>
               <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">LOBBY OPEN</span>
               <button type="button" id="cp-btn-obs-tourney" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--gold); color: var(--gold);">
                 📋 OBS Bracket URL
@@ -2822,31 +2999,37 @@
             </div>
           </div>
 
-          <!-- Tourney Game Mode Switcher + Actions -->
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: rgba(0,0,0,0.38); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 11px; font-weight: 800; color: var(--gold);">MODE:</span>
-              <button type="button" class="btn-stake-primary" id="btn-admin-tourney-mode-buy" style="padding: 5px 10px; font-size: 11px;">🎁 Bonus Buy (Mult)</button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 5px 10px; font-size: 11px;">🎰 Spins (1-Click)</button>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" id="cp-btn-seed-tourney" class="btn-stake-primary" style="padding: 6px 10px; font-size: 11px;">
-                ⚡ Auto-Seed (!tourney)
-              </button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-open-tourney" style="padding: 6px 10px; font-size: 11px;">Open Lobby</button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-tourney" style="padding: 6px 10px; font-size: 11px;">🎲 8 Demo Players</button>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 6px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 800;">🗑️ Reset Bracket</button>
-            </div>
+          <div id="cp-module-standby-bracket" class="cp-module-standby" style="display: none;">
+            ⚡ <strong>8-Bracket Tournament is OFF (Standby)</strong> — Zero CPU/DOM usage. Click the <strong>ON/OFF</strong> switch above to activate.
           </div>
 
-          <!-- Interactive 3-Round Bracket Matches (QF M1-M4, SF M5-M6, Final M7) -->
-          <div id="admin-tourney-rounds-container" style="max-height: 460px; overflow-y: auto; padding-right: 4px;">
-            <!-- Rendered dynamically by admin-hub.js -->
+          <div id="cp-module-body-bracket">
+            <!-- Tourney Game Mode Switcher + Actions -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: rgba(0,0,0,0.38); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 800; color: var(--gold);">MODE:</span>
+                <button type="button" class="btn-stake-primary" id="btn-admin-tourney-mode-buy" style="padding: 5px 10px; font-size: 11px;">🎁 Bonus Buy (Mult)</button>
+                <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 5px 10px; font-size: 11px;">🎰 Spins (1-Click)</button>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="cp-btn-seed-tourney" class="btn-stake-primary" style="padding: 6px 10px; font-size: 11px;">
+                  ⚡ Auto-Seed (!tourney)
+                </button>
+                <button type="button" class="btn-stake-secondary" id="btn-admin-open-tourney" style="padding: 6px 10px; font-size: 11px;">Open Lobby</button>
+                <button type="button" class="btn-stake-secondary" id="btn-admin-demo-tourney" style="padding: 6px 10px; font-size: 11px;">🎲 8 Demo Players</button>
+                <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 6px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 800;">🗑️ Reset Bracket</button>
+              </div>
+            </div>
+
+            <!-- Interactive 3-Round Bracket Matches (QF M1-M4, SF M5-M6, Final M7) -->
+            <div id="admin-tourney-rounds-container" style="max-height: 460px; overflow-y: auto; padding-right: 4px;">
+              <!-- Rendered dynamically by admin-hub.js -->
+            </div>
           </div>
         </div>
 
         <!-- COMMUNITY BONUS HUNT FULL MASTER CONTROL -->
-        <div class="glass-panel" style="padding: 22px; border-color: rgba(83, 252, 24, 0.35);">
+        <div class="glass-panel" id="cp-module-card-bonushunt" style="padding: 22px; border-color: rgba(83, 252, 24, 0.35);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.12rem; font-weight: 900; color: var(--kick-green); margin: 0;">
@@ -2857,6 +3040,10 @@
               </p>
             </div>
             <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="cp-power-switch is-on" data-cp-module-toggle="bonushunt" style="padding: 4px 10px; font-size: 10px;">
+                <span class="cp-switch-dot"></span>
+                <strong class="cp-switch-state">ON</strong>
+              </button>
               <button type="button" id="cp-btn-obs-bh" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--kick-green); color: var(--kick-green);">
                 📋 OBS Hunt URL
               </button>
@@ -2869,58 +3056,64 @@
             </div>
           </div>
 
-          <!-- Add Bonus Bar with Catalog Autocomplete -->
-          <div style="padding: 12px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; margin-bottom: 12px;">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
-              <div style="flex: 2; min-width: 170px; position: relative;">
-                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
-                <input type="text" id="admin-hunt-slot-search" class="form-input-dark" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
-                <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
-              </div>
-              <div style="flex: 1; min-width: 105px;">
-                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
-                <input type="text" id="admin-hunt-caller-input" class="form-input-dark" placeholder="@Viewer" style="width: 100%; padding: 7px 10px; font-size: 12px;">
-              </div>
-              <div style="width: 82px;">
-                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
-                <input type="number" id="admin-hunt-bet-input" class="form-input-dark" value="2.00" step="0.20" style="width: 100%; padding: 7px 8px; font-size: 12px;">
-              </div>
-              <button type="button" class="btn-stake-primary" id="btn-admin-add-bonus" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
-                + Add Bonus
-              </button>
-            </div>
+          <div id="cp-module-standby-bonushunt" class="cp-module-standby" style="display: none;">
+            ⚡ <strong>Community Bonus Hunt is OFF (Standby)</strong> — Zero CPU/DOM usage. Click the <strong>ON/OFF</strong> switch above to activate.
           </div>
 
-          <!-- Live Bonuses Table -->
-          <div style="overflow-x: auto; max-height: 290px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; margin-bottom: 12px;">
-            <table class="bh-table" style="font-size: 12px;">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>SLOT MACHINE</th>
-                  <th>CALLER</th>
-                  <th>BET ($)</th>
-                  <th>PAYOUT ($)</th>
-                  <th>MULT</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="admin-hunt-bonuses-tbody">
-                <!-- Rendered dynamically by admin-hub.js -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Guess The Balance Resolution Bar -->
-          <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-family: var(--font-display); font-size: 11px; font-weight: 800; color: var(--gold);">FINAL BALANCE ($):</span>
-              <input type="number" id="admin-hunt-final-balance" class="form-input-dark" placeholder="e.g. 1420.50" style="width: 120px; padding: 6px 8px; font-size: 12px;">
-              <button type="button" class="btn-stake-primary" id="btn-admin-resolve-guess" style="padding: 6px 12px; font-size: 11px; font-weight: 800;">
-                🏆 Resolve !guess Winner
-              </button>
+          <div id="cp-module-body-bonushunt">
+            <!-- Add Bonus Bar with Catalog Autocomplete -->
+            <div style="padding: 12px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; margin-bottom: 12px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 2; min-width: 170px; position: relative;">
+                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
+                  <input type="text" id="admin-hunt-slot-search" class="form-input-dark" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+                  <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
+                </div>
+                <div style="flex: 1; min-width: 105px;">
+                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
+                  <input type="text" id="admin-hunt-caller-input" class="form-input-dark" placeholder="@Viewer" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+                </div>
+                <div style="width: 82px;">
+                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
+                  <input type="number" id="admin-hunt-bet-input" class="form-input-dark" value="2.00" step="0.20" style="width: 100%; padding: 7px 8px; font-size: 12px;">
+                </div>
+                <button type="button" class="btn-stake-primary" id="btn-admin-add-bonus" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
+                  + Add Bonus
+                </button>
+              </div>
             </div>
-            <div id="admin-guess-winner-display" style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--kick-green);"></div>
+
+            <!-- Live Bonuses Table -->
+            <div style="overflow-x: auto; max-height: 290px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; margin-bottom: 12px;">
+              <table class="bh-table" style="font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>SLOT MACHINE</th>
+                    <th>CALLER</th>
+                    <th>BET ($)</th>
+                    <th>PAYOUT ($)</th>
+                    <th>MULT</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="admin-hunt-bonuses-tbody">
+                  <!-- Rendered dynamically by admin-hub.js -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Guess The Balance Resolution Bar -->
+            <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-family: var(--font-display); font-size: 11px; font-weight: 800; color: var(--gold);">FINAL BALANCE ($):</span>
+                <input type="number" id="admin-hunt-final-balance" class="form-input-dark" placeholder="e.g. 1420.50" style="width: 120px; padding: 6px 8px; font-size: 12px;">
+                <button type="button" class="btn-stake-primary" id="btn-admin-resolve-guess" style="padding: 6px 12px; font-size: 11px; font-weight: 800;">
+                  🏆 Resolve !guess Winner
+                </button>
+              </div>
+              <div id="admin-guess-winner-display" style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--kick-green);"></div>
+            </div>
           </div>
         </div>
       </div>

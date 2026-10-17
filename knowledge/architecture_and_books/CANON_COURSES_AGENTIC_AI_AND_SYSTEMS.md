@@ -66,3 +66,73 @@
    - Prevención de inyecciones de instrucciones (*indirect prompt injection*), límites de privilegios mínimos (Least Privilege Access) y cortafuegos de ejecución entre la entrada de usuarios no confiables y los comandos de terminal.
 4. **Despliegue Industrial a Gran Escala:**
    - Estudios de caso sobre agentes desplegados en infraestructuras críticas, balanceo de carga entre proveedores de modelos y arquitecturas tolerantes a fallos con *fallback* autónomo.
+
+---
+
+## 5. WalkingLabs — Learn Harness Engineering
+- **Institución:** WalkingLabs.
+- **Acceso:** Open-source en GitHub ([`walkinglabs/learn-harness-engineering`](https://github.com/walkinglabs/learn-harness-engineering)).
+- **Tesis Central:** *"The model is smart. The harness makes it reliable."* Los agentes de IA fracasan no por falta de capacidad de razonamiento del LLM, sino por falta de un arnés que constriña su espacio de búsqueda y verifique su trabajo de forma cerrada y determinista.
+
+### Los Cinco Subsistemas del Arnés
+1. **Instructions (Instrucciones con Revelación Progresiva):**
+   - Reglas maestras concisas (`AGENTS.md`), habilidades modulares cargadas bajo demanda por YAML frontmatter y prohibición estricta de volcados masivos de contexto.
+2. **State (Estado Persistido en Disco):**
+   - Libros de registro (`STATUS.md`, `progress.md`, `temporal_ledger.json`) que permiten que el trabajo se reanude de forma continua a través de múltiples sesiones y tras la compactación de contexto.
+3. **Verification (Compuertas de Verificación Deterministas):**
+   - El código nunca se declara terminado sin evidencia observable de terminal (`verify-before-claim`). Ningún agente puede auto-aprobarse sin correr tests.
+4. **Scope Control (Control de Alcance y Cambios Atómicos):**
+   - Límite de modificaciones a $\le 300$ líneas por paso, protección de archivos críticos y trabajo en ramas o sandboxes aislados.
+5. **Lifecycle & Control Systems (Sistemas de Control de Ciclo de Vida):**
+   - Bucles cerrados automatizados: bucles de objetivo (*goal loops*), temporizadores de latencia y parejas *Maker-Checker* (un agente implementa, otro audita).
+
+---
+
+## 6. DeepLearning.AI — Building Agentic Workflows with LangGraph
+- **Institución:** DeepLearning.AI en colaboración con LangChain.
+- **Instructores:** Harrison Chase (CEO & Co-fundador de LangChain) y Rotem Weiss.
+- **Acceso:** Gratuito en [deeplearning.ai/short-courses](https://www.deeplearning.ai/short-courses/).
+- **Tesis Central:** Superar las cadenas lineales simples (DAGs) adoptando **grafos cíclicos con estado persistente**, permitiendo agentes con memoria a largo plazo, bucles de corrección y control humano en el bucle (*human-in-the-loop*).
+
+### Módulos Técnicos Fundamentales
+1. **Grafos Cíclicos y Máquinas de Estado:**
+   - Modelado de nodos (acciones/llamadas a LLM) y aristas condicionales (enrutamiento según el estado devuelto). Capacidad de retroceder o reintentar sin romper el flujo.
+2. **Persistencia y Time-Travel:**
+   - Checkpointers a nivel de hilo (*threads*) que guardan el estado completo del grafo tras cada paso. Permite inspeccionar el árbol de razonamiento, reanudar tras caídas y "viajar en el tiempo" para bifurcar ejecuciones.
+3. **Human-in-the-Loop:**
+   - Primitivas `.interrupt()` para pausar la ejecución del agente antes de ejecutar acciones de alto riesgo (escritura en base de datos, compras, despliegues), solicitando validación o edición humana.
+4. **Búsqueda Agéntica Estructurada:**
+   - Integración con motores de búsqueda que devuelven estructuras de datos optimizadas para razonamiento en lugar de enlaces crudos.
+
+---
+
+## 7. DeepLearning.AI & CircleCI — Automated Testing for LLMs / LLMOps
+- **Institución:** DeepLearning.AI en colaboración con CircleCI.
+- **Instructor:** Rob Zuber (CTO de CircleCI).
+- **Acceso:** Gratuito en [deeplearning.ai/short-courses](https://www.deeplearning.ai/short-courses/).
+- **Tesis Central:** El desarrollo con LLMs requiere una transición del testing determinista tradicional a la **evaluación continua probabilística y semántica** integrada en pipelines de CI/CD.
+
+### Conceptos Clave
+1. **Testing Basado en Reglas vs. Evaluación Graduada por Modelos:**
+   - *Reglas:* Validaciones deterministas de formato (JSON válido, longitud, palabras prohibidas, AST).
+   - *Model-Graded Evals:* Uso de un modelo evaluador con rúbricas cuantitativas (G-Eval) para medir alucinaciones, tono, relevancia y fidelidad contextual.
+2. **Evaluation Gates en CI/CD:**
+   - Configuración de compuertas automatizadas en CircleCI o GitHub Actions que ejecutan suites de pruebas cada vez que se modifican prompts, modelos o datos, bloqueando regresiones antes de producción.
+3. **Métricas de Fiabilidad Pass@k:**
+   - Medición de la estabilidad de las respuestas del modelo ante variaciones semánticas y temperatura.
+
+---
+
+## 8. Supabase — Local Docker & Deterministic Migrations
+- **Institución:** Supabase (Canal Oficial de YouTube & Documentación Técnica).
+- **Tesis Central:** La administración de bases de datos para agentes e ingeniería moderna debe ser **Local-First, declarativa y 100% determinista**, eliminando la manipulación manual de consolas en la nube.
+
+### Principios Operativos de la Factoría
+1. **Schema as Code:**
+   - Cada tabla, columna, política RLS y función se codifica en archivos SQL secuenciales e inmutables dentro del repositorio (`supabase/migrations/`).
+2. **Aislamiento en Docker:**
+   - Docker levanta una réplica idéntica de la base de datos de producción localmente en segundos, con todas las extensiones (`pgcrypto`, `pg_net`) y servicios de autenticación.
+3. **Reseteo Determinista (`supabase db reset`):**
+   - Comando que destruye la base de datos local y re-ejecuta todas las migraciones desde cero seguidas de `seed.sql`, garantizando que las pruebas agénticas siempre comiencen desde un estado limpio y predecible.
+4. **Detección de Drift de Esquema (`supabase db diff`):**
+   - Comparación automática entre el estado en vivo y los archivos de migración para capturar cambios no documentados.

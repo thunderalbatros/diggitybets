@@ -120,3 +120,25 @@ flowchart TD
 
 4. **Automatización Nativa en GitHub:**
    - **`gh-aw`:** Compila instrucciones de agentes a GitHub Actions nativas con permisos granulares (`safe-outputs`), permitiendo que el repositorio se auto-mantenga de forma continua.
+
+---
+
+## 5. El Stack Tecnológico Open-Source Indispensable (SOTA 2026)
+
+Para la ejecución segura, comunicación estandarizada y monitoreo continuo dentro de la factoría de software, las siguientes 5 capas tecnológicas de código abierto representan el estándar de oro de la industria:
+
+| Capa del Pipeline | Tecnología Open-Source | Función Crítica en la Factoría |
+| :--- | :--- | :--- |
+| **1. Orquestación y Grafos** | **LangGraph / Temporal Core** | Control robusto del flujo agéntico mediante grafos cíclicos con estado persistente (*checkpointing*), evitando ciclos infinitos de ejecución y permitiendo *time-travel* y *human-in-the-loop*. |
+| **2. Aislamiento y Sandboxing** | **Docker / E2B (SDK Open-Source)** | Ejecución de código generado por IA en entornos aislados y seguros (MicroVMs Firecracker efímeras o contenedores reproducibles con reseteo determinista). |
+| **3. Protocolo de Herramientas** | **Model Context Protocol (MCP)** | Estandarización JSON-RPC 2.0 (creado por Anthropic) para conectar modelos con herramientas, APIs, recursos y editores de manera unificada y agnóstica del proveedor. |
+| **4. Evaluación de Código e IA** | **DeepEval / Ragas** | Pruebas unitarias semánticas automatizadas, métricas de fidelidad contextual (*groundedness*), relevancia de respuesta y detección de alucinaciones en pipelines RAG y generadores de código. |
+| **5. Observabilidad de Traza** | **Langfuse / OpenLLMetry** | Auditoría integral del camino de razonamiento de los agentes, árboles de ejecución (spans), latencias, métricas de error y contabilidad estricta de costos y tokens. |
+
+### 5.1 Implementación Práctica Adaptada a Restricciones de Hardware y Presupuesto ($0)
+En entornos de hardware acotado (como notebooks de trabajo con Windows, CPU/RAM limitada y presupuesto estricto de USD 0):
+1. **Orquestación:** En lugar de clústeres pesados de Temporal, se emplean máquinas de estado asíncronas nativas en Node.js y Cloudflare Durable Objects.
+2. **Sandboxing:** Se adopta el patrón **Sandcastle (Matt Pocock)** mediante **Git Worktrees efímeros** (`tools/sandbox.mjs`), ofreciendo aislamiento total por rama sin el consumo de memoria ni CPU de un demonio Docker permanente.
+3. **Protocolo MCP:** Consumo directo de servidores MCP locales y nativos del IDE (`gemini-api-docs`, `chrome-devtools`) para validar documentación y auditar interfaces.
+4. **Evaluación de Código:** Integración del **Judge Harness** (`tools/intelligence/instincts_engine.mjs --judge`) con compuertas de evaluación deterministas que auditan sintaxis, tipos, protección de configuración y ejecución de suites de prueba.
+5. **Observabilidad:** Persistencia de trazas de ejecución en archivos JSONL locales (`.system_generated/logs/transcript.jsonl`) y libros de registro temporal (`.agents/memory/temporal_ledger.json`).
