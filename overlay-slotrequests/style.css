@@ -1,0 +1,366 @@
+:root {
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --kick-green: #53fc18;
+  --cyan: #00e5ff;
+  --gold: #ffd700;
+  --purple: #a855f7;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent !important;
+  font-family: var(--font-sans);
+  color: #ffffff;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-overlay-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.sr-wheel-card {
+  position: relative;
+  width: 580px;
+  max-width: 96vw;
+  background: rgba(7, 10, 19, 0.88);
+  border: 2px solid rgba(0, 229, 255, 0.42);
+  border-radius: 26px;
+  padding: 18px 22px 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.82), 0 0 36px rgba(0, 229, 255, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+}
+
+.sr-header-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sr-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--cyan);
+}
+
+.sr-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--kick-green);
+  box-shadow: 0 0 10px var(--kick-green);
+}
+
+.sr-queue-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.45);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--kick-green);
+  letter-spacing: 0.8px;
+}
+
+.sr-wheel-wrap {
+  position: relative;
+  width: 520px;
+  height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#sr-overlay-canvas {
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 24px rgba(0, 229, 255, 0.22);
+  background: #060913;
+}
+
+.sr-wheel-pointer {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--gold);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
+}
+
+.sr-wheel-hub {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #1e293b, #070a12 78%);
+  border: 3px solid var(--gold);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.85), 0 0 18px rgba(255, 215, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.sr-hub-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sr-hub-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.sr-footer-hint {
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 600;
+  text-align: center;
+}
+
+.sr-cmd-highlight {
+  color: var(--kick-green);
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+
+/* ========================================================
+   WINNER REVEAL SHOWCASE MODAL (AVATAR + @USER + SLOT CARD)
+   ======================================================== */
+.sr-winner-showcase {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.84) translateY(20px);
+  transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1), transform 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sr-winner-showcase.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1) translateY(0);
+}
+
+.sr-winner-glow {
+  position: absolute;
+  width: 640px;
+  height: 640px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.26) 0%, rgba(0, 229, 255, 0.16) 42%, transparent 72%);
+  pointer-events: none;
+  animation: srPulseGlow 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes srPulseGlow {
+  0% { transform: scale(0.95); opacity: 0.75; }
+  100% { transform: scale(1.06); opacity: 1; }
+}
+
+.sr-winner-inner {
+  position: relative;
+  width: 540px;
+  max-width: 94vw;
+  background: linear-gradient(155deg, rgba(11, 16, 30, 0.97) 0%, rgba(6, 9, 18, 0.99) 100%);
+  border: 2.5px solid var(--gold);
+  border-radius: 24px;
+  padding: 24px 26px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.92), 0 0 42px rgba(255, 215, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sr-winner-top-tag {
+  align-self: center;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(245, 158, 11, 0.16));
+  border: 1px solid var(--gold);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.sr-winner-user-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
+.sr-winner-avatar-ring {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--cyan), var(--kick-green), var(--gold));
+  flex-shrink: 0;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+}
+
+.sr-winner-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #0b1120;
+  display: block;
+}
+
+.sr-winner-crown {
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  font-size: 22px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+}
+
+.sr-winner-user-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.sr-requested-by-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.sr-winner-username {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 229, 255, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sr-winner-slot-box {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.09), rgba(83, 252, 24, 0.06));
+  border: 1.5px solid rgba(255, 215, 0, 0.45);
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
+.sr-winner-slot-art-wrap {
+  width: 118px;
+  height: 155px;
+  aspect-ratio: 180 / 236;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--gold);
+  background: #070a12;
+  flex-shrink: 0;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.75);
+}
+
+.sr-winner-slot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #070a12;
+  display: block;
+}
+
+.sr-winner-slot-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sr-winner-provider {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.16);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.sr-winner-slot-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.sr-winner-cmd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--kick-green);
+}

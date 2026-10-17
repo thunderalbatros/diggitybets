@@ -25,8 +25,8 @@ body {
 /* Outside OBS a dark backdrop makes the transparent overlay visible */
 body.preview {
   background:
-    radial-gradient(1200px 500px at 50% 40%, #232a3f 0%, #121624 70%),
-    #121624;
+    radial-gradient(1200px 500px at 50% 40%, #0f141f 0%, #07090e 70%),
+    #07090e;
 }
 
 .oculto { display: none !important; }
@@ -48,37 +48,17 @@ body.preview {
 .stage.idle { opacity: 1; }
 body.autohide .stage.idle { opacity: 0; }
 
-/* ---------- Light effects ---------- */
-.flash {
+/* ---------- SOTA FX Canvas for 3D Coin Rain & Confetti Cannons ---------- */
+.fx-canvas {
   position: absolute;
   inset: 0;
-  z-index: 40;
+  width: 500px;
+  height: 500px;
+  z-index: 38;
   pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 244, 190, 0.95) 0%, rgba(255, 200, 40, 0.35) 45%, rgba(255, 200, 40, 0) 75%);
 }
-.flash.go { animation: flash 0.7s ease-out; }
-@keyframes flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
 
-.rays {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 800px;
-  height: 800px;
-  margin: -400px 0 0 -400px;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.30) 0deg 7deg, rgba(255, 215, 0, 0) 7deg 22deg);
-  -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.5) 40%, transparent 68%);
-  mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.5) 40%, transparent 68%);
-  transition: opacity 0.6s ease;
-}
-.stage.revealed .rays { opacity: 1; animation: raysSpin 14s linear infinite; }
-@keyframes raysSpin { to { transform: rotate(360deg); } }
-
-/* ---------- Reel container (Square & Compact) ---------- */
+/* ---------- Reel container (Square & Compact Diggity VIP Reel) ---------- */
 .ruleta {
   position: absolute;
   left: 20px;
@@ -89,10 +69,59 @@ body.autohide .stage.idle { opacity: 0; }
   display: flex;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(9, 12, 19, 0.90) 0%, rgba(15, 20, 32, 0.96) 100%);
-  border: 2px solid rgba(255, 215, 0, 0.35);
-  border-radius: 20px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.8), inset 0 0 28px rgba(0, 0, 0, 0.55);
+  background: linear-gradient(180deg, #07090e 0%, #0f141f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.reel-header {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 12;
+  pointer-events: none;
+}
+.vip-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.10);
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  padding: 3px 9px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+.live-indicator {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #53fc18;
+  background: rgba(83, 252, 24, 0.10);
+  border: 1px solid rgba(83, 252, 24, 0.22);
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.live-indicator::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #53fc18;
+  box-shadow: 0 0 8px #53fc18;
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
 }
 .ruleta.shake { animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
 @keyframes shake {

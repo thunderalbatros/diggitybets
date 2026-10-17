@@ -28,9 +28,9 @@
   const L = { cardH: 160, gap: 12, total: 56, winnerIdx: 51, spinMs: 6500, containerH: 460 };
   L.stride = L.cardH + L.gap;
 
-  // Rarity color palette
-  const RAREZAS = ['#b0c3d9', '#5e98d9', '#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b'];
-  const GOLDS = ['#ffd700', '#fff1a8', '#ffb700', '#ff8800', '#ffffff'];
+  // Diggity VIP Casino tier palette
+  const RAREZAS = ['#53fc18', '#ffd700', '#00e5ff', '#a855f7', '#ff3366', '#ff9900'];
+  const GOLDS = ['#ffd700', '#fff1a8', '#ffb700', '#53fc18', '#ffffff'];
 
   const $ = (s) => document.querySelector(s);
   const stage = $('#stage'), ruleta = $('#ruleta'), pista = $('#pista'), flash = $('#flash');
@@ -514,10 +514,16 @@
     }
 
     // T+0.35 : victory fanfare + confetti cannons + SYNCHRONIZED ON-SCREEN WINNER MODAL with DecryptedText
-    Sfx.fanfare(0.35);
-    Sfx.sparkle(0.45);
+    if (window.ProAudioFX) {
+      window.ProAudioFX.playRoyalTrumpets();
+      window.ProAudioFX.playConfettiBurst();
+    } else {
+      Sfx.fanfare(0.35);
+      Sfx.sparkle(0.45);
+    }
+
     setTimeout(() => {
-      cannons();
+      spawnSideConfettiCannons();
       const modal = $('#resultModal');
       const resName = $('#resultName');
       const resAvatar = $('#resultAvatar');
@@ -543,10 +549,14 @@
       } catch (e) {}
     }, 350);
 
-    // T+0.85 : gold coin shower
-    Sfx.coins(0.85);
+    // T+0.85 : 3D $DIG Gold Coin Rain with MetalSynth FM Audio
     setTimeout(() => {
-      coinShower();
+      if (window.ProAudioFX) {
+        window.ProAudioFX.playSkyCoinShower(2.8, 36);
+      } else {
+        Sfx.coins(0.85);
+      }
+      spawnCasinoCoinRain(36);
     }, 850);
 
     // Hold, then return to standby
@@ -565,31 +575,224 @@
     }, 650);
   }
 
-  /* ---------------- Confetti ---------------- */
-  function cannons() {
-    if (typeof confetti !== 'function') return;
-    const common = { colors: GOLDS.concat(RAREZAS), startVelocity: 62, gravity: 0.9, ticks: 220, zIndex: 50 };
-    confetti({ ...common, particleCount: 90, angle: 60, spread: 62, origin: { x: 0, y: 0.75 } });
-    confetti({ ...common, particleCount: 90, angle: 120, spread: 62, origin: { x: 1, y: 0.75 } });
-    confetti({ ...common, particleCount: 140, spread: 110, startVelocity: 48, origin: { x: 0.5, y: 0.5 } });
+  /* ============================================================
+     SOTA 2026 CASINO FX: 3D COIN RAIN & SIDE CONFETTI CANNONS
+     Inspired by tsParticles (roll, tilt, wobble) & PixiJS v8
+     ============================================================ */
+  let fxAnimationId = null;
+  const coins = [];
+  const confettiParticles = [];
+
+  function spawnCasinoCoinRain(count = 36) {
+    const canvas = $('#fxCanvas');
+    if (!canvas) return;
+    const w = canvas.width || 500;
+    const h = canvas.height || 500;
+
+    for (let i = 0; i < count; i++) {
+      coins.push({
+        x: Math.random() * (w - 60) + 30,
+        y: -50 - Math.random() * 260,
+        vx: (Math.random() - 0.5) * 2.2,
+        vy: 2.2 + Math.random() * 3.8,
+        gravity: 0.34,
+        floorY: h - 35 - Math.random() * 25,
+        bounces: 0,
+        maxBounces: 2 + Math.floor(Math.random() * 2),
+        restitution: 0.42 + Math.random() * 0.12,
+        radius: 17 + Math.random() * 4,
+        rollAngle: Math.random() * Math.PI * 2,
+        rollSpeed: 0.07 + Math.random() * 0.08,
+        tiltAngle: Math.random() * Math.PI * 2,
+        tiltSpeed: 0.04 + Math.random() * 0.05,
+        wobbleAngle: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.08,
+        wobbleDistance: 14 + Math.random() * 10,
+        rotation: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.06,
+        alpha: 1.0,
+        settled: false
+      });
+    }
+
+    startFxLoop();
   }
 
-  function coinShower() {
-    if (typeof confetti !== 'function') return;
-    let shapes;
-    try {
-      shapes = [confetti.shapeFromText({ text: '💰', scalar: 2 }), confetti.shapeFromText({ text: '⭐', scalar: 2 })];
-    } catch (e) { shapes = undefined; }
-    confetti({
-      particleCount: 36, spread: 150, origin: { x: 0.5, y: -0.1 }, gravity: 0.75, startVelocity: 22,
-      ticks: 300, scalar: 2.2, zIndex: 50, ...(shapes ? { shapes } : { colors: GOLDS })
-    });
-    const end = Date.now() + 1800;
-    (function stream() {
-      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.8 }, colors: GOLDS, zIndex: 50 });
-      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.8 }, colors: GOLDS, zIndex: 50 });
-      if (Date.now() < end) requestAnimationFrame(stream);
-    })();
+  function spawnSideConfettiCannons() {
+    const canvas = $('#fxCanvas');
+    if (!canvas) return;
+    const w = canvas.width || 500;
+    const h = canvas.height || 500;
+    const colors = ['#ffd700', '#53fc18', '#00e5ff', '#fff1a8', '#f8fafc', '#ff3366'];
+
+    // Left cannon (shooting angled upward to the right)
+    for (let i = 0; i < 45; i++) {
+      const angle = (-58 + (Math.random() * 28 - 14)) * (Math.PI / 180);
+      const speed = 16 + Math.random() * 12;
+      confettiParticles.push(createConfettiParticle(20, h - 20, Math.cos(angle) * speed, Math.sin(angle) * speed, colors));
+    }
+    // Right cannon (shooting angled upward to the left)
+    for (let i = 0; i < 45; i++) {
+      const angle = (-122 + (Math.random() * 28 - 14)) * (Math.PI / 180);
+      const speed = 16 + Math.random() * 12;
+      confettiParticles.push(createConfettiParticle(w - 20, h - 20, Math.cos(angle) * speed, Math.sin(angle) * speed, colors));
+    }
+
+    startFxLoop();
+  }
+
+  function createConfettiParticle(x, y, vx, vy, colors) {
+    return {
+      x, y, vx, vy,
+      gravity: 0.38,
+      drag: 0.965,
+      size: 7 + Math.random() * 6,
+      aspect: 0.4 + Math.random() * 0.8,
+      rollAngle: Math.random() * Math.PI * 2,
+      rollSpeed: 0.08 + Math.random() * 0.12,
+      tiltAngle: Math.random() * Math.PI * 2,
+      tiltSpeed: 0.06 + Math.random() * 0.08,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1.0,
+      life: 0,
+      maxLife: 180 + Math.floor(Math.random() * 60)
+    };
+  }
+
+  function startFxLoop() {
+    if (fxAnimationId) return;
+    const canvas = $('#fxCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let activeCount = 0;
+
+      // Confetti ribbons & squares update
+      for (let i = confettiParticles.length - 1; i >= 0; i--) {
+        const p = confettiParticles[i];
+        p.life++;
+        p.vx *= p.drag;
+        p.vy = p.vy * p.drag + p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rollAngle += p.rollSpeed;
+        p.tiltAngle += p.tiltSpeed;
+
+        if (p.life > p.maxLife - 30) {
+          p.alpha = Math.max(0, (p.maxLife - p.life) / 30);
+        }
+
+        if (p.alpha > 0.01 && p.y < canvas.height + 40) {
+          activeCount++;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.scale(Math.cos(p.rollAngle), Math.sin(p.tiltAngle));
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.alpha;
+          ctx.fillRect(-p.size / 2, -p.size * p.aspect / 2, p.size, p.size * p.aspect);
+          ctx.restore();
+        } else {
+          confettiParticles.splice(i, 1);
+        }
+      }
+
+      // 3D $DIG Gold Coins update
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const c = coins[i];
+        if (!c.settled) {
+          c.vy += c.gravity;
+          c.x += c.vx;
+          c.y += c.vy;
+          c.rollAngle += c.rollSpeed;
+          c.tiltAngle += c.tiltSpeed;
+          c.rotation += c.vRot;
+          c.wobbleAngle += c.wobbleSpeed;
+
+          // Floor bounce
+          if (c.y >= c.floorY && c.vy > 0) {
+            c.vy = -c.vy * c.restitution;
+            c.vx *= 0.72;
+            c.bounces++;
+            if (c.bounces >= c.maxBounces || Math.abs(c.vy) < 1.0) {
+              c.settled = true;
+              c.vy = 0;
+              c.vx = 0;
+            }
+          }
+        } else {
+          c.alpha -= 0.008;
+        }
+
+        if (c.alpha > 0.01) {
+          activeCount++;
+          const wobbleX = c.x + Math.sin(c.wobbleAngle) * (c.settled ? 0 : c.wobbleDistance * 0.25);
+          drawVectorCoin(ctx, wobbleX, c.y, c.radius, c.rollAngle, c.tiltAngle, c.rotation, c.alpha);
+        } else {
+          coins.splice(i, 1);
+        }
+      }
+
+      if (activeCount > 0) {
+        fxAnimationId = requestAnimationFrame(loop);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fxAnimationId = null;
+      }
+    }
+
+    fxAnimationId = requestAnimationFrame(loop);
+  }
+
+  function drawVectorCoin(ctx, x, y, r, rollAngle, tiltAngle, rotation, alpha) {
+    const scaleX = Math.cos(rollAngle);
+    const scaleY = Math.cos(tiltAngle);
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(scaleX, scaleY);
+    ctx.globalAlpha = alpha;
+
+    // Outer rim gold gradient
+    const grad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+    grad.addColorStop(0, '#fff4b8');
+    grad.addColorStop(0.3, '#ffd700');
+    grad.addColorStop(0.75, '#d49b14');
+    grad.addColorStop(1, '#8c6008');
+
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Inner rim
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Center $DIG inscription
+    if (Math.abs(scaleX) > 0.38) {
+      ctx.fillStyle = '#664303';
+      ctx.font = 'bold 10px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$DIG', 0, 0.5);
+
+      ctx.fillStyle = '#fff6bd';
+      ctx.fillText('$DIG', 0, -0.5);
+    }
+
+    // Specular shine glint when flipping through edge-on
+    if (Math.abs(scaleX) < 0.28) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillRect(-r * 0.8, -r * 0.2, r * 1.6, r * 0.4);
+    }
+
+    ctx.restore();
   }
 
   /* ============================================================
