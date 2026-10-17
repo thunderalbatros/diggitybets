@@ -101,11 +101,13 @@ class DuoWheelApp {
 
   syncTargetFromBattleState(state) {
     if (!state) return;
-    if (!state.playerA && !state.playerB) {
+    const hasA = Boolean(state.playerA && (state.playerA.username || state.playerA.name));
+    const hasB = Boolean(state.playerB && (state.playerB.username || state.playerB.name));
+    if (!hasA && !hasB) {
       this.battleTarget = 'A';
-    } else if (state.playerA && !state.playerB) {
+    } else if (hasA && !hasB) {
       this.battleTarget = 'B';
-    } else if (!state.playerA && state.playerB) {
+    } else if (!hasA && hasB) {
       this.battleTarget = 'A';
     }
     this.updateTargetPillUI();
@@ -127,7 +129,7 @@ class DuoWheelApp {
 
   addQueueEntry(entry, targetMode) {
     if (!entry || !entry.username && !entry.chatter) return;
-    const uname = entry.username || entry.chatter;
+    const uname = String(entry.username || entry.chatter).trim().replace(/^@/, '');
     const sName = entry.slotName || entry.slot || 'Wanted Dead or a Wild';
     const resolved = this.resolveSlotDetails(sName);
     if (targetMode && targetMode !== this.mode) return;
@@ -145,6 +147,7 @@ class DuoWheelApp {
     } else {
       this.pool.push(newItem);
     }
+    try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     if (!this.isSpinning) {
       this.renderTrack();
     } else {
@@ -154,6 +157,15 @@ class DuoWheelApp {
 
   initChannels() {
     try {
+      const savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
+      if (Array.isArray(savedPool) && savedPool.length > 0) {
+        this.pool = savedPool;
+      } else {
+        localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool));
+      }
+    } catch {}
+
+    try {
       this.bcBattle = new BroadcastChannel('hunthub_battle');
       this.bcTourney = new BroadcastChannel('hunthub_tourney');
       this.bcWheel = new BroadcastChannel('hunthub_duo_wheel');
@@ -161,15 +173,20 @@ class DuoWheelApp {
       this.bcWheel.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'spin') {
-          this.spin(e.data.mode);
+          if (e.data.targetCorner === 'A' || e.data.targetCorner === 'B') {
+            this.battleTarget = e.data.targetCorner;
+            this.updateTargetPillUI();
+          }
+          this.spin(e.data.mode, e.data.spinId, e.data.winner);
         } else if (e.data.action === 'set_mode') {
           this.setMode(e.data.mode);
-        } else if (e.data.action === 'set_target' && (e.data.target === 'A' || e.data.target === 'B')) {
-          this.battleTarget = e.data.target;
+        } else if ((e.data.action === 'set_target' || e.data.action === 'set_target_corner') && ((e.data.target || e.data.corner) === 'A' || (e.data.target || e.data.corner) === 'B')) {
+          this.battleTarget = e.data.target || e.data.corner;
           this.updateTargetPillUI();
         } else if (e.data.action === 'set_pool' && Array.isArray(e.data.pool)) {
           this.pool = e.data.pool;
-          this.renderTrack();
+          try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
+          if (!this.isSpinning) this.renderTrack();
         } else if (e.data.action === 'add_entry' && e.data.entry) {
           this.addQueueEntry(e.data.entry, e.data.mode);
         }
@@ -177,13 +194,13 @@ class DuoWheelApp {
 
       this.bcBattle.onmessage = (e) => {
         if (!e.data) return;
-        if (e.data.action === 'reset' || e.data.action === 'cashout') {
+        if (e.data.action === 'reset' || e.data.action === 'reset_battle' || e.data.type === 'RESET_BATTLE' || e.data.action === 'cashout' || e.data.action === 'koth_retire') {
           this.battleTarget = 'A';
           this.updateTargetPillUI();
-        } else if (e.data.action === 'koth_next_challenger' || e.data.action === 'continue') {
+        } else if (e.data.action === 'koth_next_challenger' || e.data.action === 'continue' || e.data.action === 'koth_continue') {
           this.battleTarget = 'B';
           this.updateTargetPillUI();
-        } else if (e.data.action === 'state_sync' && e.data.state) {
+        } else if ((e.data.action === 'state_sync' || e.data.action === 'battle_update') && e.data.state) {
           this.syncTargetFromBattleState(e.data.state);
         }
       };
@@ -199,10 +216,22 @@ class DuoWheelApp {
     window.addEventListener('storage', (e) => {
       if (e.key === 'hunthub_duo_mode' && e.newValue) {
         this.setMode(e.newValue);
+      } else if (e.key === 'hunthub_duo_pool_v2' && e.newValue && !this.isSpinning) {
+        try {
+          const parsedPool = JSON.parse(e.newValue);
+          if (Array.isArray(parsedPool)) {
+            this.pool = parsedPool;
+            this.renderTrack();
+          }
+        } catch {}
       } else if (e.key === 'hunthub_duo_spin_cmd' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          this.spin(parsed.mode);
+          if (parsed.targetCorner === 'A' || parsed.targetCorner === 'B') {
+            this.battleTarget = parsed.targetCorner;
+            this.updateTargetPillUI();
+          }
+          this.spin(parsed.mode, parsed.spinId, parsed.winner);
         } catch {}
       } else if (e.key === 'hunthub_battle_state' && e.newValue) {
         try {
@@ -360,14 +389,14 @@ class DuoWheelApp {
 
   getDefaultPool() {
     return [
-      { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw', icon: '🤠' },
-      { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic', icon: '⚡' },
-      { chatter: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie', icon: '⚔️' },
-      { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic', icon: '🍬' },
-      { chatter: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw', icon: '🦝' },
-      { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic', icon: '🎣' },
-      { chatter: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic', icon: '🦈' },
-      { chatter: 'RoyalFlush', slot: 'Ganja Snail', provider: 'Donut Gaming', icon: '🐌' },
+      { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', icon: '🤠' },
+      { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic Play', icon: '⚡' },
+      { chatter: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie Studio', icon: '⚔️' },
+      { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic Play', icon: '🍬' },
+      { chatter: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw Gaming', icon: '🦝' },
+      { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic Play', icon: '🎣' },
+      { chatter: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic Play', icon: '🦈' },
+      { chatter: 'RoyalFlush', slot: 'RIP City', provider: 'Hacksaw Gaming', icon: '🐱' },
     ];
   }
 
@@ -488,6 +517,9 @@ class DuoWheelApp {
 
   spin(mode, spinId, forcedWinner) {
     if (this.isSpinning) return;
+    if (spinId && this._lastProcessedSpinId === spinId) return;
+    if (spinId) this._lastProcessedSpinId = spinId;
+
     if (mode) this.setMode(mode);
     if (this._toastHideTimer) {
       clearTimeout(this._toastHideTimer);
@@ -518,17 +550,25 @@ class DuoWheelApp {
     let winnerIdx = -1;
     let winnerItem = null;
     if (forcedWinner) {
-      const targetName = typeof forcedWinner === 'string' ? forcedWinner : (forcedWinner.username || forcedWinner.chatter);
-      winnerIdx = this.pool.findIndex(p => (p.chatter || '').toLowerCase() === (targetName || '').toLowerCase());
-      if (winnerIdx === -1 && typeof forcedWinner === 'object') {
-        this.pool.push({
-          chatter: forcedWinner.username || forcedWinner.chatter,
-          slot: forcedWinner.slotName || forcedWinner.slot || 'Wanted Dead or a Wild',
-          provider: forcedWinner.slotProvider || forcedWinner.provider || 'Hacksaw',
-          icon: '🎰'
-        });
-        winnerIdx = this.pool.length - 1;
-        this.renderTrack();
+      const targetName = String(typeof forcedWinner === 'string' ? forcedWinner : (forcedWinner.username || forcedWinner.chatter || '')).trim().replace(/^@/, '');
+      winnerIdx = this.pool.findIndex(p => String(p.chatter || '').trim().replace(/^@/, '').toLowerCase() === targetName.toLowerCase());
+      if (typeof forcedWinner === 'object') {
+        const fSlot = forcedWinner.slotName || forcedWinner.slot;
+        const fProv = forcedWinner.slotProvider || forcedWinner.provider;
+        if (winnerIdx !== -1) {
+          if (fSlot) this.pool[winnerIdx].slot = fSlot;
+          if (fProv) this.pool[winnerIdx].provider = fProv;
+          this.renderTrack();
+        } else if (targetName) {
+          this.pool.push({
+            chatter: targetName,
+            slot: fSlot || 'Wanted Dead or a Wild',
+            provider: fProv || 'Hacksaw Gaming',
+            icon: '🎰'
+          });
+          winnerIdx = this.pool.length - 1;
+          this.renderTrack();
+        }
       }
     }
     if (winnerIdx === -1) {
@@ -626,10 +666,11 @@ class DuoWheelApp {
     // Remove winner from pool so the same player cannot be selected twice
     const winnerNameLower = (winner.chatter || '').toLowerCase();
     this.pool = this.pool.filter((item, idx) => idx !== winnerIdx && (item.chatter || '').toLowerCase() !== winnerNameLower);
+    try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     this.updateQueueBadge();
 
     // Notify backend queue removal if running
-    fetch('http://127.0.0.1:3001/api/wheel/duo/remove', {
+    fetch('/api/wheel/duo/remove', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: this.mode, username: winner.chatter }),
@@ -672,15 +713,37 @@ class DuoWheelApp {
       kickId: Math.floor(1000 + Math.random() * 9000),
       username: item.chatter,
       displayName: item.chatter,
+      name: `@${String(item.chatter).replace(/^@/, '')}`,
       avatar: '',
       slotName: slotDetails.name,
+      slot: slotDetails.name,
       slotProvider: slotDetails.provider || item.provider || 'Casino Slot',
+      provider: slotDetails.provider || item.provider || 'Casino Slot',
       slotImage: slotDetails.image || '',
+      image: slotDetails.image || '',
       winAmount: 0,
       multiplier: 0,
     };
 
-    // 1. BroadcastChannel
+    const winnerEventPayload = {
+      action: 'duo_winner_selected',
+      targetCorner: slotKey,
+      winner: {
+        chatter: item.chatter,
+        username: item.chatter,
+        slot: slotDetails.name,
+        slotName: slotDetails.name,
+        provider: slotDetails.provider || item.provider || 'Casino Slot',
+        image: slotDetails.image || '',
+      },
+      pool: this.pool,
+      timestamp: Date.now(),
+    };
+
+    // 1. BroadcastChannel to Control Panel (bcWheel) & Battle Overlay (bcBattle)
+    if (this.bcWheel) {
+      this.bcWheel.postMessage(winnerEventPayload);
+    }
     if (this.bcBattle) {
       this.bcBattle.postMessage({
         action: 'assign_player',
@@ -690,8 +753,9 @@ class DuoWheelApp {
       });
     }
 
-    // 2. LocalStorage cross-window storage event fallback
+    // 2. LocalStorage cross-window storage event fallback (guaranteed sync with Control Panel & Battle Overlay)
     try {
+      localStorage.setItem('hunthub_duo_winner_selected', JSON.stringify(winnerEventPayload));
       localStorage.setItem('hunthub_battle_assign', JSON.stringify({
         playerSlot: slotKey,
         player: playerObj,
@@ -725,7 +789,7 @@ class DuoWheelApp {
 
     // 3. HTTP Server fallback if online
     try {
-      await fetch('http://127.0.0.1:3001/api/battle/join', {
+      await fetch('/api/battle/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: playerObj, slot: { name: slotDetails.name, provider: slotDetails.provider } }),
