@@ -60,13 +60,13 @@ export function parseStakeBetInput(rawInput: string): { betId: string; shareUrl:
   if (!rawInput || typeof rawInput !== 'string') return null;
   const input = decodeURIComponent(rawInput.trim());
 
-  // 1. Full URL e.g. https://stake.com/casino/games/limbo?iid=house%3A524353464254&modal=bet
+  // 1. Full URL e.g. https://stake.com/casino/home?iid=house%3A524922477701&modal=bet&source=link_shared
   try {
     if (input.startsWith('http://') || input.startsWith('https://')) {
       const u = new URL(input);
       const iid = u.searchParams.get('iid');
       if (iid) {
-        const cleanIid = iid.trim();
+        const cleanIid = decodeURIComponent(iid.trim()).replace(/\.(?=\d{3})/g, '');
         return {
           betId: cleanIid,
           shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(cleanIid)}&modal=bet`
@@ -75,20 +75,27 @@ export function parseStakeBetInput(rawInput: string): { betId: string; shareUrl:
     }
   } catch (e) {}
 
-  // 2. Prefix format: casino:12345 or house:12345
-  const prefixMatch = input.match(/^(casino|house):(\w+)/i);
+  // Strip optional "ID de apuesta:" / "Bet ID:" label and dot/comma thousand separators on numeric IDs
+  const cleaned = input
+    .replace(/^(id\s*de\s*apuesta|bet\s*id)\s*[:#-]?\s*/i, '')
+    .trim();
+
+  // 2. Prefix format: casino:524922477701 or house:524.922.477.701
+  const prefixMatch = cleaned.match(/^(casino|house):([\w.\-]+)/i);
   if (prefixMatch) {
-    const canonical = `${prefixMatch[1].toLowerCase()}:${prefixMatch[2]}`;
+    const cleanIdPart = prefixMatch[2].replace(/[.,](?=\d{3})/g, '');
+    const canonical = `${prefixMatch[1].toLowerCase()}:${cleanIdPart}`;
     return {
       betId: canonical,
       shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(canonical)}&modal=bet`
     };
   }
 
-  // 3. Raw alphanumeric / numeric bet id e.g. 524353464254
-  const numMatch = input.match(/^[a-zA-Z0-9_\-]+$/);
-  if (numMatch && input.length >= 5) {
-    const canonical = `house:${input}`;
+  // 3. Raw alphanumeric / formatted numeric bet id e.g. 524922477701 or 524.922.477.701
+  const strippedNumeric = cleaned.replace(/[.,\s](?=\d{3})/g, '');
+  const numMatch = strippedNumeric.match(/^[a-zA-Z0-9_\-]+$/);
+  if (numMatch && strippedNumeric.length >= 5) {
+    const canonical = `house:${strippedNumeric}`;
     return {
       betId: canonical,
       shareUrl: `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(canonical)}&modal=bet`
@@ -492,7 +499,57 @@ export class OverlayServer {
         res.end(JSON.stringify({
           target,
           validForSeconds,
-          expiresAt: Date.now() + validForSeconds * 1000
+          expiresAt: Date.now() + validForSeconds * 1000,
+          referralCode: 'DIGGITY'
+        }));
+        return;
+      }
+
+      // Stake Verification Status Check (for "Check Status" button & real-time badge sync)
+      if (url.pathname === '/api/stake/status' && req.method === 'GET') {
+        const kickUser = (url.searchParams.get('kickUsername') || '').trim();
+        const stakeUser = (url.searchParams.get('stakeUsername') || '').trim();
+        let verified = false;
+        let status = 'UNVERIFIED';
+        let latestRequest: any = null;
+        let pointsBalance: number | undefined = undefined;
+
+        if (this.db) {
+          if (kickUser) {
+            const u = this.db.getUserByUsername(kickUser);
+            if (u) {
+              pointsBalance = u.points_balance;
+              if (u.stake_verified === 1) {
+                verified = true;
+                status = 'APPROVED';
+              }
+            }
+          }
+          const allRequests = this.db.getStakeVerificationRequests();
+          latestRequest = allRequests.find((r: any) =>
+            (kickUser && String(r.kick_username || '').toLowerCase() === kickUser.toLowerCase()) ||
+            (stakeUser && String(r.stake_username || '').toLowerCase() === stakeUser.toLowerCase())
+          ) || null;
+
+          if (latestRequest) {
+            if (latestRequest.status === 'APPROVED') {
+              verified = true;
+              status = 'APPROVED';
+            } else if (!verified) {
+              status = latestRequest.status || 'PENDING';
+            }
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          verified,
+          status,
+          referralCode: 'DIGGITY',
+          stakeUsername: latestRequest?.stake_username || stakeUser || null,
+          betId: latestRequest?.bet_id || null,
+          shareUrl: latestRequest?.share_url || null,
+          pointsBalance
         }));
         return;
       }
@@ -655,6 +712,100 @@ export class OverlayServer {
         return;
       }
 
+      // Store Weekly Stock & Catalog Status
+      if (url.pathname === '/api/store/stock' && req.method === 'GET') {
+        const username = url.searchParams.get('username') || url.searchParams.get('userId') || undefined;
+        const catalog = this.db ? this.db.getStoreCatalogStatus(username) : [];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ catalog }));
+        return;
+      }
+
+      // Live-Stream Gate Status & Toggle
+      if (url.pathname === '/api/stream/status') {
+        if (req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            isLive: this.isStreamLive(),
+            sessionId: this.db ? this.db.getStreamSessionId() : 'session_live_default'
+          }));
+          return;
+        }
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (c) => (body += c));
+          req.on('end', () => {
+            try {
+              const { isLive, sessionId } = JSON.parse(body || '{}');
+              this.setStreamLive(Boolean(isLive), sessionId);
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                success: true,
+                isLive: this.isStreamLive(),
+                sessionId: this.db ? this.db.getStreamSessionId() : 'session_live_default'
+              }));
+            } catch (err: any) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+      }
+
+      // Watch-to-Earn Heartbeat (+10 $DIG every 15m in #watch when stream is live)
+      if (url.pathname === '/api/watch/heartbeat' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { userId, username } = JSON.parse(body || '{}');
+            const target = userId || username;
+            if (!target) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ awarded: false, amount: 0, error: 'Missing username or userId' }));
+              return;
+            }
+            if (!this.db) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ awarded: this.streamLiveFallback, amount: this.streamLiveFallback ? 10 : 0 }));
+              return;
+            }
+            const hb = this.db.recordWatchHeartbeat(target);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(hb));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // House Games Anti-Exploit Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
+      if (url.pathname === '/api/games/bet' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { userId, username, game, betAmount, rawMultiplier } = JSON.parse(body || '{}');
+            const target = userId || username;
+            if (!this.db || !target) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, rtp: 95.0, maxBet: 50, maxWinCap: 500 }));
+              return;
+            }
+            const result = this.db.processHouseGameBet(target, game || 'plinko', Number(betAmount), Number(rawMultiplier) || 0);
+            res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
       // Store Redeem Voucher (User or Client)
       if (url.pathname === '/api/store/redeem' && req.method === 'POST') {
         let body = '';
@@ -674,15 +825,21 @@ export class OverlayServer {
               res.end(JSON.stringify({ error: 'User not found' }));
               return;
             }
-            const resRedeem = this.db.createStoreRedemption(u.id, u.username, voucherTitle, Number(costPoints) || 100);
+            const parsedCost = costPoints !== undefined ? Number(costPoints) : undefined;
+            const resRedeem = this.db.createStoreRedemption(u.id, u.username, voucherTitle, parsedCost);
             if (!resRedeem.success) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: resRedeem.error }));
+              res.end(JSON.stringify({ error: resRedeem.error, remainingStock: resRedeem.remainingStock }));
               return;
             }
             this.broadcast({ type: 'NEW_CLAIM', claim: resRedeem.redemption });
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, redemption: resRedeem.redemption }));
+            res.end(JSON.stringify({
+              success: true,
+              redemption: resRedeem.redemption,
+              effectiveCost: resRedeem.effectiveCost,
+              remainingStock: resRedeem.remainingStock
+            }));
           } catch (err: any) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: err.message }));
@@ -861,12 +1018,28 @@ export class OverlayServer {
         return;
       }
 
-      // Cloudflare D1 Synchronization Endpoints
+      // Cloudflare D1 & Cross-Process OBS Browser Source Synchronization Endpoints
       if (url.pathname === '/api/sync/state') {
         if (req.method === 'GET') {
-          const state = this.db ? this.db.exportStateJson() : {};
+          const dbState = this.db ? this.db.exportStateJson() : {};
+          const fullState = {
+            ...dbState,
+            overlays: {
+              battle: this.battleManager ? this.battleManager.getState() : null,
+              tourney: this.tournamentManager ? this.tournamentManager.getState() : null,
+              bonushunt: this.bonusHuntManager ? this.bonusHuntManager.getState() : null,
+              duoQueues: {
+                mode: this.duoWheelMode,
+                battleQueue: this.battleQueue,
+                tourneyQueue: this.tourneyQueue,
+              },
+              spotlight: this.getSpotlightRecommender(),
+              lastOverlayEvent: (this as any).lastOverlayEvent || null,
+            },
+            timestamp: Date.now(),
+          };
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(state));
+          res.end(JSON.stringify(fullState));
           return;
         }
         if (req.method === 'POST') {
@@ -874,10 +1047,16 @@ export class OverlayServer {
           req.on('data', (c) => (body += c));
           req.on('end', () => {
             try {
-              const state = JSON.parse(body);
-              const result = this.db ? this.db.importStateJson(state) : { success: true, count: 0 };
+              const state = JSON.parse(body || '{}');
+              if (state.overlayEvent) {
+                (this as any).lastOverlayEvent = { ...state.overlayEvent, ts: Date.now() };
+                this.broadcast(state.overlayEvent);
+                this.broadcast({ type: 'overlay_sync_event', event: state.overlayEvent, ts: Date.now() });
+              }
+              const hasDbKeys = state.users || state.storeRedemptions || state.raffleTickets || state.stakeVerifications;
+              const result = (this.db && hasDbKeys) ? this.db.importStateJson(state) : { success: true, count: 0 };
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify(result));
+              res.end(JSON.stringify({ ...result, syncedOverlay: Boolean(state.overlayEvent) }));
             } catch (err: any) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: err.message }));
@@ -1499,6 +1678,12 @@ export class OverlayServer {
             );
           } else if (payload.action === 'get_hunt_state' && this.bonusHuntManager) {
             ws.send(JSON.stringify({ action: 'hunt_state', state: this.bonusHuntManager.getState() }));
+          } else if (payload.action === 'broadcast_overlay' && payload.overlayEvent) {
+            (this as any).lastOverlayEvent = { ...payload.overlayEvent, ts: Date.now() };
+            this.broadcast(payload.overlayEvent);
+          } else if (payload.type === 'CELEBRATION' || payload.action === 'celebration') {
+            (this as any).lastOverlayEvent = { ...payload, ts: Date.now() };
+            this.broadcast(payload);
           }
         } catch {}
       });
@@ -1514,28 +1699,53 @@ export class OverlayServer {
     });
   }
 
-  private handleChannelPointRedemption(eventPayload: any): void {
-    if (!this.db) return;
+  private streamLiveFallback: boolean = true;
+
+  public setStreamLive(isLive: boolean, sessionId?: string): void {
+    this.streamLiveFallback = Boolean(isLive);
+    if (this.db) {
+      this.db.setStreamLive(isLive, sessionId);
+    }
+    this.broadcast({
+      type: 'stream_status_updated',
+      isLive: this.isStreamLive(),
+      sessionId: this.db ? this.db.getStreamSessionId() : 'session_live_default',
+    });
+  }
+
+  public isStreamLive(): boolean {
+    return this.db ? this.db.isStreamLive() : this.streamLiveFallback;
+  }
+
+  public handleChannelPointRedemption(eventPayload: any): {
+    alreadyProcessed: boolean;
+    sessionLimitReached?: boolean;
+    creditAmount: number;
+    newBalance: number;
+  } | null {
+    if (!this.db) return null;
 
     const data = eventPayload.data || eventPayload;
     const rdmId = data.id || `rdm_${Date.now()}`;
     const kickRewardId = data.reward_id || 'default_reward';
     const kickUserId = Number(data.user_id) || 0;
     const username = data.user_login || data.user_name || 'chatter';
+    const streamSessionId = data.session_id || this.db.getStreamSessionId();
 
-    // Default credit package: 5000 web credits per redemption
-    const creditAmount = 5000;
+    // Phase 6: Channel Points Bridge = 100 $DIG (max 1 redemption per stream session per user)
+    const creditAmount = 100;
 
     const result = this.db.processChannelPointRedemption(
       rdmId,
       kickRewardId,
       kickUserId,
       username,
-      creditAmount
+      creditAmount,
+      streamSessionId
     );
 
-    if (!result.alreadyProcessed) {
-      console.log(`[Channel Points Bridge] Redeemed ${creditAmount} credits for @${username} (New Balance: ${result.newBalance})`);
+    if (!result.alreadyProcessed && !result.sessionLimitReached) {
+      console.log(`[Channel Points Bridge] Redeemed ${creditAmount} $DIG for @${username} (New Balance: ${result.newBalance})`);
 
       // Broadcast to all OBS overlays and web clients
       this.broadcast({
@@ -1549,10 +1759,17 @@ export class OverlayServer {
       // Announce in chat
       if (this.chatClient) {
         this.chatClient.sendMessage(
-          `🎉 @${username} canjeó sus Channel Points de Kick por ${creditAmount.toLocaleString()} créditos HuntHub! Saldo: ${result.newBalance.toLocaleString()} 🪙`
+          `🎉 @${username} canjeó sus Channel Points de Kick por ${creditAmount.toLocaleString()} $DIG en HuntHub! Saldo: ${result.newBalance.toLocaleString()} $DIG 🪙`
         );
       }
     }
+
+    return {
+      alreadyProcessed: result.alreadyProcessed,
+      sessionLimitReached: result.sessionLimitReached,
+      creditAmount: (!result.alreadyProcessed && !result.sessionLimitReached) ? creditAmount : 0,
+      newBalance: result.newBalance,
+    };
   }
 
   public recordChatterActivity(username: string, message?: string, kickId?: number, avatar?: string): boolean {
@@ -1574,37 +1791,47 @@ export class OverlayServer {
     return true;
   }
 
-  public recordChatter(msg: KickChatMessage): void {
+  public recordChatter(
+    msg: KickChatMessage,
+    nowMs: number = Date.now()
+  ): { awarded: boolean; amount: number; newBalance: number; reason?: string } {
     const rawContent = msg.content || '';
     // Filter Kick emotes :name: (e.g. :pepega:, :kekw:)
     const stripped = rawContent.replace(/:[a-zA-Z0-9_\-]+:/g, ' ').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
     if (stripped.length < 2) {
       // Ignore emote spammer to keep active pool 100% organic
-      return;
+      return { awarded: false, amount: 0, newBalance: 0, reason: 'EMOTE_OR_SPAM' };
     }
 
     const login = msg.sender.username.toLowerCase();
     const display = msg.sender.username;
 
-    // Record in database if db is available
+    let earnResult: { awarded: boolean; amount: number; newBalance: number; reason?: string } = {
+      awarded: false,
+      amount: 0,
+      newBalance: 0
+    };
+
+    // Record in database & evaluate Phase 6 Chat-to-Earn (+5 $DIG every 5m when stream is live, max 60 $DIG/h)
     if (this.db) {
-      this.db.upsertUser(msg.sender.id, login, display);
+      earnResult = this.db.recordChatEarn(msg.sender.id, login, rawContent, nowMs);
     }
 
     this.activeChatters.set(login, {
       display,
       avatar: '',
       kickId: msg.sender.id,
-      ts: Date.now(),
+      ts: nowMs,
     });
 
     // Prune entries older than 5 minutes
-    const now = Date.now();
     for (const [k, v] of this.activeChatters.entries()) {
-      if (now - v.ts > 300000) {
+      if (nowMs - v.ts > 300000) {
         this.activeChatters.delete(k);
       }
     }
+
+    return earnResult;
   }
 
   public getActiveChatters(windowMs: number = 90000): any {

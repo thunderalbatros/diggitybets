@@ -33,6 +33,19 @@ const rawNumBet = parseStakeBetInput('524353464254');
 assert.ok(rawNumBet);
 assert.equal(rawNumBet.betId, 'house:524353464254');
 
+const sharedUrlBet = parseStakeBetInput('https://stake.com/casino/home?iid=house%3A524922477701&modal=bet&source=link_shared');
+assert.ok(sharedUrlBet);
+assert.equal(sharedUrlBet.betId, 'house:524922477701');
+assert.equal(sharedUrlBet.shareUrl, 'https://stake.com/casino/games/limbo?iid=house%3A524922477701&modal=bet');
+
+const casinoIdBet = parseStakeBetInput('casino:524922477701');
+assert.ok(casinoIdBet);
+assert.equal(casinoIdBet.betId, 'casino:524922477701');
+
+const dottedModalBet = parseStakeBetInput('524.922.477.701');
+assert.ok(dottedModalBet);
+assert.equal(dottedModalBet.betId, 'house:524922477701');
+
 assert.equal(parseStakeBetInput(''), null);
 assert.equal(parseStakeBetInput('abc'), null);
 

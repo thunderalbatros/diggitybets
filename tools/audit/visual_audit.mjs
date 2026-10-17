@@ -12,7 +12,7 @@ fs.mkdirSync(out, { recursive: true });
 
 const BASE = process.argv[2] || 'http://127.0.0.1:3000';
 const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 768, h: 1024 }, { w: 390, h: 844 }];
-const VIEWS = ['watch', 'house-games', 'tournament', 'bonushunt', 'store', 'leaderboard', 'profile'];
+const VIEWS = ['watch', 'bonushunt', 'tournament', 'house-games', 'store', 'leaderboard', 'profile', 'admin'];
 const CHROME = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
@@ -83,6 +83,29 @@ function pageChecks() {
   // 7. Heading structure
   const h1 = [...document.querySelectorAll('h1')].filter(visible).length;
   if (h1 !== 1) findings.push({ sev: 'MINOR', rule: 'h1-count', msg: `${h1} visible <h1>` });
+  // 8. Raw OS Emoji Check in key icon containers (must be SVG or clean text)
+  const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+  for (const el of document.querySelectorAll('.nav-icon, .hg-tab-icon, .store-badge-icon')) {
+    if (visible(el) && emojiRegex.test(el.textContent) && !el.querySelector('svg')) {
+      findings.push({ sev: 'MINOR', rule: 'raw-os-emoji', msg: `${sel(el)} uses raw OS emoji instead of vector SVG` });
+    }
+  }
+  // 9. Sibling Bounding-Box Collision Check (detect unintentional overlap)
+  for (const parent of document.querySelectorAll('.section-header-row, .topbar-right, .store-card-footer, .hg-controls-col')) {
+    if (!visible(parent)) continue;
+    const kids = [...parent.children].filter(visible);
+    for (let i = 0; i < kids.length; i++) {
+      for (let j = i + 1; j < kids.length; j++) {
+        const a = kids[i].getBoundingClientRect();
+        const b = kids[j].getBoundingClientRect();
+        const ox = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const oy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        if (ox > 8 && oy > 8 && getComputedStyle(kids[i]).position !== 'absolute' && getComputedStyle(kids[j]).position !== 'absolute') {
+          findings.push({ sev: 'MAJOR', rule: 'sibling-overlap', msg: `${sel(kids[i])} overlaps ${sel(kids[j])} by ${Math.round(ox)}x${Math.round(oy)}px` });
+        }
+      }
+    }
+  }
   return findings;
 }
 
@@ -100,7 +123,16 @@ for (const vp of VIEWPORTS) {
   await page.goto(BASE + '/#watch', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1200);
   for (const v of VIEWS) {
-    await page.evaluate(id => window.switchView && window.switchView('#' + id), v);
+    await page.evaluate(id => {
+      if (id === 'admin') {
+        localStorage.setItem('hunthub_is_admin', 'true');
+        localStorage.setItem('hunthub_kick_username', 'diggitybets');
+        if (window.adminHub && typeof window.adminHub.checkAdminAccess === 'function') {
+          window.adminHub.checkAdminAccess();
+        }
+      }
+      if (window.switchView) window.switchView('#' + id);
+    }, v);
     await page.waitForTimeout(450);
     const findings = await page.evaluate(pageChecks);
     await page.screenshot({ path: path.join(out, `${v}-${vp.w}.png`), fullPage: false });

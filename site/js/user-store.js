@@ -53,6 +53,7 @@ class UserStoreController {
   }
 
   init() {
+    this.initStoreStockState();
     this.updateUserUI();
     this.bindAuthButtons();
     this.bindProfileControls();
@@ -61,6 +62,8 @@ class UserStoreController {
     this.bindStoreRedemptions();
     this.renderLeaderboard();
     this.startTotpTimer();
+    this.startWatchHeartbeat();
+    this.syncStoreStockFromServer();
   }
 
   updateUserUI() {
@@ -107,24 +110,33 @@ class UserStoreController {
     if (elUSDC) elUSDC.value = this.cryptoUSDC;
     if (elSOL) elSOL.value = this.cryptoSOL;
 
-    if (badgeStake) {
-      if (this.stakeVerified) {
-        badgeStake.textContent = '✓ VERIFIED STAKE AFFILIATE';
-        badgeStake.className = 'reward-badge-pill verified';
-        badgeStake.style.background = 'rgba(83, 252, 24, 0.2)';
-        badgeStake.style.borderColor = 'var(--kick-green)';
-        badgeStake.style.color = 'var(--kick-green)';
-      } else {
-        badgeStake.textContent = 'UNVERIFIED AFFILIATE';
-        badgeStake.className = 'reward-badge-pill unverified';
-        badgeStake.style.background = 'rgba(255, 42, 95, 0.2)';
-        badgeStake.style.borderColor = 'var(--crimson)';
-        badgeStake.style.color = '#ff6b8b';
-      }
+    const topbarVerifiedBadge = document.getElementById('auth-stake-verified-badge');
+    if (topbarVerifiedBadge) {
+      topbarVerifiedBadge.style.display = this.stakeVerified ? 'inline-flex' : 'none';
+      topbarVerifiedBadge.textContent = '✓ VERIFIED';
     }
+
+    const allProfileStakeBadges = document.querySelectorAll('#prof-stake-status-badge, .prof-stake-status-badge-mirror');
+    allProfileStakeBadges.forEach(badge => {
+      if (this.stakeVerified) {
+        badge.textContent = '✓ VERIFIED';
+        badge.className = 'reward-badge-pill prof-stake-status-badge-mirror verified';
+        badge.style.background = 'rgba(83, 252, 24, 0.2)';
+        badge.style.borderColor = 'var(--kick-green)';
+        badge.style.color = 'var(--kick-green)';
+      } else {
+        badge.textContent = 'UNVERIFIED AFFILIATE';
+        badge.className = 'reward-badge-pill prof-stake-status-badge-mirror unverified';
+        badge.style.background = 'rgba(255, 42, 95, 0.2)';
+        badge.style.borderColor = 'var(--crimson)';
+        badge.style.color = '#ff6b8b';
+      }
+    });
 
     const tixEl = document.getElementById('raffle-user-tickets');
     if (tixEl) tixEl.textContent = this.raffleTickets;
+
+    this.updateStoreCatalogUI();
 
     if (this.username && window.antiFraud) {
       window.antiFraud.recordAccountUsage(this.username);
@@ -366,7 +378,7 @@ class UserStoreController {
 
   /**
    * Stake Affiliate & Partner Verification Integration
-   * Verifies account under streamer referral code "diggitybets" (stake.com/?offer=diggity&c=diggitybets)
+   * Verifies account under streamer referral code "DIGGITY" (stake.com/?offer=diggity&c=DIGGITY)
    */
   bindStakeTotpVerification() {
     const copyBtn = document.getElementById('btn-copy-target');
@@ -407,13 +419,13 @@ class UserStoreController {
           statusBox.style.background = 'rgba(83, 252, 24, 0.12)';
           statusBox.style.border = '1px solid rgba(83, 252, 24, 0.35)';
           statusBox.style.color = '#86efac';
-          statusBox.innerHTML = `<strong>✓ VERIFIED VIP:</strong> Account <strong>@${this.stakeUsername}</strong> is confirmed under code <strong>diggitybets</strong>. You receive 2x giveaway tickets & leaderboard race eligibility!`;
+          statusBox.innerHTML = `<strong>✓ VERIFIED VIP:</strong> Account <strong>@${this.stakeUsername || 'VIP'}</strong> is confirmed under code <strong>DIGGITY</strong>. You receive VIP Store Discounts & Leaderboard eligibility!`;
         } else if (this.stakeUsername) {
           statusBox.style.display = 'block';
           statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
           statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
           statusBox.style.color = '#fef08a';
-          statusBox.innerHTML = `<strong>⏳ PENDING AUDIT:</strong> Stake user <strong>@${this.stakeUsername}</strong> submitted for verification. Streamer will audit bet link in Admin Deck (+250 $DIG).`;
+          statusBox.innerHTML = `<strong>⏳ PENDING AUDIT:</strong> Stake user <strong>@${this.stakeUsername}</strong> submitted for verification under code <strong>DIGGITY</strong>. Streamer will audit bet link in Admin Deck (+250 $DIG).`;
         } else {
           statusBox.style.display = 'none';
         }
@@ -441,7 +453,7 @@ class UserStoreController {
           if (window.sonner) {
             window.sonner.toast({
               title: 'Bet ID Required',
-              message: 'Please paste your zero-value Limbo bet ID or share link.',
+              message: 'Please paste your zero-value Limbo bet ID (e.g. casino:524922477701) or share link.',
               type: 'danger'
             });
           }
@@ -490,7 +502,7 @@ class UserStoreController {
             statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
             statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
             statusBox.style.color = '#fef08a';
-            statusBox.innerHTML = `<strong>✓ REQUEST SUBMITTED:</strong> Bet [<strong>${data.parsedBet?.betId || betId}</strong>] recorded for @${stakeUser}. The streamer can audit your bet link in 1 click from the Admin Control Deck (+250 $DIG reward).`;
+            statusBox.innerHTML = `<strong>✓ REQUEST SUBMITTED:</strong> Bet [<strong>${data.parsedBet?.betId || betId}</strong>] recorded for @${stakeUser} under code <strong>DIGGITY</strong>. Click "🔄 Check Status" once approved (+250 $DIG reward).`;
           }
 
           if (window.soundEngine) window.soundEngine.playWin();
@@ -498,14 +510,14 @@ class UserStoreController {
           if (window.sonner) {
             window.sonner.toast({
               title: 'Verification Request Recorded! 🎰',
-              message: `Bet ID ${data.parsedBet?.betId || betId} submitted for streamer audit (+250 $DIG upon confirmation).`,
+              message: `Bet ID ${data.parsedBet?.betId || betId} submitted under code DIGGITY (+250 $DIG upon confirmation).`,
               type: 'green'
             });
           }
 
           // Broadcast to Admin Deck
-          if (window.adminHub && window.adminHub.channel) {
-            window.adminHub.channel.postMessage({ type: 'STAKE_VERIFICATION_REQUESTED', username: stakeUser, betId });
+          if (window.adminHub && window.adminHub.channelAdmin) {
+            window.adminHub.channelAdmin.postMessage({ type: 'STAKE_VERIFICATION_REQUESTED', username: stakeUser, betId });
           }
         } catch (err) {
           verifyBtn.textContent = 'Verify and link Stake (+250 $DIG) ⚡';
@@ -521,22 +533,91 @@ class UserStoreController {
       });
     }
 
-    if (checkBtn) {
-      checkBtn.addEventListener('click', () => {
-        updateStakeStatusBox();
-        if (window.soundEngine) window.soundEngine.playTick();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Stake Status',
-            message: this.stakeVerified
-              ? `Account @${this.stakeUsername} is verified under Stake referral code diggitybets.`
-              : (this.stakeUsername
-                  ? `Account @${this.stakeUsername} is registered. Awaiting streamer audit.`
-                  : 'Enter your Stake username and place a Limbo $0 bet to verify.'),
-            type: this.stakeVerified ? 'green' : 'default'
-          });
+    const syncStakeStatusFromServer = async (showToast = false) => {
+      const typedStake = (document.getElementById('prof-input-stake-user')?.value || this.stakeUsername || '').trim();
+      if (typedStake && !this.stakeUsername) {
+        this.stakeUsername = typedStake;
+        localStorage.setItem('hunthub_stake_user', typedStake);
+      }
+
+      // 1. Check local verified Stake list (updated by Admin Bulk Sync or Approve button)
+      try {
+        const verifiedList = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+        const matchedLocal = verifiedList.find(r =>
+          r.status === 'verified' &&
+          ((this.stakeUsername && String(r.username || '').toLowerCase() === this.stakeUsername.toLowerCase()) ||
+           (this.username && String(r.kickUser || '').replace(/^@/, '').toLowerCase() === this.username.replace(/^@/, '').toLowerCase()))
+        );
+        if (matchedLocal) {
+          this.stakeVerified = true;
+          localStorage.setItem('hunthub_stake_verified', 'true');
         }
+      } catch (_) {}
+
+      // 2. Query live backend /api/stake/status
+      try {
+        const params = new URLSearchParams();
+        if (this.username) params.set('kickUsername', this.username);
+        if (this.stakeUsername) params.set('stakeUsername', this.stakeUsername);
+        const res = await fetch(`/api/stake/status?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.stakeUsername && !this.stakeUsername) {
+            this.stakeUsername = data.stakeUsername;
+            localStorage.setItem('hunthub_stake_user', this.stakeUsername);
+          }
+          if (data.verified || data.status === 'APPROVED') {
+            this.stakeVerified = true;
+            localStorage.setItem('hunthub_stake_verified', 'true');
+          }
+        }
+      } catch (_) {}
+
+      if (this.stakeVerified) {
+        if (localStorage.getItem('hunthub_stake_bonus_claimed') !== 'true' && window.houseGames) {
+          window.houseGames.adjustBalance(250);
+          localStorage.setItem('hunthub_stake_bonus_claimed', 'true');
+        }
+        if (verifyBtn) {
+          verifyBtn.textContent = '✓ Stake Account Verified (Code: DIGGITY)';
+        }
+      }
+
+      this.updateUserUI();
+      updateStakeStatusBox();
+      this.renderLeaderboard();
+
+      if (showToast && window.sonner) {
+        window.sonner.toast({
+          title: this.stakeVerified ? '✓ Stake Account Verified!' : 'Stake Verification Status',
+          message: this.stakeVerified
+            ? `Account @${this.stakeUsername || this.username || 'VIP'} is verified under Stake code DIGGITY! ✓ VERIFIED badge active.`
+            : (this.stakeUsername
+                ? `Account @${this.stakeUsername} is registered under code DIGGITY and awaiting streamer audit.`
+                : 'Enter your Stake username and place a $0 Limbo bet to verify under code DIGGITY.'),
+          type: this.stakeVerified ? 'green' : 'default'
+        });
+      }
+    };
+
+    if (checkBtn) {
+      checkBtn.addEventListener('click', async () => {
+        if (window.soundEngine) window.soundEngine.playTick();
+        checkBtn.textContent = '🔄 Checking...';
+        await syncStakeStatusFromServer(true);
+        checkBtn.textContent = '🔄 Check Status';
       });
+    }
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const ch = new BroadcastChannel('hunthub_admin_sync');
+        ch.addEventListener('message', (e) => {
+          if (e.data && e.data.type === 'STAKE_VERIFICATION_APPROVED') {
+            syncStakeStatusFromServer(true);
+          }
+        });
+      } catch (_) {}
     }
   }
 
@@ -604,30 +685,263 @@ class UserStoreController {
     `).join('');
   }
 
+  getIsoWeekKey(date = new Date()) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  initStoreStockState() {
+    const defaultStock = {
+      battle_entry: 6,
+      tourney_entry: 6,
+      bonus_split_20: 3
+    };
+    const currentWeek = this.getIsoWeekKey();
+    const savedWeek = localStorage.getItem('hunthub_store_stock_week');
+
+    if (savedWeek !== currentWeek) {
+      // Weekly reset: every Monday at 00:00 UTC (ISO week change)
+      this.storeStock = { ...defaultStock };
+      localStorage.setItem('hunthub_store_stock_week', currentWeek);
+      localStorage.setItem('hunthub_store_stock_v6', JSON.stringify(this.storeStock));
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem('hunthub_store_stock_v6') || 'null');
+        this.storeStock = saved && typeof saved === 'object' ? { ...defaultStock, ...saved } : { ...defaultStock };
+      } catch (_) {
+        this.storeStock = { ...defaultStock };
+      }
+    }
+    this.vipDiscordClaimed = localStorage.getItem('hunthub_vip_discord_claimed') === 'true';
+    this.battleEntryLastTs = parseInt(localStorage.getItem('hunthub_battle_entry_last_ts') || '0', 10);
+  }
+
+  saveStoreStockState() {
+    const currentWeek = this.getIsoWeekKey();
+    localStorage.setItem('hunthub_store_stock_week', currentWeek);
+    localStorage.setItem('hunthub_store_stock_v6', JSON.stringify(this.storeStock));
+    localStorage.setItem('hunthub_vip_discord_claimed', this.vipDiscordClaimed ? 'true' : 'false');
+    localStorage.setItem('hunthub_battle_entry_last_ts', String(this.battleEntryLastTs || 0));
+  }
+
+  async syncStoreStockFromServer() {
+    try {
+      const q = this.username ? `?username=${encodeURIComponent(this.username)}` : '';
+      const res = await fetch(`/api/store/stock${q}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.catalog)) {
+        data.catalog.forEach(item => {
+          if (item.weeklyStockLimit !== null && typeof item.remainingStock === 'number') {
+            this.storeStock[item.key] = item.remainingStock;
+          }
+          if (item.key === 'vip_discord' && item.alreadyClaimedOneTime) {
+            this.vipDiscordClaimed = true;
+          }
+        });
+        this.saveStoreStockState();
+        this.updateStoreCatalogUI();
+      }
+    } catch (_) {}
+  }
+
+  updateStoreCatalogUI() {
+    if (!this.storeStock) this.initStoreStockState();
+
+    // 1. Automatic Stake VIP Discount on $20 Bonus Buy Split Profit (1,500 -> 1,200 $DIG if stakeVerified)
+    const splitCostEl = document.getElementById('bonus-split-cost-display');
+    const splitBtn = document.getElementById('btn-redeem-bonus-split');
+    const splitVipTag = document.getElementById('bonus-split-vip-tag');
+    const effectiveSplitCost = this.stakeVerified ? 1200 : 1500;
+
+    if (splitCostEl) {
+      splitCostEl.textContent = `${effectiveSplitCost.toLocaleString()} $DIG`;
+      splitCostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
+    }
+    if (splitBtn) {
+      splitBtn.setAttribute('data-cost', String(effectiveSplitCost));
+    }
+    if (splitVipTag) {
+      splitVipTag.textContent = this.stakeVerified
+        ? '✓ STAKE VIP DISCOUNT ACTIVE: 1,200 $DIG (Saved 300 $DIG) · Max Split Cap $100 USD'
+        : '💰 1,500 $DIG Regular · ⚡ 1,200 $DIG Stake VIP · Max Split Cap $100 USD';
+    }
+
+    // 2. Weekly Stock Pills & Button States (Resets every Monday)
+    const stockLimits = {
+      battle_entry: 6,
+      tourney_entry: 6,
+      bonus_split_20: 3
+    };
+    Object.keys(stockLimits).forEach(key => {
+      const limit = stockLimits[key];
+      const rem = Math.max(0, Number(this.storeStock[key] ?? limit));
+      const pill = document.querySelector(`[data-stock-pill="${key}"]`);
+      const btn = document.querySelector(`.btn-store-redeem[data-key="${key}"]`);
+
+      if (pill) {
+        if (rem <= 0) {
+          pill.textContent = 'SOLD OUT THIS WEEK';
+          pill.classList.add('sold-out');
+        } else {
+          pill.textContent = `WEEKLY STOCK: ${rem} / ${limit} AVAILABLE`;
+          pill.classList.remove('sold-out');
+        }
+      }
+
+      if (btn) {
+        const on14dCooldown = key === 'battle_entry' && this.battleEntryLastTs > 0 && (Date.now() - this.battleEntryLastTs < 14 * 86400 * 1000);
+        if (rem <= 0) {
+          btn.disabled = true;
+          btn.textContent = 'Sold Out';
+        } else if (on14dCooldown) {
+          btn.disabled = true;
+          btn.textContent = '14d Cooldown';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Redeem';
+        }
+      }
+    });
+
+    // 3. One-time VIP Streamer Discord Role
+    const vipPill = document.querySelector('[data-stock-pill="vip_discord"]');
+    const vipBtn = document.querySelector('.btn-store-redeem[data-key="vip_discord"]');
+    if (vipPill) {
+      if (this.vipDiscordClaimed) {
+        vipPill.textContent = 'CLAIMED (1 / 1 PER ACCOUNT)';
+        vipPill.classList.add('sold-out');
+      } else {
+        vipPill.textContent = 'LIMIT: 1 PER ACCOUNT';
+        vipPill.classList.remove('sold-out');
+      }
+    }
+    if (vipBtn) {
+      vipBtn.disabled = Boolean(this.vipDiscordClaimed);
+      vipBtn.textContent = this.vipDiscordClaimed ? 'Claimed' : 'Redeem';
+    }
+  }
+
+  /**
+   * Phase 6 Watch-to-Earn Heartbeat:
+   * +10 $DIG every 15 minutes (900_000 ms) in #watch for logged-in users when stream is live (max 40 $DIG/h).
+   */
+  startWatchHeartbeat() {
+    if (this.watchHeartbeatInterval) clearInterval(this.watchHeartbeatInterval);
+    this.watchHeartbeatInterval = setInterval(async () => {
+      if (!this.isLoggedIn || !this.username) return;
+      const watchSection = document.getElementById('watch');
+      const isViewingWatch = !window.location.hash || window.location.hash === '#watch' || (watchSection && watchSection.classList.contains('active'));
+      if (!isViewingWatch) return;
+
+      try {
+        const res = await fetch('/api/watch/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: this.username })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.awarded && data.amount > 0 && window.houseGames) {
+            window.houseGames.adjustBalance(data.amount);
+            if (window.sonner) {
+              window.sonner.toast({
+                title: '+10 $DIG Watch-to-Earn! 📺',
+                message: 'Earned +10 $DIG for watching the live stream (15m heartbeat).',
+                type: 'green'
+              });
+            }
+          }
+        }
+      } catch (_) {}
+    }, 900_000);
+  }
+
   bindStoreRedemptions() {
     const storeItems = document.querySelectorAll('.btn-store-redeem');
     storeItems.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (!this.isLoggedIn) {
           alert('Please Link your Kick account first to redeem store items.');
           return;
         }
 
-        const cost = parseInt(btn.getAttribute('data-cost') || '100', 10);
+        const itemKey = btn.getAttribute('data-key') || '';
         const itemName = btn.getAttribute('data-item') || 'Store Item';
+        let cost = parseInt(btn.getAttribute('data-cost') || '100', 10);
 
-        if (!window.houseGames || window.houseGames.balance < cost) {
-          alert(`Insufficient $DIG points balance. You need ${cost} $DIG to redeem ${itemName}.`);
+        if (itemKey === 'bonus_split_20') {
+          cost = this.stakeVerified ? 1200 : 1500;
+        }
+
+        if (itemKey === 'vip_discord' && this.vipDiscordClaimed) {
+          alert('LIMIT REACHED: VIP Streamer Discord Role can only be redeemed 1 time per account.');
           return;
         }
 
-        if (confirm(`Redeem "${itemName}" for ${cost} $DIG points?`)) {
+        if (itemKey === 'battle_entry' && this.battleEntryLastTs > 0 && (Date.now() - this.battleEntryLastTs < 14 * 86400 * 1000)) {
+          alert('COOLDOWN ACTIVE: Guaranteed 1v1 Battle Entry has a 14-day cooldown per user.');
+          return;
+        }
+
+        const stockLimits = {
+          battle_entry: 6,
+          tourney_entry: 6,
+          bonus_split_20: 3
+        };
+        if (stockLimits[itemKey] !== undefined && (this.storeStock[itemKey] ?? stockLimits[itemKey]) <= 0) {
+          alert(`SOLD OUT THIS WEEK: Weekly stock limit (${stockLimits[itemKey]}/${stockLimits[itemKey]}) reached for this reward. Resets every Monday.`);
+          this.updateStoreCatalogUI();
+          return;
+        }
+
+        if (!window.houseGames || window.houseGames.balance < cost) {
+          alert(`Insufficient $DIG points balance. You need ${cost.toLocaleString()} $DIG to redeem ${itemName}.`);
+          return;
+        }
+
+        if (confirm(`Redeem "${itemName}" for ${cost.toLocaleString()} $DIG points?`)) {
+          try {
+            const res = await fetch('/api/store/redeem', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: this.username,
+                voucherTitle: itemName,
+                costPoints: cost,
+                stakeVerified: this.stakeVerified
+              })
+            });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              if (errData.error && (errData.error.includes('SOLD OUT') || errData.error.includes('COOLDOWN') || errData.error.includes('LIMIT'))) {
+                alert(errData.error);
+                return;
+              }
+            }
+          } catch (_) {}
+
           window.houseGames.adjustBalance(-cost);
-          if (itemName.includes('Ticket')) {
+          if (itemKey === 'weekly_raffle' || itemName.includes('Raffle') || itemName.includes('Ticket')) {
             this.raffleTickets += 1;
             localStorage.setItem('hunthub_raffle_tickets', this.raffleTickets.toString());
-            this.updateUserUI();
+          } else if (itemKey === 'vip_discord') {
+            this.vipDiscordClaimed = true;
+          } else if (itemKey === 'battle_entry') {
+            this.storeStock.battle_entry = Math.max(0, (this.storeStock.battle_entry ?? 6) - 1);
+            this.battleEntryLastTs = Date.now();
+          } else if (itemKey === 'tourney_entry') {
+            this.storeStock.tourney_entry = Math.max(0, (this.storeStock.tourney_entry ?? 6) - 1);
+          } else if (itemKey === 'bonus_split_20') {
+            this.storeStock.bonus_split_20 = Math.max(0, (this.storeStock.bonus_split_20 ?? 3) - 1);
           }
+
+          this.saveStoreStockState();
+          this.updateUserUI();
 
           // Register in Streamer Admin Claims Queue & Anti-Fraud Radar
           if (window.antiFraud) {
@@ -641,7 +955,7 @@ class UserStoreController {
           if (window.sonner) {
             window.sonner.toast({
               title: 'Voucher Redeemed! 🎁',
-              message: `You redeemed "${itemName}" for ${cost} $DIG. Streamer queue notified in real-time!`,
+              message: `You redeemed "${itemName}" for ${cost.toLocaleString()} $DIG. Streamer queue notified in real-time!`,
               type: 'gold'
             });
           } else {

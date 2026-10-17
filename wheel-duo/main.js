@@ -145,11 +145,14 @@ class DuoWheelApp {
           const payload = JSON.parse(event.data);
           if (payload.action === 'spin_duo') {
             this.spin(payload.mode, payload.spinId, payload.winner);
+          } else if (payload.action === 'duo_mode_changed' && payload.mode) {
+            this.setMode(payload.mode);
           } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
             const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
             if (q && q.length > 0) {
               this.pool = q.map((item) => ({
                 chatter: item.username,
+                avatar: item.avatar || '',
                 slot: item.slotName,
                 provider: item.slotProvider,
                 icon: '🎰',
@@ -159,7 +162,45 @@ class DuoWheelApp {
           }
         } catch {}
       };
+      this.ws.onclose = () => {
+        setTimeout(() => this.initWebSocket(), 2500);
+      };
+      this.ws.onerror = () => {};
     } catch {}
+
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    if (!this._syncIntervalStarted) {
+      this._syncIntervalStarted = true;
+      this._lastEventTs = 0;
+      setInterval(async () => {
+        try {
+          const res = await fetch('http://127.0.0.1:3001/api/sync/state');
+          if (!res.ok) return;
+          const data = await res.json();
+          const duoQueues = data?.overlays?.duoQueues;
+          if (duoQueues && !this.isSpinning) {
+            const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
+            if (Array.isArray(q) && q.length > 0 && q.length !== this.pool.length) {
+              this.pool = q.map((item) => ({
+                chatter: item.username,
+                avatar: item.avatar || '',
+                slot: item.slotName,
+                provider: item.slotProvider,
+                icon: '🎰',
+              }));
+              this.renderTrack();
+            }
+          }
+          const evt = data?.overlays?.lastOverlayEvent;
+          if (evt && evt.ts && evt.ts > this._lastEventTs) {
+            this._lastEventTs = evt.ts;
+            if (evt.targetOverlay === 'wheel-duo' && evt.action === 'spin') {
+              this.spin(evt.mode, evt.spinId, evt.winner);
+            }
+          }
+        } catch {}
+      }, 1500);
+    }
   }
 
   initInteractivity() {
@@ -216,15 +257,43 @@ class DuoWheelApp {
     ];
   }
 
+  getDeterministicAvatarGradient(username) {
+    const str = String(username || 'User');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const palettes = [
+      'linear-gradient(135deg, #0091ea, #00e5ff)',
+      'linear-gradient(135deg, #ff2a5f, #ff758c)',
+      'linear-gradient(135deg, #7c4dff, #b388ff)',
+      'linear-gradient(135deg, #00c853, #53fc18)',
+      'linear-gradient(135deg, #ff9100, #ffd700)',
+    ];
+    return palettes[Math.abs(hash) % palettes.length];
+  }
+
+  updateQueueBadge() {
+    const qEl = document.getElementById('duo-queue-counter');
+    if (qEl) {
+      qEl.textContent = `QUEUE: ${this.pool.length}`;
+    }
+  }
+
   renderTrack() {
     this.trackEl.innerHTML = '';
+    this.updateQueueBadge();
     const repeats = 15;
     for (let r = 0; r < repeats; r++) {
       this.pool.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = 'duo-card';
         card.dataset.index = idx;
-        const initial = item.chatter.charAt(0).toUpperCase();
+        const initial = item.chatter.slice(0, 2).toUpperCase();
+        const avatarGrad = this.getDeterministicAvatarGradient(item.chatter);
+        const avatarHtml = item.avatar
+          ? `<div class="user-avatar-circle" style="background:${avatarGrad}"><img src="${item.avatar}" alt="${item.chatter}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='${initial}';" /></div>`
+          : `<div class="user-avatar-circle" style="background:${avatarGrad}">${initial}</div>`;
 
         const slotDetails = this.resolveSlotDetails(item.slot);
         const slotImgHtml = slotDetails.image
@@ -233,10 +302,10 @@ class DuoWheelApp {
 
         card.innerHTML = `
           <div class="card-user">
-            <div class="user-avatar-circle">${initial}</div>
+            ${avatarHtml}
             <div class="user-meta">
               <span class="user-name">@${item.chatter}</span>
-              <span class="user-tag">PARTICIPANT</span>
+              <span class="user-tag">${this.mode === 'tourney' ? '!TOURNEY CALL' : '!BATTLE CALL'}</span>
             </div>
           </div>
           <div class="card-divider">⚡</div>
@@ -276,7 +345,14 @@ class DuoWheelApp {
   }
 
   setMode(mode) {
+    const changed = this.mode !== mode;
     this.mode = mode;
+    const wrapper = document.getElementById('wheel-wrapper');
+    if (changed && wrapper) {
+      wrapper.classList.remove('mode-switching');
+      void wrapper.offsetWidth;
+      wrapper.classList.add('mode-switching');
+    }
     const tabBattle = document.getElementById('tab-mode-battle');
     const tabTourney = document.getElementById('tab-mode-tourney');
     if (tabBattle && tabTourney) {
@@ -293,6 +369,7 @@ class DuoWheelApp {
         this.targetTextEl.textContent = `SEED ${this.tourneyCount + 1}/8`;
       }
     }
+    this.updateQueueBadge();
   }
 
   spin(mode, spinId, forcedWinner) {
@@ -302,6 +379,7 @@ class DuoWheelApp {
     this.currentSpinId = spinId || ('spin_duo_' + Date.now());
 
     this.isSpinning = true;
+    this.trackEl.querySelectorAll('.winner-border-glow').forEach((el) => el.classList.remove('winner-border-glow'));
     if (this.directSpinBtn) {
       this.directSpinBtn.disabled = true;
       this.directSpinBtn.style.opacity = '0.5';
@@ -334,6 +412,7 @@ class DuoWheelApp {
     // Card height + margin = 96px
     const cardHeight = 96;
     const targetCardIndex = (10 * this.pool.length) + winnerIdx;
+    this._lastTargetCardIndex = targetCardIndex;
     const targetScrollY = (targetCardIndex * cardHeight) - (200 - 48);
 
     const startTime = performance.now();
@@ -375,6 +454,11 @@ class DuoWheelApp {
       this.directSpinBtn.innerHTML = '<span>🎰</span> SPIN DUO WHEEL';
     }
     this.playWinFanfare();
+
+    // Golden BorderGlow flash on winning duo card
+    if (typeof this._lastTargetCardIndex === 'number' && this.trackEl.children[this._lastTargetCardIndex]) {
+      this.trackEl.children[this._lastTargetCardIndex].classList.add('winner-border-glow');
+    }
 
     // Send spin_animation_complete handshake to backend for instant synchronized chat announcement
     if (this.currentSpinId) {

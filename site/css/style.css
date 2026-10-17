@@ -323,17 +323,18 @@ body {
   position: relative;
 }
 
-/* Topbar Header (Profile + Points Balance + Auth) */
+/* Topbar Header (100% Enlarged Height + Symmetrically Centered $DIG Balance + Account + Profile Right) */
 .site-topbar {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(6, 8, 13, 0.95);
+  background: rgba(6, 8, 13, 0.96);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
-  border-bottom: 2px solid rgba(255, 215, 0, 0.22);
-  padding: 0 28px;
-  height: 88px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.26);
+  padding: 0 36px;
+  height: 156px;
+  min-height: 156px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -345,20 +346,34 @@ body {
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   height: 100%;
+  position: relative;
+  z-index: 20;
+}
+
+.topbar-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  pointer-events: auto;
 }
 
 .sidebar-mobile-toggle {
   display: none;
   flex-direction: column;
   justify-content: space-around;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 9px;
   cursor: pointer;
 }
 
@@ -377,7 +392,7 @@ body {
   display: none !important;
 }
 
-/* Diggity Bets Logo placed where section title was, enlarged 150% with clean margins to prevent top clipping */
+/* Diggity Bets Logo scaled with 100% enlarged topbar */
 .topbar-logo-link {
   display: inline-flex;
   align-items: center;
@@ -387,19 +402,19 @@ body {
 }
 
 .site-header-logo {
-  height: 82px;
-  max-height: 84px;
-  max-width: 280px;
+  height: 122px;
+  max-height: 126px;
+  max-width: 340px;
   width: auto;
   object-fit: contain;
   margin-top: 0;
-  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.5)) drop-shadow(0 0 28px rgba(83, 252, 24, 0.35));
+  filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.55)) drop-shadow(0 0 32px rgba(83, 252, 24, 0.38));
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease;
 }
 
 .topbar-logo-link:hover .site-header-logo {
   transform: scale(1.03);
-  filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.7)) drop-shadow(0 0 36px rgba(83, 252, 24, 0.5));
+  filter: drop-shadow(0 0 24px rgba(255, 215, 0, 0.75)) drop-shadow(0 0 38px rgba(83, 252, 24, 0.55));
 }
 
 .topbar-center-logo {
@@ -417,40 +432,71 @@ body {
 
 /* User Balance Pill */
 .user-balance-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.78);
   border: 1.5px solid var(--border-gold);
-  border-radius: 28px;
-  padding: 8px 16px;
+  border-radius: 32px;
+  padding: 9px 18px;
   font-family: var(--font-display);
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 900;
   color: var(--gold);
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.18);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.22);
   white-space: nowrap;
 }
 
-.user-balance-pill .coin-icon {
-  font-size: 18px;
+.topbar-center .user-balance-pill {
+  padding: 12px 28px;
+  font-size: 20px;
+  border-width: 2px;
+  border-radius: 40px;
+  gap: 10px;
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.28), inset 0 0 12px rgba(255, 215, 0, 0.08);
 }
 
-/* Profile Button at Top Right */
+.user-balance-pill .coin-icon {
+  font-size: 20px;
+}
+
+.topbar-center .user-balance-pill .coin-icon {
+  font-size: 24px;
+}
+
+/* Stake Verified Badge in Topbar */
+.stake-verified-top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  border-radius: 20px;
+  background: rgba(83, 252, 24, 0.2);
+  border: 1.5px solid var(--kick-green);
+  color: var(--kick-green);
+  box-shadow: 0 0 14px rgba(83, 252, 24, 0.35);
+  white-space: nowrap;
+}
+
+/* Profile Button at Top Right (Placed to the right of Account Name) */
 .btn-top-profile {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
   color: #e2e8f0;
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 800;
-  padding: 9px 16px;
-  border-radius: 10px;
+  padding: 12px 22px;
+  border-radius: 12px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
@@ -474,12 +520,12 @@ body {
 .user-session-card {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(14, 20, 32, 0.88);
+  gap: 12px;
+  background: rgba(14, 20, 32, 0.9);
   border: 1.5px solid var(--border-gold);
-  border-radius: 30px;
-  padding: 4px 14px 4px 5px;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.18);
+  border-radius: 34px;
+  padding: 6px 18px 6px 7px;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.2);
   transition: all 0.2s ease;
 }
 
@@ -489,11 +535,11 @@ body {
 }
 
 .user-avatar-display {
-  font-size: 19px;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  font-size: 21px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -516,15 +562,15 @@ body {
 
 #auth-username-label {
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 0.5px;
 }
 
 .btn-auth-logout {
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 9px 13px;
+  font-size: 13.5px;
   color: var(--text-dim);
   border-radius: 8px;
   transition: var(--transition-fast);
@@ -541,10 +587,10 @@ body {
   color: #000000;
   border: none;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 12px 24px;
+  border-radius: 12px;
   cursor: pointer;
   text-decoration: none;
   box-shadow: 0 4px 18px var(--gold-glow);
@@ -647,7 +693,8 @@ body {
 .social-logo-stake {
   height: 36px;
   max-width: 130px;
-  filter: drop-shadow(0 0 12px rgba(83, 252, 24, 0.4));
+  background: transparent;
+  filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.18));
 }
 
 .module-card {
@@ -745,7 +792,18 @@ body {
     transform: translateX(0);
   }
   .site-topbar {
-    padding: 0 16px;
+    padding: 0 20px;
+    height: 118px;
+    min-height: 118px;
+  }
+  .site-header-logo {
+    height: 86px;
+    max-height: 88px;
+    max-width: 220px;
+  }
+  .topbar-center .user-balance-pill {
+    padding: 9px 18px;
+    font-size: 16px;
   }
   .modules-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -756,11 +814,27 @@ body {
   .topbar-active-title {
     display: none !important;
   }
+  .site-topbar {
+    height: 98px;
+    min-height: 98px;
+  }
   .site-header-logo {
-    height: 64px;
-    max-height: 66px;
-    max-width: 230px;
+    height: 68px;
+    max-height: 70px;
+    max-width: 180px;
     margin-top: 0;
+  }
+  .topbar-center .user-balance-pill {
+    padding: 8px 14px;
+    font-size: 14.5px;
+  }
+  .btn-top-profile {
+    padding: 9px 14px;
+    font-size: 14px;
+  }
+  .btn-header-cta {
+    padding: 9px 14px;
+    font-size: 14px;
   }
   .modules-grid {
     grid-template-columns: 1fr;
@@ -768,9 +842,17 @@ body {
 }
 
 @media (max-width: 640px) {
+  .topbar-center {
+    position: static;
+    transform: none;
+  }
+  .topbar-center .user-balance-pill,
   .user-balance-pill {
     padding: 7px 12px;
-    font-size: 14px;
+    font-size: 13.5px;
+  }
+  .topbar-center .user-balance-pill .coin-icon {
+    font-size: 16px;
   }
   .btn-top-profile .top-profile-text {
     display: none;
@@ -5581,18 +5663,50 @@ footer.site-footer {
   background-image: radial-gradient(circle at 10% 20%, rgba(255, 42, 95, 0.08) 0%, transparent 60%);
 }
 
-/* HOVER LEVITATION PHYSICS (Crisp lift with immediate drop on mouseout) */
-.store-voucher-card:hover {
-  transform: translateY(-10px) scale(1.02);
-  box-shadow: 0 20px 42px -10px rgba(0, 0, 0, 0.85), 0 0 32px var(--voucher-glow), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+/* Phase 6 Weekly Stock Pill Badges */
+.store-stock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.4);
+  color: #53fc18;
+}
+
+.store-stock-pill.unlimited {
+  background: rgba(255, 215, 0, 0.14);
+  border-color: rgba(255, 215, 0, 0.45);
+  color: var(--gold);
+}
+
+.store-stock-pill.sold-out {
+  background: rgba(255, 42, 95, 0.18);
+  border-color: rgba(255, 42, 95, 0.55);
+  color: #ff6b8b;
+}
+
+/* HOVER LEVITATION PHYSICS (Pure vertical float without deformation) */
+.store-voucher-card:hover,
+.raffle-hero-card.store-voucher-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 36px -8px rgba(0, 0, 0, 0.85), 0 0 28px var(--voucher-glow), inset 0 1px 1px rgba(255, 255, 255, 0.35);
   border-color: rgba(255, 255, 255, 0.4);
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 180ms ease-out,
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 200ms ease-out,
               border-color 150ms ease;
 }
 
-.store-voucher-card:active {
-  transform: translateY(-4px) scale(0.985);
+.store-voucher-card:active,
+.raffle-hero-card.store-voucher-card:active {
+  transform: translateY(-2px);
   transition: transform 80ms ease-out;
 }
 

@@ -102,7 +102,7 @@ body.autohide .stage.idle { opacity: 0; }
   40%, 60% { transform: translate3d(2px, 8px, 0); }
 }
 
-/* Gold horizontal center pointer */
+/* Gold horizontal center pointer + CS2 Elastic Peg Deflection */
 .marcador {
   position: absolute;
   left: 0;
@@ -114,6 +114,17 @@ body.autohide .stage.idle { opacity: 0; }
   box-shadow: 0 0 16px 4px rgba(255, 215, 0, 0.85), 0 0 30px rgba(255, 183, 0, 0.5);
   z-index: 15;
   pointer-events: none;
+  transform-origin: center center;
+  will-change: transform;
+}
+.marcador.needle-peg-deflect {
+  animation: pegDeflect 95ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pegDeflect {
+  0%   { transform: translateY(0) scaleY(1); }
+  35%  { transform: translateY(5px) scaleY(1.45); filter: brightness(1.35); }
+  75%  { transform: translateY(-2px) scaleY(0.92); }
+  100% { transform: translateY(0) scaleY(1); }
 }
 .marcador::before, .marcador::after {
   content: "";
@@ -122,6 +133,13 @@ body.autohide .stage.idle { opacity: 0; }
   transform: translateY(-50%);
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
+  transition: transform 0.08s ease;
+}
+.marcador.needle-peg-deflect::before {
+  transform: translateY(-50%) rotate(14deg) scale(1.12);
+}
+.marcador.needle-peg-deflect::after {
+  transform: translateY(-50%) rotate(-14deg) scale(1.12);
 }
 .marcador::before {
   left: 0;
@@ -152,7 +170,7 @@ body.autohide .stage.idle { opacity: 0; }
   background: linear-gradient(0deg, rgba(7, 9, 15, 0.98) 0%, rgba(7, 9, 15, 0) 100%);
 }
 
-/* ---------- Track (Vertical stack) ---------- */
+/* ---------- Track (Vertical stack with CS2 Near-Miss Suspense Curve) ---------- */
 .pista {
   display: flex;
   flex-direction: column;
@@ -161,11 +179,11 @@ body.autohide .stage.idle { opacity: 0; }
   padding-top: 150px;           /* card 0 centered: (460 - 160) / 2 = 150px */
   width: 100%;
   will-change: transform;
-  transition: transform 6.5s cubic-bezier(0.22, 1, 0.36, 1);   /* keep in sync with CONFIG.spinMs / EASE in main.js */
+  transition: transform 6.5s cubic-bezier(0.12, 0.99, 0.24, 1);   /* CS2 high-tension near-miss deceleration */
 }
 .pista.sin-transicion { transition: none !important; }
 
-/* ---------- Participant card (380 x 160) ---------- */
+/* ---------- Participant card (380 x 160 — CS2 Case Opening ItemCard Rarity Base) ---------- */
 .tarjeta {
   position: relative;
   flex: 0 0 160px;
@@ -177,21 +195,25 @@ body.autohide .stage.idle { opacity: 0; }
   justify-content: center;
   gap: 10px;
   padding: 12px 16px;
-  background: linear-gradient(160deg, #1d2232 0%, #11131c 100%);
-  border: 2px solid var(--rareza, #4b69ff);
-  border-left: 6px solid var(--rareza, #4b69ff);
-  border-right: 6px solid var(--rareza, #4b69ff);
+  background: linear-gradient(165deg, rgba(29, 34, 50, 0.95) 0%, rgba(13, 16, 26, 0.98) 78%, color-mix(in srgb, var(--rareza, #4b69ff) 28%, #0b0d14) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-left: 5px solid var(--rareza, #4b69ff);
+  border-right: 5px solid var(--rareza, #4b69ff);
+  border-bottom: 5px solid var(--rareza, #4b69ff);
   border-radius: 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65), inset 0 0 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.72), inset 0 -18px 28px -12px var(--rareza, #4b69ff);
   transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28), filter 0.5s ease, box-shadow 0.4s ease;
+  overflow: hidden;
 }
-.tarjeta::before {     /* rarity glow from the center */
+.tarjeta::before {     /* CS2 CaseCard radial rarity bloom from bottom base */
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 12px;
-  background: radial-gradient(ellipse at 50% 50%, var(--rareza, #4b69ff) 0%, transparent 70%);
-  opacity: 0.25;
+  background:
+    radial-gradient(ellipse at 50% 95%, var(--rareza, #4b69ff) 0%, transparent 68%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+  opacity: 0.34;
   pointer-events: none;
 }
 
@@ -228,6 +250,14 @@ body.autohide .stage.idle { opacity: 0; }
   text-align: center;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
   transition: color 0.4s ease, text-shadow 0.4s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+/* DecryptedText cryptographic reveal effect (adapted from React-Bits DecryptedText) */
+.decrypted-revealing {
+  letter-spacing: 1.5px;
+  color: #00e5ff !important;
+  text-shadow: 0 0 14px rgba(0, 229, 255, 0.85), 0 0 28px rgba(255, 215, 0, 0.55) !important;
 }
 
 /* Reveal: dim others, spotlight the winner card right in the center */
@@ -238,6 +268,7 @@ body.autohide .stage.idle { opacity: 0; }
   border-color: #ffd700;
   border-left-color: #ffd700;
   border-right-color: #ffd700;
+  border-bottom-color: #ffd700;
   box-shadow: 0 0 45px 12px rgba(255, 215, 0, 0.8), inset 0 0 32px rgba(255, 215, 0, 0.3);
 }
 .tarjeta.ganadora::after {      /* rotating golden border */

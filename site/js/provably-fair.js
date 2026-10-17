@@ -168,23 +168,23 @@ class ProvablyFairEngine {
   }
 
   /**
-   * Stake Crash: Multiplier from 1.00x upwards (1% house edge)
+   * Stake Crash: Multiplier from 1.00x upwards (5% house edge = 95.00% RTP)
    */
   getCrashMultiplier(hexHash) {
     const float = this.hashToFloat(hexHash);
-    if (float < 0.01) return 1.00;
-    const crashPoint = Math.floor((0.99 / (1.0 - float)) * 100) / 100;
+    if (float < 0.05) return 1.00;
+    const crashPoint = Math.floor((0.95 / (1.0 - float)) * 100) / 100;
     return Math.max(1.00, Math.min(crashPoint, 1000.00));
   }
 
   /**
-   * Stake Limbo: Multiplier from 1.01x up to 1,000,000.00x (1% house edge = 99% RTP)
-   * Formula: Floor(0.99 / float * 100) / 100
+   * Stake Limbo: Multiplier from 1.01x up to 1,000,000.00x (5% house edge = 95.00% RTP)
+   * Formula: Floor(0.95 / float * 100) / 100
    */
   getLimboMultiplier(hexHash) {
     const float = this.hashToFloat(hexHash);
-    if (float <= 0.00000099) return 1000000.00;
-    const mult = Math.floor((0.99 / float) * 100) / 100;
+    if (float <= 0.00000095) return 1000000.00;
+    const mult = Math.floor((0.95 / float) * 100) / 100;
     return Math.max(1.00, Math.min(mult, 1000000.00));
   }
 

@@ -327,21 +327,61 @@
 
   /* ---- Bezier inverse so every tick lands exactly when the card crosses the marker ---- */
   const bez = (u, a, b) => 3 * (1 - u) * (1 - u) * u * a + 3 * (1 - u) * u * u * b + u * u * u;
-  // CSS cubic-bezier(0.22, 1, 0.36, 1): progress(u) = bez(u, 1, 1); time(u) = bez(u, 0.22, 0.36)
+  // CSS cubic-bezier(0.12, 0.99, 0.24, 1): CS2 high-tension near-miss curve
   function timeAtProgress(p) {
     let lo = 0, hi = 1;
     for (let i = 0; i < 40; i++) {
       const mid = (lo + hi) / 2;
-      if (bez(mid, 1, 1) < p) lo = mid; else hi = mid;
+      if (bez(mid, 0.99, 1) < p) lo = mid; else hi = mid;
     }
-    return bez((lo + hi) / 2, 0.22, 0.36);
+    return bez((lo + hi) / 2, 0.12, 0.24);
+  }
+
+  // Cryptographic scramble reveal adapted from React-Bits DecryptedText
+  function decryptTextReveal(el, finalText, durationMs = 680) {
+    if (!el) return;
+    const glyphs = '0123456789ABCDEF#$%&*+<>?@';
+    const target = String(finalText || '');
+    const start = performance.now();
+    el.classList.add('decrypted-revealing');
+
+    function frame(now) {
+      const elapsed = now - start;
+      const progress = Math.min(1, elapsed / durationMs);
+      const lockedCount = Math.floor(progress * target.length);
+      let out = '';
+      for (let i = 0; i < target.length; i++) {
+        if (i < lockedCount || target[i] === ' ' || target[i] === '@') {
+          out += target[i];
+        } else {
+          out += glyphs[Math.floor(Math.random() * glyphs.length)];
+        }
+      }
+      el.textContent = out;
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = target;
+        el.classList.remove('decrypted-revealing');
+      }
+    }
+    requestAnimationFrame(frame);
   }
 
   function scheduleTicks(totalDistance, delay) {
+    const marcadorEl = $('.marcador');
     const n = Math.floor(totalDistance / L.stride);
     for (let k = 1; k <= n; k++) {
       const p = (k * L.stride) / totalDistance;
-      Sfx.tick(delay + timeAtProgress(p) * (L.spinMs / 1000), p);
+      const tSec = delay + timeAtProgress(p) * (L.spinMs / 1000);
+      Sfx.tick(tSec, p);
+      if (marcadorEl) {
+        setTimeout(() => {
+          marcadorEl.classList.remove('needle-peg-deflect');
+          void marcadorEl.offsetWidth;
+          marcadorEl.classList.add('needle-peg-deflect');
+        }, Math.max(0, Math.round(tSec * 1000)));
+      }
     }
   }
 
@@ -398,8 +438,10 @@
     Sfx.ensure();
     if (wasHidden && IN_OBS) await new Promise((r) => setTimeout(r, 450)); // let the fade-in finish
 
-    // Stop position: winner centered ± up to 35% of a card height (natural, stays firmly inside winner card)
-    const jitter = (Math.random() * 0.7 - 0.35) * (L.cardH * 0.35);
+    // CS2 Near-Miss suspense offset: stops near the upper or lower edge of the winning card (±38% of cardH)
+    const nearMissSign = Math.random() < 0.5 ? -1 : 1;
+    const nearMissMag = 0.22 + Math.random() * 0.16;
+    const jitter = nearMissSign * nearMissMag * L.cardH;
     const distance = L.winnerIdx * L.stride + jitter;
 
     pista.classList.remove('sin-transicion');
@@ -427,14 +469,19 @@
   function reveal(winner) {
     const card = pista.children[L.winnerIdx];
     const display = displayNames[winner] ?? winner;
+    const formattedWinner = display.startsWith('@') ? display : `@${display}`;
 
-    // T+0 : impact directly on the winner card in the center
+    // T+0 : impact directly on the winner card in the center + DecryptedText reveal on card
     Sfx.thud(0);
     flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
     ruleta.classList.remove('shake'); void ruleta.offsetWidth; ruleta.classList.add('shake');
     pista.classList.add('revealed');
     stage.classList.add('revealed');
     card?.classList.add('ganadora');
+    const cardNameEl = card?.querySelector('.nombre');
+    if (cardNameEl) {
+      decryptTextReveal(cardNameEl, formattedWinner, 620);
+    }
 
     // Handshake: Notify server that wheel deceleration finished for instant, millisecond-accurate chat announcement
     if (currentSpinId) {
@@ -453,7 +500,7 @@
       }).catch(() => {});
     }
 
-    // T+0.35 : victory fanfare + confetti cannons + SYNCHRONIZED ON-SCREEN WINNER MODAL
+    // T+0.35 : victory fanfare + confetti cannons + SYNCHRONIZED ON-SCREEN WINNER MODAL with DecryptedText
     Sfx.fanfare(0.35);
     Sfx.sparkle(0.45);
     setTimeout(() => {
@@ -463,7 +510,7 @@
       const resAvatar = $('#resultAvatar');
       const resInitials = $('#resultAvatarInitials');
       if (modal && resName) {
-        resName.textContent = display.startsWith('@') ? display : `@${display}`;
+        decryptTextReveal(resName, formattedWinner, 680);
         if (avatars[winner]) {
           resAvatar.src = avatars[winner];
           resAvatar.style.display = 'block';
@@ -707,21 +754,50 @@
       if (!busy) updateStandbyWithRealChatters();
     }, 15000);
 
-    // Connect to HuntHub Core WebSocket hub (port 3001) as well
-    try {
-      const hubPort = window.location.port || '3001';
-      const hubHost = window.location.hostname || '127.0.0.1';
-      hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
-      hubWs.onmessage = (ev) => {
-        try {
-          const payload = JSON.parse(ev.data);
-          onMessage(payload);
-        } catch {}
-      };
-      hubWs.onopen = () => {
-        if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
-      };
-    } catch {}
+    // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) with auto-reconnect for OBS Browser Source
+    function connectHubWs() {
+      try {
+        const hubPort = params.get('hubPort') || '3001';
+        const hubHost = window.location.hostname || '127.0.0.1';
+        hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
+        hubWs.onmessage = (ev) => {
+          try {
+            const payload = JSON.parse(ev.data);
+            if (payload.action === 'spin_csgo' || payload.type === 'csgo_spin') {
+              if (payload.demo) localDemo(payload.winner);
+              else localDemo(payload.winner);
+              return;
+            }
+            onMessage(payload);
+          } catch {}
+        };
+        hubWs.onopen = () => {
+          if (!connected) setStatus('● Connected to HuntHub Core (ws://127.0.0.1:3001)', '#00e676');
+        };
+        hubWs.onclose = () => {
+          setTimeout(connectHubWs, 2500);
+        };
+        hubWs.onerror = () => {};
+      } catch {}
+    }
+    connectHubWs();
+
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    let lastSyncedEventTs = 0;
+    setInterval(async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:3001/api/sync/state');
+        if (!res.ok) return;
+        const data = await res.json();
+        const evt = data?.overlays?.lastOverlayEvent;
+        if (evt && evt.ts && evt.ts > lastSyncedEventTs) {
+          lastSyncedEventTs = evt.ts;
+          if (evt.targetOverlay === 'wheel-csgo') {
+            localDemo(evt.winner);
+          }
+        }
+      } catch {}
+    }, 1500);
   }
 
   /* ---------------- Buttons (preview / OBS interact only) ---------------- */
@@ -730,19 +806,22 @@
     if (btnDemo) btnDemo.disabled = !enabled;
   }
 
-  function localDemo() {
+  function localDemo(forcedWinner) {
     const names = ['LuckyChatter', 'VegasPro', 'SpinKing', 'JackpotAce', 'Strike777', 'SlotMaster', 'DiamondKing', 'NeonWolf', 'RoyalFlush', 'BigBassBob'];
+    if (forcedWinner && !names.some((n) => n.toLowerCase() === String(forcedWinner).toLowerCase())) {
+      names.push(String(forcedWinner));
+    }
     const logins = names.map((n) => n.toLowerCase());
     const nombres = Object.fromEntries(names.map((n) => [n.toLowerCase(), n]));
-    onMessage({ evento: 'sorteo', id: 'local-' + Date.now(), demo: true, participantes: logins, ganador: logins[Math.floor(Math.random() * logins.length)], nombres, avatares: {} });
+    const winLogin = forcedWinner ? String(forcedWinner).toLowerCase() : logins[Math.floor(Math.random() * logins.length)];
+    onMessage({ evento: 'sorteo', id: 'local-' + Date.now(), demo: true, participantes: logins, ganador: winLogin, nombres, avatares: {} });
   }
 
-  async function trigger(demo) {
+  async function trigger(demo, forcedWinner) {
     Sfx.ensure();    // button click = user gesture, unlocks audio in normal browsers
     if (busy) return;
     if (!connected) {
-      if (demo) { localDemo(); return; }
-      setStatus('✖ Not connected to Streamer.bot — is the WebSocket Server running?', '#ff5252');
+      localDemo(forcedWinner);
       return;
     }
     try {
@@ -751,7 +830,7 @@
       setStatus(demo ? '● Demo requested' : '● Draw requested', '#00e676');
     } catch (e) {
       setStatus(`✖ Action "${CFG.actionName}" failed — import giveaway-csgo-1.0.7.sb (${e.message || e})`, '#ff5252');
-      if (demo) localDemo();
+      localDemo(forcedWinner);
     }
   }
 
@@ -766,8 +845,8 @@
   try {
     const bus = new BroadcastChannel('giveaway_bus');
     bus.onmessage = (ev) => {
-      if (ev.data?.type === 'test_spin') localDemo();
-      else if (ev.data?.type === 'spin') trigger(false);
+      if (ev.data?.type === 'test_spin') localDemo(ev.data?.winner);
+      else if (ev.data?.type === 'spin') trigger(false, ev.data?.winner);
     };
   } catch (e) {}
 

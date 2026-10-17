@@ -20,6 +20,12 @@ class StakeOriginalsController {
     localStorage.setItem('hunthub_balance', this.balance.toString());
     this.activeTab = 'plinko';
 
+    // Phase 6 Anti-Exploit Economy Constants (95.00% RTP / 5% House Edge, Max Bet 50 $DIG, Max Win Cap 500 $DIG net)
+    this.rtp = 95.00;
+    this.houseEdgeFactor = 0.95;
+    this.maxBet = 50;
+    this.maxWinCap = 500;
+
     // 2. Plinko State
     this.plinkoBet = 10;
     this.plinkoRisk = 'high'; // 'low', 'medium', 'high'
@@ -28,9 +34,9 @@ class StakeOriginalsController {
     this.plinkoHistory = [0.9, 0.3, 3, 0.2, 10];
     this.isPlinkoLoopRunning = false;
     this.plinkoPayouts = {
-      low: [8.9, 3, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 3, 8.9],
-      medium: [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22],
-      high: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76]
+      low: [8.5, 2.9, 1.3, 1.0, 0.95, 0.5, 0.95, 1.0, 1.3, 2.9, 8.5],
+      medium: [21, 4.8, 1.9, 1.3, 0.6, 0.4, 0.6, 1.3, 1.9, 4.8, 21],
+      high: [72, 9.5, 2.9, 0.9, 0.3, 0.2, 0.3, 0.9, 2.9, 9.5, 72]
     };
 
     // 3. Mines State
@@ -41,7 +47,7 @@ class StakeOriginalsController {
     this.minesState = 'idle'; // 'idle', 'playing', 'cashed', 'busted'
     this.minesCurrentMultiplier = 1.0;
 
-    // 4. Crash State (1.00% House Edge = 99.00% RTP)
+    // 4. Crash State (5.00% House Edge = 95.00% RTP)
     this.crashBet = 15;
     this.crashAutoCashout = null; // Optional: null by default
     this.crashState = 'idle'; // 'idle', 'running', 'crashed', 'cashed'
@@ -51,18 +57,18 @@ class StakeOriginalsController {
     this.crashStartTime = 0;
     this.crashAnimFrame = null;
 
-    // 5. Dice State (Stake 1.00% House Edge = 99.00% RTP)
+    // 5. Dice State (5.00% House Edge = 95.00% RTP)
     this.diceBet = 20;
     this.diceMode = 'over'; // 'over' (Roll Over) or 'under' (Roll Under)
     this.diceTarget = 50.00;
     this.diceWinChance = 50.00;
-    this.diceMultiplier = 1.9800;
+    this.diceMultiplier = 1.9000;
     this.isRollingDice = false;
 
-    // 6. Limbo State (Stake Original 1.00% House Edge = 99.00% RTP)
+    // 6. Limbo State (5.00% House Edge = 95.00% RTP)
     this.limboBet = 10;
     this.limboTarget = 2.00;
-    this.limboWinChance = 49.50;
+    this.limboWinChance = 47.50;
     this.limboHistory = [1.84, 3.20, 1.05, 12.50, 2.10];
     this.isRollingLimbo = false;
 
@@ -77,7 +83,7 @@ class StakeOriginalsController {
     this.bjSplitHands = [];
     this.bjActiveHandIdx = 0;
 
-    // 8. European Roulette State (97.30% RTP)
+    // 8. European Roulette State (95.00% RTP / Max Bet 50 $DIG)
     this.rouletteChip = 25;
     this.rouletteBets = {}; // { 'num_17': 25, 'red': 50, ... }
     this.isSpinningRoulette = false;
@@ -87,7 +93,7 @@ class StakeOriginalsController {
     this.euroWheelPockets = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     this.redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 
-    // 9. Hi-Lo State (Stake Original 1.00% House Edge = 99.00% RTP)
+    // 9. Hi-Lo State (5.00% House Edge = 95.00% RTP)
     this.hiloBet = 10;
     this.hiloState = 'idle'; // 'idle', 'in_game', 'won', 'lost', 'cashed'
     this.hiloCurrentCard = null;
@@ -95,7 +101,7 @@ class StakeOriginalsController {
     this.hiloStep = 0;
     this.hiloHistory = [];
 
-    // 10. Keno State (Stake Original 1.00% House Edge = 99.00% RTP)
+    // 10. Keno State (5.00% House Edge = 95.00% RTP)
     this.kenoBet = 10;
     this.kenoRisk = 'classic'; // 'classic', 'low', 'medium', 'high'
     this.kenoSelected = new Set();
@@ -132,13 +138,37 @@ class StakeOriginalsController {
     this.balance += amount;
     if (this.balance < 0) this.balance = 0;
     this.renderBalance();
+    if (window.userStore) {
+      window.userStore.points = this.balance;
+    }
   }
 
   /**
-   * Strict bet deduction: If balance is low, block the bet with informative message.
+   * Phase 6 Anti-Exploit Cap: Caps gross payout at betAmount + MAX_WIN_CAP (500 $DIG net profit)
+   */
+  capGrossPayout(betAmount, rawGrossPayout) {
+    const gross = Math.max(0, Math.floor(Number(rawGrossPayout) || 0));
+    if (gross <= 0) return 0;
+    const maxGross = Math.max(0, Math.floor(Number(betAmount) || 0)) + this.maxWinCap;
+    return Math.min(gross, maxGross);
+  }
+
+  /**
+   * Strict bet deduction: Enforces MAX BET = 50 $DIG and blocks bets if balance is insufficient.
    * Viewers earn $DIG points organically by watching kick.com/diggitybets.
    */
   checkAndDeductBet(betAmount) {
+    if (!Number.isFinite(betAmount) || betAmount <= 0) {
+      this.showToast('⚠️ Ingresá un monto de apuesta válido en $DIG.', 'loss');
+      return false;
+    }
+    if (betAmount > this.maxBet) {
+      this.showToast(`⚠️ Apuesta máxima permitida: ${this.maxBet} $DIG por tirada (Anti-Exploit Cap).`, 'loss');
+      if (window.soundEngine && typeof window.soundEngine.playBust === 'function') {
+        try { window.soundEngine.playBust(); } catch (_) {}
+      }
+      return false;
+    }
     if (this.balance < betAmount) {
       this.showToast('⚠️ Saldo insuficiente en $DIG. ¡Mirá el stream en Kick para acumular puntos orgánicamente!', 'loss');
       if (window.soundEngine && typeof window.soundEngine.playBust === 'function') {
@@ -236,7 +266,7 @@ class StakeOriginalsController {
         const inputId = btn.getAttribute('data-target-input');
         const input = document.getElementById(inputId);
         if (input) {
-          let val = Math.max(1, (parseInt(input.value, 10) || 10) * 2);
+          let val = Math.min(this.maxBet, Math.max(1, (parseInt(input.value, 10) || 10) * 2));
           input.value = val;
           input.dispatchEvent(new Event('change'));
           if (window.soundEngine) window.soundEngine.playChip();
@@ -415,7 +445,7 @@ class StakeOriginalsController {
           }
         } else {
           // Ball landed in bucket!
-          const winAmount = Math.floor(b.bet * b.multiplier);
+          const winAmount = this.capGrossPayout(b.bet, b.bet * b.multiplier);
           this.adjustBalance(winAmount);
           this.plinkoHistory.push(b.multiplier);
           if (this.plinkoHistory.length > 12) this.plinkoHistory.shift();
@@ -747,7 +777,7 @@ class StakeOriginalsController {
       }
       return res;
     };
-    const houseEdge = 0.99; // 1% house edge
+    const houseEdge = 0.95; // 5% house edge (95.00% RTP)
     const totalCombos = nCr(25, gems);
     const winCombos = nCr(25 - mines, gems);
     if (winCombos === 0) return 1.0;
@@ -759,7 +789,7 @@ class StakeOriginalsController {
     if (this.minesState !== 'playing') return;
 
     this.minesState = 'cashed';
-    const winAmount = Math.floor(this.minesBet * this.minesCurrentMultiplier);
+    const winAmount = this.capGrossPayout(this.minesBet, this.minesBet * this.minesCurrentMultiplier);
     this.adjustBalance(winAmount);
 
     if (window.soundEngine) window.soundEngine.playWin();
@@ -882,7 +912,7 @@ class StakeOriginalsController {
     this.crashState = 'running';
     this.crashCurrentMultiplier = 1.00;
 
-    // Cryptographic Provably Fair crash target (1% Stake house edge)
+    // Cryptographic Provably Fair crash target (5% house edge = 95.00% RTP)
     let hash = 'crash_' + Date.now();
     if (window.pfEngine && typeof window.pfEngine.generateRoundHash === 'function') {
       hash = await window.pfEngine.generateRoundHash();
@@ -890,7 +920,7 @@ class StakeOriginalsController {
       window.pfEngine.nextNonce();
     } else {
       const rand = Math.random();
-      this.crashTargetMultiplier = rand < 0.01 ? 1.00 : parseFloat(Math.max(1.00, (0.99 / (1.0 - rand))).toFixed(2));
+      this.crashTargetMultiplier = rand < 0.05 ? 1.00 : parseFloat(Math.max(1.00, (0.95 / (1.0 - rand))).toFixed(2));
     }
 
     const startBtn = document.getElementById('crash-btn-start');
@@ -928,7 +958,7 @@ class StakeOriginalsController {
 
       const cashoutBtn = document.getElementById('crash-btn-cashout');
       if (cashoutBtn && this.crashState === 'running') {
-        const potentialWin = Math.floor(this.crashBet * currentMult);
+        const potentialWin = this.capGrossPayout(this.crashBet, this.crashBet * currentMult);
         cashoutBtn.textContent = `Cashout: ${potentialWin} $DIG (${currentMult.toFixed(2)}x)`;
       }
 
@@ -1066,7 +1096,7 @@ class StakeOriginalsController {
     cancelAnimationFrame(this.crashAnimFrame);
 
     this.crashState = 'cashed';
-    const winAmount = Math.floor(this.crashBet * this.crashCurrentMultiplier);
+    const winAmount = this.capGrossPayout(this.crashBet, this.crashBet * this.crashCurrentMultiplier);
     this.adjustBalance(winAmount);
 
     if (window.soundEngine) window.soundEngine.playWin();
@@ -1165,7 +1195,7 @@ class StakeOriginalsController {
     if (multInput) {
       multInput.addEventListener('change', () => {
         let v = parseFloat(multInput.value);
-        if (isNaN(v)) v = 1.9800;
+        if (isNaN(v)) v = 1.9000;
         this.updateDiceFromMultiplier(v);
       });
     }
@@ -1208,14 +1238,14 @@ class StakeOriginalsController {
       this.diceTarget = Math.max(0.01, Math.min(98.00, target));
       this.diceWinChance = parseFloat(this.diceTarget.toFixed(2));
     }
-    this.diceMultiplier = parseFloat((99.00 / this.diceWinChance).toFixed(4));
+    this.diceMultiplier = parseFloat((95.00 / this.diceWinChance).toFixed(4));
     this.renderDiceUI();
   }
 
   updateDiceFromMultiplier(mult) {
-    const clampedMult = Math.max(1.0102, Math.min(9900.00, mult));
+    const clampedMult = Math.max(1.0102, Math.min(9500.00, mult));
     this.diceMultiplier = clampedMult;
-    const chance = 99.00 / clampedMult;
+    const chance = 95.00 / clampedMult;
     this.diceWinChance = parseFloat(chance.toFixed(2));
     if (this.diceMode === 'over') {
       this.diceTarget = parseFloat((100 - this.diceWinChance).toFixed(2));
@@ -1226,9 +1256,9 @@ class StakeOriginalsController {
   }
 
   updateDiceFromChance(chance) {
-    const clampedChance = Math.max(0.01, Math.min(98.00, chance));
+    const clampedChance = Math.max(0.01, Math.min(94.00, chance));
     this.diceWinChance = clampedChance;
-    this.diceMultiplier = parseFloat((99.00 / clampedChance).toFixed(4));
+    this.diceMultiplier = parseFloat((95.00 / clampedChance).toFixed(4));
     if (this.diceMode === 'over') {
       this.diceTarget = parseFloat((100 - clampedChance).toFixed(2));
     } else {
@@ -1316,7 +1346,7 @@ class StakeOriginalsController {
       }
 
       if (isWin) {
-        const payout = Math.floor(bet * this.diceMultiplier);
+        const payout = this.capGrossPayout(bet, bet * this.diceMultiplier);
         this.adjustBalance(payout);
         if (window.soundEngine) window.soundEngine.playWin();
         this.showToast(`🎯 Rolled ${rollResult.toFixed(2)}! Won +${payout} $DIG (${this.diceMultiplier.toFixed(4)}x)!`, 'win');
@@ -1928,6 +1958,7 @@ class StakeOriginalsController {
     });
 
     if (totalPayout > 0) {
+      totalPayout = this.capGrossPayout(totalBet, totalPayout);
       this.adjustBalance(totalPayout);
     }
 
@@ -1998,7 +2029,7 @@ class StakeOriginalsController {
       }
     } else if (outcome === 'blackjack') {
       // 3:2 Natural Blackjack payout (2.5x bet total)
-      const payout = Math.floor(this.bjBet * 2.5);
+      const payout = this.capGrossPayout(this.bjBet, this.bjBet * 2.5);
       this.adjustBalance(payout);
       if (window.soundEngine) window.soundEngine.playWin();
       if (banner) {
@@ -2006,7 +2037,7 @@ class StakeOriginalsController {
         banner.className = 'hg-result-banner active win';
       }
     } else if (outcome === 'win' || outcome === 'dealer_bust') {
-      const payout = this.bjBet * 2;
+      const payout = this.capGrossPayout(this.bjBet, this.bjBet * 2);
       this.adjustBalance(payout);
       if (window.soundEngine) window.soundEngine.playWin();
       if (banner) {
@@ -2603,6 +2634,7 @@ class StakeOriginalsController {
         });
 
         if (totalWinnings > 0) {
+          totalWinnings = this.capGrossPayout(totalCost, totalWinnings);
           this.adjustBalance(totalWinnings);
           setTimeout(() => {
             if (window.soundEngine) window.soundEngine.playWin();
@@ -2831,8 +2863,8 @@ class StakeOriginalsController {
     this.limboTarget = target;
     if (badge) badge.textContent = `${target.toFixed(2)}x`;
 
-    // 1% Stake house edge: winChance = 99 / target
-    const chance = Math.max(0.0001, Math.min(98.00, 99.00 / target));
+    // 5% house edge (95.00% RTP): winChance = 95 / target
+    const chance = Math.max(0.0001, Math.min(94.00, 95.00 / target));
     this.limboWinChance = chance;
     chanceInput.value = chance >= 1 ? chance.toFixed(2) : chance.toFixed(4);
   }
@@ -2843,12 +2875,12 @@ class StakeOriginalsController {
     const badge = document.getElementById('limbo-target-badge');
     if (!targetInput || !chanceInput) return;
 
-    let chance = parseFloat(chanceInput.value) || 49.50;
-    chance = Math.max(0.0001, Math.min(98.00, chance));
+    let chance = parseFloat(chanceInput.value) || 47.50;
+    chance = Math.max(0.0001, Math.min(94.00, chance));
     this.limboWinChance = chance;
 
-    // target = 99 / winChance
-    const target = Math.max(1.01, Math.min(1000000.00, 99.00 / chance));
+    // target = 95 / winChance
+    const target = Math.max(1.01, Math.min(1000000.00, 95.00 / chance));
     this.limboTarget = target;
     targetInput.value = target.toFixed(2);
     if (badge) badge.textContent = `${target.toFixed(2)}x`;
@@ -2885,7 +2917,7 @@ class StakeOriginalsController {
     if (banner) { banner.textContent = ''; banner.className = 'hg-result-banner'; }
     if (caption) caption.textContent = ''; // Stake Original Limbo: zero subtitle captions
 
-    // Cryptographic Outcome via Provably Fair HMAC-SHA256 (Stake formula)
+    // Cryptographic Outcome via Provably Fair HMAC-SHA256 (95.00% RTP / 5% house edge)
     let hash = 'limbo_' + Date.now();
     let outcomeMultiplier = 1.00;
     if (window.pfEngine && typeof window.pfEngine.generateRoundHash === 'function') {
@@ -2894,7 +2926,7 @@ class StakeOriginalsController {
       window.pfEngine.nextNonce();
     } else {
       const rand = Math.random();
-      outcomeMultiplier = rand < 0.01 ? 1.00 : parseFloat(Math.max(1.00, (0.99 / (1.0 - rand))).toFixed(2));
+      outcomeMultiplier = rand < 0.05 ? 1.00 : parseFloat(Math.max(1.00, (0.95 / (1.0 - rand))).toFixed(2));
     }
 
     const isWin = outcomeMultiplier >= this.limboTarget;
@@ -2923,7 +2955,7 @@ class StakeOriginalsController {
     this.renderLimboHistory();
 
     if (isWin) {
-      const payout = Math.floor(this.limboBet * this.limboTarget);
+      const payout = this.capGrossPayout(this.limboBet, this.limboBet * this.limboTarget);
       this.adjustBalance(payout);
       if (window.soundEngine && outcomeMultiplier >= 10.0 && typeof window.soundEngine.playCoins === 'function') {
         window.soundEngine.playCoins();
@@ -2962,7 +2994,7 @@ class StakeOriginalsController {
     if (rank === 14) higherCount = 4;
     if (rank === 2) lowerCount = 4;
 
-    const calcMult = (cnt) => cnt > 0 ? Number((0.99 / (cnt / totalCards)).toFixed(4)) : 0;
+    const calcMult = (cnt) => cnt > 0 ? Number((0.95 / (cnt / totalCards)).toFixed(4)) : 0;
 
     return {
       higher: {
@@ -3155,7 +3187,7 @@ class StakeOriginalsController {
       if (skipBtn) skipBtn.disabled = false;
       if (cashoutBtn) {
         cashoutBtn.disabled = this.hiloCurrentMultiplier <= 1.0;
-        const currentPayout = Math.floor(this.hiloBet * this.hiloCurrentMultiplier);
+        const currentPayout = this.capGrossPayout(this.hiloBet, this.hiloBet * this.hiloCurrentMultiplier);
         cashoutBtn.textContent = `Cashout: ${currentPayout.toLocaleString()} $DIG`;
         if (this.hiloCurrentMultiplier > 1.0) cashoutBtn.classList.add('active');
         else cashoutBtn.classList.remove('active');
@@ -3286,7 +3318,7 @@ class StakeOriginalsController {
   cashoutHilo() {
     if (this.hiloState !== 'in_game' || this.hiloCurrentMultiplier <= 1.0) return;
 
-    const payout = Math.floor(this.hiloBet * this.hiloCurrentMultiplier);
+    const payout = this.capGrossPayout(this.hiloBet, this.hiloBet * this.hiloCurrentMultiplier);
     this.adjustBalance(payout);
     this.hiloState = 'cashed';
 
@@ -3596,7 +3628,7 @@ class StakeOriginalsController {
     const pickCount = picks.length;
     const payRow = this.kenoPaytables[pickCount]?.[this.kenoRisk] || [0];
     const mult = payRow[matchedHits] || 0;
-    const payout = Math.floor(this.kenoBet * mult);
+    const payout = this.capGrossPayout(this.kenoBet, this.kenoBet * mult);
 
     this.renderKenoPaytable(matchedHits);
 

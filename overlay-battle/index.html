@@ -13,12 +13,25 @@
 </head>
 <body>
   <div id="stage-wrapper">
-    <!-- Battle Arena (Minimalist — Image 3 Layout) -->
+    <!-- Battle Arena (Minimalist — Image 3 Layout + HoloCard + ElectricBorder KotH) -->
     <main class="battle-arena">
       <!-- Player A (Cyan Corner) -->
-      <section class="player-card corner-cyan" id="card-player-a">
+      <section class="player-card corner-cyan holo-spotlight-card" id="card-player-a">
         <div class="card-glow"></div>
+        <div class="electric-border-ring" id="electric-border-a"></div>
         <div class="corner-tag">BLUE CORNER</div>
+        <div class="mode-pill-badge" id="mode-badge-a">BONUS BUY</div>
+
+        <!-- King of the Hill Reigning Streak Meter -->
+        <div class="koth-throne-meter" id="koth-meter-a" style="display: none;">
+          <span class="koth-crown-label">👑 REIGNING KING</span>
+          <div class="koth-steps-row" id="koth-steps-a">
+            <span class="koth-step" data-step="1">1/4</span>
+            <span class="koth-step" data-step="2">2/4</span>
+            <span class="koth-step" data-step="3">3/4</span>
+            <span class="koth-step koth-prize-step" data-step="4">4/4 · $20 PRIZE</span>
+          </div>
+        </div>
 
         <!-- Avatar / Monogram Header -->
         <div class="player-header">
@@ -31,7 +44,7 @@
           </div>
         </div>
 
-        <!-- Slot Showcase -->
+        <!-- Slot Showcase with HoloCard / ReflectiveCard Glare -->
         <div class="slot-display">
           <div class="slot-cover" id="cover-a">
             <div class="cover-placeholder" id="placeholder-a">
@@ -40,10 +53,11 @@
               <span class="cover-provider" id="slot-provider-a">PRAGMATIC / HACKSAW / NOLIMIT</span>
             </div>
             <img id="slot-img-a" class="slot-real-img" src="" alt="Slot A" style="display: none;">
+            <div class="holo-foil-glare"></div>
           </div>
         </div>
 
-        <!-- Multiplier & Payout Gauge -->
+        <!-- Multiplier & Payout Gauge with WAAPI Ghost Bar -->
         <div class="score-gauge">
           <div class="gauge-header">
             <span class="gauge-label">FINAL MULTIPLIER</span>
@@ -51,6 +65,7 @@
           </div>
           <div class="gauge-value" id="mult-a">0.00<span class="mult-x">x</span></div>
           <div class="gauge-meter">
+            <div class="ghost-meter-bar" id="ghost-bar-a" style="width: 0%;"></div>
             <div class="meter-bar" id="meter-bar-a" style="width: 0%;"></div>
           </div>
         </div>
@@ -62,19 +77,34 @@
         </div>
       </section>
 
-      <!-- Center VS Emblem -->
+      <!-- Center VS Emblem + Top Mode & KotH Status -->
       <div class="vs-center">
+        <div class="vs-mode-pill" id="vs-mode-badge">BONUS BUY MODE</div>
         <div class="vs-burst"></div>
         <div class="vs-circle">
           <span class="vs-text">VS</span>
         </div>
         <div class="vs-subtext" id="vs-subtext">LIVE DUEL</div>
+        <div class="vs-koth-pill" id="vs-koth-pill">👑 KOTH: STREAK 0/4 ($20 PRIZE)</div>
       </div>
 
       <!-- Player B (Crimson Corner) -->
-      <section class="player-card corner-crimson" id="card-player-b">
+      <section class="player-card corner-crimson holo-spotlight-card" id="card-player-b">
         <div class="card-glow"></div>
+        <div class="electric-border-ring" id="electric-border-b"></div>
         <div class="corner-tag">RED CORNER</div>
+        <div class="mode-pill-badge" id="mode-badge-b">BONUS BUY</div>
+
+        <!-- King of the Hill Reigning Streak Meter -->
+        <div class="koth-throne-meter" id="koth-meter-b" style="display: none;">
+          <span class="koth-crown-label">👑 REIGNING KING</span>
+          <div class="koth-steps-row" id="koth-steps-b">
+            <span class="koth-step" data-step="1">1/4</span>
+            <span class="koth-step" data-step="2">2/4</span>
+            <span class="koth-step" data-step="3">3/4</span>
+            <span class="koth-step koth-prize-step" data-step="4">4/4 · $20 PRIZE</span>
+          </div>
+        </div>
 
         <!-- Avatar / Monogram Header -->
         <div class="player-header">
@@ -87,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Slot Showcase -->
+        <!-- Slot Showcase with HoloCard / ReflectiveCard Glare -->
         <div class="slot-display">
           <div class="slot-cover" id="cover-b">
             <div class="cover-placeholder" id="placeholder-b">
@@ -96,10 +126,11 @@
               <span class="cover-provider" id="slot-provider-b">PRAGMATIC / HACKSAW / NOLIMIT</span>
             </div>
             <img id="slot-img-b" class="slot-real-img" src="" alt="Slot B" style="display: none;">
+            <div class="holo-foil-glare"></div>
           </div>
         </div>
 
-        <!-- Multiplier & Payout Gauge -->
+        <!-- Multiplier & Payout Gauge with WAAPI Ghost Bar -->
         <div class="score-gauge">
           <div class="gauge-header">
             <span class="gauge-label">FINAL MULTIPLIER</span>
@@ -107,6 +138,7 @@
           </div>
           <div class="gauge-value" id="mult-b">0.00<span class="mult-x">x</span></div>
           <div class="gauge-meter">
+            <div class="ghost-meter-bar" id="ghost-bar-b" style="width: 0%;"></div>
             <div class="meter-bar" id="meter-bar-b" style="width: 0%;"></div>
           </div>
         </div>

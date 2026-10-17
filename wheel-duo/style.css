@@ -118,6 +118,12 @@ body {
   border: 1px solid rgba(255, 215, 0, 0.5);
 }
 
+@property --border-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .step-indicator {
   display: flex;
   align-items: center;
@@ -126,6 +132,29 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
+}
+
+.atlas-queue-badge {
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.45);
+  color: #53fc18;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 0.8px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 12px rgba(83, 252, 24, 0.25);
+}
+
+#wheel-wrapper.mode-switching .reel-container {
+  animation: modeSwitchPulse 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modeSwitchPulse {
+  0%   { transform: scale(1); filter: brightness(1); }
+  45%  { transform: scale(0.975); filter: brightness(1.3); }
+  100% { transform: scale(1); filter: brightness(1); }
 }
 
 .step-label {
@@ -217,25 +246,50 @@ body {
   transition: transform 0.1s linear;
 }
 
-/* Duo Card Design (Participant Left + Slot Right) */
+/* Duo Card Design (Participant Left + 3:4 Slot Right — Grow-Game Unboxing + OptionWheel) */
 .duo-card {
+  position: relative;
   width: calc(100% - 24px);
   height: 90px;
   margin: 3px 12px;
-  background: var(--bg-card);
+  background: linear-gradient(135deg, rgba(16, 22, 38, 0.95) 0%, rgba(10, 14, 24, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45);
   flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.duo-card.highlight {
+.duo-card.highlight,
+.duo-card.winner-border-glow {
   border-color: var(--gold-accent);
-  box-shadow: 0 0 20px var(--gold-glow);
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.75), inset 0 0 22px rgba(255, 215, 0, 0.22);
+  transform: scale(1.02);
+  z-index: 12;
+}
+
+/* React-Bits BorderGlow golden conic beam on winning duo card */
+.duo-card.winner-border-glow::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  padding: 3px;
+  background: conic-gradient(from var(--border-glow-angle), #ffd700, #fff6b0, #00e5ff, #ffd700, #ff9100, #ffd700);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: duoBorderGlowSpin 1.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes duoBorderGlowSpin {
+  to { --border-glow-angle: 360deg; }
 }
 
 /* Left Half: Participant */
@@ -247,8 +301,8 @@ body {
 }
 
 .user-avatar-circle {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   background: linear-gradient(135deg, #0091ea, var(--cyan-neon));
   display: flex;
@@ -258,8 +312,10 @@ body {
   font-size: 20px;
   font-weight: 700;
   color: #fff;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .user-meta {
@@ -298,7 +354,7 @@ body {
   filter: drop-shadow(0 0 8px var(--gold-accent));
 }
 
-/* Right Half: Slot Machine */
+/* Right Half: Slot Machine (3:4 Real Portrait Cover) */
 .card-slot {
   display: flex;
   align-items: center;
@@ -335,11 +391,12 @@ body {
 }
 
 .slot-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 54px;
+  height: 72px;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
   background: rgba(255, 215, 0, 0.1);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -348,12 +405,13 @@ body {
 }
 
 .slot-cover-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 54px;
+  height: 72px;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
   object-fit: cover;
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  border: 1.5px solid rgba(255, 215, 0, 0.55);
+  box-shadow: 0 2px 12px rgba(255, 215, 0, 0.35);
   flex-shrink: 0;
 }
 

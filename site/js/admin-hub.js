@@ -69,6 +69,7 @@ class AdminHubController {
     this.setupTournamentAdmin();
     this.setupBattleAdmin();
     this.setupWheelsAdmin();
+    this.bindObsCopyButtons();
 
     // Listen for auth changes to grant admin privileges to @diggitybets
     window.addEventListener('hunthub:auth-updated', () => this.checkAdminAccess());
@@ -786,7 +787,7 @@ class AdminHubController {
           <td>
             ${isPending ? `
               <div style="display: flex; gap: 4px;">
-                <button type="button" class="btn-stake-primary btn-approve-stake" data-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 8px; font-size: 10.5px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                <button type="button" class="btn-stake-primary btn-approve-stake" data-id="${req.id}" data-user="${req.kick_username}" data-stake="${req.stake_username || req.kick_username}" style="padding: 4px 8px; font-size: 10.5px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
                   Approve (+250 $DIG) ✓
                 </button>
                 <button type="button" class="btn-chat-toggle btn-reject-stake" data-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 6px; font-size: 10.5px; color: var(--magenta);">
@@ -803,6 +804,7 @@ class AdminHubController {
       b.onclick = async () => {
         const id = b.dataset.id;
         const user = b.dataset.user;
+        const stakeUser = b.dataset.stake || user;
         try {
           await fetch('/api/admin/approve-stake-verification', {
             method: 'POST',
@@ -810,15 +812,49 @@ class AdminHubController {
             body: JSON.stringify({ requestId: id, adminUser: 'diggitybets' })
           });
         } catch (_) {}
+
+        try {
+          const referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+          const existing = referrals.find(r =>
+            (r.username || '').toLowerCase() === stakeUser.toLowerCase() ||
+            (r.kickUser || '').replace(/^@/, '').toLowerCase() === user.toLowerCase()
+          );
+          if (existing) {
+            existing.status = 'verified';
+            existing.code = 'DIGGITY';
+          } else {
+            referrals.unshift({
+              username: stakeUser,
+              kickUser: '@' + user.replace(/^@/, ''),
+              code: 'DIGGITY',
+              verifiedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+              status: 'verified'
+            });
+          }
+          localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
+        } catch (_) {}
+
+        if (this.channelAdmin) {
+          this.channelAdmin.postMessage({
+            type: 'STAKE_VERIFICATION_APPROVED',
+            kickUsername: user,
+            stakeUsername: stakeUser
+          });
+        }
+        if (window.userStore && (window.userStore.state.username || '').toLowerCase() === user.toLowerCase()) {
+          window.userStore.verifyStakeReferral(stakeUser);
+        }
+
         if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
         if (window.sonner) {
           window.sonner.toast({
             title: 'Stake Verification Approved! 🎰',
-            message: `User @${user} verified under code diggitybets. +250 $DIG credited!`,
+            message: `User @${user} verified under code DIGGITY. +250 $DIG credited!`,
             type: 'green'
           });
         }
         this.renderStakeVerificationsQueue();
+        this.renderStakeReferrals();
       };
     });
 
@@ -849,11 +885,11 @@ class AdminHubController {
 
     if (referrals.length === 0) {
       referrals = [
-        { username: 'StakeNacho', kickUser: '@NachoGamer', code: 'diggitybets', verifiedAt: '2026-10-14 14:20', status: 'verified' },
-        { username: 'StakeValen', kickUser: '@Valen99', code: 'diggitybets', verifiedAt: '2026-10-14 15:05', status: 'verified' },
-        { username: 'StakeAgus', kickUser: '@AgusKick', code: 'diggitybets', verifiedAt: '2026-10-14 16:30', status: 'verified' },
-        { username: 'DiggityFan01', kickUser: '@DiggityFan', code: 'diggitybets', verifiedAt: '2026-10-14 17:10', status: 'verified' },
-        { username: 'NewPlayer99', kickUser: '@Viewer', code: 'diggitybets', verifiedAt: '2026-10-14 18:45', status: 'pending' }
+        { username: 'StakeNacho', kickUser: '@NachoGamer', code: 'DIGGITY', verifiedAt: '2026-10-14 14:20', status: 'verified' },
+        { username: 'StakeValen', kickUser: '@Valen99', code: 'DIGGITY', verifiedAt: '2026-10-14 15:05', status: 'verified' },
+        { username: 'StakeAgus', kickUser: '@AgusKick', code: 'DIGGITY', verifiedAt: '2026-10-14 16:30', status: 'verified' },
+        { username: 'DiggityFan01', kickUser: '@DiggityFan', code: 'DIGGITY', verifiedAt: '2026-10-14 17:10', status: 'verified' },
+        { username: 'NewPlayer99', kickUser: '@Viewer', code: 'DIGGITY', verifiedAt: '2026-10-14 18:45', status: 'pending' }
       ];
       localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
     }
@@ -868,7 +904,7 @@ class AdminHubController {
         <td style="color: #ffffff; font-size: 13px;">${ref.kickUser || '@Viewer'}</td>
         <td>
           <span class="reward-badge-pill" style="background: ${ref.status === 'verified' ? 'rgba(83, 252, 24, 0.2)' : 'rgba(255, 215, 0, 0.2)'}; border-color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; font-size: 11px;">
-            ${ref.status === 'verified' ? '✓ VERIFIED (diggitybets)' : '⏳ PENDING CONFIRMATION'}
+            ${ref.status === 'verified' ? '✓ VERIFIED (DIGGITY)' : '⏳ PENDING CONFIRMATION'}
           </span>
         </td>
         <td style="font-size: 12px; color: var(--text-dim);">${ref.verifiedAt || 'Recent'}</td>
@@ -909,11 +945,12 @@ class AdminHubController {
       const existing = referrals.find(r => r.username.toLowerCase() === name.toLowerCase());
       if (existing) {
         existing.status = 'verified';
+        existing.code = 'DIGGITY';
       } else {
         referrals.push({
           username: name,
           kickUser: '@' + name,
-          code: 'diggitybets',
+          code: 'DIGGITY',
           verifiedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
           status: 'verified'
         });
@@ -926,7 +963,7 @@ class AdminHubController {
     if (window.sonner) {
       window.sonner.toast({
         title: 'Stake Affiliate Sync Complete! 🎰',
-        message: `${names.length} player(s) verified under code diggitybets.`,
+        message: `${names.length} player(s) verified under code DIGGITY.`,
         type: 'green'
       });
     }
@@ -936,7 +973,7 @@ class AdminHubController {
     if (window.sonner) {
       window.sonner.toast({
         title: 'Stake Campaign Synchronized ⚡',
-        message: 'Campaign code diggitybets active on Stake Partners network.',
+        message: 'Campaign code DIGGITY active on Stake Partners network.',
         type: 'cyan'
       });
     }
@@ -2502,6 +2539,14 @@ class AdminHubController {
         });
       }
     }, 4500);
+
+    this.relayOverlaySyncEvent({
+      target: 'wheel-csgo',
+      type: demo ? 'test_spin' : 'spin',
+      winner,
+      participantes: arr.map(c => c.user),
+      ts: Date.now()
+    });
   }
 
   spinSlotWheel(demo = false) {
@@ -2517,6 +2562,13 @@ class AdminHubController {
     if (this.channelSlotWheel) {
       this.channelSlotWheel.postMessage({ type: demo ? 'test_spin' : 'spin', category: cat, ts: Date.now() });
     }
+
+    this.relayOverlaySyncEvent({
+      target: 'wheel-slots',
+      type: demo ? 'test_spin' : 'spin',
+      category: cat,
+      ts: Date.now()
+    });
 
     if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') window.soundEngine.playDiceRoll();
 
@@ -2545,8 +2597,53 @@ class AdminHubController {
     }, 5000);
   }
 
+  relayOverlaySyncEvent(overlayEvent) {
+    try {
+      fetch('/api/sync/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ overlayEvent })
+      }).catch(() => {});
+    } catch (_) {}
+  }
+
+  bindObsCopyButtons() {
+    const btns = document.querySelectorAll('.btn-copy-obs-url');
+    btns.forEach((btn) => {
+      if (btn.dataset.obsBound === '1') return;
+      btn.dataset.obsBound = '1';
+      btn.addEventListener('click', () => {
+        const obsPath = btn.getAttribute('data-obs-path') || '/overlay-battle/index.html';
+        const obsSize = btn.getAttribute('data-obs-size') || '1920x1080';
+        const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:'))
+          ? window.location.origin
+          : 'http://127.0.0.1:3001';
+        const fullObsUrl = `${origin}${obsPath}?obs=1`;
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(fullObsUrl).catch(() => {});
+        }
+
+        const originalLabel = btn.textContent;
+        btn.textContent = `✓ Copied (${obsSize})`;
+        setTimeout(() => {
+          btn.textContent = originalLabel;
+        }, 2200);
+
+        if (window.sonner) {
+          window.sonner.toast({
+            title: `📋 OBS Browser Source URL Copied (${obsSize})`,
+            message: `${fullObsUrl} — Paste in OBS Studio Browser Source (${obsSize}).`,
+            type: 'cyan'
+          });
+        }
+      });
+    });
+  }
+
   bindAdminControls() {
     this.renderKPIs();
+    this.bindObsCopyButtons();
   }
 }
 

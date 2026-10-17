@@ -59,35 +59,44 @@ export async function queryKnowledge(query, limit = 8) {
   const qLower = query.toLowerCase().trim();
   const qTerms = qLower.split(/\s+/).filter(t => t.length > 2);
 
-  // Helper to scan directory tree recursively for markdown files
-  function scanMarkdownFiles(dir, maxDepth = 4, depth = 0) {
+  // Helper to scan directory tree recursively for markdown and reference source files
+  function scanMarkdownFiles(dir, maxDepth = 5, depth = 0, includeCode = false) {
     let files = [];
     if (depth > maxDepth || !fs.existsSync(dir)) return files;
+    const skipDirs = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', 'vendor']);
+    const allowedExts = includeCode
+      ? ['.md', '.tsx', '.ts', '.jsx', '.js', '.css']
+      : ['.md'];
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const ent of entries) {
         const fp = path.join(dir, ent.name);
         if (ent.isDirectory()) {
-          if (!ent.name.startsWith('.') && ent.name !== 'node_modules') {
-            files = files.concat(scanMarkdownFiles(fp, maxDepth, depth + 1));
+          if (!ent.name.startsWith('.') && !skipDirs.has(ent.name)) {
+            files = files.concat(scanMarkdownFiles(fp, maxDepth, depth + 1, includeCode));
           }
-        } else if (ent.isFile() && ent.name.endsWith('.md')) {
-          files.push(fp);
+        } else if (ent.isFile() && allowedExts.some(ext => ent.name.endsWith(ext))) {
+          try {
+            const st = fs.statSync(fp);
+            if (st.size <= 140_000) files.push(fp);
+          } catch (_) {}
         }
       }
     } catch (e) {}
     return files;
   }
 
-  // 1. Local Workspace Search (knowledge/, docs/, research/, canons)
+  // 1. Local Workspace Search (knowledge/, docs/, research/, references/)
   const searchDirs = [
     path.join(ROOT, 'knowledge'),
     path.join(ROOT, 'docs'),
-    path.join(ROOT, 'research')
+    path.join(ROOT, 'research'),
+    path.join(ROOT, 'references')
   ];
 
   for (const dir of searchDirs) {
-    const mdFiles = scanMarkdownFiles(dir);
+    const isReferencesDir = dir.endsWith('references');
+    const mdFiles = scanMarkdownFiles(dir, isReferencesDir ? 5 : 4, 0, isReferencesDir);
     for (const filePath of mdFiles) {
       try {
         const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
@@ -96,13 +105,14 @@ export async function queryKnowledge(query, limit = 8) {
         // Strip YAML frontmatter for cleaner semantic matches
         const cleanText = text.replace(/^---[\s\S]*?---\s*/, '');
         const lower = cleanText.toLowerCase();
+        const relLower = rel.toLowerCase();
         
         let matches = 0;
         for (const term of qTerms) {
-          if (lower.includes(term)) matches++;
+          if (lower.includes(term) || relLower.includes(term)) matches++;
         }
 
-        if (matches > 0 || lower.includes(qLower)) {
+        if (matches > 0 || lower.includes(qLower) || relLower.includes(qLower)) {
           const lines = cleanText.split('\n');
           const snippetParts = [];
           for (let i = 0; i < lines.length && snippetParts.length < 3; i++) {
@@ -121,7 +131,7 @@ export async function queryKnowledge(query, limit = 8) {
           const snippet = (snippetParts.join('\n\n...\n\n') || cleanText).slice(0, 1400);
           results.push({
             source: `local://${rel}`,
-            title: file.replace('.md', ''),
+            title: file.replace(/\.(md|tsx|ts|jsx|js|css)$/, ''),
             snippet: snippet,
             score: 0.90 + (matches / Math.max(qTerms.length, 1)) * 0.08
           });

@@ -604,19 +604,27 @@
     client.on('Custom.CodeEvent', (evt) => onMessage(evt));
     client.on('Raw.Action', (evt) => onMessage(evt));
 
-    // Connect to HuntHub Core WebSocket hub (port 3001) as well
+    // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) + /api/sync/state
     try {
       const hubPort = window.location.port || '3001';
       const hubHost = window.location.hostname || '127.0.0.1';
-      hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
+      hubWs = new WebSocket(`ws://127.0.0.1:${hubPort}`);
       hubWs.onmessage = (ev) => {
         try {
           const payload = JSON.parse(ev.data);
+          if (payload.type === 'overlay_sync_event' && payload.event) {
+            if (payload.event.target === 'wheel-slots') {
+              if (payload.event.category) currentCategory = payload.event.category;
+              localSpin(currentCategory);
+              return;
+            }
+          }
           onMessage(payload);
         } catch {}
       };
       hubWs.onopen = () => {
         if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
+        fetch(`http://${hubHost}:${hubPort}/api/sync/state`).catch(() => {});
       };
     } catch {}
   }

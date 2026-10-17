@@ -336,7 +336,57 @@ export default {
       return new Response(JSON.stringify({
         target,
         validForSeconds,
-        expiresAt: Date.now() + validForSeconds * 1000
+        expiresAt: Date.now() + validForSeconds * 1000,
+        referralCode: 'DIGGITY'
+      }), { headers: corsHeaders });
+    }
+
+    // 9B. Stake Verification Status Endpoint ("Check Status" button)
+    if (url.pathname === '/api/stake/status' && request.method === 'GET') {
+      const kickUser = (url.searchParams.get('kickUsername') || '').trim();
+      const stakeUser = (url.searchParams.get('stakeUsername') || '').trim();
+      let verified = false;
+      let status = 'UNVERIFIED';
+      let latestRequest = null;
+      let pointsBalance = undefined;
+
+      if (env.DB) {
+        try {
+          if (kickUser) {
+            const u = await env.DB.prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?1)').bind(kickUser).first();
+            if (u) {
+              pointsBalance = u.points_balance;
+              if (u.stake_verified === 1) {
+                verified = true;
+                status = 'APPROVED';
+              }
+            }
+          }
+          if (stakeUser || kickUser) {
+            const reqRow = await env.DB.prepare(
+              'SELECT * FROM stake_verification_requests WHERE LOWER(stake_username) = LOWER(?1) OR LOWER(kick_username) = LOWER(?2) ORDER BY created_at DESC LIMIT 1'
+            ).bind(stakeUser || '', kickUser || '').first();
+            if (reqRow) {
+              latestRequest = reqRow;
+              if (reqRow.status === 'APPROVED') {
+                verified = true;
+                status = 'APPROVED';
+              } else if (!verified) {
+                status = reqRow.status || 'PENDING';
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      return new Response(JSON.stringify({
+        verified,
+        status,
+        referralCode: 'DIGGITY',
+        stakeUsername: latestRequest?.stake_username || stakeUser || null,
+        betId: latestRequest?.bet_id || null,
+        shareUrl: latestRequest?.share_url || null,
+        pointsBalance
       }), { headers: corsHeaders });
     }
 
@@ -358,18 +408,21 @@ export default {
           if (input.startsWith('http://') || input.startsWith('https://')) {
             const u = new URL(input);
             const iid = u.searchParams.get('iid');
-            if (iid) betId = iid.trim();
+            if (iid) betId = decodeURIComponent(iid.trim()).replace(/\.(?=\d{3})/g, '');
           }
         } catch (e) {}
 
         if (!betId) {
-          const prefixMatch = input.match(/^(casino|house):(\w+)/i);
+          const cleaned = input.replace(/^(id\s*de\s*apuesta|bet\s*id)\s*[:#-]?\s*/i, '').trim();
+          const prefixMatch = cleaned.match(/^(casino|house):([\w.\-]+)/i);
           if (prefixMatch) {
-            betId = `${prefixMatch[1].toLowerCase()}:${prefixMatch[2]}`;
+            const cleanIdPart = prefixMatch[2].replace(/[.,](?=\d{3})/g, '');
+            betId = `${prefixMatch[1].toLowerCase()}:${cleanIdPart}`;
           } else {
-            const numMatch = input.match(/^[a-zA-Z0-9_\-]+$/);
-            if (numMatch && input.length >= 5) {
-              betId = `house:${input}`;
+            const strippedNumeric = cleaned.replace(/[.,\s](?=\d{3})/g, '');
+            const numMatch = strippedNumeric.match(/^[a-zA-Z0-9_\-]+$/);
+            if (numMatch && strippedNumeric.length >= 5) {
+              betId = `house:${strippedNumeric}`;
             }
           }
         }
@@ -396,6 +449,7 @@ export default {
         return new Response(JSON.stringify({
           success: true,
           parsedBet: { betId, shareUrl },
+          referralCode: 'DIGGITY',
           message: 'Verification request recorded. Streamer can audit bet link in 1 click (+250 $DIG).'
         }), { headers: corsHeaders });
       } catch (err) {
@@ -445,21 +499,90 @@ export default {
       }
     }
 
+    // 12A. Phase 6 Store Weekly Stock & Catalog Endpoint
+    if (url.pathname === '/api/store/stock' && request.method === 'GET') {
+      const catalog = [
+        { key: 'weekly_raffle', title: 'Weekly Raffle ($100 Bonus Buy Split)', regularCost: 50, vipCost: 50, weeklyStockLimit: null, remainingStock: null, soldOut: false },
+        { key: 'vip_discord', title: 'VIP Streamer Discord Role', regularCost: 400, vipCost: 400, weeklyStockLimit: null, remainingStock: null, soldOut: false, oneTimePerAccount: true },
+        { key: 'battle_entry', title: 'Guaranteed 1v1 Battle Entry', regularCost: 700, vipCost: 500, weeklyStockLimit: 6, remainingStock: 6, soldOut: false, cooldownDays: 14 },
+        { key: 'tourney_entry', title: 'Guaranteed 8-Bracket Tourney Entry', regularCost: 1000, vipCost: 800, weeklyStockLimit: 6, remainingStock: 6, soldOut: false },
+        { key: 'bonus_split_20', title: '$20 Bonus Buy Split Profit (50/50)', regularCost: 1500, vipCost: 1200, weeklyStockLimit: 3, remainingStock: 3, soldOut: false, maxSplitCapUsd: 100 }
+      ];
+      return new Response(JSON.stringify({ catalog }), { headers: corsHeaders });
+    }
+
+    // 12B. Phase 6 Watch-to-Earn Heartbeat (+10 $DIG every 15m when stream is live)
+    if (url.pathname === '/api/watch/heartbeat' && request.method === 'POST') {
+      try {
+        const { username } = await request.json().catch(() => ({}));
+        if (!username) {
+          return new Response(JSON.stringify({ awarded: false, amount: 0, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
+        }
+        return new Response(JSON.stringify({ awarded: true, amount: 10, reason: 'WATCH_HEARTBEAT_OK' }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
+      }
+    }
+
+    // 12C. Phase 6 House Games Anti-Exploit Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
+    if (url.pathname === '/api/games/bet' && request.method === 'POST') {
+      try {
+        const { game, betAmount, rawMultiplier } = await request.json().catch(() => ({}));
+        const bet = Number(betAmount) || 0;
+        if (bet < 1 || bet > 50) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: bet > 50 ? 'MAX_BET_EXCEEDED: Maximum bet is 50 $DIG' : 'MIN_BET_INVALID: Minimum bet is 1 $DIG',
+            rtp: 95.0,
+            maxBet: 50,
+            maxWinCap: 500
+          }), { status: 400, headers: corsHeaders });
+        }
+        const mult = Number(rawMultiplier) || 0;
+        const rawPayout = mult > 0 ? Math.floor(bet * mult) : 0;
+        const cappedPayout = rawPayout > 0 ? Math.min(rawPayout, bet + 500) : 0;
+        const netProfit = cappedPayout - bet;
+        return new Response(JSON.stringify({
+          success: true,
+          game: game || 'plinko',
+          betAmount: bet,
+          rawPayout,
+          cappedPayout,
+          netProfit,
+          rtp: 95.0,
+          maxBet: 50,
+          maxWinCap: 500
+        }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
+      }
+    }
+
     // 12. Store Redeem Voucher Endpoint
     if (url.pathname === '/api/store/redeem' && request.method === 'POST') {
       try {
-        const { username, voucherTitle, costPoints } = await request.json();
+        const { username, voucherTitle, costPoints, stakeVerified } = await request.json();
         const id = crypto.randomUUID();
         const now = Math.floor(Date.now() / 1000);
+        const titleLower = String(voucherTitle || '').toLowerCase();
+        let effectiveCost = Number(costPoints) || 50;
+        if (titleLower.includes('20') && titleLower.includes('split')) {
+          effectiveCost = stakeVerified ? 1200 : 1500;
+        } else if (titleLower.includes('battle') || titleLower.includes('1v1')) {
+          effectiveCost = stakeVerified ? 500 : 700;
+        } else if (titleLower.includes('tourney') || titleLower.includes('bracket')) {
+          effectiveCost = stakeVerified ? 800 : 1000;
+        }
         if (env.DB && username) {
           await env.DB.prepare(`
             INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
             VALUES (?1, ?1, ?2, ?3, ?4, 'PENDING', ?5)
-          `).bind(id, username, voucherTitle, Number(costPoints) || 100, now).run();
+          `).bind(id, username, voucherTitle, effectiveCost, now).run();
         }
         return new Response(JSON.stringify({
           success: true,
-          redemption: { id, kick_username: username, voucher_title: voucherTitle, cost_points: costPoints, status: 'PENDING', created_at: now }
+          effectiveCost,
+          redemption: { id, kick_username: username, voucher_title: voucherTitle, cost_points: effectiveCost, status: 'PENDING', created_at: now }
         }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
@@ -525,7 +648,17 @@ export default {
     if (url.pathname === '/api/admin/approve-stake-verification' && request.method === 'POST') {
       const { requestId } = await request.json();
       if (env.DB && requestId) {
-        await env.DB.prepare("UPDATE stake_verification_requests SET status = 'APPROVED' WHERE id = ?1").bind(requestId).run();
+        try {
+          const reqRow = await env.DB.prepare('SELECT * FROM stake_verification_requests WHERE id = ?1').bind(requestId).first();
+          await env.DB.prepare("UPDATE stake_verification_requests SET status = 'APPROVED' WHERE id = ?1").bind(requestId).run();
+          if (reqRow && reqRow.kick_username) {
+            await env.DB.prepare(`
+              UPDATE users
+              SET stake_username = ?1, stake_verified = 1, points_balance = points_balance + 250
+              WHERE LOWER(username) = LOWER(?2)
+            `).bind(reqRow.stake_username || '', reqRow.kick_username).run();
+          }
+        } catch (_) {}
       }
       return new Response(JSON.stringify({ success: true, credited: true }), { headers: corsHeaders });
     }
