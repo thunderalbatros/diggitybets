@@ -18,7 +18,25 @@ class DuoWheelApp {
     this.battleTarget = 'A'; // 'A' or 'B'
     this.tourneyCount = 0;
 
-    this.pool = this.getDefaultPool();
+    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || localStorage.getItem('hunthub_demo_users_purged_live_v2') === 'true';
+    let savedPool = null;
+    try {
+      savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
+    } catch {}
+    if (Array.isArray(savedPool)) {
+      const demoUsernames = new Set([
+        'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+        'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+        'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
+        'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar'
+      ]);
+      this.pool = savedPool.filter(p => {
+        const u = String(p.chatter || p.user || '').trim().toLowerCase().replace(/^@/, '');
+        return u && !demoUsernames.has(u);
+      });
+    } else {
+      this.pool = purged ? [] : this.getDefaultPool();
+    }
     this.trackEl = document.getElementById('reel-track');
     this.containerEl = document.getElementById('reel-container');
     this.toastEl = document.getElementById('winner-toast');
@@ -215,9 +233,10 @@ class DuoWheelApp {
       this.targetTextEl.classList.toggle('target-red', this.battleTarget === 'B');
       this.targetTextEl.textContent = `PLAYER ${this.battleTarget} (${this.battleTarget === 'A' ? 'BLUE CORNER' : 'RED CORNER'})`;
     } else {
+      const nextSeed = (this.tourneyCount % 8) + 1;
       this.targetTextEl.classList.remove('target-blue', 'target-red');
       this.targetTextEl.classList.add('tourney-target');
-      this.targetTextEl.textContent = `SEED ${this.tourneyCount + 1}/8`;
+      this.targetTextEl.textContent = `SEED ${nextSeed}/8`;
     }
   }
 
@@ -251,8 +270,12 @@ class DuoWheelApp {
 
   initChannels() {
     try {
+      const savedSeedCount = Number(localStorage.getItem('hunthub_tourney_seed_count') || 0);
+      if (!isNaN(savedSeedCount) && savedSeedCount >= 0 && savedSeedCount < 8) {
+        this.tourneyCount = savedSeedCount;
+      }
       const savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
-      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
+      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || localStorage.getItem('hunthub_demo_users_purged_live_v2') === 'true';
       if (Array.isArray(savedPool) && (savedPool.length > 0 || purged)) {
         this.pool = savedPool.map(p => ({
           user: p.user || p.chatter || 'Viewer',
@@ -272,9 +295,17 @@ class DuoWheelApp {
       this.bcWheel.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'spin') {
-          this.spin(e.data.mode, e.data.spinId, e.data.winner, e.data.targetCorner);
+          this.spin(e.data.mode, e.data.spinId, e.data.winner, e.data.targetCorner, e.data.targetSeed);
         } else if (e.data.action === 'set_mode') {
-          this.setMode(e.data.mode);
+          if (typeof e.data.tourneyCount === 'number' && !this.isSpinning) {
+            this.tourneyCount = Math.max(0, Math.min(7, e.data.tourneyCount));
+          }
+          this.setMode(e.data.mode, true);
+        } else if (e.data.action === 'set_tourney_seed' && typeof e.data.tourneyCount === 'number') {
+          if (!this.isSpinning) {
+            this.tourneyCount = Math.max(0, Math.min(7, e.data.tourneyCount));
+            this.updateTargetPillUI();
+          }
         } else if ((e.data.action === 'set_target' || e.data.action === 'set_target_corner') && ((e.data.target || e.data.corner) === 'A' || (e.data.target || e.data.corner) === 'B')) {
           if (!this.isSpinning) {
             this.battleTarget = e.data.target || e.data.corner;
@@ -291,6 +322,14 @@ class DuoWheelApp {
           if (!this.isSpinning) this.renderTrack();
         } else if (e.data.action === 'add_entry' && e.data.entry) {
           this.addQueueEntry(e.data.entry, e.data.mode);
+        }
+      };
+
+      this.bcTourney.onmessage = (e) => {
+        if (!e.data) return;
+        if (e.data.action === 'reset_tourney' && !this.isSpinning) {
+          this.tourneyCount = 0;
+          this.updateTargetPillUI();
         }
       };
 
@@ -321,7 +360,13 @@ class DuoWheelApp {
     // Cross-window localStorage sync fallback
     window.addEventListener('storage', (e) => {
       if (e.key === 'hunthub_duo_mode' && e.newValue) {
-        this.setMode(e.newValue);
+        this.setMode(e.newValue, true);
+      } else if (e.key === 'hunthub_tourney_seed_count' && e.newValue !== null && !this.isSpinning) {
+        const sc = Number(e.newValue);
+        if (!isNaN(sc)) {
+          this.tourneyCount = Math.max(0, Math.min(7, sc));
+          this.updateTargetPillUI();
+        }
       } else if (e.key === 'hunthub_duo_pool_v2' && e.newValue && !this.isSpinning) {
         try {
           const parsedPool = JSON.parse(e.newValue);
@@ -333,7 +378,7 @@ class DuoWheelApp {
       } else if (e.key === 'hunthub_duo_spin_cmd' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          this.spin(parsed.mode, parsed.spinId, parsed.winner, parsed.targetCorner);
+          this.spin(parsed.mode, parsed.spinId, parsed.winner, parsed.targetCorner, parsed.targetSeed);
         } catch {}
       } else if (e.key === 'hunthub_battle_state' && e.newValue) {
         try {
@@ -530,6 +575,20 @@ class DuoWheelApp {
     this.trackEl.style.transition = 'none';
     this.trackEl.style.transform = 'translateY(0px)';
     this.updateQueueBadge();
+
+    if (!this.pool || this.pool.length === 0) {
+      const card = document.createElement('div');
+      card.className = 'duo-card';
+      card.style.cssText = 'opacity: 0.7; justify-content: center; text-align: center; border: 1px dashed rgba(255, 255, 255, 0.2); padding: 18px;';
+      card.innerHTML = `
+        <div style="font-family: var(--font-display, inherit); font-size: 13px; font-weight: 800; color: #94a3b8;">
+          WAITING FOR CHATTERS · TYPE !BATTLE &lt;SLOT&gt;
+        </div>
+      `;
+      this.trackEl.appendChild(card);
+      return;
+    }
+
     const repeats = 15;
     for (let r = 0; r < repeats; r++) {
       this.pool.forEach((item, idx) => {
@@ -597,9 +656,18 @@ class DuoWheelApp {
     };
   }
 
-  setMode(mode) {
-    const changed = this.mode !== mode;
-    this.mode = mode;
+  setMode(mode, fromRemote = false) {
+    const normalized = mode === 'tourney' ? 'tourney' : 'battle';
+    const changed = this.mode !== normalized;
+    this.mode = normalized;
+    try {
+      localStorage.setItem('hunthub_duo_mode', this.mode);
+    } catch {}
+    if (!fromRemote && this.bcWheel) {
+      try {
+        this.bcWheel.postMessage({ action: 'set_mode', mode: this.mode, ts: Date.now() });
+      } catch {}
+    }
     const wrapper = document.getElementById('wheel-wrapper');
     if (changed && wrapper) {
       wrapper.classList.remove('mode-switching');
@@ -609,25 +677,30 @@ class DuoWheelApp {
     const tabBattle = document.getElementById('tab-mode-battle');
     const tabTourney = document.getElementById('tab-mode-tourney');
     if (tabBattle && tabTourney) {
-      tabBattle.classList.toggle('active', mode === 'battle');
-      tabTourney.classList.toggle('active', mode === 'tourney');
+      tabBattle.classList.toggle('active', this.mode === 'battle');
+      tabTourney.classList.toggle('active', this.mode === 'tourney');
     }
 
     this.updateTargetPillUI();
     this.updateQueueBadge();
   }
 
-  spin(mode, spinId, forcedWinner, targetCorner) {
+  spin(mode, spinId, forcedWinner, targetCorner, targetSeed) {
     if (this.isSpinning) return;
     if (spinId && this._lastProcessedSpinId === spinId) return;
     if (spinId) this._lastProcessedSpinId = spinId;
 
-    if (mode) this.setMode(mode);
+    if (mode) this.setMode(mode, true);
     if (targetCorner === 'A' || targetCorner === 'B') {
       this.battleTarget = targetCorner;
       this.updateTargetPillUI();
     }
+    if (typeof targetSeed === 'number' && targetSeed >= 1 && targetSeed <= 8) {
+      this.tourneyCount = targetSeed - 1;
+      this.updateTargetPillUI();
+    }
     this._lockedSpinCorner = this.battleTarget === 'B' ? 'B' : 'A';
+    this._lockedTourneySeed = (this.tourneyCount % 8) + 1;
 
     if (this._toastHideTimer) {
       clearTimeout(this._toastHideTimer);
@@ -639,6 +712,17 @@ class DuoWheelApp {
     }
 
     if (!this.pool || this.pool.length === 0) {
+      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || localStorage.getItem('hunthub_demo_users_purged_live_v2') === 'true';
+      if (purged) {
+        if (this.directSpinBtn) {
+          this.directSpinBtn.disabled = false;
+          this.directSpinBtn.innerHTML = '<span>⚠️</span> POOL EMPTY';
+          setTimeout(() => {
+            if (this.directSpinBtn) this.directSpinBtn.innerHTML = '<span>⚡</span> SPIN DUO';
+          }, 2000);
+        }
+        return;
+      }
       this.pool = this.getDefaultPool();
       this.renderTrack();
     }
@@ -763,12 +847,14 @@ class DuoWheelApp {
 
     const slotDetails = this.resolveSlotDetails(winner.slot);
     const assignedCorner = this._lockedSpinCorner || this.battleTarget;
+    const assignedSeed = this._lockedTourneySeed || ((this.tourneyCount % 8) + 1);
     this._lockedSpinCorner = null;
+    this._lockedTourneySeed = null;
 
     // Display Centered Winner Toast in English with exact resolved slot name
     this.toastTitle.textContent = this.mode === 'battle'
       ? `ASSIGNED TO 1v1 BATTLE (${assignedCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'})!`
-      : `SEEDED INTO 8-BRACKET TOURNAMENT (SEED ${this.tourneyCount + 1}/8)!`;
+      : `SEEDED INTO 8-BRACKET TOURNAMENT (SEED ${assignedSeed}/8)!`;
     this.toastChatter.textContent = `@${winner.chatter}`;
     this.toastSlot.textContent = slotDetails.name || winner.slot;
     this.toastEl.classList.add('active');
@@ -808,8 +894,10 @@ class DuoWheelApp {
       this.battleTarget = assignedCorner === 'A' ? 'B' : 'A';
       this.updateTargetPillUI();
     } else {
-      this.tourneyCount = (this.tourneyCount % 8) + 1;
-      this.autoFillTourney(winner, this.tourneyCount);
+      this.autoFillTourney(winner, assignedSeed, finishedSpinId);
+      // Advance seed 1/8 -> 2/8 -> ... -> 8/8, and auto-reset back to 0 (Seed 1/8) when 8/8 is completed!
+      this.tourneyCount = assignedSeed >= 8 ? 0 : assignedSeed;
+      try { localStorage.setItem('hunthub_tourney_seed_count', String(this.tourneyCount)); } catch {}
       this.updateTargetPillUI();
     }
   }
@@ -837,6 +925,7 @@ class DuoWheelApp {
 
     const winnerEventPayload = {
       action: 'duo_winner_selected',
+      mode: 'battle',
       spinId: spinId || null,
       targetCorner: slotKey,
       winner: {
@@ -923,33 +1012,56 @@ class DuoWheelApp {
     } catch {}
   }
 
-  async autoFillTourney(item, seed) {
+  async autoFillTourney(item, seed, spinId) {
     const slotDetails = this.resolveSlotDetails(item.slot);
     console.log(`[Duo Wheel] Auto-filling Tourney Seed ${seed}: @${item.chatter} (${slotDetails.name})`);
 
     const participantObj = {
       id: `p_${seed}`,
       kickId: Math.floor(1000 + Math.random() * 9000),
-      username: item.chatter,
-      displayName: item.chatter,
+      username: `@${String(item.chatter).replace(/^@/, '')}`,
+      displayName: String(item.chatter).replace(/^@/, ''),
       slotName: slotDetails.name,
       slotProvider: slotDetails.provider || item.provider || 'Casino Slot',
       slotImage: slotDetails.image || '',
       seed,
     };
 
-    // 1. BroadcastChannel
+    const winnerEventPayload = {
+      action: 'duo_winner_selected',
+      mode: 'tourney',
+      seed,
+      spinId: spinId || null,
+      winner: {
+        chatter: item.chatter,
+        username: item.chatter,
+        slot: slotDetails.name,
+        slotName: slotDetails.name,
+        provider: slotDetails.provider || item.provider || 'Casino Slot',
+        image: slotDetails.image || '',
+      },
+      pool: this.pool,
+      timestamp: Date.now(),
+    };
+
+    // 1. BroadcastChannel to Control Panel (bcWheel) & Tourney Overlay (bcTourney)
+    if (this.bcWheel) {
+      this.bcWheel.postMessage(winnerEventPayload);
+    }
     if (this.bcTourney) {
       this.bcTourney.postMessage({
         action: 'add_participant',
+        spinId: spinId || null,
         participant: participantObj,
         timestamp: Date.now(),
       });
     }
 
-    // 2. LocalStorage fallback
+    // 2. LocalStorage cross-window sync fallback
     try {
+      localStorage.setItem('hunthub_duo_winner_selected', JSON.stringify(winnerEventPayload));
       localStorage.setItem('hunthub_tourney_add_player', JSON.stringify({
+        spinId: spinId || null,
         participant: participantObj,
         timestamp: Date.now(),
       }));
@@ -957,7 +1069,7 @@ class DuoWheelApp {
 
     // 3. HTTP Server if running
     try {
-      await fetch('http://127.0.0.1:3001/api/tourney/join', {
+      await fetch('/api/tourney/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: participantObj, slotName: slotDetails.name }),

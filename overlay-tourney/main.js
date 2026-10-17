@@ -188,6 +188,44 @@ class TourneyOverlayApp {
     this.playVictoriousTrumpetFanfare();
   }
 
+  normalizeState(state) {
+    if (!state || typeof state !== 'object') return this.getEmptyTournamentState();
+    const cloned = { ...state };
+    if (cloned.matches && !Array.isArray(cloned.matches) && typeof cloned.matches === 'object') {
+      const order = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
+      cloned.matches = order.map((id, idx) => {
+        const m = cloned.matches[id] || {};
+        return {
+          id,
+          round: m.round || (idx < 4 ? 1 : (idx < 6 ? 2 : 3)),
+          matchNumber: m.matchNumber || (idx + 1),
+          player1: m.player1 || null,
+          player2: m.player2 || null,
+          score1: m.score1 ?? 0,
+          score2: m.score2 ?? 0,
+          winner: m.winner || null,
+          status: m.status || 'PENDING',
+        };
+      });
+    } else if (Array.isArray(cloned.matches)) {
+      cloned.matches = cloned.matches.map((m) => ({ ...m }));
+    } else {
+      cloned.matches = this.getEmptyTournamentState().matches;
+    }
+
+    // Keep participants array synced with quarterfinal slots if missing or shorter
+    const qfPlayers = [];
+    for (let i = 0; i < 4; i++) {
+      const m = cloned.matches[i];
+      if (m && m.player1) qfPlayers.push(m.player1);
+      if (m && m.player2) qfPlayers.push(m.player2);
+    }
+    if (!Array.isArray(cloned.participants) || cloned.participants.length < qfPlayers.length) {
+      cloned.participants = qfPlayers;
+    }
+    return cloned;
+  }
+
   initBroadcastChannel() {
     try {
       this.broadcastChannel = new BroadcastChannel('hunthub_tourney');
@@ -195,20 +233,30 @@ class TourneyOverlayApp {
         if (!event.data) return;
         const data = event.data;
         if (data.action === 'reset_tourney') {
-          const emptyState = data.state || this.getEmptyTournamentState();
+          const emptyState = this.normalizeState(data.state || this.getEmptyTournamentState());
           try {
             localStorage.setItem('hunthub_tourney_state', JSON.stringify(emptyState));
           } catch {}
           if (this.modal) this.modal.classList.remove('active');
           this.handleStateUpdate(emptyState, true);
         } else if (data.action === 'add_participant') {
-          this.handleAddParticipant(data.participant);
+          if (data.state) {
+            this.handleStateUpdate(data.state, false);
+          } else {
+            this.handleAddParticipant(data.participant);
+          }
         } else if (data.action === 'match_result' || data.action === 'match_winner_spins') {
-          this.handleMatchAdvancement(data);
-        } else if (data.action === 'tourney_update' || data.type === 'tournament_update') {
-          this.handleStateUpdate(data.state);
+          if (data.state) {
+            this.handleStateUpdate(data.state, false);
+          } else {
+            this.handleMatchAdvancement(data);
+          }
+        } else if (data.action === 'tourney_update' || data.type === 'tournament_update' || data.action === 'state_update' || data.action === 'open_tourney' || data.action === 'set_mode') {
+          if (data.state) {
+            this.handleStateUpdate(data.state, false);
+          }
         } else if (data.state) {
-          this.handleStateUpdate(data.state);
+          this.handleStateUpdate(data.state, false);
         }
       };
     } catch {}
@@ -235,17 +283,19 @@ class TourneyOverlayApp {
 
   isSamePlayer(a, b) {
     if (!a || !b) return false;
-    if (a.id && b.id && String(a.id) === String(b.id)) return true;
-    if (a.kickId && b.kickId && String(a.kickId) === String(b.kickId)) return true;
-    const ua = String(a.username || a.displayName || '').replace(/^@/, '').trim().toLowerCase();
-    const ub = String(b.username || b.displayName || '').replace(/^@/, '').trim().toLowerCase();
+    if (typeof a === 'object' && typeof b === 'object') {
+      if (a.id && b.id && String(a.id) === String(b.id)) return true;
+      if (a.kickId && b.kickId && String(a.kickId) === String(b.kickId)) return true;
+    }
+    const rawA = typeof a === 'string' ? a : (a.username || a.displayName || '');
+    const rawB = typeof b === 'string' ? b : (b.username || b.displayName || '');
+    const ua = String(rawA).replace(/^@/, '').trim().toLowerCase();
+    const ub = String(rawB).replace(/^@/, '').trim().toLowerCase();
     return Boolean(ua && ub && ua === ub);
   }
 
   handleMatchAdvancement(payload) {
-    if (!this.currentState || !Array.isArray(this.currentState.matches)) {
-      this.currentState = this.getDefaultDemoState();
-    }
+    this.currentState = this.normalizeState(this.currentState || this.getDefaultDemoState());
     const matchId = payload.matchId;
     const match = this.currentState.matches.find((m) => m.id === matchId);
     if (!match || !match.player1 || !match.player2) return;
@@ -302,7 +352,18 @@ class TourneyOverlayApp {
   handleAddParticipant(participant) {
     if (!participant) return;
 
-    if (!this.currentState || !this.currentState.matches) {
+    this.currentState = this.normalizeState(this.currentState || this.getEmptyTournamentState());
+
+    const m = this.currentState.matches;
+    const allQuarterfinalsFull = Boolean(
+      m[0]?.player1 && m[0]?.player2 &&
+      m[1]?.player1 && m[1]?.player2 &&
+      m[2]?.player1 && m[2]?.player2 &&
+      m[3]?.player1 && m[3]?.player2
+    );
+
+    // Auto-clear demo bracket or finished/full bracket when starting Seed 1/8 of a new tournament
+    if (this.currentState.isDemo || this.currentState.status === 'FINISHED' || (allQuarterfinalsFull && Number(participant.seed) === 1)) {
       this.currentState = this.getEmptyTournamentState();
     }
 
@@ -317,32 +378,42 @@ class TourneyOverlayApp {
 
     if (!this.currentState.participants) this.currentState.participants = [];
 
-    // Check if participant already exists by kickId or username
-    const existingIdx = this.currentState.participants.findIndex(
-      (p) => this.isSamePlayer(p, participant)
-    );
-
     let seedIdx = 0;
-    if (existingIdx >= 0) {
-      this.currentState.participants[existingIdx] = participant;
-      seedIdx = existingIdx;
+    if (typeof participant.seed === 'number' && participant.seed >= 1 && participant.seed <= 8) {
+      seedIdx = participant.seed - 1;
     } else {
-      seedIdx = this.currentState.participants.length % 8;
-      this.currentState.participants.push(participant);
+      const existingIdx = this.currentState.participants.findIndex(
+        (p) => this.isSamePlayer(p, participant)
+      );
+      if (existingIdx >= 0) {
+        seedIdx = existingIdx;
+      } else {
+        seedIdx = this.currentState.participants.length % 8;
+      }
     }
 
-    // Place into corresponding Quarterfinal match spot (m1..m4)
-    const m = this.currentState.matches;
-    if (seedIdx === 0 && m[0]) m[0].player1 = participant;
-    else if (seedIdx === 1 && m[0]) m[0].player2 = participant;
-    else if (seedIdx === 2 && m[1]) m[1].player1 = participant;
-    else if (seedIdx === 3 && m[1]) m[1].player2 = participant;
-    else if (seedIdx === 4 && m[2]) m[2].player1 = participant;
-    else if (seedIdx === 5 && m[2]) m[2].player2 = participant;
-    else if (seedIdx === 6 && m[3]) m[3].player1 = participant;
-    else if (seedIdx === 7 && m[3]) m[3].player2 = participant;
+    const matches = this.currentState.matches;
+    if (seedIdx === 0 && matches[0]) matches[0].player1 = participant;
+    else if (seedIdx === 1 && matches[0]) matches[0].player2 = participant;
+    else if (seedIdx === 2 && matches[1]) matches[1].player1 = participant;
+    else if (seedIdx === 3 && matches[1]) matches[1].player2 = participant;
+    else if (seedIdx === 4 && matches[2]) matches[2].player1 = participant;
+    else if (seedIdx === 5 && matches[2]) matches[2].player2 = participant;
+    else if (seedIdx === 6 && matches[3]) matches[3].player1 = participant;
+    else if (seedIdx === 7 && matches[3]) matches[3].player2 = participant;
 
-    this.currentState.status = this.currentState.participants.length >= 8 ? 'IN_PROGRESS' : 'LOBBY';
+    // Refresh participants list from Quarterfinal slots
+    const qfPlayers = [];
+    for (let i = 0; i < 4; i++) {
+      if (matches[i]?.player1) qfPlayers.push(matches[i].player1);
+      if (matches[i]?.player2) qfPlayers.push(matches[i].player2);
+      if (matches[i]?.player1 && matches[i]?.player2 && matches[i].status === 'PENDING') {
+        matches[i].status = 'IN_PROGRESS';
+      }
+    }
+    this.currentState.participants = qfPlayers;
+    this.currentState.isDemo = false;
+    this.currentState.status = qfPlayers.length >= 8 ? 'IN_PROGRESS' : 'LOBBY';
     this.currentState.champion = null;
 
     try {
@@ -478,8 +549,9 @@ class TourneyOverlayApp {
     };
   }
 
-  handleStateUpdate(state, isInitialLoad = false) {
-    if (!state) return;
+  handleStateUpdate(rawState, isInitialLoad = false) {
+    if (!rawState) return;
+    const state = this.normalizeState(rawState);
     const oldStatus = this.currentState ? this.currentState.status : null;
     this.currentState = state;
 
@@ -597,7 +669,7 @@ class TourneyOverlayApp {
       return;
     }
 
-    const isRunning = match.status === 'RUNNING';
+    const isRunning = match.status === 'RUNNING' || match.status === 'IN_PROGRESS';
     const isFinished = match.status === 'FINISHED';
     if (isRunning) el.classList.add('active-match');
     else el.classList.remove('active-match');
