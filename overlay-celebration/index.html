@@ -7,15 +7,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="../data/curated_slots.js"></script>
+  <link rel="stylesheet" href="style.css?v=19.0">
+  <script src="../data/curated_slots.js?v=19.0"></script>
+  <script src="../site/js/slot-resolver.js?v=19.0"></script>
 </head>
-<body class="preview-mode">
+<body class="obs-mode">
   <!-- Dynamic Fullscreen Particle Canvas for 3D Gold Coins & Chips Rain -->
   <canvas id="fx-canvas"></canvas>
 
-  <!-- Audio Gate Prompt (Appears if browser blocked autoplay until user clicks) -->
-  <div id="audio-gate-prompt" class="audio-gate">
+  <!-- Audio Gate Prompt (Only shown in ?preview=1 mode if browser blocked autoplay) -->
+  <div id="audio-gate-prompt" class="audio-gate hidden" style="display: none;">
     <div class="audio-gate-pill">
       <span class="gate-icon">🔊</span>
       <span>CLICK ANYWHERE TO UNMUTE AUDIO AND TRIGGER CELEBRATION</span>
@@ -23,23 +24,23 @@
     </div>
   </div>
 
-  <!-- Floating Luxury Winner Billboard -->
-  <div id="winner-billboard" class="billboard-container active">
+  <!-- Floating Luxury Winner Billboard (Starts hidden & 100% transparent until a winner is chosen) -->
+  <div id="winner-billboard" class="billboard-container">
     <div class="billboard-glow-backdrop"></div>
     
     <div class="billboard-card">
       <!-- Top Trophy Header Badge -->
       <div class="billboard-header">
-        <span class="chip-icon left">🪙</span>
+        <span class="chip-icon left">💰</span>
         <div class="trophy-emblem" id="billboard-icon">🏆</div>
-        <span class="chip-icon right">💰</span>
+        <span class="chip-icon right">👑</span>
       </div>
 
-      <div class="billboard-category" id="billboard-category">TOURNAMENT CHAMPION</div>
+      <div class="billboard-category" id="billboard-category">VICTORY CELEBRATION</div>
 
-      <!-- Glowing Winner Name -->
+      <!-- Glowing Winner Name in the Center -->
       <div class="winner-title-wrapper">
-        <h1 class="winner-username" id="winner-username">@SlotQueen</h1>
+        <h1 class="winner-username" id="winner-username">@Winner</h1>
       </div>
 
       <!-- Winning Slot & Multiplier Info Pill -->
@@ -50,27 +51,27 @@
           <span class="slot-name" id="winner-slot-name">Wanted Dead or a Wild</span>
         </div>
         <div class="stat-badge" id="winner-stat-badge">
-          <span id="winner-stat-value">150.00x</span>
+          <span id="winner-stat-value">WIN 🏆</span>
         </div>
       </div>
 
       <!-- Out-of-band Prize Disclaimer Banner (Responsible Gaming / Rule 2.2) -->
       <div class="prize-tag" id="winner-prize-tag">
-        <span>PRIZE: 1ST: $150 · 2ND: $50 USD</span>
+        <span>PRIZE: $5.00 USD</span>
       </div>
     </div>
   </div>
 
-  <!-- Quick Streamer Test Controls -->
-  <div id="streamer-controls" class="test-controls-bar">
+  <!-- Quick Streamer Test Controls (Only visible when ?preview=1 is passed) -->
+  <div id="streamer-controls" class="test-controls-bar" style="display: none;">
     <span class="controls-label">⚡ LIVE DEMO CONTROLS:</span>
     <button class="test-btn tourney" id="btn-test-tourney">🏆 Tourney Test</button>
     <button class="test-btn battle" id="btn-test-battle">⚔️ 1v1 Battle Test</button>
-    <button class="test-btn coins" id="btn-test-coins">🪙 Coin Rain</button>
+    <button class="test-btn coins" id="btn-test-coins">💰 Coin Rain</button>
     <button class="test-btn audio" id="btn-test-audio">🔊 Test Sound</button>
-    <button class="test-btn obs-toggle" id="btn-toggle-bg">🌓 OBS Mode (Transparent / Dark)</button>
+    <button class="test-btn obs-toggle" id="btn-toggle-bg">🌓 Toggle Background</button>
   </div>
 
-  <script src="main.js"></script>
+  <script src="main.js?v=19.0"></script>
 </body>
 </html>

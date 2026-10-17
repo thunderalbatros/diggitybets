@@ -216,8 +216,77 @@ class BonusHuntOverlayApp {
         try {
           this.handleStateUpdate(JSON.parse(e.newValue));
         } catch {}
+      } else if (e.key === 'hunthub_hunt_slots' && e.newValue !== null) {
+        try {
+          const slots = JSON.parse(e.newValue || '[]');
+          this.handleStateUpdate(this.buildStateFromHuntSlots(slots));
+        } catch {}
+      } else if (e.key === 'hunthub_demo_users_purged' && e.newValue === 'true') {
+        try {
+          const slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]');
+          this.handleStateUpdate(this.buildStateFromHuntSlots(slots));
+        } catch {}
       }
     });
+  }
+
+  buildStateFromHuntSlots(rawSlots = []) {
+    const bonuses = (Array.isArray(rawSlots) ? rawSlots : []).map((s, idx) => {
+      const bet = Number(s.bet || s.betSize || 2.0);
+      const payout = Number(s.payout || 0);
+      const mult = bet > 0 && payout > 0 ? payout / bet : 0;
+      const name = s.name || s.slotName || 'Casino Slot';
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(name, '../') : null;
+      return {
+        id: s.id || `b_${idx + 1}`,
+        slotName: canon?.name || name,
+        slotProvider: canon?.provider || s.provider || s.slotProvider || 'Casino',
+        slotImage: canon?.image || s.image || s.slotImage || '',
+        callerUsername: String(s.caller || s.callerUsername || 'Viewer').replace(/^@/, ''),
+        betSize: bet,
+        payout,
+        multiplier: mult,
+        status: payout > 0 ? 'OPENED' : 'PENDING'
+      };
+    });
+
+    const totalBonuses = bonuses.length;
+    const opened = bonuses.filter(b => b.payout > 0);
+    const openedBonuses = opened.length;
+    const remainingBonuses = Math.max(0, totalBonuses - openedBonuses);
+    const winnings = bonuses.reduce((acc, b) => acc + b.payout, 0);
+    const startCost = Number(localStorage.getItem('hunthub_hunt_start_cost') || 500);
+    const profit = winnings - startCost;
+    const runAverageX = openedBonuses > 0 ? opened.reduce((a, b) => a + b.multiplier, 0) / openedBonuses : 0;
+    const needed = Math.max(0, startCost - winnings);
+    const remBetSum = bonuses.filter(b => b.payout <= 0).reduce((a, b) => a + b.betSize, 0);
+    const reqAverageX = remBetSum > 0 ? needed / remBetSum : 0;
+    const reqAvgDollars = remainingBonuses > 0 ? needed / remainingBonuses : 0;
+    const bestWin = opened.length > 0 ? [...opened].sort((a, b) => b.payout - a.payout)[0] : null;
+    const luckyWin = opened.length > 0 ? [...opened].sort((a, b) => b.multiplier - a.multiplier)[0] : null;
+
+    return {
+      id: 'hunt_live',
+      title: 'COMMUNITY BONUS HUNT',
+      startCost,
+      status: totalBonuses === 0 ? 'COLLECTING' : (remainingBonuses === 0 ? 'FINISHED' : 'OPENING'),
+      bonuses,
+      guesses: [],
+      metrics: {
+        startCost,
+        totalBonuses,
+        openedBonuses,
+        remainingBonuses,
+        winnings,
+        endingBalance: winnings,
+        profit,
+        runAverageX,
+        reqAverageX,
+        reqAvgDollars,
+        bestWin,
+        luckyWin
+      }
+    };
   }
 
   initWebSocket() {
@@ -304,12 +373,25 @@ class BonusHuntOverlayApp {
 
   loadInitialDemo() {
     try {
+      const savedSlots = localStorage.getItem('hunthub_hunt_slots');
+      if (savedSlots !== null) {
+        const parsedSlots = JSON.parse(savedSlots);
+        if (Array.isArray(parsedSlots)) {
+          this.handleStateUpdate(this.buildStateFromHuntSlots(parsedSlots));
+          return;
+        }
+      }
       const saved = localStorage.getItem('hunthub_bonushunt_state');
       if (saved) {
         this.handleStateUpdate(JSON.parse(saved));
         return;
       }
     } catch {}
+
+    if (localStorage.getItem('hunthub_demo_users_purged') === 'true') {
+      this.handleStateUpdate(this.buildStateFromHuntSlots([]));
+      return;
+    }
 
     // Default Demo State with Slot Images
     const demo = this.getDefaultDemoState();

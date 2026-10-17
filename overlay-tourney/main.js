@@ -193,12 +193,22 @@ class TourneyOverlayApp {
       this.broadcastChannel = new BroadcastChannel('hunthub_tourney');
       this.broadcastChannel.onmessage = (event) => {
         if (!event.data) return;
-        if (event.data.action === 'add_participant') {
-          this.handleAddParticipant(event.data.participant);
-        } else if (event.data.action === 'tourney_update' || event.data.type === 'tournament_update') {
-          this.handleStateUpdate(event.data.state);
-        } else if (event.data.state) {
-          this.handleStateUpdate(event.data.state);
+        const data = event.data;
+        if (data.action === 'reset_tourney') {
+          const emptyState = data.state || this.getEmptyTournamentState();
+          try {
+            localStorage.setItem('hunthub_tourney_state', JSON.stringify(emptyState));
+          } catch {}
+          if (this.modal) this.modal.classList.remove('active');
+          this.handleStateUpdate(emptyState, true);
+        } else if (data.action === 'add_participant') {
+          this.handleAddParticipant(data.participant);
+        } else if (data.action === 'match_result' || data.action === 'match_winner_spins') {
+          this.handleMatchAdvancement(data);
+        } else if (data.action === 'tourney_update' || data.type === 'tournament_update') {
+          this.handleStateUpdate(data.state);
+        } else if (data.state) {
+          this.handleStateUpdate(data.state);
         }
       };
     } catch {}
@@ -209,12 +219,84 @@ class TourneyOverlayApp {
           const { participant } = JSON.parse(e.newValue);
           this.handleAddParticipant(participant);
         } catch {}
-      } else if (e.key === 'hunthub_tourney_state' && e.newValue) {
-        try {
-          this.handleStateUpdate(JSON.parse(e.newValue));
-        } catch {}
+      } else if (e.key === 'hunthub_tourney_state') {
+        if (!e.newValue) {
+          const emptyState = this.getEmptyTournamentState();
+          if (this.modal) this.modal.classList.remove('active');
+          this.handleStateUpdate(emptyState, true);
+        } else {
+          try {
+            this.handleStateUpdate(JSON.parse(e.newValue));
+          } catch {}
+        }
       }
     });
+  }
+
+  isSamePlayer(a, b) {
+    if (!a || !b) return false;
+    if (a.id && b.id && String(a.id) === String(b.id)) return true;
+    if (a.kickId && b.kickId && String(a.kickId) === String(b.kickId)) return true;
+    const ua = String(a.username || a.displayName || '').replace(/^@/, '').trim().toLowerCase();
+    const ub = String(b.username || b.displayName || '').replace(/^@/, '').trim().toLowerCase();
+    return Boolean(ua && ub && ua === ub);
+  }
+
+  handleMatchAdvancement(payload) {
+    if (!this.currentState || !Array.isArray(this.currentState.matches)) {
+      this.currentState = this.getDefaultDemoState();
+    }
+    const matchId = payload.matchId;
+    const match = this.currentState.matches.find((m) => m.id === matchId);
+    if (!match || !match.player1 || !match.player2) return;
+
+    if (payload.action === 'match_winner_spins') {
+      const side = Number(payload.winnerSide) === 2 ? 2 : 1;
+      match.score1 = side === 1 ? 'WIN' : 'LOSE';
+      match.score2 = side === 2 ? 'WIN' : 'LOSE';
+      match.winner = side === 1 ? match.player1 : match.player2;
+    } else {
+      const s1 = Number(payload.score1) || 0;
+      const s2 = Number(payload.score2) || 0;
+      match.score1 = s1;
+      match.score2 = s2;
+      match.winner = s1 >= s2 ? match.player1 : match.player2;
+    }
+    match.status = 'FINISHED';
+
+    // Advance winner to next round
+    const nextMap = {
+      m1: { target: 'm5', slot: 'player1' },
+      m2: { target: 'm5', slot: 'player2' },
+      m3: { target: 'm6', slot: 'player1' },
+      m4: { target: 'm6', slot: 'player2' },
+      m5: { target: 'm7', slot: 'player1' },
+      m6: { target: 'm7', slot: 'player2' },
+    };
+
+    const nextInfo = nextMap[matchId];
+    if (nextInfo) {
+      const nextMatch = this.currentState.matches.find((m) => m.id === nextInfo.target);
+      if (nextMatch) {
+        nextMatch[nextInfo.slot] = { ...match.winner };
+        nextMatch.status = (nextMatch.player1 && nextMatch.player2) ? 'RUNNING' : 'PENDING';
+      }
+      this.currentState.status = 'IN_PROGRESS';
+    } else if (matchId === 'm7') {
+      this.currentState.champion = {
+        ...match.winner,
+        multiplier: typeof match.score1 === 'number' || typeof match.score2 === 'number'
+          ? Math.max(Number(match.score1) || 0, Number(match.score2) || 0)
+          : 'WIN',
+      };
+      this.currentState.status = 'FINISHED';
+    }
+
+    try {
+      localStorage.setItem('hunthub_tourney_state', JSON.stringify(this.currentState));
+    } catch {}
+
+    this.handleStateUpdate(this.currentState, false);
   }
 
   handleAddParticipant(participant) {
@@ -225,18 +307,19 @@ class TourneyOverlayApp {
     }
 
     // Resolve slot image if missing
-    if (!participant.slotImage && window.HUNTHUB_CURATED_SLOTS && participant.slotName) {
-      const found = window.HUNTHUB_CURATED_SLOTS.find(
-        (s) => s.name.toLowerCase() === participant.slotName.toLowerCase()
-      );
-      if (found) participant.slotImage = found.image;
+    if (!participant.slotImage && window.SlotResolver && participant.slotName) {
+      const found = window.SlotResolver.resolve(participant.slotName, '../');
+      if (found) {
+        participant.slotName = found.name || participant.slotName;
+        participant.slotImage = found.image;
+      }
     }
 
     if (!this.currentState.participants) this.currentState.participants = [];
 
     // Check if participant already exists by kickId or username
     const existingIdx = this.currentState.participants.findIndex(
-      (p) => p.username === participant.username || p.id === participant.id
+      (p) => this.isSamePlayer(p, participant)
     );
 
     let seedIdx = 0;
@@ -260,12 +343,13 @@ class TourneyOverlayApp {
     else if (seedIdx === 7 && m[3]) m[3].player2 = participant;
 
     this.currentState.status = this.currentState.participants.length >= 8 ? 'IN_PROGRESS' : 'LOBBY';
+    this.currentState.champion = null;
 
     try {
       localStorage.setItem('hunthub_tourney_state', JSON.stringify(this.currentState));
     } catch {}
 
-    this.handleStateUpdate(this.currentState);
+    this.handleStateUpdate(this.currentState, false);
   }
 
   getEmptyTournamentState() {
@@ -273,6 +357,7 @@ class TourneyOverlayApp {
       id: 'tourney_' + Date.now(),
       title: '8-BRACKET SLOT CHAMPIONSHIP',
       status: 'LOBBY',
+      mode: 'BONUS_BUY',
       betPerRound: 10,
       prizeText: '1st: $150 · 2nd: $50',
       participants: [],
@@ -292,23 +377,23 @@ class TourneyOverlayApp {
   initWebSocket() {
     const urlParams = new URLSearchParams(window.location.search);
     const port = urlParams.get('port') || '3001';
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (!isLocalHost && !urlParams.get('port')) {
+      return;
+    }
     const wsUrl = `ws://127.0.0.1:${port}/`;
+
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    try {
+      fetch(`http://127.0.0.1:${port}/api/sync/state`).catch(() => {});
+    } catch (_) {}
 
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[Tourney Overlay] Connected to HuntHub Server on ' + wsUrl);
         this.reconnectAttempts = 0;
         this.ws.send(JSON.stringify({ action: 'get_tourney_state' }));
-        fetch(`http://127.0.0.1:${port}/api/sync/state`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((sync) => {
-            if (sync && sync.tourney && sync.tourney.participants && sync.tourney.participants.length > 0) {
-              this.handleStateUpdate(sync.tourney);
-            }
-          })
-          .catch(() => {});
       };
 
       this.ws.onmessage = (event) => {
@@ -339,56 +424,61 @@ class TourneyOverlayApp {
   }
 
   loadInitialState() {
+    if (this.modal) {
+      this.modal.classList.remove('active');
+    }
     // 1. Check localStorage first
     try {
       const saved = localStorage.getItem('hunthub_tourney_state');
       if (saved) {
         const state = JSON.parse(saved);
-        this.handleStateUpdate(state);
+        this.handleStateUpdate(state, true);
         return;
       }
     } catch {}
 
-    // 2. Fallback to clean demo state so canvas is NEVER blank!
+    // 2. Fallback to clean IN_PROGRESS bracket (NEVER FINISHED on load so no unsolicited winner popup appears!)
     const defaultDemo = this.getDefaultDemoState();
-    this.handleStateUpdate(defaultDemo);
+    this.handleStateUpdate(defaultDemo, true);
   }
 
   getDefaultDemoState() {
     const participants = [
-      { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead or a Wild', slotImage: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format', seed: 1 },
-      { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates of Olympus 1000', slotImage: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format', seed: 8 },
-      { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin xWays', slotImage: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format', seed: 4 },
-      { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush 1000', slotImage: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format', seed: 5 },
-      { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'RIP City', slotImage: 'https://mediumrare.imgix.net/34d643b7d8c0b23e734742e5d1c32eb6beb29ee34a69e7cd97486db6c125a2db?w=360&auto=format', seed: 2 },
-      { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', slotImage: 'https://mediumrare.imgix.net/98801318d067e57c3d22f9453d970d5278bf253365600c4d93841b9c994bf82a?w=360&auto=format', seed: 7 },
-      { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', slotImage: 'https://mediumrare.imgix.net/6cc2e6228b274e48ff6045944b153810db7131ad61d90cabce5aa35176c639e9?w=360&auto=format', seed: 3 },
-      { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Le Bandit', slotImage: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format', seed: 6 },
+      { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead or a Wild', slotImage: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format', seed: 1, isDemo: true },
+      { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates of Olympus 1000', slotImage: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format', seed: 8, isDemo: true },
+      { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin xWays', slotImage: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format', seed: 4, isDemo: true },
+      { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush 1000', slotImage: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format', seed: 5, isDemo: true },
+      { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'RIP City', slotImage: 'https://mediumrare.imgix.net/34d643b7d8c0b23e734742e5d1c32eb6beb29ee34a69e7cd97486db6c125a2db?w=360&auto=format', seed: 2, isDemo: true },
+      { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', slotImage: 'https://mediumrare.imgix.net/98801318d067e57c3d22f9453d970d5278bf253365600c4d93841b9c994bf82a?w=360&auto=format', seed: 7, isDemo: true },
+      { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', slotImage: 'https://mediumrare.imgix.net/6cc2e6228b274e48ff6045944b153810db7131ad61d90cabce5aa35176c639e9?w=360&auto=format', seed: 3, isDemo: true },
+      { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Le Bandit', slotImage: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format', seed: 6, isDemo: true },
     ];
 
     const matches = [
-      { id: 'm1', round: 1, matchNumber: 1, player1: participants[0], player2: participants[1], score1: 24.5, score2: 10.2, winner: participants[0], status: 'FINISHED' },
-      { id: 'm2', round: 1, matchNumber: 2, player1: participants[2], player2: participants[3], score1: 45.0, score2: 8.0, winner: participants[2], status: 'FINISHED' },
-      { id: 'm3', round: 1, matchNumber: 3, player1: participants[4], player2: participants[5], score1: 112.4, score2: 15.1, winner: participants[4], status: 'FINISHED' },
-      { id: 'm4', round: 1, matchNumber: 4, player1: participants[6], player2: participants[7], score1: 32.0, score2: 68.5, winner: participants[7], status: 'FINISHED' },
-      { id: 'm5', round: 2, matchNumber: 5, player1: participants[0], player2: participants[2], score1: 55.0, score2: 120.0, winner: participants[2], status: 'FINISHED' },
-      { id: 'm6', round: 2, matchNumber: 6, player1: participants[4], player2: participants[7], score1: 80.2, score2: 40.0, winner: participants[4], status: 'FINISHED' },
-      { id: 'm7', round: 3, matchNumber: 7, player1: participants[2], player2: participants[4], score1: 150.0, score2: 95.0, winner: participants[2], status: 'FINISHED' },
+      { id: 'm1', round: 1, matchNumber: 1, player1: participants[0], player2: participants[1], score1: 0, score2: 0, winner: null, status: 'RUNNING' },
+      { id: 'm2', round: 1, matchNumber: 2, player1: participants[2], player2: participants[3], score1: 0, score2: 0, winner: null, status: 'PENDING' },
+      { id: 'm3', round: 1, matchNumber: 3, player1: participants[4], player2: participants[5], score1: 0, score2: 0, winner: null, status: 'PENDING' },
+      { id: 'm4', round: 1, matchNumber: 4, player1: participants[6], player2: participants[7], score1: 0, score2: 0, winner: null, status: 'PENDING' },
+      { id: 'm5', round: 2, matchNumber: 5, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+      { id: 'm6', round: 2, matchNumber: 6, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+      { id: 'm7', round: 3, matchNumber: 7, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
     ];
 
     return {
       id: 'demo_tourney_default',
-      title: '8-Bracket Slot Championship',
-      status: 'FINISHED',
+      title: '8-BRACKET SLOT CHAMPIONSHIP',
+      status: 'IN_PROGRESS',
+      mode: 'BONUS_BUY',
+      isDemo: true,
       betPerRound: 10,
-      prizeText: '1º: $150 · 2º: $50',
+      prizeText: '1st: $150 · 2nd: $50',
       participants,
       matches,
-      champion: participants[2],
+      champion: null,
     };
   }
 
-  handleStateUpdate(state) {
+  handleStateUpdate(state, isInitialLoad = false) {
     if (!state) return;
     const oldStatus = this.currentState ? this.currentState.status : null;
     this.currentState = state;
@@ -396,16 +486,16 @@ class TourneyOverlayApp {
     // Headers
     if (this.titleEl) this.titleEl.textContent = (state.title || '8-BRACKET SLOT CHAMPIONSHIP').toUpperCase();
     if (this.betEl) this.betEl.textContent = `$${Number(state.betPerRound || 10).toFixed(2)}`;
-    if (this.prizeEl) this.prizeEl.textContent = state.prizeText || '1º: $150 · 2º: $50';
+    if (this.prizeEl) this.prizeEl.textContent = state.prizeText || '1st: $150 · 2nd: $50';
 
     // Status Text
     if (this.statusText) {
       if (state.status === 'LOBBY' || state.status === 'IDLE') {
         this.statusText.textContent = `LOBBY (${state.participants?.length || 0}/8)`;
       } else if (state.status === 'IN_PROGRESS') {
-        this.statusText.textContent = 'TORNEO EN JUEGO';
+        this.statusText.textContent = 'IN PROGRESS';
       } else if (state.status === 'FINISHED') {
-        this.statusText.textContent = 'FINALIZADO';
+        this.statusText.textContent = 'FINISHED';
       }
     }
 
@@ -422,12 +512,68 @@ class TourneyOverlayApp {
       }
     }
 
-    // Champion Celebration
-    if (state.status === 'FINISHED' && state.champion && oldStatus !== 'FINISHED') {
-      this.triggerChampionCelebration(state);
-    } else if (state.status !== 'FINISHED' && this.modal) {
+    // Recalculate exact SVG connector lines on next animation frame
+    requestAnimationFrame(() => this.updateConnectorLines());
+
+    // Keep local blocking modal hidden so bracket stays visible; celebration plays on the dedicated 1920x1080 transparent overlay
+    if (this.modal) {
       this.modal.classList.remove('active');
     }
+
+    if (!isInitialLoad && state.status === 'FINISHED' && state.champion && oldStatus !== 'FINISHED') {
+      this.triggerChampionCelebration(state);
+    }
+  }
+
+  updateConnectorLines() {
+    const svg1 = document.getElementById('svg-conn-1');
+    const svg2 = document.getElementById('svg-conn-2');
+    if (!svg1 || !svg2) return;
+
+    const getRelCenterY = (cardId, svgEl) => {
+      const card = document.getElementById(cardId);
+      if (!card) return 500;
+      const svgRect = svgEl.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      if (!svgRect.height) return 500;
+      return Math.round(((cardRect.top + cardRect.height / 2 - svgRect.top) / svgRect.height) * 1000);
+    };
+
+    svg1.setAttribute('viewBox', '0 0 100 1000');
+    svg2.setAttribute('viewBox', '0 0 100 1000');
+
+    const y1 = getRelCenterY('card-m1', svg1);
+    const y2 = getRelCenterY('card-m2', svg1);
+    const y3 = getRelCenterY('card-m3', svg1);
+    const y4 = getRelCenterY('card-m4', svg1);
+    const y5_1 = getRelCenterY('card-m5', svg1);
+    const y6_1 = getRelCenterY('card-m6', svg1);
+
+    const y5_2 = getRelCenterY('card-m5', svg2);
+    const y6_2 = getRelCenterY('card-m6', svg2);
+    const y7_2 = getRelCenterY('card-m7', svg2);
+
+    const setPath = (id, d, isActive) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.setAttribute('d', d);
+      if (isActive) el.classList.add('active');
+      else el.classList.remove('active');
+    };
+
+    const matches = (this.currentState && this.currentState.matches) || [];
+    const isFinished = (mId) => {
+      const m = matches.find((item) => item.id === mId);
+      return Boolean(m && m.status === 'FINISHED' && m.winner);
+    };
+
+    setPath('conn-m1-m5', `M 0 ${y1} H 50 V ${y5_1} H 100`, isFinished('m1'));
+    setPath('conn-m2-m5', `M 0 ${y2} H 50 V ${y5_1} H 100`, isFinished('m2'));
+    setPath('conn-m3-m6', `M 0 ${y3} H 50 V ${y6_1} H 100`, isFinished('m3'));
+    setPath('conn-m4-m6', `M 0 ${y4} H 50 V ${y6_1} H 100`, isFinished('m4'));
+
+    setPath('conn-m5-m7', `M 0 ${y5_2} H 50 V ${y7_2} H 100`, isFinished('m5'));
+    setPath('conn-m6-m7', `M 0 ${y6_2} H 50 V ${y7_2} H 100`, isFinished('m6'));
   }
 
   renderMatchCard(el, matchId, match) {
@@ -456,11 +602,23 @@ class TourneyOverlayApp {
     if (isRunning) el.classList.add('active-match');
     else el.classList.remove('active-match');
 
+    const formatScore = (score, isWinner, isLoser) => {
+      if (score === 'WIN') return 'WIN 🏆';
+      if (score === 'LOSE') return 'LOSE';
+      if (score !== undefined && score !== null && Number(score) > 0) {
+        return `${Number(score).toFixed(2).replace(/\.00$/, '')}x`;
+      }
+      if (isWinner) return 'WIN 🏆';
+      if (isLoser) return 'LOSE';
+      return '-';
+    };
+
     const renderPlayer = (p, score, isWinner, isLoser) => {
       if (!p) {
         return `<div class="player-slot"><span style="color: #64748b;">TBD</span><span class="player-score">-</span></div>`;
       }
-      const initial = (p.displayName || p.username).charAt(0).toUpperCase();
+      const cleanName = String(p.displayName || p.username || 'Player').replace(/^@/, '');
+      const initial = (cleanName.charAt(0) || 'P').toUpperCase();
       const winClass = isWinner ? 'winner' : (isLoser ? 'loser' : '');
       const crown = isWinner ? ' 👑' : '';
 
@@ -480,16 +638,16 @@ class TourneyOverlayApp {
         <div class="player-slot ${winClass}">
           <div class="player-info">
             ${imgHtml}
-            <div class="player-name-text">@${p.displayName || p.username}${crown}</div>
+            <div class="player-name-text">@${cleanName}${crown}</div>
             <span class="player-slot-name">${slotNameDisplay ? `(${slotNameDisplay})` : ''}</span>
           </div>
-          <span class="player-score">${score !== undefined && score !== null && Number(score) > 0 ? `${score}x` : (isWinner ? 'WINNER 🏆' : (isLoser ? 'LOSER' : '-'))}</span>
+          <span class="player-score">${formatScore(score, isWinner, isLoser)}</span>
         </div>
       `;
     };
 
-    const isP1Win = isFinished && match.winner && match.player1 && match.winner.kickId === match.player1.kickId;
-    const isP2Win = isFinished && match.winner && match.player2 && match.winner.kickId === match.player2.kickId;
+    const isP1Win = isFinished && match.winner && match.player1 && this.isSamePlayer(match.winner, match.player1);
+    const isP2Win = isFinished && match.winner && match.player2 && this.isSamePlayer(match.winner, match.player2);
 
     el.innerHTML = `
       <div class="match-badge">
@@ -504,44 +662,38 @@ class TourneyOverlayApp {
   }
 
   triggerChampionCelebration(state) {
+    if (!state || !state.champion) return;
     let resolvedChampSlot = null;
-    if (window.SlotResolver && state.champion) {
+    if (window.SlotResolver) {
       resolvedChampSlot = window.SlotResolver.resolve(state.champion.slotName || state.champion.slotImage || 'Wanted Dead or a Wild', '../');
     }
     const champSlotName = (resolvedChampSlot && resolvedChampSlot.name) || state.champion?.slotName || 'Wanted Dead or a Wild';
     const champSlotImage = (resolvedChampSlot && resolvedChampSlot.image) || state.champion?.slotImage;
+    const champUser = String(state.champion.displayName || state.champion.username || 'Champion').replace(/^@/, '');
 
-    // 1. Broadcast celebration to fullscreen overlay
+    // Broadcast celebration to the dedicated 1920x1080 transparent Winner Celebration overlay
     try {
       const bc = new BroadcastChannel('hunthub_celebration');
       const payload = {
         type: 'CELEBRATION',
-        category: 'tournament',
+        category: '8-BRACKET TOURNAMENT CHAMPION',
+        icon: '🏆',
+        username: `@${champUser}`,
         winner: state.champion,
-        title: state.title,
+        title: state.title || '8-BRACKET SLOT CHAMPIONSHIP',
         slotName: champSlotName,
+        slotImg: champSlotImage,
         slotImage: champSlotImage,
-        multiplier: state.champion?.multiplier || 150.0,
-        prizeText: state.prizeText || '1º: $150 · 2º: $50'
+        statLabel: 'FINAL SCORE',
+        statValue: state.champion?.multiplier ? (String(state.champion.multiplier).endsWith('x') || state.champion.multiplier === 'WIN' ? String(state.champion.multiplier) : `${state.champion.multiplier}x`) : 'CHAMPION 🏆',
+        prize: state.prizeText || 'TOURNAMENT CHAMPION',
+        timestamp: Date.now(),
       };
       bc.postMessage(payload);
       localStorage.setItem('hunthub_celebration_event', JSON.stringify(payload));
+      localStorage.setItem('hunthub_celebration_trigger', JSON.stringify(payload));
     } catch (e) {
       console.warn('[Tourney Overlay] Broadcast celebration error:', e);
-    }
-
-    // 2. Play local fanfare as fallback
-    this.playSlotWinFanfare();
-
-    // 3. Keep local modal banner for bracket view without blocking frame rate
-    if (this.modal && state.champion) {
-      this.champName.textContent = `@${state.champion.displayName || state.champion.username}`;
-      this.champSlot.textContent = `Winning Slot: ${champSlotName}`;
-      this.modal.classList.add('active');
-
-      setTimeout(() => {
-        this.modal.classList.remove('active');
-      }, 7000);
     }
   }
 
@@ -556,6 +708,7 @@ class TourneyOverlayApp {
       if (stage) {
         stage.style.transform = `scale(${scale})`;
       }
+      requestAnimationFrame(() => this.updateConnectorLines());
     };
     window.addEventListener('resize', resize);
     resize();
