@@ -30,7 +30,8 @@ class AdminHubController {
       'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
       'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
       'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar',
-      'altfarmer_450', 'stakefarmer_01', 'stakefarmer_02'
+      'altfarmer_450', 'stakefarmer_01', 'stakefarmer_02',
+      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'viewer', 'catlover'
     ]);
 
     // Duo-Wheel Queue (Unified with wheel-duo/main.js via hunthub_duo_pool_v2)
@@ -116,9 +117,9 @@ class AdminHubController {
     this.bindObsCopyButtons();
 
     // Auto-clean demo users on startup if not already purged
-    if (localStorage.getItem('hunthub_demo_users_purged_live_v2') !== 'true') {
-      this.purgeDemoUsersForLiveStream('init_clean_live_v2', true);
-      try { localStorage.setItem('hunthub_demo_users_purged_live_v2', 'true'); } catch (_) {}
+    if (localStorage.getItem('hunthub_demo_users_purged_live_v3') !== 'true') {
+      this.purgeDemoUsersForLiveStream('init_clean_live_v3', true);
+      try { localStorage.setItem('hunthub_demo_users_purged_live_v3', 'true'); } catch (_) {}
     }
 
     // Bind manual Clean All Demo Users button
@@ -907,18 +908,28 @@ class AdminHubController {
 
     let referrals = [];
     try {
-      referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+      const parsed = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+      if (Array.isArray(parsed)) {
+        referrals = parsed.filter(ref => {
+          const u = String(ref?.username || '').trim().toLowerCase().replace(/^@/, '');
+          const k = String(ref?.kickUser || '').trim().toLowerCase().replace(/^@/, '');
+          return u && !this.demoUsernames.has(u) && (!k || k === 'viewer' ? !this.demoUsernames.has(u) : !this.demoUsernames.has(k));
+        });
+        if (referrals.length !== parsed.length) {
+          localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
+        }
+      }
     } catch(e) { referrals = []; }
 
     if (referrals.length === 0) {
-      referrals = [
-        { username: 'StakeNacho', kickUser: '@NachoGamer', code: 'DIGGITY', verifiedAt: '2026-10-14 14:20', status: 'verified' },
-        { username: 'StakeValen', kickUser: '@Valen99', code: 'DIGGITY', verifiedAt: '2026-10-14 15:05', status: 'verified' },
-        { username: 'StakeAgus', kickUser: '@AgusKick', code: 'DIGGITY', verifiedAt: '2026-10-14 16:30', status: 'verified' },
-        { username: 'DiggityFan01', kickUser: '@DiggityFan', code: 'DIGGITY', verifiedAt: '2026-10-14 17:10', status: 'verified' },
-        { username: 'NewPlayer99', kickUser: '@Viewer', code: 'DIGGITY', verifiedAt: '2026-10-14 18:45', status: 'pending' }
-      ];
-      localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(referrals));
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 26px 16px; color: var(--text-dim); font-style: italic;">
+            No Stake Partner referrals synced yet. Paste your Stake Affiliate username list above and click <strong>Apply Sync</strong>.
+          </td>
+        </tr>
+      `;
+      return;
     }
 
     tbody.innerHTML = referrals.map(ref => `
@@ -1425,10 +1436,21 @@ class AdminHubController {
 
   renderBonusHuntAdmin() {
     const tbody = document.getElementById('admin-hunt-bonuses-tbody');
-    if (!tbody) return;
-
+    const summaryEl = document.getElementById('cp-bh-summary');
     let slots = [];
     try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (e) {}
+
+    if (summaryEl) {
+      summaryEl.textContent = `${slots.length} Bonus${slots.length === 1 ? '' : 'es'}`;
+    }
+
+    try {
+      const chBh = new BroadcastChannel('hunthub_bonushunt');
+      chBh.postMessage({ action: 'slots_updated', slots });
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('hunthub:bonushunt-sync', { detail: { slots } }));
+
+    if (!tbody) return;
 
     if (slots.length === 0) {
       tbody.innerHTML = `
@@ -1496,8 +1518,12 @@ class AdminHubController {
         const idx = parseInt(btn.dataset.idx, 10);
         slots.splice(idx, 1);
         localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
+        if (slots.length === 0) {
+          localStorage.setItem('hunthub_hunt_active', 'false');
+        }
         if (window.bonusHunt) {
           window.bonusHunt.slots = slots;
+          if (slots.length === 0) window.bonusHunt.isActive = false;
           window.bonusHunt.renderMetrics();
           window.bonusHunt.renderSlotTable();
         }
@@ -4287,6 +4313,7 @@ class AdminHubController {
     try {
       localStorage.setItem('hunthub_demo_users_purged', 'true');
       localStorage.setItem('hunthub_demo_users_purged_live_v2', 'true');
+      localStorage.setItem('hunthub_demo_users_purged_live_v3', 'true');
     } catch (_) {}
 
     const isDemo = (u) => {
@@ -4309,6 +4336,16 @@ class AdminHubController {
       }
     } catch (_) {}
     this.renderClaimsQueue();
+
+    // 1B. Clean Stake Partners Referrals List
+    try {
+      const savedRefs = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+      if (Array.isArray(savedRefs)) {
+        const realRefs = savedRefs.filter(r => !isDemo(r?.username) && (!r?.kickUser || r.kickUser === '@Viewer' ? !isDemo(r?.username) : !isDemo(r.kickUser)));
+        localStorage.setItem('hunthub_verified_stake_list', JSON.stringify(realRefs));
+      }
+    } catch (_) {}
+    this.renderStakeReferrals();
 
     // 2. Clean Sunday Raffle Ledger
     try {
@@ -4399,6 +4436,10 @@ class AdminHubController {
       if (Array.isArray(savedSlots)) {
         const realSlots = savedSlots.filter(s => s.caller && !isDemo(s.caller));
         localStorage.setItem('hunthub_hunt_slots', JSON.stringify(realSlots));
+        if (realSlots.length === 0) {
+          localStorage.setItem('hunthub_hunt_active', 'false');
+          localStorage.removeItem('hunthub_bonushunt_state');
+        }
         if (window.bonusHunt) {
           window.bonusHunt.slots = realSlots;
           if (realSlots.length === 0) window.bonusHunt.isActive = false;

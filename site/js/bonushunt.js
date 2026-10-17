@@ -12,11 +12,11 @@
 
 class BonusHuntController {
   constructor() {
-    this.isActive = localStorage.getItem('hunthub_hunt_active') !== 'false';
     this.huntId = 'hunt_1';
-    this.huntName = 'Community Bonus Hunt #12';
-    this.startBalance = 1500;
-    this.slots = this.isActive ? this.loadInitialHuntSlots() : [];
+    this.huntName = 'Community Bonus Hunt';
+    this.slots = this.loadInitialHuntSlots();
+    this.isActive = localStorage.getItem('hunthub_hunt_active') === 'true' || this.slots.length > 0;
+    this.startBalance = this.slots.length > 0 ? Number(localStorage.getItem('hunthub_hunt_start_cost') || 0) : 0;
     this.guesses = this.isActive ? this.loadInitialGuesses() : [];
     this.slotRequests = this.loadInitialSlotRequests();
 
@@ -104,6 +104,18 @@ class BonusHuntController {
     return [];
   }
 
+  reloadFromStorage() {
+    this.slots = this.loadInitialHuntSlots();
+    this.isActive = localStorage.getItem('hunthub_hunt_active') === 'true' || this.slots.length > 0;
+    this.startBalance = this.slots.length > 0 ? Number(localStorage.getItem('hunthub_hunt_start_cost') || 0) : 0;
+    this.guesses = this.loadInitialGuesses();
+    this.slotRequests = this.loadInitialSlotRequests();
+    this.renderMetrics();
+    this.renderSlotTable();
+    this.renderGuesses();
+    this.renderSlotRequests();
+  }
+
   init() {
     this.renderMetrics();
     this.renderSlotTable();
@@ -114,6 +126,20 @@ class BonusHuntController {
     this.initSlotRequestsForm();
     this.initSlotWheel();
     this.initProvablyFairVerifiers();
+
+    // Real-time sync with Control Panel and OBS Bonus Hunt broadcasts
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.bcHunt = new BroadcastChannel('hunthub_bonushunt');
+        this.bcHunt.onmessage = () => this.reloadFromStorage();
+      } catch (_) {}
+    }
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hunthub_hunt_slots' || e.key === 'hunthub_hunt_guesses' || e.key === 'hunthub_hunt_start_cost' || e.key === 'hunthub_hunt_active') {
+        this.reloadFromStorage();
+      }
+    });
+    window.addEventListener('hunthub:bonushunt-sync', () => this.reloadFromStorage());
   }
 
   save() {
@@ -134,18 +160,30 @@ class BonusHuntController {
     const remSubEl = document.getElementById('bh-metric-remaining-sub');
     const runAvgEl = document.getElementById('bh-metric-runavg');
     const reqAvgEl = document.getElementById('bh-metric-reqavg');
+    const statusTextEl = document.getElementById('bh-live-status-text');
 
     if (!this.isActive || this.slots.length === 0) {
       if (costEl) costEl.textContent = '$0.00';
       if (paidEl) paidEl.textContent = '$0.00';
-      if (pnlEl) pnlEl.textContent = '$0.00';
+      if (pnlEl) {
+        pnlEl.textContent = '$0.00';
+        pnlEl.className = 'bh-metric-val';
+      }
+      if (pnlSubEl) pnlSubEl.textContent = '0.0% ROI';
       if (openedEl) openedEl.textContent = '0 / 0';
+      if (remSubEl) remSubEl.textContent = '0 remaining';
       if (runAvgEl) runAvgEl.textContent = '0.00x';
-      if (reqAvgEl) reqAvgEl.textContent = '—';
+      if (reqAvgEl) {
+        reqAvgEl.textContent = '—';
+        reqAvgEl.className = 'bh-metric-val gold';
+      }
+      if (statusTextEl) statusTextEl.textContent = 'WAITING FOR HUNT';
+      this.renderHighlights([]);
       return;
     }
 
-    const totalCost = this.slots.length * 100 * 2.0;
+    const customStartCost = Number(localStorage.getItem('hunthub_hunt_start_cost') || 0);
+    const totalCost = customStartCost > 0 ? customStartCost : (this.slots.length * 100 * 2.0);
     const totalPaid = this.slots.reduce((sum, s) => sum + (s.payout || 0), 0);
     const pnl = totalPaid - totalCost;
     const roi = totalCost > 0 ? ((pnl / totalCost) * 100).toFixed(1) : '0.0';
@@ -153,6 +191,10 @@ class BonusHuntController {
     const openedSlots = this.slots.filter(s => s.payout > 0);
     const openedCount = openedSlots.length;
     const remainingCount = this.slots.length - openedCount;
+
+    if (statusTextEl) {
+      statusTextEl.textContent = remainingCount === 0 ? 'HUNT COMPLETED' : (openedCount > 0 ? 'OPENING BONUSES LIVE' : 'COLLECTING BONUSES');
+    }
 
     // Run Average Multiplier (Payout / Bet of opened)
     const openedBets = openedSlots.reduce((sum, s) => sum + (s.bet || 2.0), 0);
@@ -219,13 +261,27 @@ class BonusHuntController {
     const bestValEl = document.getElementById('bh-best-val');
     const bestMultEl = document.getElementById('bh-best-mult');
     const bestImgEl = document.getElementById('bh-best-img');
+    const bestPlaceholderEl = document.getElementById('bh-best-placeholder');
 
     if (bestWin && bestWin.payout > 0) {
-      if (bestNameEl) bestNameEl.textContent = bestWin.name;
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(bestWin.name || bestWin.slotName || bestWin) : null;
+      const imgSrc = canon?.image || bestWin.image || '';
+      if (bestNameEl) bestNameEl.textContent = canon?.name || bestWin.name || bestWin.slotName || 'Slot';
       if (bestCallerEl) bestCallerEl.textContent = `Call by: ${bestWin.caller || 'Chat'}`;
       if (bestValEl) bestValEl.textContent = `$${bestWin.payout.toFixed(2)}`;
       if (bestMultEl) bestMultEl.textContent = `${(bestWin.payout / (bestWin.bet || 2)).toFixed(2)}x`;
-      if (bestImgEl && bestWin.image) bestImgEl.src = bestWin.image;
+      if (bestImgEl && imgSrc) {
+        bestImgEl.src = imgSrc;
+        bestImgEl.style.display = 'block';
+      }
+      if (bestPlaceholderEl) bestPlaceholderEl.style.display = 'none';
+    } else {
+      if (bestNameEl) bestNameEl.textContent = '—';
+      if (bestCallerEl) bestCallerEl.textContent = 'Call by: —';
+      if (bestValEl) bestValEl.textContent = '$0.00';
+      if (bestMultEl) bestMultEl.textContent = '0.00x';
+      if (bestImgEl) bestImgEl.style.display = 'none';
+      if (bestPlaceholderEl) bestPlaceholderEl.style.display = 'flex';
     }
 
     const luckyNameEl = document.getElementById('bh-lucky-name');
@@ -233,13 +289,27 @@ class BonusHuntController {
     const luckyValEl = document.getElementById('bh-lucky-val');
     const luckyMultEl = document.getElementById('bh-lucky-mult');
     const luckyImgEl = document.getElementById('bh-lucky-img');
+    const luckyPlaceholderEl = document.getElementById('bh-lucky-placeholder');
 
     if (luckyWin && luckyWin.payout > 0) {
-      if (luckyNameEl) luckyNameEl.textContent = luckyWin.name;
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(luckyWin.name || luckyWin.slotName || luckyWin) : null;
+      const imgSrc = canon?.image || luckyWin.image || '';
+      if (luckyNameEl) luckyNameEl.textContent = canon?.name || luckyWin.name || luckyWin.slotName || 'Slot';
       if (luckyCallerEl) luckyCallerEl.textContent = `Call by: ${luckyWin.caller || 'Chat'}`;
       if (luckyMultEl) luckyMultEl.textContent = `${(luckyWin.payout / (luckyWin.bet || 2)).toFixed(2)}x`;
       if (luckyValEl) luckyValEl.textContent = `$${luckyWin.payout.toFixed(2)}`;
-      if (luckyImgEl && luckyWin.image) luckyImgEl.src = luckyWin.image;
+      if (luckyImgEl && imgSrc) {
+        luckyImgEl.src = imgSrc;
+        luckyImgEl.style.display = 'block';
+      }
+      if (luckyPlaceholderEl) luckyPlaceholderEl.style.display = 'none';
+    } else {
+      if (luckyNameEl) luckyNameEl.textContent = '—';
+      if (luckyCallerEl) luckyCallerEl.textContent = 'Call by: —';
+      if (luckyMultEl) luckyMultEl.textContent = '0.00x';
+      if (luckyValEl) luckyValEl.textContent = '$0.00';
+      if (luckyImgEl) luckyImgEl.style.display = 'none';
+      if (luckyPlaceholderEl) luckyPlaceholderEl.style.display = 'flex';
     }
   }
 
