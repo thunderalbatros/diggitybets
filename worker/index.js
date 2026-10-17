@@ -143,7 +143,27 @@ export default {
       }), { headers: corsHeaders });
     }
 
-    // 3a. Kick Public Channel Profile Proxy
+    // 3a. Kick Public Channel Profile Proxy & Live Stream Status
+    if (url.pathname === '/api/kick/stream-status' && request.method === 'GET') {
+      try {
+        const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
+          headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+        });
+        if (kickRes.ok) {
+          const kickData = await kickRes.json();
+          const isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
+          return new Response(JSON.stringify({
+            success: true,
+            channel: 'diggitybets',
+            isStreamLive,
+            viewerCount: Number(kickData?.livestream?.viewer_count || 0),
+            chatroomId: Number(kickData?.chatroom?.id || 2672891)
+          }), { headers: corsHeaders });
+        }
+      } catch (e) {}
+      return new Response(JSON.stringify({ success: true, channel: 'diggitybets', isStreamLive: false, viewerCount: 0, chatroomId: 2672891 }), { headers: corsHeaders });
+    }
+
     if (url.pathname.startsWith('/api/kick/user/') && request.method === 'GET') {
       const username = decodeURIComponent(url.pathname.replace('/api/kick/user/', '')).trim().replace(/^@/, '');
       try {
@@ -155,12 +175,14 @@ export default {
           const kickId = Number(kickData?.user?.id || kickData?.id || 0);
           const cleanName = String(kickData?.user?.username || username).trim();
           const isAdmin = cleanName.toLowerCase() === 'diggitybets' || cleanName.toLowerCase() === 'tarkansky' || kickId === 88254585;
+          const isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
           return new Response(JSON.stringify({
             success: true,
             username: cleanName,
             kick_id: kickId,
             avatarUrl: kickData?.user?.profile_pic || '',
             isAdmin,
+            isStreamLive,
             verified: true
           }), { headers: corsHeaders });
         }
@@ -601,14 +623,54 @@ export default {
       return new Response(JSON.stringify({ catalog }), { headers: corsHeaders });
     }
 
-    // 12B. Phase 6 Watch-to-Earn Heartbeat (+10 $DIG every 15m when stream is live)
+    // 12B. Phase 6 Watch-to-Earn Heartbeat (+10 $DIG every 15m ONLY when kick.com/diggitybets is LIVE + viewer is actively participating)
     if (url.pathname === '/api/watch/heartbeat' && request.method === 'POST') {
       try {
-        const { username } = await request.json().catch(() => ({}));
+        const body = await request.json().catch(() => ({}));
+        const username = String(body.username || '').trim().replace(/^@/, '');
+        const verifiedChatActive = Boolean(body.verifiedChatActive);
+        const lastChatActivityMs = Number(body.lastChatActivityMs ?? Infinity);
         if (!username) {
-          return new Response(JSON.stringify({ awarded: false, amount: 0, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
+          return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
         }
-        return new Response(JSON.stringify({ awarded: true, amount: 10, reason: 'WATCH_HEARTBEAT_OK' }), { headers: corsHeaders });
+
+        // 1. Verify that https://kick.com/diggitybets is currently LIVE
+        let isStreamLive = false;
+        try {
+          const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
+            headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+          });
+          if (kickRes.ok) {
+            const kickData = await kickRes.json();
+            isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
+          }
+        } catch (_) {}
+
+        if (!isStreamLive) {
+          return new Response(JSON.stringify({
+            awarded: false,
+            amount: 0,
+            isStreamLive: false,
+            reason: 'STREAM_OFFLINE'
+          }), { headers: corsHeaders });
+        }
+
+        // 2. Verify active participation & permanence in kick.com/diggitybets (no passive/AFK farming)
+        if (!verifiedChatActive || !Number.isFinite(lastChatActivityMs) || lastChatActivityMs > 900_000) {
+          return new Response(JSON.stringify({
+            awarded: false,
+            amount: 0,
+            isStreamLive: true,
+            reason: 'INACTIVE_VIEWER_NO_CHAT'
+          }), { headers: corsHeaders });
+        }
+
+        return new Response(JSON.stringify({
+          awarded: true,
+          amount: 10,
+          isStreamLive: true,
+          reason: 'LIVE_ACTIVE_VIEWER_VERIFIED'
+        }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
       }

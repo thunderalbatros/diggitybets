@@ -13,7 +13,11 @@
 
 class StakeOriginalsController {
   constructor() {
-    // 1. Initial Balance: Default to 0 $DIG (no free faucet, earned organically in Kick stream)
+    // 1. Initial Balance: Default to 0 $DIG (no free faucet, earned ONLY when kick.com/diggitybets is LIVE + active viewer participation)
+    if (!localStorage.getItem('hunthub_offline_points_purged_v1')) {
+      localStorage.setItem('hunthub_balance', '0');
+      localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
+    }
     let saved = localStorage.getItem('hunthub_balance');
     let parsed = parseInt(saved, 10);
     this.balance = isNaN(parsed) ? 0 : Math.max(0, parsed);

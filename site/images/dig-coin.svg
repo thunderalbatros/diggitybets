@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <defs>
+    <linearGradient id="digGoldRim" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF08A"/>
+      <stop offset="45%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <radialGradient id="digCore" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#070A12"/>
+    </radialGradient>
+    <linearGradient id="digGlyph" x1="8" y1="7" x2="24" y2="25" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#FFE55C"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer Gold Coin Body -->
+  <circle cx="16" cy="16" r="14.5" fill="url(#digGoldRim)" stroke="#FEF08A" stroke-width="1"/>
+  <!-- Casino Chip Neon Kick-Green Edge Notches -->
+  <path d="M16 1.5V4.2M16 27.8V30.5M1.5 16H4.2M27.8 16H30.5M5.75 5.75L7.65 7.65M24.35 24.35L26.25 26.25M26.25 5.75L24.35 7.65M7.65 24.35L5.75 26.25" stroke="#53FC18" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Inner Dark Obsidian Core -->
+  <circle cx="16" cy="16" r="11" fill="url(#digCore)" stroke="#FFD700" stroke-width="1.2"/>
+  <!-- Subtle Inner Dashed Ring -->
+  <circle cx="16" cy="16" r="9.2" stroke="rgba(255,215,0,0.35)" stroke-width="0.75" stroke-dasharray="2 2"/>
+  <!-- Embossed $D Identity Monogram -->
+  <path d="M13.5 8.2V23.8M11.2 10H16.6C19.6 10 21.5 12.1 21.5 16C21.5 19.9 19.6 22 16.6 22H11.2V10Z" stroke="url(#digGlyph)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Kick Green Spark Accent -->
+  <circle cx="21.5" cy="10.2" r="1.4" fill="#53FC18"/>
+</svg>
