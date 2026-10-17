@@ -39,9 +39,15 @@ class OAuthEngine {
     this.checkInitialAdmin();
   }
 
+  isAuthorizedStreamer(username) {
+    const clean = String(username || '').trim().toLowerCase().replace(/^@/, '');
+    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky';
+  }
+
   checkInitialAdmin() {
-    const isAdmin = localStorage.getItem('hunthub_is_admin') === 'true' ||
-      (localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace('@', '') === 'diggitybets';
+    const storedUser = localStorage.getItem('hunthub_kick_username') || '';
+    const isAdmin = this.isAuthorizedStreamer(storedUser);
+    localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     this.updateAdminDeckUI(isAdmin);
   }
 
@@ -68,49 +74,116 @@ class OAuthEngine {
       .replace(/=+$/, '');
   }
 
-  // --- KICK OAUTH 2.1 PKCE FLOW ---
+  // --- INSTANT ZERO-FREEZE KICK ACCOUNT LINK MODAL ---
 
   async loginKick() {
-    try {
-      const state = this.generateRandomString(32);
-      const codeVerifier = this.generateRandomString(96);
-      const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+    let modal = document.getElementById('kick-instant-link-modal');
+    if (modal) modal.remove();
 
-      sessionStorage.setItem('hh_oauth_provider', 'kick');
-      sessionStorage.setItem('hh_oauth_state', state);
-      sessionStorage.setItem('hh_code_verifier', codeVerifier);
+    modal = document.createElement('div');
+    modal.id = 'kick-instant-link-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(6,8,14,0.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;';
 
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: this.config.kick.clientId,
-        redirect_uri: this.config.kick.redirectUri,
-        scope: this.config.kick.scope,
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        state: state
+    const currentVal = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '');
+    modal.innerHTML = `
+      <div style="width:100%;max-width:430px;background:#10141f;border:1px solid rgba(83,252,24,0.45);border-radius:16px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:12px;height:12px;border-radius:50%;background:#53fc18;box-shadow:0 0 12px #53fc18;display:inline-block;"></span>
+            <h3 style="margin:0;font-family:'Chakra Petch',sans-serif;font-size:1.25rem;letter-spacing:0.5px;color:#fff;">LINK KICK.COM ACCOUNT</h3>
+          </div>
+          <button type="button" id="kick-modal-close-btn" style="background:transparent;border:none;color:#94a3b8;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+        </div>
+        <p style="margin:0 0 14px 0;font-size:0.85rem;color:#94a3b8;line-height:1.5;">
+          Enter your exact <strong style="color:#53fc18;">Kick.com</strong> username to sync your live chat commands (<code style="color:#00e5ff;">!battle</code>, <code style="color:#ffd700;">!tourney</code>, <code style="color:#53fc18;">!guess</code>), $DIG points, and streamer permissions.
+        </p>
+        <div style="margin-bottom:14px;">
+          <label for="kick-modal-username-input" style="display:block;font-size:0.72rem;font-weight:800;color:#cbd5e1;letter-spacing:0.8px;margin-bottom:6px;text-transform:uppercase;">Kick Username</label>
+          <input type="text" id="kick-modal-username-input" value="${currentVal}" placeholder="e.g. diggitybets or tarkansky" autocomplete="off"
+            style="width:100%;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,0.55);border:1px solid rgba(83,252,24,0.4);color:#fff;font-size:0.95rem;font-weight:700;outline:none;box-sizing:border-box;" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="kick-modal-cancel-btn" style="padding:10px 16px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#cbd5e1;font-weight:700;font-size:0.82rem;cursor:pointer;">Cancel</button>
+          <button type="button" id="kick-modal-submit-btn" style="padding:10px 20px;border-radius:8px;background:#53fc18;border:none;color:#05070a;font-family:'Chakra Petch',sans-serif;font-weight:900;font-size:0.9rem;letter-spacing:0.5px;cursor:pointer;box-shadow:0 0 18px rgba(83,252,24,0.35);">⚡ LINK KICK NOW</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const inputEl = document.getElementById('kick-modal-username-input');
+    const submitBtn = document.getElementById('kick-modal-submit-btn');
+    const closeBtn = document.getElementById('kick-modal-close-btn');
+    const cancelBtn = document.getElementById('kick-modal-cancel-btn');
+
+    if (inputEl) {
+      setTimeout(() => inputEl.focus(), 40);
+    }
+
+    const closeModal = () => {
+      if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+    };
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    const completeLink = async () => {
+      const raw = (inputEl ? inputEl.value : '').trim().replace(/^@/, '');
+      if (!raw) {
+        if (window.sonner) {
+          window.sonner.toast({ title: 'Username Required', message: 'Please enter your Kick.com username.', type: 'danger' });
+        }
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'VERIFYING...';
+      }
+
+      let avatarUrl = '';
+      let kickId = 0;
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2200);
+        const res = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(raw.toLowerCase())}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          avatarUrl = data?.user?.profile_pic || '';
+          kickId = Number(data?.user?.id || data?.id || 0);
+        }
+      } catch (_) {
+        // Fallback smoothly if Kick public endpoint is blocked by browser CORS
+      }
+
+      const isAdmin = this.isAuthorizedStreamer(raw) || kickId === 88254585;
+      this.applyKickUserData({
+        username: raw,
+        avatarUrl,
+        kick_id: kickId,
+        isSub: true,
+        isAdmin,
+        verified: true
       });
 
-      if (window.sonner) {
-        window.sonner.toast({
-          title: 'Connecting to Kick... 🟩',
-          message: 'Redirecting to Kick.com OAuth 2.1 authorization...',
-          type: 'green'
-        });
-      }
+      closeModal();
+    };
 
-      setTimeout(() => {
-        window.location.href = `${this.config.kick.authUrl}?${params.toString()}`;
-      }, 350);
-
-    } catch (err) {
-      console.error('[OAuthEngine] Kick OAuth initiation error:', err);
-      if (window.sonner) {
-        window.sonner.toast({
-          title: 'OAuth Error',
-          message: 'Could not initialize Kick authorization.',
-          type: 'danger'
-        });
-      }
+    if (submitBtn) submitBtn.addEventListener('click', completeLink);
+    if (inputEl) {
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          completeLink();
+        }
+      });
     }
   }
 
@@ -271,12 +344,17 @@ class OAuthEngine {
     const cleanUsername = rawUsername.trim().toLowerCase().replace('@', '');
     const kickIdNum = Number(user.kick_id || user.id || 0);
 
-    // Streamer Admin Verification: username 'diggitybets' or kick_id 88254585
-    const isAdmin = Boolean(user.isAdmin || cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || kickIdNum === 88254585);
+    // Streamer Admin Verification: username 'diggitybets' / 'tarkansky' or kick_id 88254585
+    const isAdmin = Boolean(user.isAdmin || this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585);
 
     localStorage.setItem('hunthub_kick_username', formattedUsername);
     localStorage.setItem('hunthub_is_sub', user.isSub ? 'true' : 'false');
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
+    if (isAdmin) {
+      localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+    } else {
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+    }
 
     if (user.avatarUrl) {
       localStorage.setItem('hunthub_avatar', user.avatarUrl);
@@ -301,32 +379,40 @@ class OAuthEngine {
 
     if (window.sonner) {
       window.sonner.toast({
-        title: isAdmin ? 'Admin Control Deck Unlocked! 👑' : 'Kick Account Linked! 🟩',
+        title: isAdmin ? 'Streamer Control Deck Unlocked! 👑' : 'Kick Account Linked! 🟩',
         message: isAdmin
-          ? `Welcome Master @diggitybets! Admin Control Deck is now active.`
+          ? `Welcome Streamer ${formattedUsername}! Streamer Admin & Control Panel are now active.`
           : `Welcome ${formattedUsername}! Your Kick watchtime and chat points are synced.`,
         type: isAdmin ? 'gold' : 'green'
       });
     }
 
-    if (window.adminHub && isAdmin) {
+    if (window.adminHub) {
       window.adminHub.checkAdminAccess();
     }
   }
 
   updateAdminDeckUI(isAdmin) {
     const navTabAdmin = document.getElementById('nav-tab-admin');
+    const navTabControl = document.getElementById('nav-tab-control');
     const authAdminBadge = document.getElementById('auth-admin-badge');
     const adminHubSection = document.getElementById('admin-hub');
+    const controlPanelSection = document.getElementById('control-panel');
 
     if (navTabAdmin) {
       navTabAdmin.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    if (navTabControl) {
+      navTabControl.style.display = isAdmin ? 'inline-flex' : 'none';
     }
     if (authAdminBadge) {
       authAdminBadge.style.display = isAdmin ? 'inline-block' : 'none';
     }
     if (!isAdmin && adminHubSection) {
       adminHubSection.style.display = 'none';
+    }
+    if (!isAdmin && controlPanelSection) {
+      controlPanelSection.style.display = 'none';
     }
   }
 

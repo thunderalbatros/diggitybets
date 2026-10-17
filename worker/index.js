@@ -207,9 +207,9 @@ export default {
           userData.username = 'KickUser_' + code.substring(0, 5);
         }
 
-        const cleanUsername = String(userData.username || '').trim().toLowerCase();
+        const cleanUsername = String(userData.username || '').trim().toLowerCase().replace(/^@/, '');
         const kickIdNum = Number(userData.id) || 0;
-        const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || kickIdNum === 88254585);
+        const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || cleanUsername === 'tarkansky' || kickIdNum === 88254585);
 
         // Persist into D1 if available
         if (env.DB && userData.username) {
@@ -592,7 +592,7 @@ export default {
     // 13. Admin Store Redemptions
     if (url.pathname === '/api/admin/store-redemptions' && request.method === 'GET') {
       const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (String(adminUser).toLowerCase().replace('@', '') !== 'diggitybets') {
+      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
       }
       let claims = [];
@@ -631,7 +631,7 @@ export default {
     // 16. Admin Stake Verifications Queue
     if (url.pathname === '/api/admin/stake-verifications' && request.method === 'GET') {
       const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (String(adminUser).toLowerCase().replace('@', '') !== 'diggitybets') {
+      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
       }
       let requests = [];
@@ -675,7 +675,7 @@ export default {
     // 19. Admin Security Alerts
     if (url.pathname === '/api/admin/security-alerts' && request.method === 'GET') {
       const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (String(adminUser).toLowerCase().replace('@', '') !== 'diggitybets') {
+      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
       }
       let alerts = [];

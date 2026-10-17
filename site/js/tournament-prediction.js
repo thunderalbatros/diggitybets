@@ -312,12 +312,16 @@ class TournamentPredictionController {
 
   getSlotName(slotId) {
     if (!slotId) return null;
+    let name = slotId;
     if (window.SlotResolver) {
       const res = window.SlotResolver.resolve(slotId);
-      return res.name;
+      name = res.name;
+    } else {
+      const s = this.slots.find(x => x.id === slotId);
+      name = s ? s.name : slotId;
     }
-    const s = this.slots.find(x => x.id === slotId);
-    return s ? s.name : slotId;
+    const esc = window.escapeHTML || (x => x);
+    return esc(name);
   }
 
   getSlotImage(slotId) {

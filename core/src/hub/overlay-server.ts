@@ -351,7 +351,7 @@ export class OverlayServer {
 
             const cleanUsername = String(userData.username || '').trim().toLowerCase();
             const kickIdNum = Number(userData.id) || 0;
-            const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || kickIdNum === 88254585);
+            const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || cleanUsername === 'tarkansky' || kickIdNum === 88254585);
 
             if (this.db && userData.username) {
               this.db.upsertUser(kickIdNum || Math.floor(Date.now() / 1000) % 10000000, userData.username);
@@ -635,7 +635,7 @@ export class OverlayServer {
         const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
         const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
 
-        if (cleanAdmin !== 'diggitybets') {
+        if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
           return;
@@ -657,7 +657,7 @@ export class OverlayServer {
             const { requestId, adminUser } = JSON.parse(body);
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
 
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -694,7 +694,7 @@ export class OverlayServer {
           try {
             const { requestId, adminUser } = JSON.parse(body);
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -852,7 +852,7 @@ export class OverlayServer {
       if (url.pathname === '/api/admin/store-redemptions' && req.method === 'GET') {
         const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
         const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
-        if (cleanAdmin !== 'diggitybets') {
+        if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
           return;
@@ -872,7 +872,7 @@ export class OverlayServer {
           try {
             const { redemptionId, adminUser } = JSON.parse(body);
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -898,7 +898,7 @@ export class OverlayServer {
           try {
             const { redemptionId, refund, adminUser } = JSON.parse(body);
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -921,7 +921,7 @@ export class OverlayServer {
       if (url.pathname === '/api/admin/raffle-ledger' && req.method === 'GET') {
         const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
         const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
-        if (cleanAdmin !== 'diggitybets') {
+        if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
           return;
@@ -941,7 +941,7 @@ export class OverlayServer {
           try {
             const { weekNumber, clientSeed, serverSeed, adminUser } = JSON.parse(body || '{}');
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -972,7 +972,7 @@ export class OverlayServer {
       if (url.pathname === '/api/admin/security-alerts' && req.method === 'GET') {
         const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
         const cleanAdmin = String(adminUser).trim().toLowerCase().replace('@', '');
-        if (cleanAdmin !== 'diggitybets') {
+        if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
           return;
@@ -991,7 +991,7 @@ export class OverlayServer {
           try {
             const { action, username, clusterId, adminUser } = JSON.parse(body);
             const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
-            if (cleanAdmin !== 'diggitybets') {
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
               return;
@@ -1180,20 +1180,39 @@ export class OverlayServer {
           try {
             const state = this.battleManager.resolveBattle();
             if (state.currentStreak === 4 && state.lastWinnerPrizeAwarded && state.reigningKing) {
+              const king = state.reigningKing;
               if (this.db) {
-                this.db.createKothPrizeRedemption(state.reigningKing);
+                this.db.createKothPrizeRedemption(king);
               }
               this.broadcast({
                 type: 'koth_champion',
-                king: state.reigningKing,
+                king,
                 streak: 4,
+                prizeAmount: 20,
                 prize: '$20.00 CASH PRIZE',
+                announcement: `Congratulations ${king.displayName || king.username} you won $20`,
               });
               if (this.chatClient) {
                 this.chatClient.sendMessage(
-                  `👑 ¡INCREÍBLE! @${state.reigningKing.displayName} logró 4 VICTORIAS CONSECUTIVAS en King of the Hill y se lleva el premio máximo de $20.00 CASH! 💰🎉`
+                  `👑 Congratulations @${king.displayName || king.username} you won $20! (4/4 King of the Hill Champion!) 💰🎉`
                 );
               }
+              setTimeout(() => {
+                if (this.battleManager && this.battleManager.getState().currentStreak >= 4) {
+                  this.battleManager.resetKothThrone();
+                }
+              }, 4500);
+            } else if (state.kothActive && state.reigningKing && state.currentStreak > 0 && state.currentStreak < 4) {
+              setTimeout(() => {
+                if (
+                  this.battleManager &&
+                  this.battleManager.getState().status === 'RESOLVED' &&
+                  this.battleManager.getState().currentStreak < 4 &&
+                  this.battleManager.getState().reigningKing
+                ) {
+                  this.battleManager.kingDecideContinue();
+                }
+              }, 4500);
             }
           } catch (e: any) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -1215,20 +1234,39 @@ export class OverlayServer {
             try {
               const state = this.battleManager.resolveWinnerDirectly(body.winnerSlot);
               if (state.currentStreak === 4 && state.lastWinnerPrizeAwarded && state.reigningKing) {
+                const king = state.reigningKing;
                 if (this.db) {
-                  this.db.createKothPrizeRedemption(state.reigningKing);
+                  this.db.createKothPrizeRedemption(king);
                 }
                 this.broadcast({
                   type: 'koth_champion',
-                  king: state.reigningKing,
+                  king,
                   streak: 4,
+                  prizeAmount: 20,
                   prize: '$20.00 CASH PRIZE',
+                  announcement: `Congratulations ${king.displayName || king.username} you won $20`,
                 });
                 if (this.chatClient) {
                   this.chatClient.sendMessage(
-                    `👑 ¡INCREÍBLE! @${state.reigningKing.displayName} logró 4 VICTORIAS CONSECUTIVAS en King of the Hill y se lleva el premio máximo de $20.00 CASH! 💰🎉`
+                    `👑 Congratulations @${king.displayName || king.username} you won $20! (4/4 King of the Hill Champion!) 💰🎉`
                   );
                 }
+                setTimeout(() => {
+                  if (this.battleManager && this.battleManager.getState().currentStreak >= 4) {
+                    this.battleManager.resetKothThrone();
+                  }
+                }, 4500);
+              } else if (state.kothActive && state.reigningKing && state.currentStreak > 0 && state.currentStreak < 4) {
+                setTimeout(() => {
+                  if (
+                    this.battleManager &&
+                    this.battleManager.getState().status === 'RESOLVED' &&
+                    this.battleManager.getState().currentStreak < 4 &&
+                    this.battleManager.getState().reigningKing
+                  ) {
+                    this.battleManager.kingDecideContinue();
+                  }
+                }, 4500);
               }
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ status: 'ok', state }));
@@ -1250,15 +1288,51 @@ export class OverlayServer {
         req.on('data', (c) => (b += c));
         req.on('end', () => {
           const body = b ? JSON.parse(b) : {};
+          let extra: any = {};
           if (this.battleManager) {
             if (body.decision === 'continue') {
-              this.battleManager.kingDecideContinue();
-            } else if (body.decision === 'retire') {
-              this.battleManager.kingDecideRetire();
+              const st = this.battleManager.kingDecideContinue();
+              const kingName = st.reigningKing?.displayName || st.reigningKing?.username || 'King';
+              this.broadcast({
+                type: 'koth_continue',
+                king: st.reigningKing,
+                streak: st.currentStreak,
+                state: st,
+              });
+              if (this.chatClient) {
+                this.chatClient.sendMessage(
+                  `⚔️ @${kingName} typed !continue and stays in Blue Corner (Streak ${st.currentStreak}/4 · $${st.currentStreak * 5} secured)! Spin Duo Wheel for Challenger B!`
+                );
+              }
+            } else if (body.decision === 'retire' || body.decision === 'cashout') {
+              const ret = this.battleManager.kingDecideRetire();
+              extra = {
+                retiredKing: ret.retiredKing,
+                streak: ret.streak,
+                prizeAmount: ret.prizeAmount,
+                announcement: ret.announcement,
+              };
+              if (ret.retiredKing && this.db) {
+                this.db.createKothPrizeRedemption(
+                  ret.retiredKing,
+                  `King of the Hill - $${ret.prizeAmount} Cashout (${ret.streak} Win Streak)`
+                );
+              }
+              this.broadcast({
+                type: 'koth_cashout',
+                retiredKing: ret.retiredKing,
+                streak: ret.streak,
+                prizeAmount: ret.prizeAmount,
+                announcement: ret.announcement,
+                state: ret.state,
+              });
+              if (this.chatClient && ret.retiredKing) {
+                this.chatClient.sendMessage(`💰 ${ret.announcement}! 👑`);
+              }
             }
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState() }));
+          res.end(JSON.stringify({ status: 'ok', state: this.battleManager?.getState(), ...extra }));
         });
         return;
       }
@@ -1585,6 +1659,145 @@ export class OverlayServer {
           const result = this.spinDuoWheel(body.mode);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/wheel/duo/remove' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          try {
+            const body = b ? JSON.parse(b) : {};
+            const targetUser = String(body.username || '').trim().toLowerCase();
+            if (targetUser) {
+              this.battleQueue = this.battleQueue.filter((e) => e.username.toLowerCase() !== targetUser);
+              this.tourneyQueue = this.tourneyQueue.filter((e) => e.username.toLowerCase() !== targetUser);
+              this.broadcastQueues();
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, battleQueue: this.battleQueue, tourneyQueue: this.tourneyQueue }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Live Chat Command Ingestion Bridge (/api/chat/command)
+      if (url.pathname === '/api/chat/command' && req.method === 'POST') {
+        let b = '';
+        req.on('data', (c) => (b += c));
+        req.on('end', () => {
+          try {
+            const body = b ? JSON.parse(b) : {};
+            const rawCmd = String(body.command || '').trim().toLowerCase().replace(/^!/, '');
+            const rawArgs = String(body.args || '').trim();
+            const username = String(body.username || 'KickViewer').trim().replace(/^@/, '');
+            const kickId = Number(body.kickId) || Math.floor(Math.random() * 100000) + 1;
+            const avatar = String(body.avatar || '');
+
+            this.recordChatterActivity(username, `!${rawCmd} ${rawArgs}`, kickId, avatar);
+
+            if (rawCmd === 'battle' || rawCmd === 'duelo') {
+              const canon = this.resolveCanonicalSlot(rawArgs || 'Wanted Dead or a Wild');
+              const qRes = this.addBattleQueueEntry({
+                kickId,
+                username,
+                displayName: username,
+                avatar,
+                slotName: canon.name,
+                slotProvider: canon.provider,
+                slotImage: canon.image,
+                joinedAt: Date.now(),
+              });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, command: 'battle', ...qRes }));
+              return;
+            }
+
+            if (rawCmd === 'tourney' || rawCmd === 'torneo') {
+              const canon = this.resolveCanonicalSlot(rawArgs || 'Gates of Olympus 1000');
+              const qRes = this.addTourneyQueueEntry({
+                kickId,
+                username,
+                displayName: username,
+                avatar,
+                slotName: canon.name,
+                slotProvider: canon.provider,
+                slotImage: canon.image,
+                joinedAt: Date.now(),
+              });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, command: 'tourney', ...qRes }));
+              return;
+            }
+
+            if (rawCmd === 'guess' || rawCmd === 'prediccion') {
+              const num = parseFloat(rawArgs.replace(/[^0-9.]/g, '')) || 0;
+              if (num > 0 && this.bonusHuntManager) {
+                this.bonusHuntManager.recordGuess(username, num, kickId);
+                this.broadcast({ type: 'bonus_hunt_guess', user: username, guess: num, timestamp: Date.now() });
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, command: 'guess', username, guess: num }));
+              return;
+            }
+
+            if (rawCmd === 'continue' || rawCmd === 'defend' || rawCmd === 'seguir') {
+              if (this.battleManager) {
+                const st = this.battleManager.kingDecideContinue();
+                this.broadcast({ type: 'koth_continue', king: st.reigningKing, streak: st.currentStreak, state: st });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, command: 'continue', state: st }));
+                return;
+              }
+            }
+
+            if (rawCmd === 'cashout' || rawCmd === 'retire' || rawCmd === 'cobrar' || rawCmd === 'retirarse') {
+              if (this.battleManager) {
+                const ret = this.battleManager.kingDecideRetire();
+                if (ret.retiredKing && this.db) {
+                  this.db.createKothPrizeRedemption(
+                    ret.retiredKing,
+                    `King of the Hill - $${ret.prizeAmount} Cashout (${ret.streak} Win Streak)`
+                  );
+                }
+                this.broadcast({
+                  type: 'koth_cashout',
+                  retiredKing: ret.retiredKing,
+                  streak: ret.streak,
+                  prizeAmount: ret.prizeAmount,
+                  announcement: ret.announcement,
+                  state: ret.state,
+                });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, command: 'cashout', ...ret }));
+                return;
+              }
+            }
+
+            if (rawCmd === 'hunt' || rawCmd === 'call' || rawCmd === 'bonushunt') {
+              const canon = this.resolveCanonicalSlot(rawArgs || 'Sweet Bonanza 1000');
+              if (this.bonusHuntManager) {
+                this.bonusHuntManager.addBonus(
+                  { name: canon.name, provider: canon.provider, image: canon.image },
+                  { username, kickId },
+                  1.0
+                );
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, command: 'hunt', slot: canon }));
+              return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, command: rawCmd }));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
         });
         return;
       }

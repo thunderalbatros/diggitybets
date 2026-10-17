@@ -30,6 +30,10 @@ class BattleOverlayApp {
           this.handleStateUpdate(e.data.state);
         } else if (e.data.action === 'resolve_battle') {
           this.handleResolve(e.data);
+        } else if (e.data.action === 'koth_cashout' || e.data.type === 'koth_cashout') {
+          this.handleKothCashout(e.data);
+        } else if (e.data.action === 'koth_continue' || e.data.type === 'koth_continue') {
+          this.handleKothContinue(e.data);
         } else if (e.data.action === 'reset_battle') {
           this.handleReset();
         }
@@ -49,6 +53,12 @@ class BattleOverlayApp {
         try {
           this.handleStateUpdate(JSON.parse(e.newValue));
         } catch {}
+      } else if (e.key === 'hunthub_koth_event' && e.newValue) {
+        try {
+          const ev = JSON.parse(e.newValue);
+          if (ev.action === 'koth_cashout') this.handleKothCashout(ev);
+          else if (ev.action === 'koth_continue') this.handleKothContinue(ev);
+        } catch {}
       }
     });
   }
@@ -65,6 +75,9 @@ class BattleOverlayApp {
     this.handleStateUpdate({
       id: 'battle_lobby',
       status: 'LOBBY',
+      kothActive: true,
+      currentStreak: 0,
+      reigningKing: null,
       playerA: null,
       playerB: null,
       winner: null,
@@ -76,6 +89,9 @@ class BattleOverlayApp {
       this.currentState = {
         id: 'battle_' + Date.now(),
         status: 'LOBBY',
+        kothActive: true,
+        currentStreak: 0,
+        reigningKing: null,
         playerA: null,
         playerB: null,
         winner: null,
@@ -88,10 +104,11 @@ class BattleOverlayApp {
       if (canon) {
         player.slotName = canon.name;
         player.slotProvider = canon.provider;
-        if (!player.slotImage || player.slotImage.startsWith('../')) {
-          player.slotImage = canon.image;
-        }
+        player.slotImage = canon.image;
       }
+      player.multiplier = Number(player.multiplier || 0);
+      player.winAmount = Number(player.winAmount || 0);
+      player.result = null;
     }
 
     if (slotKey === 'A') {
@@ -100,9 +117,14 @@ class BattleOverlayApp {
       this.currentState.playerB = player;
     }
 
+    this.currentState.winner = null;
+    this.currentState._kothIncremented = false;
+
     if (this.currentState.playerA && this.currentState.playerB) {
       this.currentState.status = 'READY';
       this.playClashSound();
+    } else {
+      this.currentState.status = 'LOBBY';
     }
 
     try {
@@ -114,23 +136,150 @@ class BattleOverlayApp {
 
   handleResolve(data) {
     if (!this.currentState) return;
+    if (data.multA !== undefined && this.currentState.playerA) this.currentState.playerA.multiplier = Number(data.multA);
+    if (data.multB !== undefined && this.currentState.playerB) this.currentState.playerB.multiplier = Number(data.multB);
+
+    const winnerSide = data.winner || ((this.currentState.playerA?.multiplier || 0) >= (this.currentState.playerB?.multiplier || 0) ? 'A' : 'B');
+    this.currentState.winner = winnerSide;
     this.currentState.status = 'RESOLVED';
-    this.currentState.winner = data.winner;
-    if (data.multA !== undefined && this.currentState.playerA) this.currentState.playerA.multiplier = data.multA;
-    if (data.multB !== undefined && this.currentState.playerB) this.currentState.playerB.multiplier = data.multB;
+    this.currentState.kothActive = true;
+
+    if (this.currentState.playerA) {
+      this.currentState.playerA.result = winnerSide === 'A' ? 'WINNER' : 'LOSER';
+    }
+    if (this.currentState.playerB) {
+      this.currentState.playerB.result = winnerSide === 'B' ? 'WINNER' : 'LOSER';
+    }
+
+    const winnerObj = winnerSide === 'A' ? this.currentState.playerA : this.currentState.playerB;
+    if (winnerObj && !this.currentState._kothIncremented) {
+      const prevKingUser = (this.currentState.reigningKing?.username || '').toLowerCase();
+      const winUser = (winnerObj.username || '').toLowerCase();
+      if (prevKingUser && prevKingUser === winUser) {
+        this.currentState.currentStreak = Math.min(4, (Number(this.currentState.currentStreak) || 1) + 1);
+      } else {
+        this.currentState.currentStreak = 1;
+      }
+      this.currentState.reigningKing = { ...winnerObj };
+      this.currentState.awaitingKingDecision = this.currentState.currentStreak < 4;
+      this.currentState._kothIncremented = true;
+    }
+
     try {
       localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState));
     } catch {}
     this.handleStateUpdate(this.currentState);
   }
 
-  handleReset() {
+  handleKothCashout(data) {
+    if (this._celebrationTimer) {
+      clearTimeout(this._celebrationTimer);
+      this._celebrationTimer = null;
+    }
+    const king = data?.retiredKing || this.currentState?.reigningKing || this.currentState?.playerA;
+    const streak = Math.max(1, Number(data?.streak || this.currentState?.currentStreak || 1));
+    const prizeAmount = Number(data?.prizeAmount || Math.min(20, streak * 5));
+    const kingName = king ? (king.displayName || king.username) : 'Winner';
+
     this.currentState = {
       id: 'battle_' + Date.now(),
       status: 'LOBBY',
+      gameMode: this.currentState?.gameMode || 'BONUS_BUY',
+      betAmount: this.currentState?.betAmount || 10,
+      prizeText: this.currentState?.prizeText || '$50.00 POOL',
+      kothActive: true,
+      reigningKing: null,
+      currentStreak: 0,
+      awaitingKingDecision: false,
       playerA: null,
       playerB: null,
       winner: null,
+      _kothIncremented: false,
+    };
+
+    try {
+      localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState));
+    } catch {}
+    if (this.bcBattle) {
+      this.bcBattle.postMessage({ action: 'battle_update', state: this.currentState });
+    }
+
+    this.handleStateUpdate(this.currentState);
+
+    // Show Cashout Congratulations Banner for 4.5s
+    this.playSlotWinFanfare();
+    if (this.modal) {
+      if (this.modalWinner) this.modalWinner.textContent = `@${kingName}`;
+      const modalSubtitle = this.modal.querySelector('.modal-subtitle');
+      if (modalSubtitle) modalSubtitle.textContent = '💰 KING OF THE HILL CASHOUT!';
+      if (this.modalStat) {
+        this.modalStat.textContent = `Congratulations @${kingName} you won $${prizeAmount}`;
+      }
+      const modalSlot = document.getElementById('modal-slot-title');
+      if (modalSlot) modalSlot.textContent = `${streak} Win Streak ($5 per win)`;
+      this.modal.classList.add('active');
+      this._celebrationTimer = setTimeout(() => {
+        if (this.modal) this.modal.classList.remove('active');
+      }, 4500);
+    }
+  }
+
+  handleKothContinue(data) {
+    if (this._celebrationTimer) {
+      clearTimeout(this._celebrationTimer);
+      this._celebrationTimer = null;
+    }
+    if (this.modal) this.modal.classList.remove('active');
+    if (this.ribbonA) this.ribbonA.classList.remove('active');
+    if (this.ribbonB) this.ribbonB.classList.remove('active');
+
+    const king = data?.king || data?.state?.reigningKing || this.currentState?.reigningKing || this.currentState?.playerA;
+    const streak = Math.max(1, Number(data?.streak || data?.state?.currentStreak || this.currentState?.currentStreak || 1));
+
+    if (king) {
+      this.currentState = {
+        ...this.currentState,
+        status: 'LOBBY',
+        kothActive: true,
+        reigningKing: { ...king },
+        currentStreak: streak,
+        awaitingKingDecision: false,
+        playerA: {
+          ...king,
+          multiplier: 0,
+          winAmount: 0,
+          result: null,
+        },
+        playerB: null,
+        winner: null,
+        _kothIncremented: false,
+      };
+      try {
+        localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState));
+      } catch {}
+      if (this.bcBattle) {
+        this.bcBattle.postMessage({ action: 'battle_update', state: this.currentState });
+      }
+      this.handleStateUpdate(this.currentState);
+    }
+  }
+
+  handleReset() {
+    if (this._celebrationTimer) {
+      clearTimeout(this._celebrationTimer);
+      this._celebrationTimer = null;
+    }
+    if (this.modal) this.modal.classList.remove('active');
+    this.currentState = {
+      id: 'battle_' + Date.now(),
+      status: 'LOBBY',
+      kothActive: true,
+      reigningKing: null,
+      currentStreak: 0,
+      playerA: null,
+      playerB: null,
+      winner: null,
+      _kothIncremented: false,
     };
     try {
       localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState));
@@ -148,8 +297,12 @@ class BattleOverlayApp {
     this.nameA = document.getElementById('name-a');
     this.tagA = document.getElementById('slot-tag-a');
     this.monogramA = document.getElementById('monogram-a');
+    this.placeholderA = document.getElementById('placeholder-a');
     this.slotNameA = document.getElementById('slot-name-a');
     this.slotProvA = document.getElementById('slot-provider-a');
+    this.captionA = document.getElementById('slot-caption-a');
+    this.captionTitleA = document.getElementById('slot-caption-title-a');
+    this.captionProvA = document.getElementById('slot-caption-prov-a');
     this.multA = document.getElementById('mult-a');
     this.payoutA = document.getElementById('payout-a');
     this.meterA = document.getElementById('meter-bar-a');
@@ -164,8 +317,12 @@ class BattleOverlayApp {
     this.nameB = document.getElementById('name-b');
     this.tagB = document.getElementById('slot-tag-b');
     this.monogramB = document.getElementById('monogram-b');
+    this.placeholderB = document.getElementById('placeholder-b');
     this.slotNameB = document.getElementById('slot-name-b');
     this.slotProvB = document.getElementById('slot-provider-b');
+    this.captionB = document.getElementById('slot-caption-b');
+    this.captionTitleB = document.getElementById('slot-caption-title-b');
+    this.captionProvB = document.getElementById('slot-caption-prov-b');
     this.multB = document.getElementById('mult-b');
     this.payoutB = document.getElementById('payout-b');
     this.meterB = document.getElementById('meter-bar-b');
@@ -314,6 +471,10 @@ class BattleOverlayApp {
           const payload = JSON.parse(event.data);
           if (payload.type === 'battle_update' || payload.type === 'battle_resolved') {
             this.handleStateUpdate(payload.state);
+          } else if (payload.type === 'koth_cashout') {
+            this.handleKothCashout(payload);
+          } else if (payload.type === 'koth_continue') {
+            this.handleKothContinue(payload);
           } else if (payload.action === 'battle_state') {
             this.handleStateUpdate(payload.state);
           } else if (payload.targetOverlay === 'overlay-battle' && payload.state) {
@@ -372,9 +533,12 @@ class BattleOverlayApp {
 
     // Center King of the Hill Streak Pill
     const streakVal = Number(state.currentStreak || 0);
+    const securedVal = Math.min(20, streakVal * 5);
     if (this.vsKothPill) {
       const kingName = state.reigningKing ? `@${state.reigningKing.displayName || state.reigningKing.username}` : 'OPEN THRONE';
-      this.vsKothPill.textContent = `👑 KOTH: ${kingName} · STREAK ${streakVal}/4 ($20 PRIZE)`;
+      this.vsKothPill.textContent = streakVal > 0
+        ? `👑 KOTH: ${kingName} · STREAK ${streakVal}/4 ($${securedVal} WON · $20 MAX)`
+        : `👑 KOTH: ${kingName} · STREAK 0/4 ($5/WIN · $20 MAX)`;
     }
 
     // Status Badge
@@ -397,8 +561,12 @@ class BattleOverlayApp {
       nameEl: this.nameA,
       tagEl: this.tagA,
       monogramEl: this.monogramA,
+      placeholderEl: this.placeholderA,
       slotNameEl: this.slotNameA,
       slotProvEl: this.slotProvA,
+      captionEl: this.captionA,
+      captionTitleEl: this.captionTitleA,
+      captionProvEl: this.captionProvA,
       multEl: this.multA,
       payoutEl: this.payoutA,
       meterEl: this.meterA,
@@ -415,8 +583,12 @@ class BattleOverlayApp {
       nameEl: this.nameB,
       tagEl: this.tagB,
       monogramEl: this.monogramB,
+      placeholderEl: this.placeholderB,
       slotNameEl: this.slotNameB,
       slotProvEl: this.slotProvB,
+      captionEl: this.captionB,
+      captionTitleEl: this.captionTitleB,
+      captionProvEl: this.captionProvB,
       multEl: this.multB,
       payoutEl: this.payoutB,
       meterEl: this.meterB,
@@ -451,41 +623,62 @@ class BattleOverlayApp {
 
   renderPlayer(player, dom) {
     if (!player) {
-      if (dom.cardEl) dom.cardEl.classList.remove('koth-king-active');
+      if (dom.cardEl) {
+        dom.cardEl.classList.remove('koth-king-active');
+        dom.cardEl.style.opacity = '1';
+      }
       if (dom.kothMeterEl) dom.kothMeterEl.style.display = 'none';
       dom.nameEl.textContent = 'Waiting for Player...';
       dom.tagEl.textContent = '!battle <slot> in chat';
+      dom.tagEl.style.color = '';
       dom.monogramEl.textContent = '?';
+      if (dom.placeholderEl) dom.placeholderEl.style.display = 'flex';
       dom.slotNameEl.textContent = 'No Slot Selected';
       dom.slotProvEl.textContent = 'Pragmatic / Hacksaw / Nolimit';
+      if (dom.captionEl) dom.captionEl.style.display = 'none';
       dom.multEl.innerHTML = `0.00<span class="mult-x">x</span>`;
       dom.payoutEl.textContent = '$0.00 USD';
       this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, 0);
       dom.ribbonEl.classList.remove('active');
       dom.imgEl.style.display = 'none';
+      dom.imgEl.src = '';
       return;
     }
 
     const canon = (window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player.slotImage || player, '../') : null) || {
-      name: player.slotName,
-      provider: player.slotProvider || 'Casino Slot',
+      name: player.slotName || 'Wanted Dead or a Wild',
+      provider: player.slotProvider || 'Hacksaw Gaming',
       image: player.slotImage || ''
     };
 
     dom.nameEl.textContent = `@${player.displayName || player.username}`;
-    dom.tagEl.textContent = `Slot: ${canon.name}`;
+    dom.tagEl.textContent = `${canon.name}`;
     dom.monogramEl.textContent = (player.displayName || player.username).charAt(0).toUpperCase();
     dom.slotNameEl.textContent = canon.name;
     dom.slotProvEl.textContent = canon.provider;
 
+    // Hide placeholder and show clean slot card image + slot title caption
+    if (dom.placeholderEl) dom.placeholderEl.style.display = 'none';
+    if (dom.captionEl) {
+      dom.captionEl.style.display = 'flex';
+      if (dom.captionTitleEl) dom.captionTitleEl.textContent = canon.name;
+      if (dom.captionProvEl) dom.captionProvEl.textContent = canon.provider;
+    }
+
     let slotImg = (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(player.slotImage || canon.image, '../') : (player.slotImage || canon.image));
+    if (!slotImg && window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+      slotImg = window.SlotResolver.generateDataUriCard(canon.name, canon.provider);
+    }
 
     if (slotImg) {
+      dom.imgEl.onerror = () => {
+        dom.imgEl.onerror = null;
+        if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+          dom.imgEl.src = window.SlotResolver.generateDataUriCard(canon.name, canon.provider);
+        }
+      };
       dom.imgEl.src = slotImg;
       dom.imgEl.style.display = 'block';
-      dom.imgEl.onerror = () => {
-        dom.imgEl.src = 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
-      };
     } else {
       dom.imgEl.style.display = 'none';
     }
@@ -500,7 +693,7 @@ class BattleOverlayApp {
       this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, player.result === 'WINNER' ? 100 : 0);
     } else {
       dom.multEl.innerHTML = `${mult.toFixed(2)}<span class="mult-x">x</span>`;
-      dom.payoutEl.textContent = `$${Number(player.winAmount || 0).toFixed(2)} USD`;
+      dom.payoutEl.textContent = `$${Number(player.winAmount || (mult * Number(this.currentState?.betAmount || 10))).toFixed(2)} USD`;
       // Gauge calculation (max 50x = 100%)
       const pct = Math.min(100, Math.max(0, (mult / 50) * 100));
       this.animateGhostImpactBar(dom.ghostEl, dom.meterEl, pct);
@@ -509,15 +702,16 @@ class BattleOverlayApp {
     // King of the Hill Streak Badge + ElectricBorder energy ring
     const isReigningKing = Boolean(
       this.currentState &&
-      this.currentState.kothActive &&
+      (this.currentState.kothActive !== false) &&
       this.currentState.reigningKing &&
       (this.currentState.reigningKing.kickId === player.kickId ||
         (this.currentState.reigningKing.username || '').toLowerCase() === (player.username || '').toLowerCase())
     );
 
     if (isReigningKing) {
-      const streak = Number(this.currentState.currentStreak || 1);
-      dom.tagEl.innerHTML = `👑 KING · STREAK ${streak}/4 · $20 PRIZE`;
+      const streak = Math.max(1, Number(this.currentState.currentStreak || 1));
+      const secured = Math.min(20, streak * 5);
+      dom.tagEl.innerHTML = `👑 KING · STREAK ${streak}/4 · $${secured} WON`;
       dom.tagEl.style.color = 'var(--gold, #ffd700)';
       if (dom.cardEl) dom.cardEl.classList.add('koth-king-active');
       if (dom.kothMeterEl) {
@@ -557,7 +751,12 @@ class BattleOverlayApp {
     if (state.winner === 'A') winnerObj = state.playerA;
     else if (state.winner === 'B') winnerObj = state.playerB;
 
-    const isKothChampion = state.currentStreak === 4;
+    if (!winnerObj) return;
+
+    const streak = Math.max(1, Number(state.currentStreak || 1));
+    const prizeSecured = Math.min(20, streak * 5);
+    const isKothChampion = streak >= 4;
+    const winnerName = winnerObj.displayName || winnerObj.username;
 
     // 1. Broadcast celebration to fullscreen overlay
     try {
@@ -571,8 +770,8 @@ class BattleOverlayApp {
         slotImage: winnerObj?.slotImage,
         multiplier: winnerObj?.multiplier || 0,
         winAmount: winnerObj?.winAmount || 0,
-        prizeText: isKothChampion ? '$20.00 CASH PRIZE (4-STREAK CHAMPION)' : (state.prizeText || '$50.00 USD'),
-        kothStreak: state.currentStreak
+        prizeText: isKothChampion ? `Congratulations @${winnerName} you won $20!` : `Streak ${streak}/4 · $${prizeSecured} Secured`,
+        kothStreak: streak
       };
       bc.postMessage(payload);
       localStorage.setItem('hunthub_celebration_event', JSON.stringify(payload));
@@ -583,33 +782,95 @@ class BattleOverlayApp {
     // 2. Play local fanfare as audio fallback
     this.playSlotWinFanfare();
 
-    // 3. Keep local modal for 1v1 card view
-    if (winnerObj && this.modal) {
-      if (this.modalWinner) this.modalWinner.textContent = `@${winnerObj.displayName || winnerObj.username}`;
+    // 3. Show local modal + Winner crown ribbon for 4.5s, then automatically turn off ("apagarse") and transition!
+    if (this.modal) {
+      if (this.modalWinner) this.modalWinner.textContent = `@${winnerName}`;
       const modalSubtitle = this.modal.querySelector('.modal-subtitle');
       if (modalSubtitle) {
         modalSubtitle.textContent = isKothChampion
-          ? '👑 4-STREAK KING OF THE HILL CHAMPION!'
-          : 'DUEL WINNER!';
+          ? '👑 4/4 STREAK KING OF THE HILL CHAMPION!'
+          : `👑 DUEL WINNER! (STREAK ${streak}/4 · $${prizeSecured} SECURED)`;
       }
       const modalSlot = document.getElementById('modal-slot-title');
-      if (modalSlot) modalSlot.textContent = winnerObj.slotName || 'Casino Slot';
+      if (modalSlot) {
+        modalSlot.textContent = isKothChampion
+          ? `${winnerObj.slotName || 'Casino Slot'} · MAX 4-WIN CAP REACHED!`
+          : `${winnerObj.slotName || 'Casino Slot'} · Type !continue or !cashout`;
+      }
       if (this.modalStat) {
         if (isKothChampion) {
-          this.modalStat.textContent = '🏆 WON $20.00 CASH PRIZE!';
+          this.modalStat.textContent = `Congratulations @${winnerName} you won $20!`;
         } else if (state.gameMode === 'SPINS') {
-          this.modalStat.textContent = '🏆 SPINS DUEL WINNER!';
+          this.modalStat.textContent = `🏆 WINNER! ($${prizeSecured} Secured — Next Win: $${(streak + 1) * 5})`;
         } else {
           const mult = Number(winnerObj.multiplier || 0);
-          this.modalStat.textContent = mult > 0 ? `Multiplier: ${mult.toFixed(2)}x` : 'WINNER!';
+          this.modalStat.textContent = mult > 0
+            ? `Multiplier: ${mult.toFixed(2)}x · $${prizeSecured} Secured`
+            : `WINNER! · $${prizeSecured} Secured`;
         }
       }
       this.modal.classList.add('active');
-
-      setTimeout(() => {
-        this.modal.classList.remove('active');
-      }, 7000);
     }
+
+    if (this._celebrationTimer) {
+      clearTimeout(this._celebrationTimer);
+    }
+
+    this._celebrationTimer = setTimeout(() => {
+      if (this.modal) this.modal.classList.remove('active');
+      if (this.ribbonA) this.ribbonA.classList.remove('active');
+      if (this.ribbonB) this.ribbonB.classList.remove('active');
+
+      // Only auto-transition if still in RESOLVED state for this duel
+      if (!this.currentState || this.currentState.status !== 'RESOLVED') return;
+
+      if (isKothChampion) {
+        // 4-Win Max Cap ($20 USD) reached: clear both cards & Control Panel inputs to empty!
+        this.currentState = {
+          id: 'battle_' + Date.now(),
+          status: 'LOBBY',
+          gameMode: this.currentState.gameMode || 'BONUS_BUY',
+          betAmount: this.currentState.betAmount || 10,
+          prizeText: this.currentState.prizeText || '$50.00 POOL',
+          kothActive: true,
+          reigningKing: null,
+          currentStreak: 0,
+          awaitingKingDecision: false,
+          playerA: null,
+          playerB: null,
+          winner: null,
+          _kothIncremented: false,
+        };
+      } else {
+        // Streaks 1, 2, or 3: Winner automatically moves into / stays in Player A (Blue Corner), Player B clears to empty!
+        const nextKing = {
+          ...winnerObj,
+          multiplier: 0,
+          winAmount: 0,
+          result: null,
+        };
+        this.currentState = {
+          ...this.currentState,
+          status: 'LOBBY',
+          kothActive: true,
+          reigningKing: nextKing,
+          currentStreak: streak,
+          awaitingKingDecision: true,
+          playerA: nextKing,
+          playerB: null,
+          winner: null,
+          _kothIncremented: false,
+        };
+      }
+
+      try {
+        localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState));
+      } catch {}
+      if (this.bcBattle) {
+        this.bcBattle.postMessage({ action: 'battle_update', state: this.currentState });
+      }
+      this.handleStateUpdate(this.currentState);
+    }, 4500);
   }
 
   setupAutoScaling() {

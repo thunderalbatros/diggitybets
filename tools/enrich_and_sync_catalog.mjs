@@ -72,4 +72,19 @@ const curatedContent = `window.HUNTHUB_CURATED_SLOTS = ${JSON.stringify(enriched
 fs.writeFileSync(CURATED_JS_PATH, curatedContent, 'utf8');
 console.log(`Updated ${CURATED_JS_PATH} (${enrichedSlots.length} slots)`);
 
+// Also sync verified images into data/curated_slots.json if present
+const CURATED_JSON_PATH = path.join(ROOT, 'data', 'curated_slots.json');
+if (fs.existsSync(CURATED_JSON_PATH)) {
+  const byName = new Map(enrichedSlots.map((s) => [s.name.toLowerCase(), s.image]));
+  const curatedJson = JSON.parse(fs.readFileSync(CURATED_JSON_PATH, 'utf8'));
+  for (const item of curatedJson) {
+    const verifiedImg = byName.get((item.name || '').toLowerCase());
+    if (verifiedImg) {
+      item.image = verifiedImg;
+    }
+  }
+  fs.writeFileSync(CURATED_JSON_PATH, JSON.stringify(curatedJson, null, 2), 'utf8');
+  console.log(`Synced verified images into ${CURATED_JSON_PATH}`);
+}
+
 console.log('Catalog sync and enrichment completed successfully!');

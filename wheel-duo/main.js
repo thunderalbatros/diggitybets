@@ -99,6 +99,59 @@ class DuoWheelApp {
     } catch {}
   }
 
+  syncTargetFromBattleState(state) {
+    if (!state) return;
+    if (!state.playerA && !state.playerB) {
+      this.battleTarget = 'A';
+    } else if (state.playerA && !state.playerB) {
+      this.battleTarget = 'B';
+    } else if (!state.playerA && state.playerB) {
+      this.battleTarget = 'A';
+    }
+    this.updateTargetPillUI();
+  }
+
+  updateTargetPillUI() {
+    if (!this.targetTextEl) return;
+    if (this.mode === 'battle') {
+      this.targetTextEl.classList.remove('tourney-target');
+      this.targetTextEl.classList.toggle('target-blue', this.battleTarget === 'A');
+      this.targetTextEl.classList.toggle('target-red', this.battleTarget === 'B');
+      this.targetTextEl.textContent = `PLAYER ${this.battleTarget} (${this.battleTarget === 'A' ? 'BLUE CORNER' : 'RED CORNER'})`;
+    } else {
+      this.targetTextEl.classList.remove('target-blue', 'target-red');
+      this.targetTextEl.classList.add('tourney-target');
+      this.targetTextEl.textContent = `SEED ${this.tourneyCount + 1}/8`;
+    }
+  }
+
+  addQueueEntry(entry, targetMode) {
+    if (!entry || !entry.username && !entry.chatter) return;
+    const uname = entry.username || entry.chatter;
+    const sName = entry.slotName || entry.slot || 'Wanted Dead or a Wild';
+    const resolved = this.resolveSlotDetails(sName);
+    if (targetMode && targetMode !== this.mode) return;
+
+    const existingIdx = this.pool.findIndex(p => (p.chatter || '').toLowerCase() === uname.toLowerCase());
+    const newItem = {
+      chatter: uname,
+      avatar: entry.avatar || '',
+      slot: resolved.name,
+      provider: resolved.provider,
+      icon: '🎰',
+    };
+    if (existingIdx !== -1) {
+      this.pool[existingIdx] = newItem;
+    } else {
+      this.pool.push(newItem);
+    }
+    if (!this.isSpinning) {
+      this.renderTrack();
+    } else {
+      this.updateQueueBadge();
+    }
+  }
+
   initChannels() {
     try {
       this.bcBattle = new BroadcastChannel('hunthub_battle');
@@ -111,11 +164,35 @@ class DuoWheelApp {
           this.spin(e.data.mode);
         } else if (e.data.action === 'set_mode') {
           this.setMode(e.data.mode);
-        } else if (e.data.action === 'set_pool') {
+        } else if (e.data.action === 'set_target' && (e.data.target === 'A' || e.data.target === 'B')) {
+          this.battleTarget = e.data.target;
+          this.updateTargetPillUI();
+        } else if (e.data.action === 'set_pool' && Array.isArray(e.data.pool)) {
           this.pool = e.data.pool;
           this.renderTrack();
+        } else if (e.data.action === 'add_entry' && e.data.entry) {
+          this.addQueueEntry(e.data.entry, e.data.mode);
         }
       };
+
+      this.bcBattle.onmessage = (e) => {
+        if (!e.data) return;
+        if (e.data.action === 'reset' || e.data.action === 'cashout') {
+          this.battleTarget = 'A';
+          this.updateTargetPillUI();
+        } else if (e.data.action === 'koth_next_challenger' || e.data.action === 'continue') {
+          this.battleTarget = 'B';
+          this.updateTargetPillUI();
+        } else if (e.data.action === 'state_sync' && e.data.state) {
+          this.syncTargetFromBattleState(e.data.state);
+        }
+      };
+    } catch {}
+
+    // Initialize target from current saved battle state if present
+    try {
+      const savedBattle = JSON.parse(localStorage.getItem('hunthub_battle_state') || 'null');
+      if (savedBattle) this.syncTargetFromBattleState(savedBattle);
     } catch {}
 
     // Cross-window localStorage sync fallback
@@ -126,6 +203,27 @@ class DuoWheelApp {
         try {
           const parsed = JSON.parse(e.newValue);
           this.spin(parsed.mode);
+        } catch {}
+      } else if (e.key === 'hunthub_battle_state' && e.newValue) {
+        try {
+          const st = JSON.parse(e.newValue);
+          this.syncTargetFromBattleState(st);
+        } catch {}
+      } else if (e.key === 'hunthub_battle_cmd' && e.newValue) {
+        try {
+          const cmd = JSON.parse(e.newValue);
+          if (cmd.action === 'reset' || cmd.action === 'cashout') {
+            this.battleTarget = 'A';
+            this.updateTargetPillUI();
+          } else if (cmd.action === 'koth_next_challenger' || cmd.action === 'continue') {
+            this.battleTarget = 'B';
+            this.updateTargetPillUI();
+          }
+        } catch {}
+      } else if (e.key === 'hunthub_duo_queue_add' && e.newValue) {
+        try {
+          const payload = JSON.parse(e.newValue);
+          this.addQueueEntry(payload.entry, payload.mode);
         } catch {}
       }
     });
@@ -147,6 +245,8 @@ class DuoWheelApp {
             this.spin(payload.mode, payload.spinId, payload.winner);
           } else if (payload.action === 'duo_mode_changed' && payload.mode) {
             this.setMode(payload.mode);
+          } else if (payload.type === 'battle_state' && payload.data) {
+            this.syncTargetFromBattleState(payload.data);
           } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
             const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
             if (q && q.length > 0) {
@@ -157,7 +257,7 @@ class DuoWheelApp {
                 provider: item.slotProvider,
                 icon: '🎰',
               }));
-              this.renderTrack();
+              if (!this.isSpinning) this.renderTrack();
             }
           }
         } catch {}
@@ -177,6 +277,9 @@ class DuoWheelApp {
           const res = await fetch('http://127.0.0.1:3001/api/sync/state');
           if (!res.ok) return;
           const data = await res.json();
+          if (data?.battle) {
+            this.syncTargetFromBattleState(data.battle);
+          }
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
             const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
@@ -212,14 +315,25 @@ class DuoWheelApp {
       });
     }
 
-    // 2. Click on the reel stage
+    // 2. Click on Target Pill to toggle Player A (Blue Corner) / Player B (Red Corner)
+    if (this.targetTextEl) {
+      this.targetTextEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.mode === 'battle') {
+          this.battleTarget = this.battleTarget === 'A' ? 'B' : 'A';
+          this.updateTargetPillUI();
+        }
+      });
+    }
+
+    // 3. Click on the reel stage
     if (this.containerEl) {
       this.containerEl.addEventListener('click', () => {
         this.spin();
       });
     }
 
-    // 3. Spacebar or Enter to spin
+    // 4. Spacebar or Enter to spin
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
@@ -282,6 +396,8 @@ class DuoWheelApp {
 
   renderTrack() {
     this.trackEl.innerHTML = '';
+    this.trackEl.style.transition = 'none';
+    this.trackEl.style.transform = 'translateY(0px)';
     this.updateQueueBadge();
     const repeats = 15;
     for (let r = 0; r < repeats; r++) {
@@ -296,8 +412,14 @@ class DuoWheelApp {
           : `<div class="user-avatar-circle" style="background:${avatarGrad}">${initial}</div>`;
 
         const slotDetails = this.resolveSlotDetails(item.slot);
-        const slotImgHtml = slotDetails.image
-          ? `<img src="${slotDetails.image}" class="slot-cover-thumb" alt="${item.slot}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-icon-box" style="display:none;">${item.icon || '🎰'}</div>`
+        const resolvedName = slotDetails.name || item.slot || 'Casino Slot';
+        const resolvedProv = slotDetails.provider || item.provider || 'CASINO';
+        const fallbackUri = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+          ? window.SlotResolver.generateDataUriCard(resolvedName, resolvedProv)
+          : '';
+        const coverSrc = slotDetails.image || fallbackUri;
+        const slotImgHtml = coverSrc
+          ? `<img src="${coverSrc}" class="slot-cover-thumb" alt="" data-fallback="${fallbackUri}" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;}else{this.style.display='none';this.nextElementSibling.style.display='flex';}" /><div class="slot-icon-box" style="display:none;">${item.icon || '🎰'}</div>`
           : `<div class="slot-icon-box">${item.icon || '🎰'}</div>`;
 
         card.innerHTML = `
@@ -311,8 +433,8 @@ class DuoWheelApp {
           <div class="card-divider">⚡</div>
           <div class="card-slot">
             <div class="slot-meta">
-              <span class="slot-name">${slotDetails.name || item.slot}</span>
-              <span class="slot-prov">${slotDetails.provider || item.provider}</span>
+              <span class="slot-name">${resolvedName}</span>
+              <span class="slot-prov">${resolvedProv}</span>
             </div>
             ${slotImgHtml}
           </div>
@@ -360,21 +482,26 @@ class DuoWheelApp {
       tabTourney.classList.toggle('active', mode === 'tourney');
     }
 
-    if (this.targetTextEl) {
-      if (mode === 'battle') {
-        this.targetTextEl.classList.remove('tourney-target');
-        this.targetTextEl.textContent = `PLAYER ${this.battleTarget} (${this.battleTarget === 'A' ? 'BLUE CORNER' : 'RED CORNER'})`;
-      } else {
-        this.targetTextEl.classList.add('tourney-target');
-        this.targetTextEl.textContent = `SEED ${this.tourneyCount + 1}/8`;
-      }
-    }
+    this.updateTargetPillUI();
     this.updateQueueBadge();
   }
 
   spin(mode, spinId, forcedWinner) {
     if (this.isSpinning) return;
     if (mode) this.setMode(mode);
+    if (this._toastHideTimer) {
+      clearTimeout(this._toastHideTimer);
+      this._toastHideTimer = null;
+    }
+    if (this._pendingPoolRemoval) {
+      this._pendingPoolRemoval();
+      this._pendingPoolRemoval = null;
+    }
+
+    if (!this.pool || this.pool.length === 0) {
+      this.pool = this.getDefaultPool();
+      this.renderTrack();
+    }
 
     this.currentSpinId = spinId || ('spin_duo_' + Date.now());
 
@@ -439,14 +566,14 @@ class DuoWheelApp {
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        this.onSpinFinished(winnerItem);
+        this.onSpinFinished(winnerItem, winnerIdx);
       }
     };
 
     requestAnimationFrame(animate);
   }
 
-  onSpinFinished(winner) {
+  onSpinFinished(winner, winnerIdx) {
     this.isSpinning = false;
     if (this.directSpinBtn) {
       this.directSpinBtn.disabled = false;
@@ -485,24 +612,54 @@ class DuoWheelApp {
       });
     }
 
-    // Display Toast in English
+    const slotDetails = this.resolveSlotDetails(winner.slot);
+    const assignedCorner = this.battleTarget;
+
+    // Display Centered Winner Toast in English with exact resolved slot name
     this.toastTitle.textContent = this.mode === 'battle'
-      ? `ASSIGNED TO 1v1 BATTLE (${this.battleTarget === 'A' ? 'BLUE CORNER' : 'RED CORNER'})!`
+      ? `ASSIGNED TO 1v1 BATTLE (${assignedCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'})!`
       : `SEEDED INTO 8-BRACKET TOURNAMENT (SEED ${this.tourneyCount + 1}/8)!`;
     this.toastChatter.textContent = `@${winner.chatter}`;
-    this.toastSlot.textContent = winner.slot;
+    this.toastSlot.textContent = slotDetails.name || winner.slot;
     this.toastEl.classList.add('active');
+
+    // Remove winner from pool so the same player cannot be selected twice
+    const winnerNameLower = (winner.chatter || '').toLowerCase();
+    this.pool = this.pool.filter((item, idx) => idx !== winnerIdx && (item.chatter || '').toLowerCase() !== winnerNameLower);
+    this.updateQueueBadge();
+
+    // Notify backend queue removal if running
+    fetch('http://127.0.0.1:3001/api/wheel/duo/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: this.mode, username: winner.chatter }),
+    }).catch(() => {});
+
+    this._pendingPoolRemoval = () => {
+      if (this.pool.length > 0 && !this.isSpinning) {
+        this.renderTrack();
+      }
+    };
+
+    // Auto-hide toast after 4.5s and refresh track without the selected winner
+    this._toastHideTimer = setTimeout(() => {
+      this.toastEl.classList.remove('active');
+      if (this._pendingPoolRemoval) {
+        this._pendingPoolRemoval();
+        this._pendingPoolRemoval = null;
+      }
+    }, 4500);
 
     // Auto-fill Target System
     if (this.mode === 'battle') {
-      this.autoFillBattle(winner, this.battleTarget);
-      // Toggle target for next spin
-      this.battleTarget = this.battleTarget === 'A' ? 'B' : 'A';
-      this.targetTextEl.textContent = `PLAYER ${this.battleTarget} (${this.battleTarget === 'A' ? 'BLUE CORNER' : 'RED CORNER'})`;
+      this.autoFillBattle(winner, assignedCorner);
+      // Toggle target for next spin: A -> B, B -> A
+      this.battleTarget = assignedCorner === 'A' ? 'B' : 'A';
+      this.updateTargetPillUI();
     } else {
       this.tourneyCount = (this.tourneyCount % 8) + 1;
       this.autoFillTourney(winner, this.tourneyCount);
-      this.targetTextEl.textContent = `SEED ${this.tourneyCount < 8 ? this.tourneyCount + 1 : 1}/8`;
+      this.updateTargetPillUI();
     }
   }
 

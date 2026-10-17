@@ -4,30 +4,41 @@
  * 100% English, zero dependencies, lightweight notebook performance.
  */
 
+// Global HTML Escaper (Cloudflare Security Audit standard)
+window.escapeHTML = function(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 // Global switchView helper
 window.switchView = function(targetId) {
   if (!targetId || targetId === '#' || targetId === '#top') targetId = '#watch';
   if (!targetId.startsWith('#')) targetId = '#' + targetId;
 
-  // Admin Route Protection & Alias (#admin -> #admin-hub)
-  if (targetId === '#admin' || targetId === '#admin-hub') {
+  // Admin & Control Panel Route Protection (#admin -> #admin-hub, #control-panel)
+  if (targetId === '#admin' || targetId === '#admin-hub' || targetId === '#control-panel') {
     const currentKickUser = (localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace('@', '');
-    const isAdmin = currentKickUser === 'diggitybets' || currentKickUser === 'diggity_bets' || localStorage.getItem('hunthub_is_admin') === 'true';
+    const isAdmin = currentKickUser === 'diggitybets' || currentKickUser === 'diggity_bets' || currentKickUser === 'tarkansky';
     if (!isAdmin) {
       if (window.sonner) {
         window.sonner.toast({
           title: 'Access Denied 🔒',
-          message: 'Admin Control Deck is restricted exclusively to streamer @diggitybets.',
+          message: 'Streamer Admin & Control Panel are restricted to @diggitybets and @tarkansky.',
           type: 'danger'
         });
       }
       targetId = '#watch';
-    } else {
+    } else if (targetId === '#admin') {
       targetId = '#admin-hub';
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub'];
+  const validViews = ['#watch', '#house-games', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -72,7 +83,8 @@ window.switchView = function(targetId) {
     '#store': '🎁 REWARDS STORE & RAFFLES',
     '#leaderboard': '📊 WAGER LEADERBOARD',
     '#profile': '👤 USER PROFILE & VERIFICATION',
-    '#admin-hub': '👑 STREAMER ADMIN & MODERATION HUB'
+    '#admin-hub': '👑 STREAMER ADMIN & MODERATION HUB',
+    '#control-panel': '🎛️ STREAMER LIVE CONTROL PANEL'
   };
   const titleContainer = document.getElementById('topbar-active-title');
   if (titleContainer && titles[targetId]) {

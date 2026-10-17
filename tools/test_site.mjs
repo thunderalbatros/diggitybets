@@ -35,8 +35,8 @@ const requiredIds = [
   'stake-originals-iframe',
   // Leaderboard & Profile (Stage 6)
   'leaderboard', 'profile', 'totp-mult-val', 'totp-timer', 'btn-link-discord',
-  // Streamer Admin Hub & Anti-Fraud Radar (Stage 6.2)
-  'admin-hub', 'nav-tab-admin', 'admin-claims-tbody', 'admin-alts-tbody', 'btn-roll-sunday-raffle'
+  // Streamer Admin Hub, Condensed Control Panel & Anti-Fraud Radar
+  'admin-hub', 'nav-tab-admin', 'control-panel', 'nav-tab-control', 'admin-claims-tbody', 'admin-alts-tbody', 'btn-roll-sunday-raffle'
 ];
 
 let missingIds = [];

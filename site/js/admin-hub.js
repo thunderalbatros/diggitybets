@@ -40,17 +40,25 @@ class AdminHubController {
     this.tourneyMode = 'BONUS_BUY';
     this.battleMode = 'BONUS_BUY';
 
-    // King of the Hill (KotH) State
+    // King of the Hill (KotH) State & Duo Wheel Corner Target ('A' = Blue Corner, 'B' = Red Corner)
+    this.wheelTargetCorner = 'A';
+    this.kothCelebrationTimer = null;
+    this.tourneyQueue = [];
     this.kothState = {
       active: true,
       king: null,
+      kingSlot: '',
+      kingProvider: '',
+      kingImage: '',
       streak: 0,
       maxStreak: 4,
+      prizePerWin: 5,
+      maxPrize: 20,
       awaitingDecision: false
     };
     try {
       const savedKoth = localStorage.getItem('hunthub_koth_state');
-      if (savedKoth) this.kothState = JSON.parse(savedKoth);
+      if (savedKoth) this.kothState = { ...this.kothState, ...JSON.parse(savedKoth) };
     } catch (_) {}
 
     // CS:GO 90s Window Active Chatters
@@ -69,9 +77,11 @@ class AdminHubController {
     this.setupTournamentAdmin();
     this.setupBattleAdmin();
     this.setupWheelsAdmin();
+    this.setupCondensedControlPanel();
+    this.initLiveKickChatBridge();
     this.bindObsCopyButtons();
 
-    // Listen for auth changes to grant admin privileges to @diggitybets
+    // Listen for auth changes to grant admin privileges to @diggitybets & @tarkansky
     window.addEventListener('hunthub:auth-updated', () => this.checkAdminAccess());
 
     // Check admin on startup
@@ -87,6 +97,7 @@ class AdminHubController {
 
       try {
         this.channelDuo = new BroadcastChannel('hunthub_duo_wheel');
+        this.channelDuo.onmessage = (e) => this.handleDuoBroadcast(e.data);
       } catch (_) {}
 
       try {
@@ -99,6 +110,7 @@ class AdminHubController {
 
       try {
         this.channelBattle = new BroadcastChannel('hunthub_battle');
+        this.channelBattle.onmessage = (e) => this.handleBattleBroadcast(e.data);
       } catch (_) {}
 
       try {
@@ -110,19 +122,25 @@ class AdminHubController {
   isStreamerUser(username) {
     if (!username) return false;
     const clean = username.trim().toLowerCase().replace('@', '');
-    return clean === 'diggitybets' || clean === 'diggity_bets';
+    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky';
   }
 
   checkAdminAccess() {
     const currentKickUser = localStorage.getItem('hunthub_kick_username') || '';
-    const isAdmin = this.isStreamerUser(currentKickUser) || localStorage.getItem('hunthub_is_admin') === 'true';
+    const isAdmin = this.isStreamerUser(currentKickUser);
+    localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
 
     const navTab = document.getElementById('nav-tab-admin');
+    const navTabControl = document.getElementById('nav-tab-control');
     const adminBadge = document.getElementById('auth-admin-badge');
     const adminSection = document.getElementById('admin-hub');
+    const controlSection = document.getElementById('control-panel');
 
     if (navTab) {
       navTab.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    if (navTabControl) {
+      navTabControl.style.display = isAdmin ? 'inline-flex' : 'none';
     }
     if (adminBadge) {
       adminBadge.style.display = isAdmin ? 'inline-block' : 'none';
@@ -131,8 +149,10 @@ class AdminHubController {
     if (isAdmin) {
       this.renderAllDecks();
       this.bindAdminControls();
-    } else if (adminSection) {
-      adminSection.style.display = 'none';
+      this.syncCondensedControlPanelUI();
+    } else {
+      if (adminSection) adminSection.style.display = 'none';
+      if (controlSection) controlSection.style.display = 'none';
     }
   }
 
@@ -143,7 +163,7 @@ class AdminHubController {
     if (window.sonner) {
       window.sonner.toast({
         title: 'Streamer Admin Unlocked! 👑',
-        message: 'Master command center is active in top navigation for @diggitybets.',
+        message: 'Master command center is active in navigation for @diggitybets and @tarkansky.',
         type: 'gold'
       });
     }
@@ -2014,27 +2034,59 @@ class AdminHubController {
       }
     }
 
-    // King of the Hill progression
+    // Determine winner details (username + slot) from Control Panel or Admin Hub
+    const userAVal = (document.getElementById('cp-battle-user-a')?.value || document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA').trim();
+    const slotAVal = (document.getElementById('cp-battle-slot-a')?.value || 'Wanted Dead or a Wild').trim();
+    const userBVal = (document.getElementById('cp-battle-user-b')?.value || document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB').trim();
+    const slotBVal = (document.getElementById('cp-battle-slot-b')?.value || 'Gates of Olympus 1000').trim();
+
+    const winUserClean = (winnerSlot === 'A' ? userAVal : userBVal).split(' ')[0].replace(/^@/, '') || (winnerSlot === 'A' ? 'PlayerA' : 'PlayerB');
+    const winSlotName = winnerSlot === 'A' ? slotAVal : slotBVal;
+    const resolvedSlot = this.resolveSlotMeta(winSlotName);
+
+    // King of the Hill progression ($5 per win, max 4 wins = $20 USD)
     if (this.kothState.active) {
-      const cleanWinningUser = winningName.split(' ')[0].replace(/^@/, '');
-      const isSameKing = this.kothState.king && this.kothState.king.toLowerCase() === cleanWinningUser.toLowerCase();
+      const isSameKing = this.kothState.king && this.kothState.king.toLowerCase() === winUserClean.toLowerCase();
 
       if (isSameKing) {
-        this.kothState.streak += 1;
+        this.kothState.streak = Math.min(4, (this.kothState.streak || 0) + 1);
       } else {
-        this.kothState.king = cleanWinningUser;
+        this.kothState.king = winUserClean;
         this.kothState.streak = 1;
       }
+      this.kothState.kingSlot = resolvedSlot.name;
+      this.kothState.kingProvider = resolvedSlot.provider;
+      this.kothState.kingImage = resolvedSlot.image;
 
-      if (this.kothState.streak >= this.kothState.maxStreak) {
+      const reachedMaxCap = this.kothState.streak >= this.kothState.maxStreak;
+      const currentPrize = Math.min(20, this.kothState.streak * 5);
+
+      if (reachedMaxCap) {
         this.kothState.awaitingDecision = false;
-        this.awardKothGrandPrize(this.kothState.king);
+        this.awardKothGrandPrize(this.kothState.king, 20, 4);
+        this.showKothBanner(`👑 Congratulations @${this.kothState.king} you won $20! (4/4 Max Streak Champion!)`, 'gold');
       } else {
         this.kothState.awaitingDecision = true;
+        this.showKothBanner(`👑 WINNER: @${this.kothState.king} (Streak ${this.kothState.streak}/4 — $${currentPrize} banked)! Type !continue or !cashout`, 'cyan');
       }
 
       localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
       this.renderKothDeck();
+      this.syncCondensedControlPanelUI();
+
+      // Auto-turn off winner celebration after 4.5s and transition cards
+      if (this.kothCelebrationTimer) clearTimeout(this.kothCelebrationTimer);
+      this.kothCelebrationTimer = setTimeout(() => {
+        if (reachedMaxCap) {
+          this.clearBothBattleCorners();
+        } else {
+          // Move / keep Winner in Player A (Blue Corner) and clear Player B (Red Corner)
+          this.setCornerFighter('A', this.kothState.king, this.kothState.kingSlot);
+          this.setCornerFighter('B', '', '');
+          this.setWheelTargetCorner('B');
+          this.pushCornersToOverlay();
+        }
+      }, 4500);
     }
 
     // Sync to backend / overlays
@@ -2058,7 +2110,7 @@ class AdminHubController {
       this.channelBattle.postMessage({
         action: 'resolve_battle',
         winner: winnerSlot,
-        winningName,
+        winningName: `@${winUserClean}`,
         losingName,
         kothStreak: this.kothState.streak
       });
@@ -2067,14 +2119,14 @@ class AdminHubController {
     if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
     if (window.sonner) {
       window.sonner.toast({
-        title: `${winningName} Won Duel! ⚔️`,
-        message: `${scoreDetail}. Rival ${losingName} disqualified.`,
+        title: `@${winUserClean} Won Duel! ⚔️`,
+        message: `${scoreDetail}. Streak: ${this.kothState.streak}/4 ($${Math.min(20, this.kothState.streak * 5)} USD).`,
         type: 'gold'
       });
     }
   }
 
-  awardKothGrandPrize(kingUsername) {
+  awardKothGrandPrize(kingUsername, prizeAmount = 20, winsCount = 4) {
     if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
     if (typeof window.confetti === 'function') {
       window.confetti({ particleCount: 120, spread: 90 });
@@ -2083,12 +2135,13 @@ class AdminHubController {
     let claims = [];
     try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (_) {}
 
+    const voucherLabel = `King of the Hill - $${prizeAmount} Cashout (${winsCount} Win${winsCount > 1 ? 's' : ''})`;
     const newRedemption = {
       id: 'koth_prize_' + Date.now(),
       kick_username: kingUsername,
       username: kingUsername,
-      voucher_title: 'King of the Hill - $20 Cashout (4 Streak Champion)',
-      voucherTitle: 'King of the Hill - $20 Cashout (4 Streak Champion)',
+      voucher_title: voucherLabel,
+      voucherTitle: voucherLabel,
       cost_points: 0,
       cost: 0,
       status: 'PENDING',
@@ -2106,8 +2159,8 @@ class AdminHubController {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           kickUsername: kingUsername,
-          voucherKey: 'koth_4_streak_champion',
-          voucherTitle: 'King of the Hill - $20 Cashout (4 Streak Champion)',
+          voucherKey: 'koth_cashout',
+          voucherTitle: voucherLabel,
           costPoints: 0
         })
       });
@@ -2118,20 +2171,35 @@ class AdminHubController {
 
     if (window.sonner) {
       window.sonner.toast({
-        title: '👑 4-STREAK KING OF THE HILL CHAMPION! $20 CASH!',
-        message: `@${kingUsername} captured the throne! $20 prize logged to Tab 1 with 1-click crypto wallets.`,
+        title: `👑 Congratulations @${kingUsername} you won $${prizeAmount}!`,
+        message: `$${prizeAmount} USD prize logged to Vouchers Queue (${winsCount} win${winsCount > 1 ? 's' : ''}).`,
         type: 'gold'
       });
     }
   }
 
   kothContinue() {
+    if (!this.kothState.king) {
+      const fallbackA = (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '');
+      if (fallbackA) {
+        this.kothState.king = fallbackA;
+        this.kothState.streak = Math.max(1, this.kothState.streak || 1);
+      }
+    }
+    const kingName = this.kothState.king || 'King';
+    const kingSlot = this.kothState.kingSlot || document.getElementById('cp-battle-slot-a')?.value || 'Wanted Dead or a Wild';
     this.kothState.awaitingDecision = false;
     localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
 
+    // Keep Winner in Corner A (Blue Corner) and clear Corner B (Red Corner)
+    this.setCornerFighter('A', kingName, kingSlot);
+    this.setCornerFighter('B', '', '');
+    this.setWheelTargetCorner('B');
+    this.pushCornersToOverlay();
+
     const pA = document.getElementById('admin-battle-player-a-name');
     const pB = document.getElementById('admin-battle-player-b-name');
-    if (pA) pA.textContent = `@${this.kothState.king} (Reigning King)`;
+    if (pA) pA.textContent = `@${kingName} (${kingSlot})`;
     if (pB) pB.textContent = '@Challenger (Waiting for Wheel...)';
 
     const cardA = document.getElementById('admin-card-player-a');
@@ -2153,42 +2221,38 @@ class AdminHubController {
     } catch (_) {}
 
     if (this.channelBattle) {
-      this.channelBattle.postMessage({ action: 'koth_continue', king: this.kothState.king, streak: this.kothState.streak });
+      this.channelBattle.postMessage({
+        action: 'koth_continue',
+        king: kingName,
+        slot: kingSlot,
+        streak: this.kothState.streak
+      });
     }
 
+    this.showKothBanner(`⚔️ @${kingName} chose !continue (Streak ${this.kothState.streak}/4)! Spin Duo Wheel to pick Red Corner (Player B).`, 'cyan');
     this.renderKothDeck();
+    this.syncCondensedControlPanelUI();
+
     if (window.sonner) {
       window.sonner.toast({
-        title: `👑 King @${this.kothState.king} Defends Throne!`,
-        message: `Current Streak: ${this.kothState.streak}/4. Challenger seat opened.`,
+        title: `👑 King @${kingName} Continues Fighting!`,
+        message: `Staying in Blue Corner (A) with Streak ${this.kothState.streak}/4. Spin Wheel for Player B (Red Corner)!`,
         type: 'green'
       });
     }
   }
 
   kothRetire() {
-    const retired = this.kothState.king;
-    const streak = this.kothState.streak;
+    const retired = this.kothState.king || (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '') || 'Winner';
+    const streak = Math.max(1, this.kothState.streak || 1);
+    const prizeAmount = Math.min(20, streak * 5);
+    const announcement = `Congratulations @${retired} you won $${prizeAmount}`;
 
-    this.kothState.king = null;
-    this.kothState.streak = 0;
-    this.kothState.awaitingDecision = false;
-    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+    if (retired && retired !== 'Winner') {
+      this.awardKothGrandPrize(retired, prizeAmount, streak);
+    }
 
-    const pA = document.getElementById('admin-battle-player-a-name');
-    const pB = document.getElementById('admin-battle-player-b-name');
-    if (pA) pA.textContent = '@PlayerA';
-    if (pB) pB.textContent = '@PlayerB';
-
-    const cardA = document.getElementById('admin-card-player-a');
-    const cardB = document.getElementById('admin-card-player-b');
-    if (cardA) cardA.style.opacity = '1';
-    if (cardB) cardB.style.opacity = '1';
-
-    const bA = document.getElementById('admin-battle-badge-a');
-    const bB = document.getElementById('admin-battle-badge-b');
-    if (bA) bA.style.display = 'none';
-    if (bB) bB.style.display = 'none';
+    this.showKothBanner(`💰 ${announcement}! (${streak}/4 Wins — Both corners cleared for new contenders)`, 'gold');
 
     try {
       fetch('/api/battle/koth/decision', {
@@ -2199,46 +2263,34 @@ class AdminHubController {
     } catch (_) {}
 
     if (this.channelBattle) {
-      this.channelBattle.postMessage({ action: 'koth_retire', retiredKing: retired, streak });
+      this.channelBattle.postMessage({
+        action: 'koth_retire',
+        retiredKing: retired,
+        streak,
+        prizeAmount,
+        announcement
+      });
     }
 
-    this.renderKothDeck();
+    // Clear both corners and reset wheel target to Player A (Blue Corner)
+    this.clearBothBattleCorners();
+
     if (window.sonner) {
       window.sonner.toast({
-        title: `💰 King @${retired} Cashed Out!`,
-        message: `Retired with ${streak} victory(s). Throne is open for new contenders.`,
+        title: `💰 ${announcement}!`,
+        message: `Cards A & B cleared. Ready to spin for new Player A (Blue Corner) and Player B (Red Corner).`,
         type: 'gold'
       });
     }
   }
 
   kothNewGame() {
-    this.kothState.king = null;
-    this.kothState.streak = 0;
-    this.kothState.awaitingDecision = false;
-    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
-
-    const pA = document.getElementById('admin-battle-player-a-name');
-    const pB = document.getElementById('admin-battle-player-b-name');
-    if (pA) pA.textContent = '@PlayerA';
-    if (pB) pB.textContent = '@PlayerB';
-
-    const cardA = document.getElementById('admin-card-player-a');
-    const cardB = document.getElementById('admin-card-player-b');
-    if (cardA) cardA.style.opacity = '1';
-    if (cardB) cardB.style.opacity = '1';
-
-    const bA = document.getElementById('admin-battle-badge-a');
-    const bB = document.getElementById('admin-battle-badge-b');
-    if (bA) bA.style.display = 'none';
-    if (bB) bB.style.display = 'none';
-
-    try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
-    this.renderKothDeck();
+    this.clearBothBattleCorners();
+    this.showKothBanner('🔄 Both corners cleared! Spin Duo Wheel to select Player A (Blue Corner).', 'cyan');
     if (window.sonner) {
       window.sonner.toast({
-        title: '👑 Fresh King of the Hill Game Ready!',
-        message: 'Throne and streak reset to 0/4.',
+        title: '👑 Fresh 1v1 Battle Ready!',
+        message: 'Both Blue & Red Corners cleared. Waiting for Winner A and Winner B.',
         type: 'cyan'
       });
     }
@@ -2273,11 +2325,9 @@ class AdminHubController {
         const u = document.getElementById('admin-duo-input-user')?.value.trim().replace(/^@/, '');
         const s = document.getElementById('admin-duo-input-slot')?.value.trim();
         if (!u || !s) return;
-        this.duoPool.unshift({ chatter: u, slot: s, provider: 'Casino', icon: '🎰' });
+        this.addDuoEntry(u, s, this.duoMode);
         document.getElementById('admin-duo-input-user').value = '';
         document.getElementById('admin-duo-input-slot').value = '';
-        this.renderDuoQueue();
-        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
       };
     }
 
@@ -2347,6 +2397,11 @@ class AdminHubController {
       const res = await fetch('/api/wheel/duo/queues');
       if (res.ok) {
         const data = await res.json();
+        if (Array.isArray(data.tourneyQueue)) {
+          this.tourneyQueue = data.tourneyQueue;
+          const tCount = document.getElementById('cp-tourney-q-count');
+          if (tCount) tCount.textContent = String(this.tourneyQueue.length);
+        }
         const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
         if (q && q.length > 0) {
           this.duoPool = q.map(e => ({
@@ -2366,6 +2421,8 @@ class AdminHubController {
     const badge = document.getElementById('admin-duo-mode-badge');
     const btnB = document.getElementById('btn-duo-mode-battle');
     const btnT = document.getElementById('btn-duo-mode-tourney');
+    const cpBtnB = document.getElementById('cp-btn-duo-mode-battle');
+    const cpBtnT = document.getElementById('cp-btn-duo-mode-tourney');
 
     if (mode === 'battle') {
       if (badge) {
@@ -2375,6 +2432,8 @@ class AdminHubController {
       }
       if (btnB) { btnB.className = 'btn-stake-primary'; }
       if (btnT) { btnT.className = 'btn-stake-secondary'; }
+      if (cpBtnB) { cpBtnB.style.background = 'rgba(0, 229, 255, 0.18)'; }
+      if (cpBtnT) { cpBtnT.style.background = 'transparent'; }
     } else {
       if (badge) {
         badge.textContent = '8-BRACKET TOURNEY';
@@ -2383,6 +2442,8 @@ class AdminHubController {
       }
       if (btnB) { btnB.className = 'btn-stake-secondary'; }
       if (btnT) { btnT.className = 'btn-stake-primary'; }
+      if (cpBtnB) { cpBtnB.style.background = 'transparent'; }
+      if (cpBtnT) { cpBtnT.style.background = 'rgba(255, 215, 0, 0.18)'; }
     }
 
     if (this.channelDuo) {
@@ -2394,56 +2455,109 @@ class AdminHubController {
       body: JSON.stringify({ mode: this.duoMode })
     }).catch(() => {});
     this.syncDuoQueues();
+    this.renderDuoQueue();
     if (window.sonner) window.sonner.toast({ title: `Duo-Wheel Mode: ${mode.toUpperCase()} 🔄`, message: 'Synced to OBS overlay.', type: 'cyan' });
   }
 
   renderDuoQueue() {
     const listEl = document.getElementById('admin-duo-list');
     const countEl = document.getElementById('admin-duo-count');
-    if (!listEl) return;
-
     if (countEl) countEl.textContent = this.duoPool.length.toString();
 
-    if (this.duoPool.length === 0) {
-      listEl.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Queue empty. Add chatters above.</div>`;
-      return;
+    if (listEl) {
+      if (this.duoPool.length === 0) {
+        listEl.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Queue empty. Add chatters above or via !battle &lt;slot&gt;.</div>`;
+      } else {
+        listEl.innerHTML = this.duoPool.map((p) => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
+            <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${p.chatter}</span>
+            <span style="font-size: 11px; color: var(--gold);">${p.slot}</span>
+          </div>
+        `).join('');
+      }
     }
 
-    listEl.innerHTML = this.duoPool.map((p, idx) => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
-        <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${p.chatter}</span>
-        <span style="font-size: 11px; color: var(--gold);">${p.slot}</span>
-      </div>
-    `).join('');
+    // Also update Condensed Control Panel queue list
+    const cpListEl = document.getElementById('cp-duo-queue-list');
+    const cpCountEl = document.getElementById('cp-duo-queue-count');
+    if (cpCountEl) cpCountEl.textContent = `${this.duoPool.length} entries`;
+    if (cpListEl) {
+      if (this.duoPool.length === 0) {
+        cpListEl.innerHTML = `<span style="font-size: 11px; color: var(--text-muted);">Pool empty. Waiting for !battle &lt;slot&gt; or !tourney &lt;slot&gt; in Kick chat...</span>`;
+      } else {
+        cpListEl.innerHTML = this.duoPool.map((p) => {
+          const meta = this.resolveSlotMeta(p.slot);
+          return `
+            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; font-size: 11px;">
+              <img src="${meta.image}" alt="" style="width: 20px; height: 26px; border-radius: 4px; object-fit: cover;" />
+              <strong style="color: #fff;">@${p.chatter}</strong>
+              <span style="color: var(--gold);">${meta.name}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
   }
 
   spinDuoWheel() {
     if (this.duoPool.length === 0) {
-      if (window.sonner) window.sonner.toast({ title: 'Queue Empty', message: 'Add duos to spin.', type: 'danger' });
+      if (window.sonner) window.sonner.toast({ title: 'Queue Empty', message: 'Add duos or wait for !battle <slot> in chat.', type: 'danger' });
       return;
     }
 
     const btn = document.getElementById('btn-spin-duo-wheel');
+    const cpBtn = document.getElementById('cp-btn-spin-duo');
     if (btn) {
       btn.disabled = true;
       btn.textContent = '🎰 SPINNING DUO-WHEEL...';
     }
+    if (cpBtn) {
+      cpBtn.disabled = true;
+      cpBtn.textContent = '🎡 SPINNING DUO WHEEL...';
+    }
 
-    const winner = this.duoPool[Math.floor(Math.random() * this.duoPool.length)];
+    // Determine target corner: if Corner A is empty, always select Corner A (Blue) first; otherwise select Corner B (Red)
+    const userAVal = (document.getElementById('cp-battle-user-a')?.value || '').trim();
+    const targetCorner = (!userAVal || this.wheelTargetCorner === 'A') ? 'A' : 'B';
+    this.setWheelTargetCorner(targetCorner);
+
+    const winnerIdx = Math.floor(Math.random() * this.duoPool.length);
+    const winner = this.duoPool[winnerIdx];
+    const resolvedMeta = this.resolveSlotMeta(winner.slot);
+    winner.slot = resolvedMeta.name;
+    winner.provider = resolvedMeta.provider;
+    winner.imageUrl = resolvedMeta.image;
 
     if (this.channelDuo) {
-      this.channelDuo.postMessage({ action: 'spin', mode: this.duoMode, winner, ts: Date.now() });
+      this.channelDuo.postMessage({
+        action: 'spin',
+        mode: this.duoMode,
+        targetCorner,
+        winner,
+        ts: Date.now()
+      });
     }
 
     try {
-      localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify({ action: 'spin', mode: this.duoMode, winner, ts: Date.now() }));
+      localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify({
+        action: 'spin',
+        mode: this.duoMode,
+        targetCorner,
+        winner,
+        ts: Date.now()
+      }));
     } catch (_) {}
 
-    // Trigger server-side spin draw
-    fetch('/api/wheel/duo/spin', {
+    // Remove winner from local pool immediately so they cannot be picked twice!
+    const cleanWinnerUser = String(winner.chatter || '').trim().toLowerCase().replace(/^@/, '');
+    this.duoPool = this.duoPool.filter(item => String(item.chatter || '').trim().toLowerCase().replace(/^@/, '') !== cleanWinnerUser);
+    this.renderDuoQueue();
+
+    // Remove winner from backend queue as well
+    fetch('/api/wheel/duo/remove', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: this.duoMode })
+      body: JSON.stringify({ mode: this.duoMode, username: cleanWinnerUser })
     }).catch(() => {});
 
     if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') {
@@ -2455,20 +2569,23 @@ class AdminHubController {
         btn.disabled = false;
         btn.textContent = '🎰 SPIN DUO-WHEEL (SELECT WINNER)';
       }
+      if (cpBtn) {
+        cpBtn.disabled = false;
+        cpBtn.textContent = '🎡 SPIN DUO WHEEL (Pick Winner & Fill Corner)';
+      }
       if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
       if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
 
-      // Auto-assign to seat
+      // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
       if (this.duoMode === 'battle') {
-        const pB = document.getElementById('admin-battle-player-b-name');
-        if (pB) pB.textContent = `@${winner.chatter} (${winner.slot})`;
+        this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot);
       }
 
       if (window.sonner) {
         window.sonner.toast({
-          title: 'Duo-Wheel Winner Selected! 🎰',
-          message: `@${winner.chatter} won with slot "${winner.slot}"!`,
-          type: 'gold'
+          title: `Winner ${targetCorner === 'A' ? 'A (Blue Corner)' : 'B (Red Corner)'} Selected! 🎰`,
+          message: `@${winner.chatter} + "${winner.slot}" assigned to ${targetCorner === 'A' ? 'Player A (Blue)' : 'Player B (Red)'} and removed from wheel pool!`,
+          type: targetCorner === 'A' ? 'cyan' : 'gold'
         });
       }
     }, 4500);
@@ -2645,7 +2762,663 @@ class AdminHubController {
     this.renderKPIs();
     this.bindObsCopyButtons();
   }
+
+  // ========================================================
+  // CONDENSED CONTROL PANEL (#control-panel) & LIVE KICK BRIDGE
+  // ========================================================
+
+  resolveSlotMeta(rawSlotName) {
+    const clean = String(rawSlotName || '').trim() || 'Wanted Dead or a Wild';
+    if (window.SlotResolver && typeof window.SlotResolver.resolve === 'function') {
+      const r = window.SlotResolver.resolve(clean);
+      if (r && r.image) {
+        return { name: r.name || clean, provider: r.provider || 'Casino', image: r.image };
+      }
+    }
+    const fallbackImg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+      ? window.SlotResolver.generateDataUriCard(clean, 'Casino')
+      : '/site/images/slots/wanted-dead-or-a-wild.svg';
+    return { name: clean, provider: 'Casino', image: fallbackImg };
+  }
+
+  setWheelTargetCorner(corner) {
+    this.wheelTargetCorner = corner === 'B' ? 'B' : 'A';
+    const pill = document.getElementById('cp-wheel-target-pill');
+    if (pill) {
+      if (this.wheelTargetCorner === 'A') {
+        pill.textContent = '🔵 PLAYER A (BLUE CORNER)';
+        pill.style.background = 'rgba(0, 229, 255, 0.18)';
+        pill.style.borderColor = '#00e5ff';
+        pill.style.color = '#00e5ff';
+      } else {
+        pill.textContent = '🔴 PLAYER B (RED CORNER)';
+        pill.style.background = 'rgba(255, 42, 95, 0.18)';
+        pill.style.borderColor = '#ff2a5f';
+        pill.style.color = '#ff2a5f';
+      }
+    }
+    if (this.channelDuo) {
+      this.channelDuo.postMessage({ action: 'set_target_corner', corner: this.wheelTargetCorner });
+    }
+  }
+
+  setCornerFighter(corner, username, slotName) {
+    const cleanUser = String(username || '').trim().replace(/^@/, '');
+    const formattedUser = cleanUser ? `@${cleanUser}` : '';
+    const cleanSlot = String(slotName || '').trim();
+    const meta = this.resolveSlotMeta(cleanSlot || (corner === 'A' ? 'Wanted Dead or a Wild' : 'Gates of Olympus 1000'));
+
+    if (corner === 'A') {
+      const uEl = document.getElementById('cp-battle-user-a');
+      const sEl = document.getElementById('cp-battle-slot-a');
+      const imgEl = document.getElementById('cp-battle-img-a');
+      const adminNameEl = document.getElementById('admin-battle-player-a-name');
+      if (uEl) uEl.value = formattedUser;
+      if (sEl) sEl.value = cleanSlot ? meta.name : '';
+      if (imgEl) {
+        imgEl.src = meta.image;
+        imgEl.onerror = () => {
+          if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+            imgEl.src = window.SlotResolver.generateDataUriCard(meta.name, meta.provider);
+          }
+        };
+      }
+      if (adminNameEl) {
+        adminNameEl.textContent = cleanUser ? `${formattedUser} (${meta.name})` : '@PlayerA';
+      }
+    } else {
+      const uEl = document.getElementById('cp-battle-user-b');
+      const sEl = document.getElementById('cp-battle-slot-b');
+      const imgEl = document.getElementById('cp-battle-img-b');
+      const adminNameEl = document.getElementById('admin-battle-player-b-name');
+      if (uEl) uEl.value = formattedUser;
+      if (sEl) sEl.value = cleanSlot ? meta.name : '';
+      if (imgEl) {
+        imgEl.src = meta.image;
+        imgEl.onerror = () => {
+          if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+            imgEl.src = window.SlotResolver.generateDataUriCard(meta.name, meta.provider);
+          }
+        };
+      }
+      if (adminNameEl) {
+        adminNameEl.textContent = cleanUser ? `${formattedUser} (${meta.name})` : '@PlayerB';
+      }
+    }
+  }
+
+  assignWheelWinnerToCorner(corner, username, slotName) {
+    if (corner === 'A') {
+      this.setCornerFighter('A', username, slotName);
+      this.setWheelTargetCorner('B');
+    } else {
+      this.setCornerFighter('B', username, slotName);
+    }
+    this.pushCornersToOverlay();
+  }
+
+  pushCornersToOverlay() {
+    const userA = (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '');
+    const slotA = (document.getElementById('cp-battle-slot-a')?.value || '').trim();
+    const userB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
+    const slotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
+
+    const metaA = slotA ? this.resolveSlotMeta(slotA) : { name: '', provider: '', image: '' };
+    const metaB = slotB ? this.resolveSlotMeta(slotB) : { name: '', provider: '', image: '' };
+
+    const statePayload = {
+      type: 'BATTLE_SYNC',
+      mode: this.battleMode === 'SPINS' ? 'SPINS' : 'MULTIPLIER',
+      kothStreak: this.kothState.streak || 0,
+      reigningKing: this.kothState.king || null,
+      playerA: {
+        name: userA ? `@${userA}` : '',
+        slot: metaA.name,
+        provider: metaA.provider,
+        image: metaA.image
+      },
+      playerB: {
+        name: userB ? `@${userB}` : '',
+        slot: metaB.name,
+        provider: metaB.provider,
+        image: metaB.image
+      },
+      ts: Date.now()
+    };
+
+    try {
+      localStorage.setItem('hunthub_battle_state', JSON.stringify(statePayload));
+    } catch (_) {}
+
+    if (this.channelBattle) {
+      this.channelBattle.postMessage(statePayload);
+    }
+  }
+
+  clearBothBattleCorners() {
+    this.kothState.king = null;
+    this.kothState.kingSlot = '';
+    this.kothState.streak = 0;
+    this.kothState.awaitingDecision = false;
+    localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
+
+    this.setCornerFighter('A', '', '');
+    this.setCornerFighter('B', '', '');
+    this.setWheelTargetCorner('A');
+
+    const multA = document.getElementById('cp-battle-mult-a');
+    const multB = document.getElementById('cp-battle-mult-b');
+    if (multA) multA.value = '';
+    if (multB) multB.value = '';
+
+    this.pushCornersToOverlay();
+    if (this.channelBattle) {
+      this.channelBattle.postMessage({ type: 'RESET_BATTLE', ts: Date.now() });
+    }
+    try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
+
+    this.renderKothDeck();
+    this.syncCondensedControlPanelUI();
+  }
+
+  showKothBanner(text, tone = 'cyan') {
+    const banner = document.getElementById('cp-koth-banner');
+    if (!banner) return;
+    if (!text) {
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'block';
+    banner.textContent = text;
+    if (tone === 'gold') {
+      banner.style.borderColor = 'var(--gold)';
+      banner.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(83, 252, 24, 0.14))';
+    } else {
+      banner.style.borderColor = '#00e5ff';
+      banner.style.background = 'linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(15, 23, 42, 0.9))';
+    }
+  }
+
+  addDuoEntry(username, slotName, mode = 'battle') {
+    const cleanUser = String(username || '').trim().replace(/^@/, '');
+    const meta = this.resolveSlotMeta(slotName);
+    if (!cleanUser) return;
+
+    if (mode === 'tourney') {
+      this.tourneyQueue = this.tourneyQueue.filter(e => String(e.username || '').toLowerCase() !== cleanUser.toLowerCase());
+      this.tourneyQueue.push({ username: cleanUser, slotName: meta.name, slotProvider: meta.provider, imageUrl: meta.image });
+      const tCount = document.getElementById('cp-tourney-q-count');
+      if (tCount) tCount.textContent = String(this.tourneyQueue.length);
+    }
+
+    if (mode === this.duoMode || mode === 'battle') {
+      this.duoPool = this.duoPool.filter(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') !== cleanUser.toLowerCase());
+      this.duoPool.unshift({
+        chatter: cleanUser,
+        slot: meta.name,
+        provider: meta.provider,
+        imageUrl: meta.image,
+        icon: '🎰'
+      });
+      this.renderDuoQueue();
+      if (this.channelDuo) {
+        this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+      }
+    }
+  }
+
+  handleDuoBroadcast(data) {
+    if (!data) return;
+    if (data.action === 'duo_winner_selected' && data.winner) {
+      const target = data.targetCorner || (document.getElementById('cp-battle-user-a')?.value ? 'B' : 'A');
+      const u = data.winner.chatter || data.winner.username || '';
+      const s = data.winner.slot || data.winner.slotName || '';
+      if (u) {
+        const cleanU = u.toLowerCase().replace(/^@/, '');
+        this.duoPool = this.duoPool.filter(item => String(item.chatter || '').toLowerCase().replace(/^@/, '') !== cleanU);
+        this.renderDuoQueue();
+        this.assignWheelWinnerToCorner(target, u, s);
+      }
+    }
+  }
+
+  handleBattleBroadcast(data) {
+    if (!data) return;
+    if (data.action === 'set_target_corner' && data.corner) {
+      this.setWheelTargetCorner(data.corner);
+    }
+  }
+
+  syncCondensedControlPanelUI() {
+    const streak = this.kothState.streak || 0;
+    const prize = Math.min(20, streak * 5);
+    const badge = document.getElementById('cp-battle-streak-badge');
+    if (badge) {
+      badge.textContent = `👑 STREAK: ${streak}/4 ($${prize})`;
+    }
+    const kingTagA = document.getElementById('cp-king-tag-a');
+    if (kingTagA) {
+      kingTagA.style.display = streak > 0 ? 'inline-block' : 'none';
+      if (streak > 0) kingTagA.textContent = `👑 KING (${streak}/4 · $${prize})`;
+    }
+
+    // Initialize slot preview images if empty
+    const imgA = document.getElementById('cp-battle-img-a');
+    const imgB = document.getElementById('cp-battle-img-b');
+    if (imgA && !imgA.getAttribute('src')) {
+      imgA.src = this.resolveSlotMeta('Wanted Dead or a Wild').image;
+    }
+    if (imgB && !imgB.getAttribute('src')) {
+      imgB.src = this.resolveSlotMeta('Gates of Olympus 1000').image;
+    }
+
+    this.renderDuoQueue();
+  }
+
+  setupCondensedControlPanel() {
+    this.syncCondensedControlPanelUI();
+
+    // 1. Battle Mode Switch inside #control-panel
+    const btnMultMode = document.getElementById('cp-mode-mult-btn');
+    const btnSpinMode = document.getElementById('cp-mode-spin-btn');
+    const multBox = document.getElementById('cp-mult-box');
+    const spinBox = document.getElementById('cp-spin-box');
+
+    if (btnMultMode && btnSpinMode) {
+      btnMultMode.onclick = () => {
+        this.setBattleMode('BONUS_BUY');
+        if (multBox) multBox.style.display = 'grid';
+        if (spinBox) spinBox.style.display = 'none';
+        btnMultMode.style.borderColor = 'var(--gold)';
+        btnMultMode.style.color = 'var(--gold)';
+        btnMultMode.style.background = 'rgba(255,215,0,0.12)';
+        btnSpinMode.style.borderColor = 'rgba(255,255,255,0.15)';
+        btnSpinMode.style.color = '#cbd5e1';
+        btnSpinMode.style.background = 'transparent';
+      };
+      btnSpinMode.onclick = () => {
+        this.setBattleMode('SPINS');
+        if (multBox) multBox.style.display = 'none';
+        if (spinBox) spinBox.style.display = 'grid';
+        btnSpinMode.style.borderColor = 'var(--gold)';
+        btnSpinMode.style.color = 'var(--gold)';
+        btnSpinMode.style.background = 'rgba(255,215,0,0.12)';
+        btnMultMode.style.borderColor = 'rgba(255,255,255,0.15)';
+        btnMultMode.style.color = '#cbd5e1';
+        btnMultMode.style.background = 'transparent';
+      };
+    }
+
+    // Live slot cover preview when editing slot A or B inputs
+    const slotAInput = document.getElementById('cp-battle-slot-a');
+    const slotBInput = document.getElementById('cp-battle-slot-b');
+    if (slotAInput) {
+      slotAInput.addEventListener('input', () => {
+        const meta = this.resolveSlotMeta(slotAInput.value);
+        const imgA = document.getElementById('cp-battle-img-a');
+        if (imgA) imgA.src = meta.image;
+      });
+    }
+    if (slotBInput) {
+      slotBInput.addEventListener('input', () => {
+        const meta = this.resolveSlotMeta(slotBInput.value);
+        const imgB = document.getElementById('cp-battle-img-b');
+        if (imgB) imgB.src = meta.image;
+      });
+    }
+
+    // Compare Multipliers & Declare Winner
+    const btnResolveMult = document.getElementById('cp-btn-resolve-mult');
+    if (btnResolveMult) {
+      btnResolveMult.onclick = () => {
+        this.pushCornersToOverlay();
+        const multA = parseFloat(document.getElementById('cp-battle-mult-a')?.value || '0');
+        const multB = parseFloat(document.getElementById('cp-battle-mult-b')?.value || '0');
+        const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
+        const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
+        const winnerSlot = multA >= multB ? 'A' : 'B';
+        const winName = winnerSlot === 'A' ? userA : userB;
+        const loseName = winnerSlot === 'A' ? userB : userA;
+        this.applyBattleResolution(winnerSlot, winName, loseName, `${Math.max(multA, multB).toFixed(2)}x vs ${Math.min(multA, multB).toFixed(2)}x`);
+      };
+    }
+
+    // 1-Click Spins Winners
+    const btnWinA = document.getElementById('cp-btn-win-a');
+    const btnWinB = document.getElementById('cp-btn-win-b');
+    if (btnWinA) {
+      btnWinA.onclick = () => {
+        this.pushCornersToOverlay();
+        const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
+        const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
+        this.applyBattleResolution('A', userA, userB, 'Spins Mode Victory');
+      };
+    }
+    if (btnWinB) {
+      btnWinB.onclick = () => {
+        this.pushCornersToOverlay();
+        const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
+        const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
+        this.applyBattleResolution('B', userB, userA, 'Spins Mode Victory');
+      };
+    }
+
+    // Push cards, !continue, !cashout, Clear
+    const btnSyncCards = document.getElementById('cp-btn-sync-cards');
+    const btnContinue = document.getElementById('cp-btn-koth-continue');
+    const btnCashout = document.getElementById('cp-btn-koth-cashout');
+    const btnClear = document.getElementById('cp-btn-battle-clear');
+
+    if (btnSyncCards) {
+      btnSyncCards.onclick = () => {
+        this.pushCornersToOverlay();
+        if (window.sonner) window.sonner.toast({ title: 'Cards Synced to OBS ⚔️', message: 'Blue & Red Corners updated on 1v1 Battle overlay.', type: 'cyan' });
+      };
+    }
+    if (btnContinue) btnContinue.onclick = () => this.kothContinue();
+    if (btnCashout) btnCashout.onclick = () => this.kothRetire();
+    if (btnClear) btnClear.onclick = () => this.kothNewGame();
+
+    // 2. Duo Wheel & Other Wheels Controls inside #control-panel
+    const btnTargetA = document.getElementById('cp-btn-target-a');
+    const btnTargetB = document.getElementById('cp-btn-target-b');
+    const btnSpinDuo = document.getElementById('cp-btn-spin-duo');
+    const btnDuoBattle = document.getElementById('cp-btn-duo-mode-battle');
+    const btnDuoTourney = document.getElementById('cp-btn-duo-mode-tourney');
+    const btnDuoAdd = document.getElementById('cp-btn-duo-add');
+    const btnDuoClear = document.getElementById('cp-btn-duo-clear');
+    const btnSpinCsgo = document.getElementById('cp-btn-spin-csgo');
+    const btnSpinSlots = document.getElementById('cp-btn-spin-slots');
+
+    if (btnTargetA) btnTargetA.onclick = () => this.setWheelTargetCorner('A');
+    if (btnTargetB) btnTargetB.onclick = () => this.setWheelTargetCorner('B');
+    if (btnSpinDuo) btnSpinDuo.onclick = () => this.spinDuoWheel();
+    if (btnDuoBattle) btnDuoBattle.onclick = () => this.setDuoMode('battle');
+    if (btnDuoTourney) btnDuoTourney.onclick = () => this.setDuoMode('tourney');
+
+    if (btnDuoAdd) {
+      btnDuoAdd.onclick = () => {
+        const u = document.getElementById('cp-duo-add-user')?.value.trim();
+        const s = document.getElementById('cp-duo-add-slot')?.value.trim();
+        if (!u || !s) return;
+        this.addDuoEntry(u, s, this.duoMode);
+        document.getElementById('cp-duo-add-user').value = '';
+        document.getElementById('cp-duo-add-slot').value = '';
+      };
+    }
+    if (btnDuoClear) {
+      btnDuoClear.onclick = () => {
+        this.duoPool = [];
+        this.renderDuoQueue();
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: [] });
+      };
+    }
+
+    if (btnSpinCsgo) btnSpinCsgo.onclick = () => this.spinCSGOWheel(false);
+    if (btnSpinSlots) btnSpinSlots.onclick = () => this.spinSlotWheel(false);
+
+    // 3. Tournament & Bonus Hunt Quick Controls
+    const btnSeedTourney = document.getElementById('cp-btn-seed-tourney');
+    if (btnSeedTourney) {
+      btnSeedTourney.onclick = () => {
+        const seedSource = this.tourneyQueue.length > 0 ? this.tourneyQueue : this.duoPool.map(p => ({ username: p.chatter, slotName: p.slot }));
+        for (let i = 0; i < 8; i++) {
+          const item = seedSource[i];
+          const pInput = document.getElementById(`admin-tourney-p${i + 1}`);
+          const sInput = document.getElementById(`admin-tourney-s${i + 1}`);
+          if (item && pInput && sInput) {
+            pInput.value = `@${String(item.username || '').replace(/^@/, '')}`;
+            sInput.value = item.slotName || 'Gates of Olympus 1000';
+          }
+        }
+        const startBtn = document.getElementById('btn-admin-start-tourney');
+        if (startBtn) startBtn.click();
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '8-Bracket Tournament Seeded! 🏆',
+            message: 'Players and slots loaded into the 8-Bracket Tournament.',
+            type: 'gold'
+          });
+        }
+      };
+    }
+
+    const btnBhAdd = document.getElementById('cp-btn-bh-add');
+    if (btnBhAdd) {
+      btnBhAdd.onclick = () => {
+        const slot = document.getElementById('cp-bh-slot')?.value.trim();
+        const bet = parseFloat(document.getElementById('cp-bh-bet')?.value || '2.00');
+        const caller = document.getElementById('cp-bh-user')?.value.trim() || '@diggitybets';
+        if (!slot) return;
+        const adminSearch = document.getElementById('admin-hunt-slot-search');
+        const adminBet = document.getElementById('admin-hunt-bet-input');
+        const adminCaller = document.getElementById('admin-hunt-caller-input');
+        const adminAddBtn = document.getElementById('btn-admin-add-hunt-slot');
+        if (adminSearch) adminSearch.value = slot;
+        if (adminBet) adminBet.value = String(bet);
+        if (adminCaller) adminCaller.value = caller;
+        if (adminAddBtn) adminAddBtn.click();
+        document.getElementById('cp-bh-slot').value = '';
+      };
+    }
+
+    // 4. Copy OBS Overlay URLs from #control-panel
+    const copyObsHelper = (path, label) => {
+      const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:'))
+        ? window.location.origin
+        : 'https://diggitybets.vip';
+      const url = `${origin}${path}?obs=1`;
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(url).catch(() => {});
+      }
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `📋 ${label} OBS URL Copied!`,
+          message: url,
+          type: 'cyan'
+        });
+      }
+    };
+
+    const obsBattle = document.getElementById('cp-btn-obs-battle');
+    const obsDuo = document.getElementById('cp-btn-obs-duo');
+    const obsCsgo = document.getElementById('cp-btn-obs-csgo');
+    const obsSlots = document.getElementById('cp-btn-obs-slots');
+    const obsTourney = document.getElementById('cp-btn-obs-tourney');
+    const obsBh = document.getElementById('cp-btn-obs-bh');
+
+    if (obsBattle) obsBattle.onclick = () => copyObsHelper('/overlay-battle/index.html', '1v1 Battle');
+    if (obsDuo) obsDuo.onclick = () => copyObsHelper('/wheel-duo/index.html', 'Dual Wheel');
+    if (obsCsgo) obsCsgo.onclick = () => copyObsHelper('/wheel-csgo/index.html', 'CS:GO Wheel');
+    if (obsSlots) obsSlots.onclick = () => copyObsHelper('/wheel-slots/overlay/index.html', 'Slot Wheel');
+    if (obsTourney) obsTourney.onclick = () => copyObsHelper('/bracket-8/index.html', '8-Bracket Tourney');
+    if (obsBh) obsBh.onclick = () => copyObsHelper('/overlay-bonushunt/index.html', 'Bonus Hunt');
+
+    // 5. Manual Command Dispatch Bar in #control-panel
+    const btnSendCmd = document.getElementById('cp-btn-send-cmd');
+    const cmdInput = document.getElementById('cp-chat-cmd-input');
+    const userInput = document.getElementById('cp-chat-user-input');
+    if (btnSendCmd && cmdInput) {
+      const sendNow = () => {
+        const u = (userInput ? userInput.value : '@KickViewer').trim().replace(/^@/, '') || 'KickViewer';
+        const c = cmdInput.value.trim();
+        if (!c) return;
+        this.processLiveChatCommand(u, c);
+        cmdInput.value = '';
+      };
+      btnSendCmd.onclick = sendNow;
+      cmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendNow();
+        }
+      });
+    }
+  }
+
+  // ========================================================
+  // LIVE KICK CHAT PUSHER BRIDGE (https://kick.com/diggitybets)
+  // ========================================================
+
+  async initLiveKickChatBridge() {
+    let chatroomId = 2672891; // Default diggitybets Kick chatroom ID
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch('https://kick.com/api/v2/channels/diggitybets', { signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.chatroom?.id) {
+          chatroomId = Number(data.chatroom.id);
+        }
+      }
+    } catch (_) {}
+
+    const connectPusher = () => {
+      try {
+        const wsUrl = 'wss://ws-us2.pusher.app/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false';
+        const ws = new WebSocket(wsUrl);
+        this.kickPusherWs = ws;
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            event: 'pusher:subscribe',
+            data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
+          }));
+          const statusEl = document.getElementById('cp-kick-ws-status');
+          if (statusEl) {
+            statusEl.textContent = `LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+          }
+        };
+
+        ws.onmessage = (evt) => {
+          try {
+            const packet = JSON.parse(evt.data);
+            if (packet.event === 'App\\Events\\ChatMessageEvent' && packet.data) {
+              const msgData = typeof packet.data === 'string' ? JSON.parse(packet.data) : packet.data;
+              const sender = msgData?.sender?.username || 'Chatter';
+              const content = String(msgData?.content || '').trim();
+              if (sender) {
+                this.recentChatters.set(sender, { user: sender, ts: Date.now() });
+              }
+              if (content.startsWith('!')) {
+                this.processLiveChatCommand(sender, content);
+              }
+            }
+          } catch (_) {}
+        };
+
+        ws.onclose = () => {
+          setTimeout(connectPusher, 6000);
+        };
+      } catch (_) {}
+    };
+
+    connectPusher();
+  }
+
+  processLiveChatCommand(username, rawMessage) {
+    const cleanUser = String(username || 'Viewer').trim().replace(/^@/, '');
+    const text = String(rawMessage || '').trim();
+    if (!text.startsWith('!')) return;
+
+    const logEl = document.getElementById('cp-live-chat-log');
+    if (logEl) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = document.createElement('div');
+      entry.innerHTML = `<span style="color:#64748b;">[${timeStr}]</span> <strong style="color:#53fc18;">@${cleanUser}:</strong> <span style="color:#fff;">${text}</span>`;
+      logEl.prepend(entry);
+    }
+
+    // Forward to backend /api/chat/command if running local/server hub
+    fetch('/api/chat/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: cleanUser, content: text })
+    }).catch(() => {});
+
+    const parts = text.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ').trim();
+
+    if (cmd === '!battle') {
+      const slotName = arg || 'Wanted Dead or a Wild';
+      this.addDuoEntry(cleanUser, slotName, 'battle');
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `⚔️ !battle Entry (@${cleanUser})`,
+          message: `Added @${cleanUser} with "${slotName}" to Duo Wheel Battle Queue.`,
+          type: 'cyan'
+        });
+      }
+      return;
+    }
+
+    if (cmd === '!tourney') {
+      const slotName = arg || 'Gates of Olympus 1000';
+      this.addDuoEntry(cleanUser, slotName, 'tourney');
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `🏆 !tourney Entry (@${cleanUser})`,
+          message: `Added @${cleanUser} with "${slotName}" to 8-Bracket Tourney Queue.`,
+          type: 'gold'
+        });
+      }
+      return;
+    }
+
+    if (cmd === '!guess') {
+      const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
+      if (!isNaN(numVal) && numVal > 0) {
+        if (window.bonusHuntTracker && typeof window.bonusHuntTracker.submitChatGuess === 'function') {
+          window.bonusHuntTracker.submitChatGuess(cleanUser, numVal);
+        } else {
+          try {
+            const guesses = JSON.parse(localStorage.getItem('hunthub_bh_guesses') || '[]');
+            const filtered = guesses.filter(g => String(g.user || '').toLowerCase() !== cleanUser.toLowerCase());
+            filtered.unshift({ user: `@${cleanUser}`, amount: numVal, ts: Date.now() });
+            localStorage.setItem('hunthub_bh_guesses', JSON.stringify(filtered));
+            const gCountEl = document.getElementById('cp-bh-guess-count');
+            if (gCountEl) gCountEl.textContent = String(filtered.length);
+          } catch (_) {}
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: `💎 !guess Registered (@${cleanUser})`,
+            message: `@${cleanUser} guessed $${numVal.toFixed(2)} for the Bonus Hunt!`,
+            type: 'green'
+          });
+        }
+      }
+      return;
+    }
+
+    if (cmd === '!continue') {
+      const currentKing = (this.kothState.king || document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
+      if (!currentKing || currentKing === cleanUser.toLowerCase() || this.isStreamerUser(cleanUser)) {
+        this.kothContinue();
+      }
+      return;
+    }
+
+    if (cmd === '!cashout') {
+      const currentKing = (this.kothState.king || document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
+      if (!currentKing || currentKing === cleanUser.toLowerCase() || this.isStreamerUser(cleanUser)) {
+        this.kothRetire();
+      }
+      return;
+    }
+
+    if (cmd === '!hunt' && arg) {
+      const bhSlotInput = document.getElementById('cp-bh-slot');
+      const bhUserInput = document.getElementById('cp-bh-user');
+      if (bhSlotInput && !bhSlotInput.value) bhSlotInput.value = arg;
+      if (bhUserInput) bhUserInput.value = `@${cleanUser}`;
+    }
+  }
 }
 
 // Global initialization
 window.adminHub = new AdminHubController();
+

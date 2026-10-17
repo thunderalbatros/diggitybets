@@ -37,9 +37,8 @@ class LiveChatController {
   }
 
   bindDrawerEvents() {
-    const toggleBtns = document.querySelectorAll('.btn-chat-toggle');
+    const toggleBtns = document.querySelectorAll('#btn-open-chat-drawer, [data-chat-drawer-toggle="true"]');
     const closeBtn = document.getElementById('chat-drawer-close');
-    const drawer = document.getElementById('chat-drawer');
     const overlay = document.getElementById('chat-drawer-backdrop');
 
     toggleBtns.forEach(btn => {
@@ -102,6 +101,10 @@ class LiveChatController {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
+      if (text.startsWith('!') && window.adminHub && typeof window.adminHub.processLiveChatCommand === 'function') {
+        window.adminHub.processLiveChatCommand(currentUsername, text);
+      }
+
       input.value = '';
       if (window.soundEngine) window.soundEngine.playCard();
     });
@@ -117,16 +120,19 @@ class LiveChatController {
     const msgEl = document.createElement('div');
     msgEl.className = 'chat-msg-row';
 
-    const badgeLabel = msg.badge.toUpperCase();
-    const badgeClass = `chat-badge-${msg.badge}`;
+    const badgeLabel = (msg.badge || 'viewer').toUpperCase();
+    const badgeClass = `chat-badge-${String(msg.badge || 'viewer').replace(/[^a-z0-9_-]/gi, '')}`;
+    const safeUser = this.escapeHTML(msg.user || 'Viewer');
+    const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(msg.color) ? msg.color : '#53fc18';
+    const safeTime = this.escapeHTML(msg.time || '');
 
     msgEl.innerHTML = `
       <div class="chat-msg-meta">
         <span class="chat-badge ${badgeClass}">${badgeLabel}</span>
-        <span class="chat-username" style="color: ${msg.color}">${msg.user}</span>
-        <span class="chat-timestamp">${msg.time}</span>
+        <span class="chat-username" style="color: ${safeColor}">${safeUser}</span>
+        <span class="chat-timestamp">${safeTime}</span>
       </div>
-      <div class="chat-msg-text">${this.escapeHTML(msg.content)}</div>
+      <div class="chat-msg-text">${this.escapeHTML(msg.content || '')}</div>
     `;
 
     container.appendChild(msgEl);

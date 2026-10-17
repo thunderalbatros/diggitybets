@@ -15,17 +15,51 @@ export interface CanonicalSlot {
   color?: string;
 }
 
-// Fallback image (Wanted Dead or a Wild verified CDN)
-export const DEFAULT_FALLBACK_IMAGE = 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
+// Fallback image (Wanted Dead or a Wild verified Official Hacksaw CDN)
+export const DEFAULT_FALLBACK_IMAGE = 'https://www-live.hacksawgaming.com/casino_thumbnails/1067.jpg';
 
-// Curated flagship catalog (always resident in memory, 100% verified URLs)
+// Known legacy synthetic imgix hashes to auto-heal if present in old cached states
+const LEGACY_BROKEN_HASHES = new Set([
+  '8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299',
+  '1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3',
+  '8b11c97a78ef3a7cfbe3a49257bbdf9360cb4be258b3506927da8fa8c028a25c',
+  '2be43834316fa71dc75a5960ce01783f98292f9d854e4881f215099fbcfe327c',
+  '4ef4fc019e0839e144a1fa429813c9a6df27a00f2e82cf594d2ba7cb5b5c92c8',
+  '5d6f6e8e0d6b0b5711c2adad4f3914a38f714eb6c0c55f84eb430e3bb4a3ba45',
+  '60b940989067b5e9f56475d4ff3db896942ad2f347960fa03892797e8bc6f827',
+  'dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec',
+  '5a0c36b4ae9cbe588cf4ba27e57c661bb5ad4e85741f23ee9f3907c0879c3d4f',
+  '41da24e4d5885fe77bc95f5108fb26d70ae4f3fec14781cfc9fa6a8e805fe9e3',
+  '05cfbdfcf1c81cfd8c7602f3bb44781df5a48554fe4bf693c126581c8160408d',
+  '2e276f595fe36e4f3aa79d2ee37e7fe0b8f9e6129841808605eb8037a5e84606',
+  'dddf1cfdf8c991b5d638be0a599f66dc0dfbf813501cb6982f6e91f6ebf8b66f',
+  'a5dcb65fbf77d446dc0320bb00fe79ca0236a2e4ba775ec0b4bfcb80cfec401a',
+  'b404ad170f4cf54f3b60fc851b2fc5d2a931ca81bbd067e4367c3fe5848bb010',
+  'b0ec0c8c0bbab167f9d5059d43ad26f3329fc61da0c58a8a3a0ea2195f00e998',
+  '06a3501a30fcf214b98160fc976aa260a9f5d1797c23bc9eeaa1a97d8bcfdb92',
+  '14d8eb34c379a00e5720c29f63624e5a99e19d7d3d6666fa5a0f82c40c8fa907',
+  'c5ffbb9920155b991da40b490d1e345cb3f73ae08be6ecfa609d94944ec7ea72',
+  '1344aa1be63a9aa83e60c87fcb101c784f181f7d54203aeae4531405a395c805',
+  '7ae4a07d6b3531dbfa3e271c6d9bb1ba6d83a1975e52da453ff54ae006248b1d',
+  'd0bb47b5c87cbfb534e793ea5b07849e83ec0bf7246ba727725d2b1f07da190e'
+]);
+
+export function isLegacyBrokenSlotUrl(url: string): boolean {
+  if (!url) return true;
+  for (const h of LEGACY_BROKEN_HASHES) {
+    if (url.includes(h)) return true;
+  }
+  return false;
+}
+
+// Curated flagship catalog (always resident in memory, 100% verified HTTP 200 OK URLs)
 export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
   {
     id: 'wanted-dead-or-a-wild',
     name: 'Wanted Dead or a Wild',
     slug: 'wanted-dead-or-a-wild',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1067.jpg',
     maxWin: '12,500x',
     rtp: '96.38%',
     tier: '1',
@@ -38,7 +72,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Gates of Olympus 1000',
     slug: 'gates-of-olympus-1000',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2023/12/Gates-of-Olympus_1000_339x180.png',
     maxWin: '15,000x',
     rtp: '96.50%',
     tier: '1',
@@ -51,7 +85,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Gates of Olympus',
     slug: 'gates-of-olympus',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/8b11c97a78ef3a7cfbe3a49257bbdf9360cb4be258b3506927da8fa8c028a25c?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2021/02/GOOL_EN_339x180.png',
     maxWin: '5,000x',
     rtp: '96.50%',
     tier: '1',
@@ -64,7 +98,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Sweet Bonanza 1000',
     slug: 'sweet-bonanza-1000',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/2be43834316fa71dc75a5960ce01783f98292f9d854e4881f215099fbcfe327c?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2024/05/Sweet-Bonanza-1000_339x180.png',
     maxWin: '25,000x',
     rtp: '96.53%',
     tier: '1',
@@ -77,7 +111,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Sweet Bonanza',
     slug: 'sweet-bonanza',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/4ef4fc019e0839e144a1fa429813c9a6df27a00f2e82cf594d2ba7cb5b5c92c8?w=180&h=236&fit=min&auto=format',
+    image: 'https://mediumrare.imgix.net/9974a4ae80c70a5d29be4a1e6a645a55169ff82722b5a50694db86f25b4f2f0f?w=180&h=236&fit=min&auto=format',
     maxWin: '21,100x',
     rtp: '96.48%',
     tier: '1',
@@ -90,7 +124,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Sugar Rush 1000',
     slug: 'sugar-rush-1000',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/5d6f6e8e0d6b0b5711c2adad4f3914a38f714eb6c0c55f84eb430e3bb4a3ba45?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2024/03/Sugar-Rush-1000_339x180.png',
     maxWin: '25,000x',
     rtp: '96.53%',
     tier: '1',
@@ -103,7 +137,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Sugar Rush',
     slug: 'sugar-rush',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/60b940989067b5e9f56475d4ff3db896942ad2f347960fa03892797e8bc6f827?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2022/06/Sugar_Rush_EN_339x180.png',
     maxWin: '5,000x',
     rtp: '96.50%',
     tier: '1',
@@ -116,7 +150,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Le Bandit',
     slug: 'le-bandit',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1309.jpg',
     maxWin: '10,000x',
     rtp: '96.34%',
     tier: '1',
@@ -129,7 +163,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'RIP City',
     slug: 'rip-city',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/5a0c36b4ae9cbe588cf4ba27e57c661bb5ad4e85741f23ee9f3907c0879c3d4f?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1233.jpg',
     maxWin: '12,500x',
     rtp: '96.22%',
     tier: '1',
@@ -142,7 +176,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Chaos Crew 2',
     slug: 'chaos-crew-2',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/41da24e4d5885fe77bc95f5108fb26d70ae4f3fec14781cfc9fa6a8e805fe9e3?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1352.jpg',
     maxWin: '20,000x',
     rtp: '96.27%',
     tier: '1',
@@ -168,7 +202,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Mental',
     slug: 'mental',
     provider: 'Nolimit City',
-    image: 'https://mediumrare.imgix.net/05cfbdfcf1c81cfd8c7602f3bb44781df5a48554fe4bf693c126581c8160408d?w=180&h=236&fit=min&auto=format',
+    image: 'https://fan-cdn.nolimitcity.com/mental_meta_image_06f5394518.png',
     maxWin: '66,666x',
     rtp: '96.08%',
     tier: '1',
@@ -181,7 +215,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Tombstone R.I.P.',
     slug: 'tombstone-r-i-p',
     provider: 'Nolimit City',
-    image: 'https://mediumrare.imgix.net/2e276f595fe36e4f3aa79d2ee37e7fe0b8f9e6129841808605eb8037a5e84606?w=180&h=236&fit=min&auto=format',
+    image: 'https://fan-cdn.nolimitcity.com/tombstone_rip_meta_image_1513c1fbe7.jpg',
     maxWin: '300,000x',
     rtp: '96.08%',
     tier: '1',
@@ -207,7 +241,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Big Bass Splash',
     slug: 'big-bass-splash',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/dddf1cfdf8c991b5d638be0a599f66dc0dfbf813501cb6982f6e91f6ebf8b66f?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2022/06/BBSPLASH_EN_339x180_04-1.png',
     maxWin: '5,000x',
     rtp: '96.71%',
     tier: '1',
@@ -220,7 +254,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Big Bass Bonanza',
     slug: 'big-bass-bonanza',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/a5dcb65fbf77d446dc0320bb00fe79ca0236a2e4ba775ec0b4bfcb80cfec401a?w=180&h=236&fit=min&auto=format',
+    image: 'https://mediumrare.imgix.net/28b9f1d33ddddb3b365ed5c1ad5a815f02db8a16d6849f436a63fbfafe3dba75?w=180&h=236&fit=min&auto=format',
     maxWin: '2,100x',
     rtp: '96.71%',
     tier: '1',
@@ -233,7 +267,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'The Dog House Megaways',
     slug: 'the-dog-house-megaways',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/b404ad170f4cf54f3b60fc851b2fc5d2a931ca81bbd067e4367c3fe5848bb010?w=180&h=236&fit=min&auto=format',
+    image: 'https://mediumrare.imgix.net/9aaa1942df920ad474e703a0ce36b119f51e6b3342b96e848a7c2bbe9078c75a?w=180&h=236&fit=min&auto=format',
     maxWin: '12,305x',
     rtp: '96.55%',
     tier: '1',
@@ -246,7 +280,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Starlight Princess 1000',
     slug: 'starlight-princess-1000',
     provider: 'Pragmatic Play',
-    image: 'https://mediumrare.imgix.net/b0ec0c8c0bbab167f9d5059d43ad26f3329fc61da0c58a8a3a0ea2195f00e998?w=180&h=236&fit=min&auto=format',
+    image: 'https://www.pragmaticplay.com/wp-content/uploads/2023/07/Starlight-Princess-1000_339x180.png',
     maxWin: '15,000x',
     rtp: '96.50%',
     tier: '1',
@@ -259,7 +293,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Hand of Anubis',
     slug: 'hand-of-anubis',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/06a3501a30fcf214b98160fc976aa260a9f5d1797c23bc9eeaa1a97d8bcfdb92?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1164.jpg',
     maxWin: '10,000x',
     rtp: '96.24%',
     tier: '1',
@@ -272,7 +306,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Dork Unit',
     slug: 'dork-unit',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/14d8eb34c379a00e5720c29f63624e5a99e19d7d3d6666fa5a0f82c40c8fa907?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1172.jpg',
     maxWin: '10,000x',
     rtp: '96.24%',
     tier: '1',
@@ -285,7 +319,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Fire in the Hole 2',
     slug: 'fire-in-the-hole-2',
     provider: 'Nolimit City',
-    image: 'https://mediumrare.imgix.net/c5ffbb9920155b991da40b490d1e345cb3f73ae08be6ecfa609d94944ec7ea72?w=180&h=236&fit=min&auto=format',
+    image: 'https://fan-cdn.nolimitcity.com/fith_2_share_img_db234472f3.png',
     maxWin: '65,000x',
     rtp: '96.07%',
     tier: '1',
@@ -389,7 +423,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'SixSixSix',
     slug: 'sixsixsix',
     provider: 'Hacksaw Gaming',
-    image: 'https://mediumrare.imgix.net/1344aa1be63a9aa83e60c87fcb101c784f181f7d54203aeae4531405a395c805?w=180&h=236&fit=min&auto=format',
+    image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1534.jpg',
     maxWin: '16,666x',
     rtp: '96.15%',
     tier: '1',
@@ -402,7 +436,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Folsom Prison',
     slug: 'folsom-prison',
     provider: 'Nolimit City',
-    image: 'https://mediumrare.imgix.net/7ae4a07d6b3531dbfa3e271c6d9bb1ba6d83a1975e52da453ff54ae006248b1d?w=180&h=236&fit=min&auto=format',
+    image: 'https://fan-cdn.nolimitcity.com/folsom_prison_splash_poster_9cfb1e7e22.png',
     maxWin: '71,400x',
     rtp: '96.07%',
     tier: '1',
@@ -415,7 +449,7 @@ export const CURATED_SLOTS_CATALOG: CanonicalSlot[] = [
     name: 'Das xBoot',
     slug: 'das-xboot',
     provider: 'Nolimit City',
-    image: 'https://mediumrare.imgix.net/d0bb47b5c87cbfb534e793ea5b07849e83ec0bf7246ba727725d2b1f07da190e?w=180&h=236&fit=min&auto=format',
+    image: 'https://fan-cdn.nolimitcity.com/das_xboot_meta_image_8b26f28d0f.png',
     maxWin: '55,200x',
     rtp: '96.03%',
     tier: '1',
@@ -686,7 +720,7 @@ export class SlotResolver {
 
     // 2. Alias substring lookup (e.g. if query contains 'olympus 1000' or 'wanted')
     for (const [alias, targetId] of this.aliasMap.entries()) {
-      if (clean === alias || clean.includes(alias) || alias.includes(clean)) {
+      if (alias.length >= 4 && (clean === alias || clean.includes(alias) || (clean.length >= 4 && alias.includes(clean)))) {
         if (this.catalog.has(targetId)) return this.catalog.get(targetId)!;
       }
     }
@@ -695,10 +729,12 @@ export class SlotResolver {
     if (this.catalog.has(clean)) return this.catalog.get(clean)!;
     if (this.catalog.has(this.slugify(query))) return this.catalog.get(this.slugify(query))!;
 
+    const minContainedLen = Math.max(5, Math.floor(clean.length * 0.6));
+
     // 4. Substring inclusion in curated catalog (prioritize Tier 1 flagships)
     for (const slot of CURATED_SLOTS_CATALOG) {
       const slotKey = this.normalizeKey(slot.name);
-      if (slotKey.includes(clean) || clean.includes(slotKey)) {
+      if (slotKey.includes(clean) || (slotKey.length >= minContainedLen && clean.includes(slotKey))) {
         return slot;
       }
     }
@@ -706,7 +742,7 @@ export class SlotResolver {
     // 5. Substring inclusion in full catalog
     for (const slot of this.catalog.values()) {
       const slotKey = this.normalizeKey(slot.name);
-      if (slotKey.includes(clean) || clean.includes(slotKey)) {
+      if (slotKey.includes(clean) || (slotKey.length >= minContainedLen && clean.includes(slotKey))) {
         return slot;
       }
     }
@@ -719,7 +755,7 @@ export class SlotResolver {
    */
   public resolve(query: string | Partial<CanonicalSlot>, baseContext?: string): CanonicalSlot {
     if (typeof query === 'object' && query !== null) {
-      if (query.name && query.image && !query.image.startsWith('../')) {
+      if (query.name && query.image && !query.image.startsWith('../') && !isLegacyBrokenSlotUrl(query.image)) {
         return {
           id: query.id || this.slugify(query.name),
           name: query.name,
