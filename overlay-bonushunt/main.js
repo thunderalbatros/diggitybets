@@ -220,12 +220,22 @@ class BonusHuntOverlayApp {
   }
 
   getDefaultDemoState() {
+    const resolveImg = (name, provider) => {
+      if (window.SlotResolver && typeof window.SlotResolver.resolve === 'function') {
+        const r = window.SlotResolver.resolve(name, '../');
+        if (r && r.image) return r.image;
+      }
+      if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+        return window.SlotResolver.generateDataUriCard(name, provider);
+      }
+      return '';
+    };
     const bonuses = [
       {
         id: 'b1',
         slotName: 'Wanted Dead or a Wild',
         slotProvider: 'Hacksaw Gaming',
-        slotImage: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Wanted Dead or a Wild', 'Hacksaw Gaming'),
         callerUsername: 'LuckyStriker',
         callerKickId: 101,
         betSize: 1.0,
@@ -237,7 +247,7 @@ class BonusHuntOverlayApp {
         id: 'b2',
         slotName: 'Gates of Olympus 1000',
         slotProvider: 'Pragmatic Play',
-        slotImage: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Gates of Olympus 1000', 'Pragmatic Play'),
         callerUsername: 'VegasKing',
         callerKickId: 102,
         betSize: 1.0,
@@ -249,7 +259,7 @@ class BonusHuntOverlayApp {
         id: 'b3',
         slotName: 'San Quentin xWays',
         slotProvider: 'Nolimit City',
-        slotImage: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png',
+        slotImage: resolveImg('San Quentin xWays', 'Nolimit City'),
         callerUsername: 'SlotQueen',
         callerKickId: 103,
         betSize: 0.4,
@@ -261,7 +271,7 @@ class BonusHuntOverlayApp {
         id: 'b4',
         slotName: 'Sugar Rush 1000',
         slotProvider: 'Pragmatic Play',
-        slotImage: 'https://mediumrare.imgix.net/5d6f6e8e0d6b0b5711c2adad4f3914a38f714eb6c0c55f84eb430e3bb4a3ba45?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Sugar Rush 1000', 'Pragmatic Play'),
         callerUsername: 'SpinMaster',
         callerKickId: 104,
         betSize: 1.0,
@@ -273,7 +283,7 @@ class BonusHuntOverlayApp {
         id: 'b5',
         slotName: 'Rip City',
         slotProvider: 'Hacksaw Gaming',
-        slotImage: 'https://mediumrare.imgix.net/5a0c36b4ae9cbe588cf4ba27e57c661bb5ad4e85741f23ee9f3907c0879c3d4f?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Rip City', 'Hacksaw Gaming'),
         callerUsername: 'Strike777',
         callerKickId: 105,
         betSize: 1.0,
@@ -285,7 +295,7 @@ class BonusHuntOverlayApp {
         id: 'b6',
         slotName: 'Big Bass Splash',
         slotProvider: 'Pragmatic Play',
-        slotImage: 'https://mediumrare.imgix.net/dddf1cfdf8c991b5d638be0a599f66dc0dfbf813501cb6982f6e91f6ebf8b66f?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Big Bass Splash', 'Pragmatic Play'),
         callerUsername: 'BigBassBob',
         callerKickId: 106,
         betSize: 1.0,
@@ -297,7 +307,7 @@ class BonusHuntOverlayApp {
         id: 'b7',
         slotName: 'Cookout',
         slotProvider: 'Colorful Play',
-        slotImage: 'https://mediumrare.imgix.net/67ccc373c89ba0c20791a337d304a8c50c78295c5e18987e59dd4975324119b0?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Cookout', 'Colorful Play'),
         callerUsername: 'NeonWolf',
         callerKickId: 107,
         betSize: 1.0,
@@ -309,7 +319,7 @@ class BonusHuntOverlayApp {
         id: 'b8',
         slotName: 'Le Bandit',
         slotProvider: 'Hacksaw Gaming',
-        slotImage: 'https://mediumrare.imgix.net/dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec?w=180&h=236&fit=min&auto=format',
+        slotImage: resolveImg('Le Bandit', 'Hacksaw Gaming'),
         callerUsername: 'RoyalFlush',
         callerKickId: 108,
         betSize: 1.0,
@@ -437,10 +447,13 @@ class BonusHuntOverlayApp {
     }
     const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || 'Unknown Slot';
     const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || 'Casino';
-    const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage;
+    const fallbackCardUri = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+      ? window.SlotResolver.generateDataUriCard(slotNameDisplay, slotProviderDisplay)
+      : '';
+    const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage || fallbackCardUri;
 
     const imgHtml = slotImgSrc
-      ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="${slotNameDisplay}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="slot-thumb-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`
+      ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackCardUri}';" />`
       : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
 
     row.innerHTML = `

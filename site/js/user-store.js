@@ -181,6 +181,11 @@ class UserStoreController {
         this.isLoggedIn = false;
         localStorage.removeItem('hunthub_kick_username');
         localStorage.removeItem('hunthub_is_sub');
+        localStorage.removeItem('hunthub_is_admin');
+        localStorage.removeItem('hunthub_streamer_admin_unlocked');
+        if (window.oauthEngine) {
+          window.oauthEngine.updateAdminDeckUI(false);
+        }
         this.updateUserUI();
         if (window.soundEngine) window.soundEngine.playChip();
         if (window.sonner) {
@@ -414,18 +419,19 @@ class UserStoreController {
 
     const updateStakeStatusBox = () => {
       if (statusBox) {
+        const esc = (s) => (window.escapeHTML ? window.escapeHTML(s) : s);
         if (this.stakeVerified) {
           statusBox.style.display = 'block';
           statusBox.style.background = 'rgba(83, 252, 24, 0.12)';
           statusBox.style.border = '1px solid rgba(83, 252, 24, 0.35)';
           statusBox.style.color = '#86efac';
-          statusBox.innerHTML = `<strong>✓ VERIFIED VIP:</strong> Account <strong>@${this.stakeUsername || 'VIP'}</strong> is confirmed under code <strong>DIGGITY</strong>. You receive VIP Store Discounts & Leaderboard eligibility!`;
+          statusBox.innerHTML = `<strong>✓ VERIFIED VIP:</strong> Account <strong>@${esc(this.stakeUsername || 'VIP')}</strong> is confirmed under code <strong>DIGGITY</strong>. You receive VIP Store Discounts & Leaderboard eligibility!`;
         } else if (this.stakeUsername) {
           statusBox.style.display = 'block';
           statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
           statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
           statusBox.style.color = '#fef08a';
-          statusBox.innerHTML = `<strong>⏳ PENDING AUDIT:</strong> Stake user <strong>@${this.stakeUsername}</strong> submitted for verification under code <strong>DIGGITY</strong>. Streamer will audit bet link in Admin Deck (+250 $DIG).`;
+          statusBox.innerHTML = `<strong>⏳ PENDING AUDIT:</strong> Stake user <strong>@${esc(this.stakeUsername)}</strong> submitted for verification under code <strong>DIGGITY</strong>. Streamer will audit bet link in Admin Deck (+250 $DIG).`;
         } else {
           statusBox.style.display = 'none';
         }
@@ -486,7 +492,8 @@ class UserStoreController {
               statusBox.style.background = 'rgba(255, 42, 95, 0.12)';
               statusBox.style.border = '1px solid rgba(255, 42, 95, 0.35)';
               statusBox.style.color = '#ff6b8b';
-              statusBox.innerHTML = `<strong>❌ VERIFICATION ERROR:</strong> ${data.error || 'Invalid bet submission'}`;
+              const safeErr = window.escapeHTML ? window.escapeHTML(data.error || 'Invalid bet submission') : (data.error || 'Invalid bet submission');
+              statusBox.innerHTML = `<strong>❌ VERIFICATION ERROR:</strong> ${safeErr}`;
             }
             return;
           }
@@ -502,7 +509,10 @@ class UserStoreController {
             statusBox.style.background = 'rgba(255, 215, 0, 0.12)';
             statusBox.style.border = '1px solid rgba(255, 215, 0, 0.35)';
             statusBox.style.color = '#fef08a';
-            statusBox.innerHTML = `<strong>✓ REQUEST SUBMITTED:</strong> Bet [<strong>${data.parsedBet?.betId || betId}</strong>] recorded for @${stakeUser} under code <strong>DIGGITY</strong>. Click "🔄 Check Status" once approved (+250 $DIG reward).`;
+            const esc = (s) => (window.escapeHTML ? window.escapeHTML(s) : s);
+            const safeBetId = esc(data.parsedBet?.betId || betId);
+            const safeUser = esc(stakeUser);
+            statusBox.innerHTML = `<strong>✓ REQUEST SUBMITTED:</strong> Bet [<strong>${safeBetId}</strong>] recorded for @${safeUser} under code <strong>DIGGITY</strong>. Click "🔄 Check Status" once approved (+250 $DIG reward).`;
           }
 
           if (window.soundEngine) window.soundEngine.playWin();
@@ -656,6 +666,7 @@ class UserStoreController {
       }
     }
 
+    const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
     tbody.innerHTML = this.leaderboardData.map(item => `
       <tr class="leaderboard-row ${item.rank <= 3 ? `top-${item.rank}` : ''}">
         <td style="font-family: var(--font-display); font-weight: 800; font-size: 15px; color: ${item.rank === 1 ? 'var(--gold)' : (item.rank === 2 ? '#e2e8f0' : (item.rank === 3 ? '#cd7f32' : 'var(--text-muted)'))};">
@@ -663,10 +674,10 @@ class UserStoreController {
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
-            ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.casinoUser || item.kickUser, 28) : `<span style="font-size: 18px;">${item.avatar}</span>`}
+            ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.casinoUser || item.kickUser, 28) : `<span style="font-size: 18px;">${esc(item.avatar)}</span>`}
             <div>
-              <strong style="color: #ffffff; font-size: 13px;">${item.casinoUser || item.stakeUser}</strong>
-              <div style="font-size: 11px; color: var(--text-dim);">${item.kickUser}</div>
+              <strong style="color: #ffffff; font-size: 13px;">${esc(item.casinoUser || item.stakeUser)}</strong>
+              <div style="font-size: 11px; color: var(--text-dim);">${esc(item.kickUser)}</div>
             </div>
           </div>
         </td>

@@ -122,11 +122,13 @@ class SlotsExplorerController {
     const endIdx = this.currentPage * this.pageSize;
     const currentBatch = this.filteredSlots.slice(startIdx, endIdx);
 
+    const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
+
     if (this.filteredSlots.length === 0) {
       gridEl.innerHTML = `
         <div class="slots-empty-state">
           <span>🔍</span>
-          <p>No se encontraron slots con el término "${this.searchQuery}".</p>
+          <p>No se encontraron slots con el término "${esc(this.searchQuery)}".</p>
         </div>
       `;
       const loadMoreBtn = document.getElementById('slots-btn-load-more');
@@ -140,22 +142,24 @@ class SlotsExplorerController {
       const card = document.createElement('div');
       card.className = 'slot-card';
 
-      const providerBadge = slot.badge || slot.provider || 'SLOT';
-      const maxWin = slot.maxWin || '5,000x';
+      const providerBadge = esc(slot.badge || slot.provider || 'SLOT');
+      const maxWin = esc(slot.maxWin || '5,000x');
       const imgSrc = slot.image || '';
+      const safeName = esc(slot.name);
+      const safeProvider = esc(slot.provider || 'Provider');
 
       card.innerHTML = `
         <div class="slot-card-image-wrap">
-          <img class="slot-card-img" src="${imgSrc}" alt="${slot.name}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'180\\' height=\\'236\\' viewBox=\\'0 0 180 236\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%230e1320\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23ffd700\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>${encodeURIComponent(slot.name)}</text></svg>'">
+          <img class="slot-card-img" src="${imgSrc}" alt="${safeName}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'180\\' height=\\'236\\' viewBox=\\'0 0 180 236\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%230e1320\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23ffd700\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>${encodeURIComponent(slot.name || '')}</text></svg>'">
           <span class="slot-badge-pill">${providerBadge}</span>
           <span class="slot-maxwin-pill">${maxWin}</span>
         </div>
         <div class="slot-card-info">
-          <h4 class="slot-card-title" title="${slot.name}">${slot.name}</h4>
-          <span class="slot-card-provider">${slot.provider || 'Provider'}</span>
+          <h4 class="slot-card-title" title="${safeName}">${safeName}</h4>
+          <span class="slot-card-provider">${safeProvider}</span>
           <div class="slot-card-actions">
-            <button type="button" class="btn-slot-action btn-add-hunt" data-slot-id="${slot.id}" data-slot-name="${slot.name}" data-slot-img="${slot.image || ''}">💎 +Hunt</button>
-            <a href="wheel-slots/overlay/index.html?slot=${encodeURIComponent(slot.id)}" target="_blank" class="btn-slot-action btn-spin-wheel">🎰 Ruleta</a>
+            <button type="button" class="btn-slot-action btn-add-hunt" data-slot-id="${esc(slot.id)}" data-slot-name="${safeName}" data-slot-img="${esc(slot.image || '')}">💎 +Hunt</button>
+            <a href="wheel-slots/overlay/index.html?slot=${encodeURIComponent(slot.id)}" target="_blank" rel="noopener noreferrer" class="btn-slot-action btn-spin-wheel">🎰 Ruleta</a>
           </div>
         </div>
       `;

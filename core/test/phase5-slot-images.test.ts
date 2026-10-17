@@ -91,7 +91,7 @@ async function runPhase5Tests() {
   assert.strictEqual(wanted.id, 'wanted-dead-or-a-wild');
   assert.strictEqual(wanted.name, 'Wanted Dead or a Wild');
   assert.strictEqual(wanted.provider, 'Hacksaw Gaming');
-  assert.ok(wanted.image.includes('imgix.net'), 'Wanted must have imgix CDN cover');
+  assert.ok(wanted.image.includes('hacksawgaming.com') || wanted.image.includes('imgix.net'), 'Wanted must have verified official/CDN cover');
 
   const gates1k = slotResolver.resolve('Gates of Olympus 1000');
   assert.strictEqual(gates1k.id, 'gates-of-olympus-1000');
@@ -146,7 +146,7 @@ async function runPhase5Tests() {
     {
       name: 'Wanted Dead or a Wild',
       provider: 'Hacksaw Gaming',
-      image: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format',
+      image: 'https://www-live.hacksawgaming.com/casino_thumbnails/1067.jpg',
     }
   );
   battleManager.joinLobby(
@@ -154,13 +154,13 @@ async function runPhase5Tests() {
     {
       name: 'Gates of Olympus 1000',
       provider: 'Pragmatic Play',
-      image: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format',
+      image: 'https://www.pragmaticplay.com/wp-content/uploads/2023/12/Gates-of-Olympus_1000_339x180.png',
     }
   );
   const bState = battleManager.getState();
   assert.strictEqual(bState.playerA?.slotName, 'Wanted Dead or a Wild');
   assert.strictEqual(bState.playerA?.slotProvider, 'Hacksaw Gaming');
-  assert.ok(bState.playerA?.slotImage?.includes('mediumrare.imgix.net'));
+  assert.ok(bState.playerA?.slotImage?.includes('hacksawgaming.com'));
   assert.strictEqual(bState.playerB?.slotName, 'Gates of Olympus 1000');
   assert.strictEqual(bState.playerB?.slotProvider, 'Pragmatic Play');
   console.log('  ✓ BattleManager preserves canonical slotName, slotProvider, and slotImage in state');
@@ -184,14 +184,14 @@ async function runPhase5Tests() {
     {
       name: 'Sugar Rush 1000',
       provider: 'Pragmatic Play',
-      image: 'https://mediumrare.imgix.net/5d6f6e8e0d6b0b5711c2adad4f3914a38f714eb6c0c55f84eb430e3bb4a3ba45?w=180&h=236&fit=min&auto=format',
+      image: 'https://www.pragmaticplay.com/wp-content/uploads/2024/03/Sugar-Rush-1000_339x180.png',
     },
     { username: 'AgusKick', kickId: 301 },
     2.0
   );
   assert.strictEqual(addedBonus.slotName, 'Sugar Rush 1000');
   assert.strictEqual(addedBonus.slotProvider, 'Pragmatic Play');
-  assert.ok(addedBonus.slotImage?.includes('mediumrare.imgix.net'));
+  assert.ok(addedBonus.slotImage?.includes('pragmaticplay.com'));
   console.log('  ✓ BonusHuntManager stores canonical slot details on bonus addition');
 
   // 4. OverlayServer HTTP API & Queues Auto-Resolution Tests
@@ -211,7 +211,7 @@ async function runPhase5Tests() {
     assert.strictEqual(bEntryRes.success, true);
     assert.strictEqual(bEntryRes.entry.slotName, 'Wanted Dead or a Wild');
     assert.strictEqual(bEntryRes.entry.slotProvider, 'Hacksaw Gaming');
-    assert.ok(bEntryRes.entry.slotImage.includes('imgix.net'));
+    assert.ok(bEntryRes.entry.slotImage.includes('hacksawgaming.com') || bEntryRes.entry.slotImage.includes('imgix.net'));
     console.log('  ✓ addBattleQueueEntry automatically resolves "wanted" to canonical "Wanted Dead or a Wild"');
 
     // 4.2 Tourney Queue entry with colloquial chat alias "olympus 1000"
@@ -219,7 +219,7 @@ async function runPhase5Tests() {
     assert.strictEqual(tEntryRes.success, true);
     assert.strictEqual(tEntryRes.entry.slotName, 'Gates of Olympus 1000');
     assert.strictEqual(tEntryRes.entry.slotProvider, 'Pragmatic Play');
-    assert.ok(tEntryRes.entry.slotImage.includes('imgix.net'));
+    assert.ok(tEntryRes.entry.slotImage.includes('pragmaticplay.com') || tEntryRes.entry.slotImage.includes('imgix.net'));
     console.log('  ✓ addTourneyQueueEntry automatically resolves "olympus 1000" to canonical "Gates of Olympus 1000"');
 
     // 4.3 HTTP GET /api/wheel/duo/queues returns canonical slot data

@@ -460,15 +460,22 @@ pusherClient.onCommand(({ command, args, sender, messageId }) => {
   // --- King of the Hill: Continue / Defend Throne ---
   if (command === 'continue' || command === 'defend' || command === 'seguir' || command === 'defender') {
     const bState = battleManager.getState();
-    const isKing = bState.reigningKing && (
-      bState.reigningKing.kickId === sender.id ||
-      bState.reigningKing.username.toLowerCase() === sender.username.toLowerCase()
+    const activeKing = bState.reigningKing || bState.playerA;
+    const isKing = activeKing && (
+      activeKing.kickId === sender.id ||
+      activeKing.username.toLowerCase() === sender.username.toLowerCase()
     );
-    if (bState.awaitingKingDecision && (isKing || isStreamer || isMod)) {
-      battleManager.kingDecideContinue();
-      const kingName = bState.reigningKing?.displayName || sender.username;
+    if ((bState.awaitingKingDecision || bState.reigningKing || bState.playerA) && (isKing || isStreamer || isMod)) {
+      const st = battleManager.kingDecideContinue();
+      const kingName = st.reigningKing?.displayName || sender.username;
+      overlayServer.broadcast({
+        type: 'koth_continue',
+        king: st.reigningKing,
+        streak: st.currentStreak,
+        state: st,
+      });
       chatClient.sendMessage(
-        `👑 ¡El Rey @${kingName} DECIDIÓ DEFENDER EL TRONO (Racha: ${bState.currentStreak}/4)! ¡Que pase el próximo retador con !battle! ⚔️`
+        `👑 @${kingName} typed !continue and stays in Blue Corner (Streak: ${st.currentStreak}/4 · $${st.currentStreak * 5} secured)! Spin for Challenger B! ⚔️`
       );
       return;
     }
@@ -477,15 +484,30 @@ pusherClient.onCommand(({ command, args, sender, messageId }) => {
   // --- King of the Hill: Retire / Cashout ---
   if (command === 'retire' || command === 'cashout' || command === 'retirarse' || command === 'cobrar') {
     const bState = battleManager.getState();
-    const isKing = bState.reigningKing && (
-      bState.reigningKing.kickId === sender.id ||
-      bState.reigningKing.username.toLowerCase() === sender.username.toLowerCase()
+    const activeKing = bState.reigningKing || bState.playerA;
+    const isKing = activeKing && (
+      activeKing.kickId === sender.id ||
+      activeKing.username.toLowerCase() === sender.username.toLowerCase()
     );
-    if (bState.awaitingKingDecision && (isKing || isStreamer || isMod)) {
+    if ((bState.awaitingKingDecision || bState.reigningKing || bState.playerA) && (isKing || isStreamer || isMod)) {
       const res = battleManager.kingDecideRetire();
       const kingName = res.retiredKing?.displayName || sender.username;
+      if (res.retiredKing) {
+        db.createKothPrizeRedemption(
+          res.retiredKing,
+          `King of the Hill - $${res.prizeAmount} Cashout (${res.streak} Win Streak)`
+        );
+      }
+      overlayServer.broadcast({
+        type: 'koth_cashout',
+        retiredKing: res.retiredKing,
+        streak: res.streak,
+        prizeAmount: res.prizeAmount,
+        announcement: res.announcement,
+        state: res.state,
+      });
       chatClient.sendMessage(
-        `💰 ¡El Rey @${kingName} SE RETIRA y cobra su racha de ${res.streak} victoria(s)! ¡El trono de King of the Hill queda libre! 👑`
+        `💰 Congratulations @${kingName} you won $${res.prizeAmount}! (King of the Hill Cashout — ${res.streak} Win Streak) 👑`
       );
       return;
     }

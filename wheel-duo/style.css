@@ -162,21 +162,38 @@ body {
 }
 
 .step-target-pill {
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  color: var(--cyan-neon);
-  padding: 4px 10px;
+  background: rgba(0, 229, 255, 0.16);
+  border: 1.5px solid rgba(0, 229, 255, 0.65);
+  color: #00e5ff;
+  padding: 5px 12px;
   border-radius: 20px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
   font-size: 11px;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.28);
+}
+
+.step-target-pill.target-blue {
+  background: linear-gradient(135deg, rgba(0, 145, 234, 0.35), rgba(0, 229, 255, 0.18));
+  border-color: #00e5ff;
+  color: #e0faff;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+}
+
+.step-target-pill.target-red {
+  background: linear-gradient(135deg, rgba(255, 42, 95, 0.38), rgba(213, 0, 0, 0.2));
+  border-color: #ff2a5f;
+  color: #ffe4ec;
+  box-shadow: 0 0 18px rgba(255, 42, 95, 0.5);
 }
 
 .step-target-pill.tourney-target {
-  background: rgba(255, 215, 0, 0.12);
-  border: 1px solid rgba(255, 215, 0, 0.35);
+  background: rgba(255, 215, 0, 0.16);
+  border-color: rgba(255, 215, 0, 0.65);
   color: var(--gold-accent);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
 }
 
 /* Reel Stage */
@@ -415,22 +432,26 @@ body {
   flex-shrink: 0;
 }
 
-/* Winner Toast */
+/* Centered Large Winner Toast in the Middle of the Wheel */
 .winner-toast {
   position: absolute;
-  bottom: 60px;
-  left: 24px;
-  right: 24px;
-  background: rgba(10, 14, 25, 0.95);
-  border: 2px solid var(--gold-accent);
-  border-radius: 18px;
-  padding: 14px 20px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 44px);
+  background: radial-gradient(circle at 50% 0%, rgba(22, 30, 52, 0.98) 0%, rgba(8, 11, 20, 0.98) 100%);
+  border: 2.5px solid var(--gold-accent);
+  border-radius: 22px;
+  padding: 22px 24px;
   display: none;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 0 40px var(--gold-glow);
-  z-index: 20;
-  animation: toast-slide 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.92), 0 0 42px var(--gold-glow);
+  z-index: 30;
+  animation: toast-center-pop 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
 
 .winner-toast.active {
@@ -438,42 +459,56 @@ body {
 }
 
 .toast-crown {
-  font-size: 36px;
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.7));
 }
 
 .toast-details {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 6px;
 }
 
 .toast-title {
   font-family: 'Chakra Petch', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--gold-accent);
-  letter-spacing: 2px;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
 }
 
 .toast-names {
   font-family: 'Chakra Petch', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .toast-chatter {
-  color: var(--cyan-neon);
+  font-size: 30px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(0, 229, 255, 0.75);
+  letter-spacing: 0.5px;
 }
 
 .toast-with {
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--text-muted);
-  margin: 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .toast-slot {
+  font-size: 22px;
+  font-weight: 800;
   color: var(--gold-accent);
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
 }
 
 /* Footer */
@@ -533,4 +568,9 @@ body {
 @keyframes toast-slide {
   0% { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toast-center-pop {
+  0% { transform: translate(-50%, -46%) scale(0.88); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }

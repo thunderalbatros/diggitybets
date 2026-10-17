@@ -180,18 +180,23 @@ class BonusHuntController {
       const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : {
         name: s.name,
         provider: s.provider || 'Provider',
-        image: s.image || 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format'
+        image: s.image || 'site/images/slots/wanted-dead-or-a-wild.svg'
       };
       const imgSrc = window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s.image || canon.image) : (s.image || canon.image);
-      const slotName = canon.name || s.name;
-      const slotProvider = canon.provider || s.provider || 'Provider';
+      const esc = window.escapeHTML || (x => x);
+      const slotName = esc(canon.name || s.name || 'Slot');
+      const slotProvider = esc(canon.provider || s.provider || 'Provider');
+      const callerName = esc(s.caller || '—');
+      const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+        ? window.SlotResolver.generateDataUriCard(canon.name || s.name || 'Slot', canon.provider || s.provider || 'Casino')
+        : 'site/images/slots/wanted-dead-or-a-wild.svg';
 
       tr.className = isOpened ? 'bh-row-opened' : 'bh-row-pending';
       tr.innerHTML = `
         <td class="bh-td-num">#${idx + 1}</td>
         <td class="bh-td-slot">
           <div class="bh-slot-info">
-            <img class="bh-slot-thumb" src="${imgSrc}" alt="${slotName}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
+            <img class="bh-slot-thumb" src="${imgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackSvg}';">
             <div>
               <span class="bh-slot-name">${slotName}</span>
               <span class="bh-slot-provider">${slotProvider}</span>
@@ -201,7 +206,7 @@ class BonusHuntController {
         <td class="bh-td-bet">$${(s.bet || 2).toFixed(2)}</td>
         <td class="bh-td-payout">${isOpened ? `$${s.payout.toFixed(2)}` : '<span class="status-pending" style="color: var(--text-dim);">Pending</span>'}</td>
         <td class="bh-td-mult"><span class="bh-mult-pill ${isOpened ? (parseFloat(mult) >= 100 ? 'super' : 'normal') : ''}">${mult}</span></td>
-        <td class="bh-td-caller">${s.caller || '—'}</td>
+        <td class="bh-td-caller">${callerName}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -209,6 +214,8 @@ class BonusHuntController {
 
   renderGuesses() {
     const listEl = document.getElementById('bh-guesses-list');
+    const cpCountEl = document.getElementById('cp-bh-guess-count');
+    if (cpCountEl) cpCountEl.textContent = String(this.guesses.length);
     if (!listEl) return;
 
     if (!this.isActive || this.guesses.length === 0) {
@@ -223,6 +230,7 @@ class BonusHuntController {
 
     listEl.innerHTML = '';
     const sorted = [...this.guesses].sort((a, b) => b.guess - a.guess);
+    const esc = window.escapeHTML || (x => x);
 
     sorted.forEach(g => {
       const item = document.createElement('div');
@@ -230,12 +238,35 @@ class BonusHuntController {
       item.innerHTML = `
         <div class="bh-guess-user">
           <span class="bh-user-badge">VIP</span>
-          <span class="bh-user-name">${g.user}</span>
+          <span class="bh-user-name">${esc(g.user)}</span>
         </div>
         <div class="bh-guess-val">$${g.guess.toLocaleString()}</div>
       `;
       listEl.appendChild(item);
     });
+  }
+
+  submitChatGuess(username, guessVal) {
+    const clean = String(username || 'Viewer').trim().replace(/^@/, '');
+    const formatted = `@${clean}`;
+    const num = Number(guessVal);
+    if (!num || isNaN(num) || num <= 0) return;
+
+    this.isActive = true;
+    localStorage.setItem('hunthub_hunt_active', 'true');
+    const existingIdx = this.guesses.findIndex(g => String(g.user || '').toLowerCase() === formatted.toLowerCase());
+    const entry = {
+      user: formatted,
+      guess: num,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    if (existingIdx >= 0) {
+      this.guesses[existingIdx] = entry;
+    } else {
+      this.guesses.push(entry);
+    }
+    this.save();
+    this.renderGuesses();
   }
 
   updateLinkedUserBadge() {
@@ -265,36 +296,27 @@ class BonusHuntController {
             message: 'Please enter a valid predicted final payout amount in USD (e.g. 1750).',
             type: 'gold'
           });
-        } else {
-          alert('Please enter a valid predicted final payout amount in USD (e.g. 1750).');
         }
         if (valEl) valEl.focus();
         return;
       }
 
       const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
-
-      const existingIdx = this.guesses.findIndex(g => g.user.toLowerCase() === activeUser.toLowerCase());
-      const newEntry = {
-        user: activeUser,
-        guess: guessVal,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      if (existingIdx >= 0) {
-        this.guesses[existingIdx] = newEntry;
-      } else {
-        this.guesses.push(newEntry);
-      }
-
-      this.save();
-      this.renderGuesses();
+      this.submitChatGuess(activeUser, guessVal);
       if (window.soundEngine) window.soundEngine.playCoins();
 
       if (valEl) valEl.value = '';
-      alert(`Prediction of $${guessVal.toLocaleString()} recorded successfully for ${activeUser}!`);
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Prediction Recorded! 💎',
+          message: `Prediction of $${guessVal.toLocaleString()} recorded for ${activeUser}!`,
+          type: 'green'
+        });
+      }
     });
   }
 }
 
 window.bonusHunt = new BonusHuntController();
+window.bonusHuntTracker = window.bonusHunt;
+

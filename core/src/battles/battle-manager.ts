@@ -312,13 +312,18 @@ export class BattleManager {
   }
 
   public kingDecideContinue(): BattleState {
-    if (!this.state.kothActive || !this.state.reigningKing) {
+    const activeKing = this.state.reigningKing || this.state.playerA;
+    if (!this.state.kothActive || !activeKing) {
       return this.getState();
     }
 
+    this.state.reigningKing = { ...activeKing };
+    if (this.state.currentStreak < 1) {
+      this.state.currentStreak = 1;
+    }
     this.state.awaitingKingDecision = false;
     this.state.playerA = {
-      ...this.state.reigningKing,
+      ...activeKing,
       winAmount: 0,
       multiplier: 0,
       result: null,
@@ -332,9 +337,18 @@ export class BattleManager {
     return this.getState();
   }
 
-  public kingDecideRetire(): { state: BattleState; retiredKing: BattlePlayer | null; streak: number } {
-    const retiredKing = this.state.reigningKing;
-    const streak = this.state.currentStreak;
+  public kingDecideRetire(): {
+    state: BattleState;
+    retiredKing: BattlePlayer | null;
+    streak: number;
+    prizeAmount: number;
+    announcement: string;
+  } {
+    const retiredKing = this.state.reigningKing || this.state.playerA;
+    const streak = Math.max(1, this.state.currentStreak || 1);
+    const prizeAmount = Math.min(20, streak * 5);
+    const kingName = retiredKing ? (retiredKing.displayName || retiredKing.username) : 'Player';
+    const announcement = `Congratulations ${kingName} you won $${prizeAmount}`;
 
     this.state.reigningKing = null;
     this.state.currentStreak = 0;
@@ -347,7 +361,7 @@ export class BattleManager {
     this.state.lastWinnerPrizeAwarded = false;
 
     this.emitChange();
-    return { state: this.getState(), retiredKing, streak };
+    return { state: this.getState(), retiredKing, streak, prizeAmount, announcement };
   }
 
   public resetKothThrone(): BattleState {

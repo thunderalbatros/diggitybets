@@ -264,23 +264,41 @@
       </div>
     </div>
 
-    <!-- Winner Resolution Card -->
+    <!-- Winner Resolution & King of the Hill Card -->
     <div class="card">
-      <div class="card-title">Resolution & Winner Action</div>
+      <div class="card-title">
+        <span>Resolution &amp; King of the Hill</span>
+        <span id="koth-streak-badge" style="color: var(--gold);">👑 Streak: 0/4 ($0 / $20 Max)</span>
+      </div>
       <div class="row row-mult-mode">
         <button class="btn-gold" id="btn-resolve" style="padding: 12px; font-size: 13px; font-weight: 700;">
-          ⚖️ COMPARE MULTIPLIERS & DECLARE WINNER
+          ⚖️ COMPARE MULTIPLIERS &amp; DECLARE WINNER
         </button>
       </div>
       <div class="winner-box" id="winner-box" style="display: none;">
         Winner Declared!
       </div>
+      <div class="row" style="margin-top: 8px;">
+        <div class="col">
+          <button type="button" class="btn-cyan" id="btn-koth-continue" onclick="triggerKothDecision('continue')">
+            ⚔️ !continue (Stay Blue Corner)
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn-gold" id="btn-koth-cashout" onclick="triggerKothDecision('cashout')">
+            💰 !cashout (Claim Prize &amp; Clear)
+          </button>
+        </div>
+      </div>
+      <div class="chatter-hint">Chat Commands: <code>!continue</code> (stay in Blue Corner) · <code>!cashout</code> ($5/win, max 4 wins = $20)</div>
       <div class="row" style="margin-top: 10px;">
         <button id="btn-demo" style="background: #1e293b; color: #8e9bb0;">⚡ Load Demo Battle (1-Click)</button>
       </div>
     </div>
   </div>
 
+  <script src="../data/curated_slots.js"></script>
+  <script src="../site/js/slot-resolver.js"></script>
   <script>
     const serverUrl = 'http://127.0.0.1:3001';
     let bc = null;
@@ -291,6 +309,7 @@
     let currentResolutionMode = 'multiplier';
     let localState = null;
     let isServerOnline = false;
+    let autoTransitionTimer = null;
 
     function setResolutionMode(mode) {
       currentResolutionMode = mode;
@@ -306,6 +325,12 @@
       document.querySelectorAll('.row-spin-mode').forEach((el) => {
         el.style.display = !isMult ? 'flex' : 'none';
       });
+
+      if (localState) {
+        localState.gameMode = isMult ? 'BONUS_BUY' : 'SPINS';
+        saveAndBroadcast(localState);
+      }
+      apiPost('/api/battle/mode', { gameMode: isMult ? 'BONUS_BUY' : 'SPINS' });
     }
 
     function saveAndBroadcast(state) {
@@ -319,31 +344,185 @@
       updateUI(state);
     }
 
-    // Pass Winner 1-Click for Spin Mode
-    function passWinner(winnerSlot) {
+    function applyKothResolution(winnerSlot, multA, multB) {
+      if (autoTransitionTimer) {
+        clearTimeout(autoTransitionTimer);
+        autoTransitionTimer = null;
+      }
+
       if (!localState) {
         localState = {
           id: 'battle_' + Date.now(),
           status: 'READY',
-          betAmount: 10,
-          prizeText: '$50.00 POOL',
-          playerA: { username: document.getElementById('p-a-user').value || 'Player A', slotName: document.getElementById('p-a-slot').value || 'Slot A' },
-          playerB: { username: document.getElementById('p-b-user').value || 'Player B', slotName: document.getElementById('p-b-slot').value || 'Slot B' },
+          kothActive: true,
+          currentStreak: 0,
+          reigningKing: null,
+          betAmount: Number(document.getElementById('cfg-bet').value) || 10,
+          prizeText: document.getElementById('cfg-prize').value || '$50.00 POOL',
         };
       }
 
-      localState.status = 'RESOLVED';
-      localState.winner = winnerSlot;
+      const userA = document.getElementById('p-a-user').value.trim() || localState.playerA?.username || 'Player A';
+      const slotA = document.getElementById('p-a-slot').value.trim() || localState.playerA?.slotName || 'Wanted Dead or a Wild';
+      const userB = document.getElementById('p-b-user').value.trim() || localState.playerB?.username || 'Player B';
+      const slotB = document.getElementById('p-b-slot').value.trim() || localState.playerB?.slotName || 'Gates of Olympus 1000';
 
-      // Update tags
+      const canonA = window.SlotResolver ? window.SlotResolver.resolve(slotA, '../') : { name: slotA, provider: 'Casino', image: '' };
+      const canonB = window.SlotResolver ? window.SlotResolver.resolve(slotB, '../') : { name: slotB, provider: 'Casino', image: '' };
+
+      localState.playerA = {
+        ...(localState.playerA || {}),
+        username: userA,
+        displayName: userA,
+        slotName: canonA.name,
+        slotProvider: canonA.provider,
+        slotImage: canonA.image,
+        multiplier: multA !== undefined ? Number(multA) : Number(localState.playerA?.multiplier || 0),
+        result: winnerSlot === 'A' ? 'WINNER' : 'LOSER',
+      };
+      localState.playerB = {
+        ...(localState.playerB || {}),
+        username: userB,
+        displayName: userB,
+        slotName: canonB.name,
+        slotProvider: canonB.provider,
+        slotImage: canonB.image,
+        multiplier: multB !== undefined ? Number(multB) : Number(localState.playerB?.multiplier || 0),
+        result: winnerSlot === 'B' ? 'WINNER' : 'LOSER',
+      };
+
+      const winnerObj = winnerSlot === 'A' ? localState.playerA : localState.playerB;
+      const prevKingName = (localState.reigningKing?.username || '').toLowerCase();
+      const winName = (winnerObj.username || '').toLowerCase();
+
+      if (prevKingName && prevKingName === winName) {
+        localState.currentStreak = Math.min(4, (Number(localState.currentStreak) || 1) + 1);
+      } else {
+        localState.currentStreak = 1;
+      }
+      localState.reigningKing = { ...winnerObj };
+      localState.kothActive = true;
+      localState.winner = winnerSlot;
+      localState.status = 'RESOLVED';
+      localState.awaitingKingDecision = localState.currentStreak < 4;
+      localState._kothIncremented = true;
+
+      saveAndBroadcast(localState);
+      if (bc) {
+        bc.postMessage({ action: 'resolve_battle', winner: winnerSlot, multA: localState.playerA.multiplier, multB: localState.playerB.multiplier });
+      }
+
+      // After 4.5s celebration, auto-transition winner into Corner A (or clear both if 4/4 = $20 cap reached)
+      const streakAtResolve = localState.currentStreak;
+      autoTransitionTimer = setTimeout(() => {
+        if (!localState || localState.status !== 'RESOLVED') return;
+        if (streakAtResolve >= 4) {
+          localState = {
+            ...localState,
+            status: 'LOBBY',
+            reigningKing: null,
+            currentStreak: 0,
+            awaitingKingDecision: false,
+            playerA: null,
+            playerB: null,
+            winner: null,
+            _kothIncremented: false,
+          };
+        } else {
+          const nextKing = { ...winnerObj, multiplier: 0, winAmount: 0, result: null };
+          localState = {
+            ...localState,
+            status: 'LOBBY',
+            reigningKing: nextKing,
+            currentStreak: streakAtResolve,
+            awaitingKingDecision: true,
+            playerA: nextKing,
+            playerB: null,
+            winner: null,
+            _kothIncremented: false,
+          };
+        }
+        saveAndBroadcast(localState);
+      }, 4500);
+    }
+
+    // Pass Winner 1-Click for Spin Mode
+    function passWinner(winnerSlot) {
       document.getElementById('p-a-status-tag').textContent = winnerSlot === 'A' ? 'WIN (PASSED) 👑' : 'LOSE (OUT)';
       document.getElementById('p-a-status-tag').style.color = winnerSlot === 'A' ? 'var(--green)' : '#ff2a5f';
       document.getElementById('p-b-status-tag').textContent = winnerSlot === 'B' ? 'WIN (PASSED) 👑' : 'LOSE (OUT)';
       document.getElementById('p-b-status-tag').style.color = winnerSlot === 'B' ? 'var(--green)' : '#ff2a5f';
 
-      saveAndBroadcast(localState);
-      if (bc) {
-        bc.postMessage({ action: 'resolve_battle', winner: winnerSlot });
+      applyKothResolution(winnerSlot);
+      apiPost('/api/battle/resolve-spins', { winnerSlot });
+    }
+
+    async function triggerKothDecision(decision) {
+      if (autoTransitionTimer) {
+        clearTimeout(autoTransitionTimer);
+        autoTransitionTimer = null;
+      }
+
+      if (decision === 'cashout') {
+        const king = localState?.reigningKing || localState?.playerA;
+        const kingName = king ? (king.displayName || king.username) : (document.getElementById('p-a-user').value || 'Winner');
+        const streak = Math.max(1, Number(localState?.currentStreak || 1));
+        const prizeAmount = Math.min(20, streak * 5);
+
+        localState = {
+          id: 'battle_' + Date.now(),
+          status: 'LOBBY',
+          kothActive: true,
+          reigningKing: null,
+          currentStreak: 0,
+          awaitingKingDecision: false,
+          playerA: null,
+          playerB: null,
+          winner: null,
+          _kothIncremented: false,
+        };
+        saveAndBroadcast(localState);
+
+        const cashoutPayload = {
+          action: 'koth_cashout',
+          retiredKing: { username: kingName, displayName: kingName },
+          streak,
+          prizeAmount,
+          announcement: `Congratulations ${kingName} you won $${prizeAmount}`,
+          ts: Date.now(),
+        };
+        if (bc) bc.postMessage(cashoutPayload);
+        try { localStorage.setItem('hunthub_koth_event', JSON.stringify(cashoutPayload)); } catch {}
+
+        const wBox = document.getElementById('winner-box');
+        if (wBox) {
+          wBox.style.display = 'block';
+          wBox.textContent = `💰 Congratulations @${kingName} you won $${prizeAmount}!`;
+          setTimeout(() => { wBox.style.display = 'none'; }, 4500);
+        }
+        await apiPost('/api/battle/koth/decision', { decision: 'cashout' });
+      } else if (decision === 'continue') {
+        const king = localState?.reigningKing || localState?.playerA;
+        if (king) {
+          const streak = Math.max(1, Number(localState?.currentStreak || 1));
+          const nextKing = { ...king, multiplier: 0, winAmount: 0, result: null };
+          localState = {
+            ...localState,
+            status: 'LOBBY',
+            kothActive: true,
+            reigningKing: nextKing,
+            currentStreak: streak,
+            awaitingKingDecision: false,
+            playerA: nextKing,
+            playerB: null,
+            winner: null,
+          };
+          saveAndBroadcast(localState);
+          const contPayload = { action: 'koth_continue', king: nextKing, streak, state: localState, ts: Date.now() };
+          if (bc) bc.postMessage(contPayload);
+          try { localStorage.setItem('hunthub_koth_event', JSON.stringify(contPayload)); } catch {}
+        }
+        await apiPost('/api/battle/koth/decision', { decision: 'continue' });
       }
     }
 
@@ -388,15 +567,46 @@
       if (state.betAmount) document.getElementById('cfg-bet').value = state.betAmount;
       if (state.prizeText) document.getElementById('cfg-prize').value = state.prizeText;
 
+      const streak = Number(state.currentStreak || 0);
+      const prizeWon = Math.min(20, streak * 5);
+      const streakBadge = document.getElementById('koth-streak-badge');
+      if (streakBadge) {
+        const kingLabel = state.reigningKing ? `@${state.reigningKing.displayName || state.reigningKing.username} · ` : '';
+        streakBadge.textContent = `👑 ${kingLabel}Streak: ${streak}/4 ($${prizeWon} / $20 Max)`;
+      }
+      const cashoutBtn = document.getElementById('btn-koth-cashout');
+      if (cashoutBtn) {
+        cashoutBtn.textContent = streak > 0
+          ? `💰 !cashout (Claim $${prizeWon} & Clear)`
+          : `💰 !cashout (Claim Prize & Clear)`;
+      }
+
       if (state.playerA) {
         document.getElementById('p-a-user').value = state.playerA.displayName || state.playerA.username || '';
         document.getElementById('p-a-slot').value = state.playerA.slotName || '';
-        if (state.playerA.multiplier !== undefined) document.getElementById('p-a-mult').value = Number(state.playerA.multiplier).toFixed(2);
+        document.getElementById('p-a-mult').value = Number(state.playerA.multiplier || 0).toFixed(2);
+        document.getElementById('p-a-status-tag').textContent = state.reigningKing ? `👑 KING (${streak}/4)` : 'READY';
+        document.getElementById('p-a-status-tag').style.color = state.reigningKing ? 'var(--gold)' : 'var(--cyan)';
+      } else {
+        document.getElementById('p-a-user').value = '';
+        document.getElementById('p-a-slot').value = '';
+        document.getElementById('p-a-mult').value = '0.00';
+        document.getElementById('p-a-status-tag').textContent = 'WAITING';
+        document.getElementById('p-a-status-tag').style.color = 'var(--cyan)';
       }
+
       if (state.playerB) {
         document.getElementById('p-b-user').value = state.playerB.displayName || state.playerB.username || '';
         document.getElementById('p-b-slot').value = state.playerB.slotName || '';
-        if (state.playerB.multiplier !== undefined) document.getElementById('p-b-mult').value = Number(state.playerB.multiplier).toFixed(2);
+        document.getElementById('p-b-mult').value = Number(state.playerB.multiplier || 0).toFixed(2);
+        document.getElementById('p-b-status-tag').textContent = 'READY';
+        document.getElementById('p-b-status-tag').style.color = 'var(--crimson)';
+      } else {
+        document.getElementById('p-b-user').value = '';
+        document.getElementById('p-b-slot').value = '';
+        document.getElementById('p-b-mult').value = '0.00';
+        document.getElementById('p-b-status-tag').textContent = 'WAITING';
+        document.getElementById('p-b-status-tag').style.color = 'var(--crimson)';
       }
 
       const wBox = document.getElementById('winner-box');
@@ -405,7 +615,9 @@
         const winName = state.winner === 'A' ? state.playerA?.displayName : (state.winner === 'B' ? state.playerB?.displayName : 'TIE');
         const mult = state.winner === 'A' ? state.playerA?.multiplier : state.playerB?.multiplier;
         const multText = mult ? ` (${Number(mult).toFixed(2)}x)` : '';
-        wBox.textContent = `👑 Winner: @${winName}${multText}`;
+        wBox.textContent = streak >= 4
+          ? `👑 Congratulations @${winName} you won $20! (4/4 Streak)`
+          : `👑 Winner: @${winName}${multText} — Streak ${streak}/4 ($${prizeWon} Secured)`;
       } else {
         wBox.style.display = 'none';
       }
@@ -417,14 +629,16 @@
         if (!e.data) return;
         if (e.data.action === 'assign_player') {
           const { playerSlot, player } = e.data;
+          if (!localState) localState = { status: 'LOBBY', kothActive: true, currentStreak: 0, reigningKing: null, betAmount: 10, prizeText: '$50.00 POOL' };
           if (playerSlot === 'A') {
-            document.getElementById('p-a-user').value = player.displayName || player.username;
-            document.getElementById('p-a-slot').value = player.slotName;
+            localState.playerA = player;
           } else if (playerSlot === 'B') {
-            document.getElementById('p-b-user').value = player.displayName || player.username;
-            document.getElementById('p-b-slot').value = player.slotName;
+            localState.playerB = player;
           }
+          if (localState.playerA && localState.playerB) localState.status = 'READY';
+          updateUI(localState);
         } else if (e.data.state) {
+          localState = e.data.state;
           updateUI(e.data.state);
         }
       };
@@ -434,17 +648,19 @@
       if (e.key === 'hunthub_battle_assign' && e.newValue) {
         try {
           const { playerSlot, player } = JSON.parse(e.newValue);
+          if (!localState) localState = { status: 'LOBBY', kothActive: true, currentStreak: 0, reigningKing: null, betAmount: 10, prizeText: '$50.00 POOL' };
           if (playerSlot === 'A') {
-            document.getElementById('p-a-user').value = player.displayName || player.username;
-            document.getElementById('p-a-slot').value = player.slotName;
+            localState.playerA = player;
           } else if (playerSlot === 'B') {
-            document.getElementById('p-b-user').value = player.displayName || player.username;
-            document.getElementById('p-b-slot').value = player.slotName;
+            localState.playerB = player;
           }
+          if (localState.playerA && localState.playerB) localState.status = 'READY';
+          updateUI(localState);
         } catch {}
       } else if (e.key === 'hunthub_battle_state' && e.newValue) {
         try {
-          updateUI(JSON.parse(e.newValue));
+          localState = JSON.parse(e.newValue);
+          updateUI(localState);
         } catch {}
       }
     });
@@ -457,9 +673,12 @@
       if (!res) {
         const state = {
           status: 'LOBBY',
+          kothActive: true,
+          currentStreak: localState?.currentStreak || 0,
+          reigningKing: localState?.reigningKing || null,
           betAmount: bet,
           prizeText: prize,
-          playerA: null,
+          playerA: localState?.reigningKing ? { ...localState.reigningKing, multiplier: 0, winAmount: 0, result: null } : null,
           playerB: null,
           winner: null,
         };
@@ -468,102 +687,85 @@
     };
 
     document.getElementById('btn-reset').onclick = async () => {
-      const res = await apiPost('/api/battle/reset');
-      if (!res) {
-        const state = {
-          status: 'LOBBY',
-          betAmount: 10,
-          prizeText: '$50.00 POOL',
-          playerA: null,
-          playerB: null,
-          winner: null,
-        };
-        saveAndBroadcast(state);
+      if (autoTransitionTimer) {
+        clearTimeout(autoTransitionTimer);
+        autoTransitionTimer = null;
       }
+      const res = await apiPost('/api/battle/reset');
+      const state = {
+        status: 'LOBBY',
+        kothActive: true,
+        currentStreak: 0,
+        reigningKing: null,
+        betAmount: 10,
+        prizeText: '$50.00 POOL',
+        playerA: null,
+        playerB: null,
+        winner: null,
+      };
+      saveAndBroadcast(state);
+      if (bc) bc.postMessage({ action: 'reset_battle' });
     };
 
     document.getElementById('btn-save-a').onclick = () => {
       const mult = Number(document.getElementById('p-a-mult').value) || 0;
       const user = document.getElementById('p-a-user').value.trim() || 'LuckyStriker';
-      const slot = document.getElementById('p-a-slot').value.trim() || 'Wanted Dead';
+      const slot = document.getElementById('p-a-slot').value.trim() || 'Wanted Dead or a Wild';
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(slot, '../') : { name: slot, provider: 'Hacksaw Gaming', image: '' };
 
-      if (!localState) localState = { status: 'LOBBY', betAmount: 10, prizeText: '$50.00 POOL' };
-      if (!localState.playerA) {
-        localState.playerA = { username: user, displayName: user, slotName: slot, multiplier: mult };
-      } else {
-        localState.playerA.username = user;
-        localState.playerA.displayName = user;
-        localState.playerA.slotName = slot;
-        localState.playerA.multiplier = mult;
-      }
+      if (!localState) localState = { status: 'LOBBY', kothActive: true, currentStreak: 0, reigningKing: null, betAmount: 10, prizeText: '$50.00 POOL' };
+      localState.playerA = {
+        ...(localState.playerA || {}),
+        username: user,
+        displayName: user,
+        slotName: canon.name,
+        slotProvider: canon.provider,
+        slotImage: canon.image,
+        multiplier: mult,
+      };
       saveAndBroadcast(localState);
+      apiPost('/api/battle/payout', { playerSlot: 'A', multiplier: mult });
     };
 
     document.getElementById('btn-save-b').onclick = () => {
       const mult = Number(document.getElementById('p-b-mult').value) || 0;
       const user = document.getElementById('p-b-user').value.trim() || 'VegasKing';
-      const slot = document.getElementById('p-b-slot').value.trim() || 'Gates 1000';
+      const slot = document.getElementById('p-b-slot').value.trim() || 'Gates of Olympus 1000';
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(slot, '../') : { name: slot, provider: 'Pragmatic Play', image: '' };
 
-      if (!localState) localState = { status: 'LOBBY', betAmount: 10, prizeText: '$50.00 POOL' };
-      if (!localState.playerB) {
-        localState.playerB = { username: user, displayName: user, slotName: slot, multiplier: mult };
-      } else {
-        localState.playerB.username = user;
-        localState.playerB.displayName = user;
-        localState.playerB.slotName = slot;
-        localState.playerB.multiplier = mult;
-      }
+      if (!localState) localState = { status: 'LOBBY', kothActive: true, currentStreak: 0, reigningKing: null, betAmount: 10, prizeText: '$50.00 POOL' };
+      localState.playerB = {
+        ...(localState.playerB || {}),
+        username: user,
+        displayName: user,
+        slotName: canon.name,
+        slotProvider: canon.provider,
+        slotImage: canon.image,
+        multiplier: mult,
+      };
       saveAndBroadcast(localState);
+      apiPost('/api/battle/payout', { playerSlot: 'B', multiplier: mult });
     };
 
     document.getElementById('btn-resolve').onclick = async () => {
       const multA = Number(document.getElementById('p-a-mult').value) || 0;
       const multB = Number(document.getElementById('p-b-mult').value) || 0;
+      const winnerSlot = multA >= multB ? 'A' : 'B';
 
-      if (!localState) localState = { status: 'READY', betAmount: 10, prizeText: '$50.00 POOL' };
-      if (!localState.playerA) {
-        localState.playerA = { username: document.getElementById('p-a-user').value || 'Player A', slotName: document.getElementById('p-a-slot').value || 'Slot A' };
-      }
-      if (!localState.playerB) {
-        localState.playerB = { username: document.getElementById('p-b-user').value || 'Player B', slotName: document.getElementById('p-b-slot').value || 'Slot B' };
-      }
-
-      localState.playerA.multiplier = multA;
-      localState.playerB.multiplier = multB;
-      localState.winner = multA >= multB ? 'A' : 'B';
-      localState.status = 'RESOLVED';
-
-      saveAndBroadcast(localState);
-      if (bc) {
-        bc.postMessage({ action: 'resolve_battle', winner: localState.winner, multA, multB });
-      }
+      applyKothResolution(winnerSlot, multA, multB);
+      await apiPost('/api/battle/payout', { playerSlot: 'A', multiplier: multA });
+      await apiPost('/api/battle/payout', { playerSlot: 'B', multiplier: multB });
+      await apiPost('/api/battle/resolve');
     };
 
     document.getElementById('btn-demo').onclick = () => {
-      const demoState = {
-        status: 'RESOLVED',
-        betAmount: 10,
-        prizeText: '$50.00 POOL',
-        playerA: {
-          username: 'LuckyStriker',
-          displayName: 'LuckyStriker',
-          slotName: 'Wanted Dead or a Wild',
-          slotProvider: 'Hacksaw Gaming',
-          multiplier: 3.41,
-        },
-        playerB: {
-          username: 'VegasKing',
-          displayName: 'VegasKing',
-          slotName: 'Gates of Olympus 1000',
-          slotProvider: 'Pragmatic Play',
-          multiplier: 2.11,
-        },
-        winner: 'A',
-      };
-      saveAndBroadcast(demoState);
-      if (bc) {
-        bc.postMessage({ action: 'resolve_battle', winner: 'A', multA: 3.41, multB: 2.11 });
-      }
+      document.getElementById('p-a-user').value = 'LuckyStriker';
+      document.getElementById('p-a-slot').value = 'Wanted Dead or a Wild';
+      document.getElementById('p-a-mult').value = '3.41';
+      document.getElementById('p-b-user').value = 'VegasKing';
+      document.getElementById('p-b-slot').value = 'Gates of Olympus 1000';
+      document.getElementById('p-b-mult').value = '2.11';
+      applyKothResolution('A', 3.41, 2.11);
     };
 
     // Initial load
