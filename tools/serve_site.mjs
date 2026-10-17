@@ -76,6 +76,48 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Mock API endpoints for local testing & visual audit
+  if (cleanUrl === '/api/hunt/spotlight') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ active: false, username: null }));
+    return;
+  }
+
+  if (cleanUrl === '/api/stake/target') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ target: 77777, validForSeconds: 600, expiresAt: Date.now() + 600000 }));
+    return;
+  }
+
+  if (cleanUrl === '/api/store/stock') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ catalog: [] }));
+    return;
+  }
+
+  if (cleanUrl.startsWith('/api/battle/')) {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ success: true }));
+    return;
+  }
+
+  // Generic API fallback for simulation / visual audit
+  if (cleanUrl.startsWith('/api/')) {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      success: true,
+      queues: { p1: [], p2: [] },
+      mode: 'BONUS_BUY',
+      isLive: false,
+      catalog: [],
+      redemptions: [],
+      alerts: [],
+      ledger: []
+    }));
+    return;
+  }
+
   let resolvedPath = path.join(rootDir, cleanUrl);
 
   // Check special mappings for Stake clone

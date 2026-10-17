@@ -197,13 +197,46 @@ export function invalidateIndexCache() {
   lastIndexTime = 0;
 }
 
+const CACHE_DIR = path.join(ROOT, '.cache');
+const CACHE_FILE = path.join(CACHE_DIR, 'rag_index_cache.json');
+
 /**
- * Builds or retrieves cached MiniSearch index
+ * Builds or retrieves cached MiniSearch index (with disk persistence)
  */
 export function getOrBuildMiniSearchIndex(force = false) {
   const now = Date.now();
   if (!force && cachedIndex && now - lastIndexTime < 300_000) {
     return cachedIndex;
+  }
+
+  // 1. Try loading from disk cache if fresh (< 30 minutes)
+  if (!force && fs.existsSync(CACHE_FILE)) {
+    try {
+      const stats = fs.statSync(CACHE_FILE);
+      if (now - stats.mtimeMs < 1_800_000) { // 30 min freshness
+        const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+        const chunks = JSON.parse(raw);
+        if (Array.isArray(chunks) && chunks.length > 0) {
+          let mini = null;
+          if (MiniSearchClass) {
+            mini = new MiniSearchClass({
+              fields: ['title', 'section', 'text'],
+              storeFields: ['id', 'source', 'title', 'section', 'category', 'snippet', 'text'],
+              searchOptions: {
+                boost: { title: 3, section: 2, text: 1 },
+                boostDocument: (docId, term, doc) => (doc && doc.category === 'canon' ? 2.5 : 1.0),
+                fuzzy: 0.2,
+                prefix: true
+              }
+            });
+            mini.addAll(chunks);
+          }
+          cachedIndex = { mini, chunks };
+          lastIndexTime = now;
+          return cachedIndex;
+        }
+      }
+    } catch (_) {}
   }
 
   const searchDirs = [
@@ -231,8 +264,10 @@ export function getOrBuildMiniSearchIndex(force = false) {
     }
   }
 
+  let mini = null;
+
   if (MiniSearchClass) {
-    const mini = new MiniSearchClass({
+    mini = new MiniSearchClass({
       fields: ['title', 'section', 'text'],
       storeFields: ['id', 'source', 'title', 'section', 'category', 'snippet', 'text'],
       searchOptions: {
@@ -248,6 +283,14 @@ export function getOrBuildMiniSearchIndex(force = false) {
   } else {
     cachedIndex = { mini: null, chunks: allChunks };
   }
+
+  // Save chunks to disk cache
+  try {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(allChunks), 'utf8');
+  } catch (_) {}
 
   lastIndexTime = now;
   return cachedIndex;
@@ -374,6 +417,7 @@ export async function queryKnowledge(query, limit = 8) {
       try {
         const res = await fetch(`${QDRANT_HOST}/collections/${col}/points/scroll`, {
           method: 'POST',
+          signal: AbortSignal.timeout(2500),
           headers: {
             'api-key': QDRANT_API_KEY,
             'Content-Type': 'application/json'
@@ -449,7 +493,9 @@ export async function queryKnowledge(query, limit = 8) {
   try {
     const { rerankCandidatesWithAI } = await import('./vertex_ai_bridge.mjs');
     if (typeof rerankCandidatesWithAI === 'function' && fused.length > 0) {
-      reranked = await rerankCandidatesWithAI(query, fused.slice(0, 15));
+      const rerankPromise = rerankCandidatesWithAI(query, fused.slice(0, 15));
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(fused), 3500));
+      reranked = await Promise.race([rerankPromise, timeoutPromise]);
     }
   } catch (_) {}
 

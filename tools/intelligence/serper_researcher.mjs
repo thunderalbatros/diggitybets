@@ -41,6 +41,7 @@ export async function searchWeb(query, limit = 5) {
 
   const res = await fetch('https://google.serper.dev/search', {
     method: 'POST',
+    signal: AbortSignal.timeout(3500),
     headers: {
       'X-API-KEY': SERPER_API_KEY,
       'Content-Type': 'application/json'

@@ -51,3 +51,9 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# Sandcastle Ephemeral Worktrees
+.sandboxes/
+
+# Local intelligence & RAG index caches
+.cache/
