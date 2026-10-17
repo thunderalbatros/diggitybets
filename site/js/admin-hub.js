@@ -38,8 +38,13 @@ class AdminHubController {
     ];
     try {
       const savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
-      if (Array.isArray(savedPool) && savedPool.length > 0) {
-        this.duoPool = savedPool;
+      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
+      if (Array.isArray(savedPool) && (savedPool.length > 0 || purged)) {
+        this.duoPool = savedPool.map(p => ({
+          ...p,
+          chatter: p.chatter || p.user || 'Viewer',
+          user: p.user || p.chatter || 'Viewer'
+        }));
       } else {
         localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool));
       }
@@ -50,6 +55,14 @@ class AdminHubController {
 
     // King of the Hill (KotH) State & Duo Wheel Corner Target ('A' = Blue Corner, 'B' = Red Corner)
     this.wheelTargetCorner = 'A';
+    this._processedDuoSpinIds = new Set();
+    this._demoUsersPurgedForLive = false;
+    this.demoUsernames = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
+      'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar'
+    ]);
     this.kothCelebrationTimer = null;
     this.tourneyQueue = [];
     this.kothState = {
@@ -2490,15 +2503,17 @@ class AdminHubController {
 
     if (btnRestoreDuo) {
       btnRestoreDuo.onclick = () => {
+        this._demoUsersPurgedForLive = false;
+        try { localStorage.removeItem('hunthub_demo_users_purged'); } catch (_) {}
         this.duoPool = [
-          { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', icon: '🤠' },
-          { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic Play', icon: '⚡' },
-          { chatter: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie Studio', icon: '⚔️' },
-          { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic Play', icon: '🍬' },
-          { chatter: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw Gaming', icon: '🦝' },
-          { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic Play', icon: '🎣' },
-          { chatter: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic Play', icon: '🦈' },
-          { chatter: 'RoyalFlush', slot: 'RIP City', provider: 'Hacksaw Gaming', icon: '🐱' }
+          { chatter: 'LuckyStriker', user: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', icon: '🤠' },
+          { chatter: 'VegasKing', user: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic Play', icon: '⚡' },
+          { chatter: 'SlotQueen', user: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie Studio', icon: '⚔️' },
+          { chatter: 'SpinMaster', user: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic Play', icon: '🍬' },
+          { chatter: 'Strike777', user: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw Gaming', icon: '🦝' },
+          { chatter: 'BigBassBob', user: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic Play', icon: '🎣' },
+          { chatter: 'NeonWolf', user: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic Play', icon: '🦈' },
+          { chatter: 'RoyalFlush', user: 'RoyalFlush', slot: 'RIP City', provider: 'Hacksaw Gaming', icon: '🐱' }
         ];
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
@@ -2647,9 +2662,12 @@ class AdminHubController {
       } else {
         cpListEl.innerHTML = this.duoPool.map((p) => {
           const meta = this.resolveSlotMeta(p.slot);
+          const fallbackUri = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+            ? window.SlotResolver.generateDataUriCard(meta.name, meta.provider)
+            : '';
           return `
-            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; font-size: 11px;">
-              <img src="${meta.image}" alt="" style="width: 20px; height: 26px; border-radius: 4px; object-fit: cover;" />
+            <div style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 8px; font-size: 11px;">
+              <img src="${meta.image}" alt="" style="width: 24px; height: 32px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackUri}';" />
               <strong style="color: #fff;">@${p.chatter}</strong>
               <span style="color: var(--gold);">${meta.name}</span>
             </div>
@@ -2680,6 +2698,12 @@ class AdminHubController {
     const userAVal = (document.getElementById('cp-battle-user-a')?.value || '').trim();
     const targetCorner = (!userAVal || this.wheelTargetCorner === 'A') ? 'A' : 'B';
     this.setWheelTargetCorner(targetCorner);
+
+    // When spinning for Player A (Blue Corner), ensure Player B (Red Corner) is completely empty until Spin 2
+    if (this.duoMode === 'battle' && targetCorner === 'A') {
+      this.setCornerFighter('B', '', '');
+      this.pushCornersToOverlay();
+    }
 
     const winnerIdx = Math.floor(Math.random() * this.duoPool.length);
     const winner = { ...this.duoPool[winnerIdx] };
@@ -2745,7 +2769,7 @@ class AdminHubController {
 
       // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
       if (this.duoMode === 'battle') {
-        this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot);
+        this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot, spinId);
       }
 
       if (window.sonner) {
@@ -2975,11 +2999,21 @@ class AdminHubController {
     }
   }
 
+  getEmptyCornerPlaceholderSvg(corner) {
+    const color = corner === 'B' ? '#ff2a5f' : '#00e5ff';
+    const label = corner === 'B' ? 'EMPTY B' : 'EMPTY A';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 236"><rect width="180" height="236" rx="14" fill="#070a12" stroke="${color}" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="6 4"/><text x="90" y="112" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="900" font-size="44" fill="${color}" fill-opacity="0.45">?</text><text x="90" y="152" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="800" font-size="14" fill="#64748b" letter-spacing="1.5">${label}</text></svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
   setCornerFighter(corner, username, slotName) {
     const cleanUser = String(username || '').trim().replace(/^@/, '');
     const formattedUser = cleanUser ? `@${cleanUser}` : '';
     const cleanSlot = String(slotName || '').trim();
-    const meta = this.resolveSlotMeta(cleanSlot || (corner === 'A' ? 'Wanted Dead or a Wild' : 'Gates of Olympus 1000'));
+    const hasFighter = Boolean(cleanUser);
+    const meta = hasFighter
+      ? this.resolveSlotMeta(cleanSlot || (corner === 'A' ? 'Wanted Dead or a Wild' : 'Gates of Olympus 1000'))
+      : { name: '', provider: '', image: this.getEmptyCornerPlaceholderSvg(corner) };
 
     if (corner === 'A') {
       const uEl = document.getElementById('cp-battle-user-a');
@@ -2987,17 +3021,19 @@ class AdminHubController {
       const imgEl = document.getElementById('cp-battle-img-a');
       const adminNameEl = document.getElementById('admin-battle-player-a-name');
       if (uEl) uEl.value = formattedUser;
-      if (sEl) sEl.value = cleanSlot ? meta.name : '';
+      if (sEl) sEl.value = hasFighter ? (cleanSlot ? meta.name : meta.name) : '';
       if (imgEl) {
         imgEl.src = meta.image;
         imgEl.onerror = () => {
-          if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+          if (hasFighter && window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
             imgEl.src = window.SlotResolver.generateDataUriCard(meta.name, meta.provider);
+          } else {
+            imgEl.src = this.getEmptyCornerPlaceholderSvg('A');
           }
         };
       }
       if (adminNameEl) {
-        adminNameEl.textContent = cleanUser ? `${formattedUser} (${meta.name})` : '@PlayerA';
+        adminNameEl.textContent = hasFighter ? `${formattedUser} (${meta.name})` : '@PlayerA (Waiting...)';
       }
     } else {
       const uEl = document.getElementById('cp-battle-user-b');
@@ -3005,27 +3041,44 @@ class AdminHubController {
       const imgEl = document.getElementById('cp-battle-img-b');
       const adminNameEl = document.getElementById('admin-battle-player-b-name');
       if (uEl) uEl.value = formattedUser;
-      if (sEl) sEl.value = cleanSlot ? meta.name : '';
+      if (sEl) sEl.value = hasFighter ? (cleanSlot ? meta.name : meta.name) : '';
       if (imgEl) {
         imgEl.src = meta.image;
         imgEl.onerror = () => {
-          if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
+          if (hasFighter && window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
             imgEl.src = window.SlotResolver.generateDataUriCard(meta.name, meta.provider);
+          } else {
+            imgEl.src = this.getEmptyCornerPlaceholderSvg('B');
           }
         };
       }
       if (adminNameEl) {
-        adminNameEl.textContent = cleanUser ? `${formattedUser} (${meta.name})` : '@PlayerB';
+        adminNameEl.textContent = hasFighter ? `${formattedUser} (${meta.name})` : '@PlayerB (Waiting...)';
       }
     }
   }
 
-  assignWheelWinnerToCorner(corner, username, slotName) {
+  assignWheelWinnerToCorner(corner, username, slotName, spinId) {
+    if (spinId) {
+      if (this._processedDuoSpinIds.has(spinId)) return;
+      this._processedDuoSpinIds.add(spinId);
+    }
+
+    const cleanUser = String(username || '').trim().replace(/^@/, '');
+    if (!cleanUser) return;
+
     if (corner === 'A') {
-      this.setCornerFighter('A', username, slotName);
+      this.setCornerFighter('A', cleanUser, slotName);
+      // Player B MUST remain completely empty until the second spin explicitly selects Player B
+      this.setCornerFighter('B', '', '');
       this.setWheelTargetCorner('B');
     } else {
-      this.setCornerFighter('B', username, slotName);
+      const currentA = (document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
+      if (currentA && currentA === cleanUser.toLowerCase()) {
+        // Never allow Player A to be duplicated into Player B
+        return;
+      }
+      this.setCornerFighter('B', cleanUser, slotName);
     }
     this.pushCornersToOverlay();
   }
@@ -3033,11 +3086,17 @@ class AdminHubController {
   pushCornersToOverlay() {
     const userA = (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '');
     const slotA = (document.getElementById('cp-battle-slot-a')?.value || '').trim();
-    const userB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
-    const slotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
+    let userB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
+    let slotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
 
-    const metaA = slotA ? this.resolveSlotMeta(slotA) : { name: '', provider: '', image: '' };
-    const metaB = slotB ? this.resolveSlotMeta(slotB) : { name: '', provider: '', image: '' };
+    if (userA && userB && userA.toLowerCase() === userB.toLowerCase()) {
+      userB = '';
+      slotB = '';
+      this.setCornerFighter('B', '', '');
+    }
+
+    const metaA = (userA && slotA) ? this.resolveSlotMeta(slotA) : { name: '', provider: '', image: '' };
+    const metaB = (userB && slotB) ? this.resolveSlotMeta(slotB) : { name: '', provider: '', image: '' };
 
     const playerAObj = userA ? {
       userId: `u_${userA}`,
@@ -3171,6 +3230,7 @@ class AdminHubController {
   handleDuoBroadcast(data) {
     if (!data) return;
     if (data.action === 'duo_winner_selected' && data.winner) {
+      if (data.spinId && this._processedDuoSpinIds.has(data.spinId)) return;
       if (data.timestamp && this._lastDuoWinTs === data.timestamp) return;
       if (data.timestamp) this._lastDuoWinTs = data.timestamp;
 
@@ -3186,7 +3246,7 @@ class AdminHubController {
         }
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
-        this.assignWheelWinnerToCorner(target, u, s);
+        this.assignWheelWinnerToCorner(target, u, s, data.spinId);
       }
     }
   }
@@ -3196,6 +3256,7 @@ class AdminHubController {
     if (data.action === 'set_target_corner' && data.corner) {
       this.setWheelTargetCorner(data.corner);
     } else if (data.action === 'assign_player' && data.player) {
+      if (data.spinId && this._processedDuoSpinIds.has(data.spinId)) return;
       if (data.timestamp && this._lastAssignTs === data.timestamp) return;
       if (data.timestamp) this._lastAssignTs = data.timestamp;
 
@@ -3207,7 +3268,7 @@ class AdminHubController {
         this.duoPool = this.duoPool.filter(item => String(item.chatter || '').toLowerCase().replace(/^@/, '') !== cleanU);
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
-        this.assignWheelWinnerToCorner(corner, u, s);
+        this.assignWheelWinnerToCorner(corner, u, s, data.spinId);
       }
     }
   }
@@ -3231,15 +3292,26 @@ class AdminHubController {
       if (savedBattle) {
         const uAEl = document.getElementById('cp-battle-user-a');
         const uBEl = document.getElementById('cp-battle-user-b');
-        const pAName = savedBattle.playerA?.username || savedBattle.playerA?.displayName || savedBattle.playerA?.name || '';
+        const pAName = String(savedBattle.playerA?.username || savedBattle.playerA?.displayName || savedBattle.playerA?.name || '').trim().replace(/^@/, '');
         const pASlot = savedBattle.playerA?.slotName || savedBattle.playerA?.slot || '';
-        const pBName = savedBattle.playerB?.username || savedBattle.playerB?.displayName || savedBattle.playerB?.name || '';
-        const pBSlot = savedBattle.playerB?.slotName || savedBattle.playerB?.slot || '';
+        let pBName = String(savedBattle.playerB?.username || savedBattle.playerB?.displayName || savedBattle.playerB?.name || '').trim().replace(/^@/, '');
+        let pBSlot = savedBattle.playerB?.slotName || savedBattle.playerB?.slot || '';
+
+        if (pAName && pBName && pAName.toLowerCase() === pBName.toLowerCase()) {
+          pBName = '';
+          pBSlot = '';
+          savedBattle.playerB = null;
+          savedBattle.status = 'LOBBY';
+          localStorage.setItem('hunthub_battle_state', JSON.stringify(savedBattle));
+        }
+
         if (pAName && uAEl && !uAEl.value) {
           this.setCornerFighter('A', pAName, pASlot);
         }
         if (pBName && uBEl && !uBEl.value) {
           this.setCornerFighter('B', pBName, pBSlot);
+        } else if (!pBName) {
+          this.setCornerFighter('B', '', '');
         }
         if (pAName && !pBName) {
           this.setWheelTargetCorner('B');
@@ -3247,14 +3319,14 @@ class AdminHubController {
       }
     } catch (_) {}
 
-    // Initialize slot preview images if empty
-    const imgA = document.getElementById('cp-battle-img-a');
-    const imgB = document.getElementById('cp-battle-img-b');
-    if (imgA && !imgA.getAttribute('src')) {
-      imgA.src = this.resolveSlotMeta('Wanted Dead or a Wild').image;
+    // Ensure any corner without a username displays the empty placeholder
+    const curUserA = (document.getElementById('cp-battle-user-a')?.value || '').trim();
+    const curUserB = (document.getElementById('cp-battle-user-b')?.value || '').trim();
+    if (!curUserA) {
+      this.setCornerFighter('A', '', '');
     }
-    if (imgB && !imgB.getAttribute('src')) {
-      imgB.src = this.resolveSlotMeta('Gates of Olympus 1000').image;
+    if (!curUserB || (curUserA && curUserA.toLowerCase().replace(/^@/, '') === curUserB.toLowerCase().replace(/^@/, ''))) {
+      this.setCornerFighter('B', '', '');
     }
 
     this.renderDuoQueue();
@@ -3529,6 +3601,78 @@ class AdminHubController {
   // LIVE KICK CHAT PUSHER BRIDGE (https://kick.com/diggitybets)
   // ========================================================
 
+  purgeDemoUsersForLiveStream(reason = 'stream_online') {
+    if (this._demoUsersPurgedForLive) return;
+    this._demoUsersPurgedForLive = true;
+    try {
+      localStorage.setItem('hunthub_demo_users_purged', 'true');
+    } catch (_) {}
+
+    const isDemo = (u) => {
+      const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
+      return !clean || this.demoUsernames.has(clean);
+    };
+
+    // 1. Clean Duo Wheel Pool (battle & tourney)
+    if (Array.isArray(this.duoPool)) {
+      const beforeLen = this.duoPool.length;
+      this.duoPool = this.duoPool.filter(item => !isDemo(item.chatter || item.user));
+      if (this.duoPool.length !== beforeLen) {
+        try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
+        this.renderDuoQueue();
+        if (this.channelDuo) {
+          this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool, type: 'sync_pool', items: this.duoPool });
+        }
+      }
+    }
+
+    // 2. Clean Recent Chatters Map
+    if (this.recentChatters && typeof this.recentChatters.forEach === 'function') {
+      for (const [k] of this.recentChatters.entries()) {
+        if (isDemo(k)) this.recentChatters.delete(k);
+      }
+    }
+
+    // 3. Clean Corners A & B if holding a demo user
+    const userA = document.getElementById('cp-battle-user-a')?.value || '';
+    const userB = document.getElementById('cp-battle-user-b')?.value || '';
+    let cornersChanged = false;
+    if (userA && isDemo(userA)) {
+      this.setCornerFighter('A', '', '');
+      cornersChanged = true;
+    }
+    if (userB && isDemo(userB)) {
+      this.setCornerFighter('B', '', '');
+      cornersChanged = true;
+    }
+    if (cornersChanged) {
+      this.syncCondensedControlPanelUI();
+      this.pushCornersToOverlay();
+    }
+
+    // 4. Clean Bonus Hunt demo guesses
+    try {
+      const savedGuesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
+      if (Array.isArray(savedGuesses)) {
+        const realGuesses = savedGuesses.filter(g => !isDemo(g.user || g.username));
+        localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(realGuesses));
+      }
+      if (window.bonusHunt && Array.isArray(window.bonusHunt.guesses)) {
+        window.bonusHunt.guesses = window.bonusHunt.guesses.filter(g => !isDemo(g.user || g.username));
+        if (typeof window.bonusHunt.renderGuesses === 'function') window.bonusHunt.renderGuesses();
+      }
+    } catch (_) {}
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: '🟢 Live Stream Mode Active',
+        message: 'Demo/example users were automatically cleared for live Kick viewers.',
+        type: 'green'
+      });
+    }
+    console.log(`[AdminHub] Auto-purged demo users (${reason}).`);
+  }
+
   async initLiveKickChatBridge() {
     let chatroomId = 2672891; // Default diggitybets Kick chatroom ID
     window.hunthubStreamLive = false;
@@ -3543,6 +3687,9 @@ class AdminHubController {
           const data = await res.json();
           if (data?.chatroomId) chatroomId = Number(data.chatroomId);
           window.hunthubStreamLive = Boolean(data?.isStreamLive);
+          if (window.hunthubStreamLive) {
+            this.purgeDemoUsersForLiveStream('api_stream_live');
+          }
           return;
         }
       } catch (_) {}
@@ -3558,6 +3705,9 @@ class AdminHubController {
             chatroomId = Number(data.chatroom.id);
           }
           window.hunthubStreamLive = Boolean(data?.livestream && data.livestream.is_live !== false);
+          if (window.hunthubStreamLive) {
+            this.purgeDemoUsersForLiveStream('kick_v2_stream_live');
+          }
         }
       } catch (_) {}
     };
@@ -3591,6 +3741,10 @@ class AdminHubController {
               const sender = msgData?.sender?.username || 'Chatter';
               const content = String(msgData?.content || '').trim();
               if (sender) {
+                const cleanSender = sender.trim().replace(/^@/, '').toLowerCase();
+                if (!this.demoUsernames.has(cleanSender)) {
+                  this.purgeDemoUsersForLiveStream('live_kick_chat_message');
+                }
                 this.recentChatters.set(sender, { user: sender, ts: Date.now() });
                 if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
                   window.userStore.recordVerifiedKickChatActivity(sender, content);
@@ -3616,6 +3770,10 @@ class AdminHubController {
     const cleanUser = String(username || 'Viewer').trim().replace(/^@/, '');
     const text = String(rawMessage || '').trim();
     if (!text.startsWith('!')) return;
+
+    if (cleanUser && !this.demoUsernames.has(cleanUser.toLowerCase())) {
+      this.purgeDemoUsersForLiveStream('live_chat_command');
+    }
 
     const logEl = document.getElementById('cp-live-chat-log');
     if (logEl) {

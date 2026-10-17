@@ -74,33 +74,127 @@ class DuoWheelApp {
     } catch {}
   }
 
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    try {
+      const t = startTime;
+      const masterGain = this.audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volume, t);
+
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(3.6, t);
+
+      const minCutoff = Math.max(320, freq * 1.2);
+      const peakCutoff = Math.min(6800, freq * 5.4);
+      const sustainCutoff = Math.min(4200, freq * 3.2);
+
+      filter.frequency.setValueAtTime(minCutoff, t);
+      filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+      filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, t);
+      osc2.frequency.setValueAtTime(freq, t);
+      osc1.detune.setValueAtTime(-7, t);
+      osc2.detune.setValueAtTime(7, t);
+
+      const subOsc = this.audioCtx.createOscillator();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(freq * 0.5, t);
+      const subGain = this.audioCtx.createGain();
+      subGain.gain.setValueAtTime(0.24, t);
+      subOsc.connect(subGain);
+      subGain.connect(filter);
+
+      if (!isStaccato && duration > 0.25) {
+        try {
+          const lfo = this.audioCtx.createOscillator();
+          const lfoGain = this.audioCtx.createGain();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(5.3, t);
+          lfoGain.gain.setValueAtTime(0, t);
+          lfoGain.gain.setValueAtTime(0, t + 0.16);
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+          lfo.connect(osc1.frequency);
+          lfo.connect(osc2.frequency);
+          lfo.start(t + 0.16);
+          lfo.stop(t + duration + 0.1);
+        } catch (_) {}
+      }
+
+      const noteGain = this.audioCtx.createGain();
+      const attackTime = isStaccato ? 0.018 : 0.035;
+      const releaseTime = isStaccato ? 0.06 : 0.25;
+
+      noteGain.gain.setValueAtTime(0.001, t);
+      noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+      if (isStaccato) {
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      } else {
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+      }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+      masterGain.connect(this.audioCtx.destination);
+
+      const stopTime = t + duration + releaseTime + 0.05;
+      osc1.start(t);
+      osc2.start(t);
+      subOsc.start(t);
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      subOsc.stop(stopTime);
+    } catch (_) {}
+  }
+
   playWinFanfare() {
     if (!this.audioCtx) return;
     try {
-      const notes = [440, 554.37, 659.25, 880];
       const now = this.audioCtx.currentTime;
-      notes.forEach((f, i) => {
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        const t = now + i * 0.1;
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(f, t);
+      // Royal Entrance Motif in D Major
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
+        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
+        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
+        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
+        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
+      ];
 
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start(t);
-        osc.stop(t + 0.45);
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
       });
-    } catch {}
+
+      // Grand Climax 5-Horn Chord at T + 1.42s
+      const climaxTime = now + 1.42;
+      const chord = [
+        { freq: 293.66, dur: 1.25, vol: 0.34 },
+        { freq: 440.00, dur: 1.30, vol: 0.36 },
+        { freq: 587.33, dur: 1.35, vol: 0.40 },
+        { freq: 739.99, dur: 1.40, vol: 0.44 },
+        { freq: 880.00, dur: 1.45, vol: 0.48 },
+      ];
+
+      chord.forEach(c => {
+        this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+      });
+    } catch (_) {}
   }
 
   syncTargetFromBattleState(state) {
-    if (!state) return;
+    if (!state || this.isSpinning) return;
     const hasA = Boolean(state.playerA && (state.playerA.username || state.playerA.name));
     const hasB = Boolean(state.playerB && (state.playerB.username || state.playerB.name));
     if (!hasA && !hasB) {
@@ -158,8 +252,13 @@ class DuoWheelApp {
   initChannels() {
     try {
       const savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
-      if (Array.isArray(savedPool) && savedPool.length > 0) {
-        this.pool = savedPool;
+      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true';
+      if (Array.isArray(savedPool) && (savedPool.length > 0 || purged)) {
+        this.pool = savedPool.map(p => ({
+          user: p.user || p.chatter || 'Viewer',
+          chatter: p.chatter || p.user || 'Viewer',
+          slot: p.slot || 'Wanted Dead or a Wild'
+        }));
       } else {
         localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool));
       }
@@ -173,18 +272,21 @@ class DuoWheelApp {
       this.bcWheel.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'spin') {
-          if (e.data.targetCorner === 'A' || e.data.targetCorner === 'B') {
-            this.battleTarget = e.data.targetCorner;
-            this.updateTargetPillUI();
-          }
-          this.spin(e.data.mode, e.data.spinId, e.data.winner);
+          this.spin(e.data.mode, e.data.spinId, e.data.winner, e.data.targetCorner);
         } else if (e.data.action === 'set_mode') {
           this.setMode(e.data.mode);
         } else if ((e.data.action === 'set_target' || e.data.action === 'set_target_corner') && ((e.data.target || e.data.corner) === 'A' || (e.data.target || e.data.corner) === 'B')) {
-          this.battleTarget = e.data.target || e.data.corner;
-          this.updateTargetPillUI();
-        } else if (e.data.action === 'set_pool' && Array.isArray(e.data.pool)) {
-          this.pool = e.data.pool;
+          if (!this.isSpinning) {
+            this.battleTarget = e.data.target || e.data.corner;
+            this.updateTargetPillUI();
+          }
+        } else if ((e.data.action === 'set_pool' || e.data.type === 'sync_pool') && Array.isArray(e.data.pool || e.data.items)) {
+          const incoming = e.data.pool || e.data.items;
+          this.pool = incoming.map(p => ({
+            user: p.user || p.chatter || 'Viewer',
+            chatter: p.chatter || p.user || 'Viewer',
+            slot: p.slot || 'Wanted Dead or a Wild'
+          }));
           try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
           if (!this.isSpinning) this.renderTrack();
         } else if (e.data.action === 'add_entry' && e.data.entry) {
@@ -195,11 +297,15 @@ class DuoWheelApp {
       this.bcBattle.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'reset' || e.data.action === 'reset_battle' || e.data.type === 'RESET_BATTLE' || e.data.action === 'cashout' || e.data.action === 'koth_retire') {
-          this.battleTarget = 'A';
-          this.updateTargetPillUI();
+          if (!this.isSpinning) {
+            this.battleTarget = 'A';
+            this.updateTargetPillUI();
+          }
         } else if (e.data.action === 'koth_next_challenger' || e.data.action === 'continue' || e.data.action === 'koth_continue') {
-          this.battleTarget = 'B';
-          this.updateTargetPillUI();
+          if (!this.isSpinning) {
+            this.battleTarget = 'B';
+            this.updateTargetPillUI();
+          }
         } else if ((e.data.action === 'state_sync' || e.data.action === 'battle_update') && e.data.state) {
           this.syncTargetFromBattleState(e.data.state);
         }
@@ -227,18 +333,14 @@ class DuoWheelApp {
       } else if (e.key === 'hunthub_duo_spin_cmd' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (parsed.targetCorner === 'A' || parsed.targetCorner === 'B') {
-            this.battleTarget = parsed.targetCorner;
-            this.updateTargetPillUI();
-          }
-          this.spin(parsed.mode, parsed.spinId, parsed.winner);
+          this.spin(parsed.mode, parsed.spinId, parsed.winner, parsed.targetCorner);
         } catch {}
       } else if (e.key === 'hunthub_battle_state' && e.newValue) {
         try {
           const st = JSON.parse(e.newValue);
           this.syncTargetFromBattleState(st);
         } catch {}
-      } else if (e.key === 'hunthub_battle_cmd' && e.newValue) {
+      } else if (e.key === 'hunthub_battle_cmd' && e.newValue && !this.isSpinning) {
         try {
           const cmd = JSON.parse(e.newValue);
           if (cmd.action === 'reset' || cmd.action === 'cashout') {
@@ -515,12 +617,18 @@ class DuoWheelApp {
     this.updateQueueBadge();
   }
 
-  spin(mode, spinId, forcedWinner) {
+  spin(mode, spinId, forcedWinner, targetCorner) {
     if (this.isSpinning) return;
     if (spinId && this._lastProcessedSpinId === spinId) return;
     if (spinId) this._lastProcessedSpinId = spinId;
 
     if (mode) this.setMode(mode);
+    if (targetCorner === 'A' || targetCorner === 'B') {
+      this.battleTarget = targetCorner;
+      this.updateTargetPillUI();
+    }
+    this._lockedSpinCorner = this.battleTarget === 'B' ? 'B' : 'A';
+
     if (this._toastHideTimer) {
       clearTimeout(this._toastHideTimer);
       this._toastHideTimer = null;
@@ -627,10 +735,11 @@ class DuoWheelApp {
       this.trackEl.children[this._lastTargetCardIndex].classList.add('winner-border-glow');
     }
 
+    const finishedSpinId = this.currentSpinId;
+    this.currentSpinId = null;
+
     // Send spin_animation_complete handshake to backend for instant synchronized chat announcement
-    if (this.currentSpinId) {
-      const finishedSpinId = this.currentSpinId;
-      this.currentSpinId = null;
+    if (finishedSpinId) {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         try {
           this.ws.send(JSON.stringify({ action: 'spin_animation_complete', spinId: finishedSpinId }));
@@ -653,7 +762,8 @@ class DuoWheelApp {
     }
 
     const slotDetails = this.resolveSlotDetails(winner.slot);
-    const assignedCorner = this.battleTarget;
+    const assignedCorner = this._lockedSpinCorner || this.battleTarget;
+    this._lockedSpinCorner = null;
 
     // Display Centered Winner Toast in English with exact resolved slot name
     this.toastTitle.textContent = this.mode === 'battle'
@@ -693,7 +803,7 @@ class DuoWheelApp {
 
     // Auto-fill Target System
     if (this.mode === 'battle') {
-      this.autoFillBattle(winner, assignedCorner);
+      this.autoFillBattle(winner, assignedCorner, finishedSpinId);
       // Toggle target for next spin: A -> B, B -> A
       this.battleTarget = assignedCorner === 'A' ? 'B' : 'A';
       this.updateTargetPillUI();
@@ -704,7 +814,7 @@ class DuoWheelApp {
     }
   }
 
-  async autoFillBattle(item, slotKey) {
+  async autoFillBattle(item, slotKey, spinId) {
     const slotDetails = this.resolveSlotDetails(item.slot);
     console.log(`[Duo Wheel] Auto-filling Battle Player ${slotKey}: @${item.chatter} (${slotDetails.name})`);
 
@@ -727,6 +837,7 @@ class DuoWheelApp {
 
     const winnerEventPayload = {
       action: 'duo_winner_selected',
+      spinId: spinId || null,
       targetCorner: slotKey,
       winner: {
         chatter: item.chatter,
@@ -747,6 +858,7 @@ class DuoWheelApp {
     if (this.bcBattle) {
       this.bcBattle.postMessage({
         action: 'assign_player',
+        spinId: spinId || null,
         playerSlot: slotKey,
         player: playerObj,
         timestamp: Date.now(),
@@ -757,6 +869,7 @@ class DuoWheelApp {
     try {
       localStorage.setItem('hunthub_duo_winner_selected', JSON.stringify(winnerEventPayload));
       localStorage.setItem('hunthub_battle_assign', JSON.stringify({
+        spinId: spinId || null,
         playerSlot: slotKey,
         player: playerObj,
         timestamp: Date.now(),
@@ -778,9 +891,22 @@ class DuoWheelApp {
           winner: null,
         };
       }
-      if (slotKey === 'A') battleState.playerA = playerObj;
-      if (slotKey === 'B') battleState.playerB = playerObj;
-      if (battleState.playerA && battleState.playerB) battleState.status = 'READY';
+      if (slotKey === 'A') {
+        battleState.playerA = playerObj;
+        battleState.playerB = null;
+        battleState.status = 'LOBBY';
+      } else if (slotKey === 'B') {
+        const cleanA = String(battleState.playerA?.username || '').trim().toLowerCase().replace(/^@/, '');
+        const cleanB = String(playerObj.username || '').trim().toLowerCase().replace(/^@/, '');
+        if (!cleanA || cleanA !== cleanB) {
+          battleState.playerB = playerObj;
+        }
+      }
+      if (battleState.playerA && battleState.playerB) {
+        battleState.status = 'READY';
+      } else {
+        battleState.status = 'LOBBY';
+      }
 
       localStorage.setItem('hunthub_battle_state', JSON.stringify(battleState));
     } catch (e) {

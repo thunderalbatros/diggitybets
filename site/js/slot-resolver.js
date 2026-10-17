@@ -53,7 +53,7 @@
     if (url.indexOf('fan-cdn.nolimitcity.com') !== -1) return true;
     if (url.indexOf('mediumrare.imgix.net/games/') !== -1) return true;
     if (url.indexOf('trans_eba4744bd0.png') !== -1) return true;
-    if (url.indexOf('site/images/slots/') !== -1 && /\.svg$/i.test(url)) return true;
+    if (url.indexOf('images/slots/') !== -1 && /\.svg(\?.*)?$/i.test(url)) return true;
     for (var i = 0; i < LEGACY_BROKEN_HASHES.length; i++) {
       if (url.indexOf(LEGACY_BROKEN_HASHES[i]) !== -1) return true;
     }
@@ -745,30 +745,22 @@
   }
 
   function resolve(query, baseContext) {
+    var objName = '';
+    var objProv = '';
+    var objImg = '';
     if (typeof query === 'object' && query !== null) {
-      if (query.name && query.image && query.image.indexOf('../') === -1 && !isLegacyBrokenUrl(query.image)) {
-        return {
-          id: query.id || slugify(query.name),
-          name: query.name,
-          slug: query.slug || slugify(query.name),
-          provider: query.provider || 'Casino',
-          image: resolveSlotImageUrl(query.image, baseContext),
-          maxWin: query.maxWin || '10,000x',
-          rtp: query.rtp || '96.50%',
-          tier: query.tier || '2',
-          category: query.category,
-          badge: query.badge,
-          color: query.color
-        };
-      }
-      if (query.name) {
-        var mObj = fuzzyMatch(query.name);
-        if (mObj) {
+      objName = String(query.name || query.slotName || query.slot || query.title || '').trim();
+      objProv = String(query.provider || query.slotProvider || '').trim();
+      objImg = String(query.image || query.slotImage || query.imageUrl || query.img || '').trim();
+
+      if (objName) {
+        var mObj = fuzzyMatch(objName);
+        if (mObj && mObj.image && !isLegacyBrokenUrl(mObj.image)) {
           return {
             id: mObj.id,
             name: mObj.name,
             slug: mObj.slug,
-            provider: mObj.provider,
+            provider: mObj.provider || objProv || 'Casino',
             image: resolveSlotImageUrl(mObj.image, baseContext),
             maxWin: mObj.maxWin,
             rtp: mObj.rtp,
@@ -779,9 +771,25 @@
           };
         }
       }
+
+      if (objName && objImg && objImg.indexOf('../') === -1 && !isLegacyBrokenUrl(objImg)) {
+        return {
+          id: query.id || slugify(objName),
+          name: objName,
+          slug: query.slug || slugify(objName),
+          provider: objProv || 'Casino',
+          image: resolveSlotImageUrl(objImg, baseContext),
+          maxWin: query.maxWin || '10,000x',
+          rtp: query.rtp || '96.50%',
+          tier: query.tier || '2',
+          category: query.category,
+          badge: query.badge,
+          color: query.color
+        };
+      }
     }
 
-    var str = typeof query === 'string' ? query : (query && query.name ? query.name : '');
+    var str = typeof query === 'string' ? query : objName;
     var match = fuzzyMatch(str);
     if (match) {
       return {
@@ -807,8 +815,8 @@
       id: slug,
       name: titleCased,
       slug: slug,
-      provider: 'Casino Slot',
-      image: generateDataUriCard(titleCased, 'Casino Slot', '#ffd700'),
+      provider: objProv || 'Casino Slot',
+      image: generateDataUriCard(titleCased, objProv || 'Casino Slot', '#ffd700'),
       maxWin: '10,000x',
       rtp: '96.50%',
       tier: '2',

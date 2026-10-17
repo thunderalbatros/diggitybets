@@ -111,7 +111,7 @@ class BattleOverlayApp {
 
     // Resolve slot cover art canonically
     if (player) {
-      const canon = window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player.slotImage || player, '../') : null;
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player, '../') : null;
       if (canon) {
         player.slotName = canon.name;
         player.slotProvider = canon.provider;
@@ -124,7 +124,14 @@ class BattleOverlayApp {
 
     if (slotKey === 'A') {
       this.currentState.playerA = player;
+      // Selecting Player A starts a new battle: Player B must remain empty until selected
+      this.currentState.playerB = null;
     } else if (slotKey === 'B') {
+      const cleanA = String(this.currentState.playerA?.username || this.currentState.playerA?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+      const cleanB = String(player?.username || player?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+      if (cleanA && cleanB && cleanA === cleanB) {
+        return;
+      }
       this.currentState.playerB = player;
     }
 
@@ -622,6 +629,23 @@ class BattleOverlayApp {
 
   handleStateUpdate(state) {
     if (!state) return;
+
+    // Prevent Player A from ever appearing duplicated in Player B
+    if (state.playerA && !(state.playerA.username || state.playerA.displayName || state.playerA.name)) {
+      state.playerA = null;
+    }
+    if (state.playerB && !(state.playerB.username || state.playerB.displayName || state.playerB.name)) {
+      state.playerB = null;
+    }
+    if (state.playerA && state.playerB) {
+      const cleanA = String(state.playerA.username || state.playerA.displayName || state.playerA.name || '').trim().toLowerCase().replace(/^@/, '');
+      const cleanB = String(state.playerB.username || state.playerB.displayName || state.playerB.name || '').trim().toLowerCase().replace(/^@/, '');
+      if (cleanA && cleanA === cleanB) {
+        state.playerB = null;
+        if (state.status === 'READY') state.status = 'LOBBY';
+      }
+    }
+
     const oldStatus = this.currentState ? this.currentState.status : null;
     this.currentState = state;
 

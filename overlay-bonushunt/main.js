@@ -78,30 +78,127 @@ class BonusHuntOverlayApp {
     } catch {}
   }
 
-  playFanfare() {
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    try {
+      const t = startTime;
+      const masterGain = this.audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volume, t);
+
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(3.6, t);
+
+      const minCutoff = Math.max(320, freq * 1.2);
+      const peakCutoff = Math.min(6800, freq * 5.4);
+      const sustainCutoff = Math.min(4200, freq * 3.2);
+
+      filter.frequency.setValueAtTime(minCutoff, t);
+      filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+      filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, t);
+      osc2.frequency.setValueAtTime(freq, t);
+      osc1.detune.setValueAtTime(-7, t);
+      osc2.detune.setValueAtTime(7, t);
+
+      const subOsc = this.audioCtx.createOscillator();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(freq * 0.5, t);
+      const subGain = this.audioCtx.createGain();
+      subGain.gain.setValueAtTime(0.24, t);
+      subOsc.connect(subGain);
+      subGain.connect(filter);
+
+      if (!isStaccato && duration > 0.25) {
+        try {
+          const lfo = this.audioCtx.createOscillator();
+          const lfoGain = this.audioCtx.createGain();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(5.3, t);
+          lfoGain.gain.setValueAtTime(0, t);
+          lfoGain.gain.setValueAtTime(0, t + 0.16);
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+          lfo.connect(osc1.frequency);
+          lfo.connect(osc2.frequency);
+          lfo.start(t + 0.16);
+          lfo.stop(t + duration + 0.1);
+        } catch (_) {}
+      }
+
+      const noteGain = this.audioCtx.createGain();
+      const attackTime = isStaccato ? 0.018 : 0.035;
+      const releaseTime = isStaccato ? 0.06 : 0.25;
+
+      noteGain.gain.setValueAtTime(0.001, t);
+      noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+      if (isStaccato) {
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      } else {
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+      }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+      masterGain.connect(this.audioCtx.destination);
+
+      const stopTime = t + duration + releaseTime + 0.05;
+      osc1.start(t);
+      osc2.start(t);
+      subOsc.start(t);
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      subOsc.stop(stopTime);
+    } catch (_) {}
+  }
+
+  playVictoriousTrumpetFanfare() {
     if (!this.audioCtx) return;
     try {
-      const notes = [523.25, 659.25, 783.99, 1046.50];
       const now = this.audioCtx.currentTime;
 
-      notes.forEach((freq, idx) => {
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        const startTime = now + idx * 0.12;
+      // Royal Entrance Motif in D Major
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
+        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
+        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
+        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
+        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
+      ];
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, startTime);
-
-        gain.gain.setValueAtTime(0.3, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.65);
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
       });
-    } catch {}
+
+      // Grand Climax 5-Horn Chord at T + 1.42s
+      const climaxTime = now + 1.42;
+      const chord = [
+        { freq: 293.66, dur: 1.25, vol: 0.34 },
+        { freq: 440.00, dur: 1.30, vol: 0.36 },
+        { freq: 587.33, dur: 1.35, vol: 0.40 },
+        { freq: 739.99, dur: 1.40, vol: 0.44 },
+        { freq: 880.00, dur: 1.45, vol: 0.48 },
+      ];
+
+      chord.forEach(c => {
+        this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+      });
+    } catch (_) {}
+  }
+
+  playFanfare() {
+    this.playVictoriousTrumpetFanfare();
   }
 
   initBroadcastChannel() {
@@ -418,6 +515,23 @@ class BonusHuntOverlayApp {
       this.topGuessUserEl.textContent = `@${m.closestGuess.username} ($${m.closestGuess.guess.toFixed(2)} · Diff: $${m.closestGuess.diff.toFixed(2)})`;
     }
 
+    // Heal any cached bonus images via SlotResolver before rendering
+    if (Array.isArray(state.bonuses) && window.SlotResolver) {
+      let healed = false;
+      state.bonuses.forEach(b => {
+        if (!b) return;
+        const resolved = window.SlotResolver.resolve(b.slotName || b.name || b, '../');
+        if (resolved && resolved.image && b.slotImage !== resolved.image) {
+          b.slotImage = resolved.image;
+          if (!b.slotProvider || b.slotProvider === 'Casino') b.slotProvider = resolved.provider || b.slotProvider;
+          healed = true;
+        }
+      });
+      if (healed) {
+        try { localStorage.setItem('hunthub_bonushunt_state', JSON.stringify(state)); } catch (_) {}
+      }
+    }
+
     // Render Table
     this.renderTable(state.bonuses || []);
 
@@ -443,14 +557,15 @@ class BonusHuntOverlayApp {
 
     let resolvedSlot = null;
     if (window.SlotResolver) {
-      resolvedSlot = window.SlotResolver.resolve(b.slotName || b.slotImage || b, '../');
+      resolvedSlot = window.SlotResolver.resolve(b.slotName || b.name || b, '../');
     }
-    const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || 'Unknown Slot';
-    const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || 'Casino';
+    const slotNameDisplay = (resolvedSlot && resolvedSlot.name) || b.slotName || b.name || 'Unknown Slot';
+    const slotProviderDisplay = (resolvedSlot && (resolvedSlot.badge || resolvedSlot.provider)) || b.slotProvider || b.provider || 'Casino';
     const fallbackCardUri = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
       ? window.SlotResolver.generateDataUriCard(slotNameDisplay, slotProviderDisplay)
       : '';
-    const slotImgSrc = (resolvedSlot && resolvedSlot.image) || b.slotImage || fallbackCardUri;
+    const isStaleSvg = b.slotImage && /\.svg(\?.*)?$/i.test(String(b.slotImage));
+    const slotImgSrc = (resolvedSlot && resolvedSlot.image) || (!isStaleSvg && b.slotImage) || fallbackCardUri;
 
     const imgHtml = slotImgSrc
       ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackCardUri}';" />`

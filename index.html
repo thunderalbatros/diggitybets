@@ -21,9 +21,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Design System Stylesheet -->
-  <link rel="stylesheet" href="site/css/style.css">
+  <link rel="stylesheet" href="site/css/style.css?v=18.0">
 </head>
 <body>
+
+  <!-- SOTA 2026: Procedural SVG Noise Filter for Anti-Banding & Frosted Glass Texture -->
+  <svg class="svg-noise-defs" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+    <defs>
+      <filter id="surface-noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>
+    </defs>
+  </svg>
+  <div class="site-noise-overlay" aria-hidden="true"></div>
 
   <!-- App Layout Container -->
   <div class="app-layout">
@@ -2740,7 +2751,7 @@
                 </span>
               </div>
               <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-                <img id="cp-battle-img-a" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(0, 229, 255, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
+                <img id="cp-battle-img-a" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%2300e5ff%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%2300e5ff%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20A%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(0, 229, 255, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
                 <div style="flex: 1; min-width: 0;">
                   <input type="text" id="cp-battle-user-a" class="form-input-dark" placeholder="Waiting Winner A..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(0, 229, 255, 0.35);" />
                   <input type="text" id="cp-battle-slot-a" class="form-input-dark" placeholder="Slot A (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
@@ -2757,7 +2768,7 @@
                 <span style="font-size: 10px; color: #fca5a5; font-weight: 700;">CHALLENGER</span>
               </div>
               <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-                <img id="cp-battle-img-b" src="https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255, 42, 95, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
+                <img id="cp-battle-img-b" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%23ff2a5f%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%23ff2a5f%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20B%3C%2Ftext%3E%3C%2Fsvg%3E" alt="" style="width: 60px; height: 79px; aspect-ratio: 180 / 236; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255, 42, 95, 0.45); background: #070a12; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
                 <div style="flex: 1; min-width: 0;">
                   <input type="text" id="cp-battle-user-b" class="form-input-dark" placeholder="Waiting Winner B..." style="width: 100%; padding: 6px 8px; font-size: 12px; font-weight: 800; margin-bottom: 6px; border-color: rgba(255, 42, 95, 0.35);" />
                   <input type="text" id="cp-battle-slot-b" class="form-input-dark" placeholder="Slot B (!battle slot)" style="width: 100%; padding: 6px 8px; font-size: 11px;" />
@@ -3042,23 +3053,23 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=15.0"></script>
-  <script src="site/js/slot-resolver.js?v=15.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=15.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=15.0"></script>
-  <script src="site/js/audio.js?v=15.0"></script>
-  <script src="site/js/provably-fair.js?v=15.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=15.0"></script>
-  <script src="site/js/avatar-generator.js?v=15.0"></script>
-  <script src="site/js/user-store.js?v=15.0"></script>
-  <script src="site/js/auth-oauth.js?v=15.0"></script>
-  <script src="site/js/admin-hub.js?v=15.0"></script>
-  <script src="site/js/house-games.js?v=15.0"></script>
-  <script src="site/js/tournament-prediction.js?v=15.0"></script>
-  <script src="site/js/bonushunt.js?v=15.0"></script>
-  <script src="site/js/motion-fx.js?v=15.0"></script>
-  <script src="site/js/sonner-toast.js?v=15.0"></script>
-  <script src="site/js/app.js?v=15.0"></script>
+  <script src="data/curated_slots.js?v=18.0"></script>
+  <script src="site/js/slot-resolver.js?v=18.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=18.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=18.0"></script>
+  <script src="site/js/audio.js?v=18.0"></script>
+  <script src="site/js/provably-fair.js?v=18.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=18.0"></script>
+  <script src="site/js/avatar-generator.js?v=18.0"></script>
+  <script src="site/js/user-store.js?v=18.0"></script>
+  <script src="site/js/auth-oauth.js?v=18.0"></script>
+  <script src="site/js/admin-hub.js?v=18.0"></script>
+  <script src="site/js/house-games.js?v=18.0"></script>
+  <script src="site/js/tournament-prediction.js?v=18.0"></script>
+  <script src="site/js/bonushunt.js?v=18.0"></script>
+  <script src="site/js/motion-fx.js?v=18.0"></script>
+  <script src="site/js/sonner-toast.js?v=18.0"></script>
+  <script src="site/js/app.js?v=18.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 
