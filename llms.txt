@@ -1,0 +1,23 @@
+# DiggityBets & HuntHub — Live Kick Casino Stream Engagement Suite
+
+> Official community engagement platform, free-to-play spectator games, Provably Fair mini-games, and real-time OBS Studio overlays for [kick.com/diggitybets](https://kick.com/diggitybets) (`https://diggitybets.vip`).
+> 100% free spectator participation (+18 Responsible Gaming compliant, zero entry fees, zero custody of spectator funds).
+
+## Core Live Stream Features & Chat Commands
+- **1v1 Battle & King of the Hill (`!battle <slot>`, `!continue`, `!cashout`)**: Viewers enter the Dual Wheel with their favorite slot. Each 1v1 victory awards $5 USD, up to 4 consecutive wins ($20 USD max cap).
+- **Slot Requests Roulette (`!sr <slot>`)**: Automated live roulette wheel displaying `@username + Slot Name` on each slice and revealing the winning viewer's Kick Avatar, `@username`, and official `180x236` Slot Card.
+- **8-Bracket Slot Tournament (`!tourney <slot>`)**: Single-elimination 8-player bracket with Bonus Buy (Multiplier) and 1-Click Spins modes.
+- **Community Bonus Hunt (`!guess <amount>`)**: Live tracker for bonus opening sessions with ROI %, running average multiplier (`X`), required break-even `X`, and automated Guess The Final Balance settlement.
+
+## Public Sections & OBS Studio Browser Sources
+- [Main Community Hub & Stream Center](https://diggitybets.vip/): Live Kick stream embed, 1v1 Battle Arena, 8-Bracket Tournament, Bonus Hunt Tracker, Free House Games, and 4,889 Curated Slots Explorer.
+- [1v1 Battle & KotH OBS Overlay](https://diggitybets.vip/overlay-battle/index.html?obs=1): Transparent `1920x1080` real-time arena overlay.
+- [Dual Wheel OBS Overlay](https://diggitybets.vip/wheel-duo/index.html?obs=1): Synchronized `620x620` dual roulette for `!battle` and `!tourney`.
+- [Slot Requests (!sr) OBS Overlay](https://diggitybets.vip/overlay-slotrequests/index.html?obs=1): Transparent `620x620` roulette and winner showcase card for `!sr <slot>`.
+- [8-Bracket Tournament OBS Overlay](https://diggitybets.vip/overlay-tourney/index.html?obs=1): Transparent `1920x1080` live tournament bracket.
+- [Community Bonus Hunt OBS Overlay](https://diggitybets.vip/overlay-bonushunt/index.html?obs=1): Transparent `1920x1080` live bonus hunt ticker.
+- [Winner Celebration OBS Overlay](https://diggitybets.vip/overlay-celebration/index.html?obs=1): Transparent `1920x1080` dual-tier celebration (partial round win vs grand champion fanfare, falling coins, and spectator avatar).
+
+## Engineering & Governance Documentation
+- [AGENTS.md](https://diggitybets.vip/AGENTS.md): Engineering protocols, compliance rules, and squad architecture.
+- [CONSTRAINTS.md](https://diggitybets.vip/CONSTRAINTS.md): Enforced numeric quality floors (Core Web Vitals, OBS CPU budget, security, and AEO).
