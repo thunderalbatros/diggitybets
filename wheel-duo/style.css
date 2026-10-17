@@ -422,11 +422,12 @@ body {
 }
 
 .slot-cover-thumb {
-  width: 54px;
+  width: 55px;
   height: 72px;
-  aspect-ratio: 3 / 4;
-  border-radius: 10px;
-  object-fit: cover;
+  aspect-ratio: 180 / 236;
+  border-radius: 9px;
+  object-fit: contain;
+  background: #070a12;
   border: 1.5px solid rgba(255, 215, 0, 0.55);
   box-shadow: 0 2px 12px rgba(255, 215, 0, 0.35);
   flex-shrink: 0;

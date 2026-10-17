@@ -759,8 +759,12 @@ class AdminHubController {
     }
 
     setTimeout(() => {
-      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
-        window.soundEngine.playWin();
+      if (window.soundEngine) {
+        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+          window.soundEngine.playVictoriousTrumpetFanfare();
+        } else if (typeof window.soundEngine.playWin === 'function') {
+          window.soundEngine.playWin();
+        }
       }
       if (typeof window.confetti === 'function') {
         window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
@@ -1227,8 +1231,10 @@ class AdminHubController {
           return;
         }
 
-        const slots = window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : (window.HUNTHUB_CURATED_SLOTS || []);
-        const matches = slots.filter(s => s.name.toLowerCase().includes(q) || s.provider.toLowerCase().includes(q)).slice(0, 8);
+        const slots = (window.HUNTHUB_CURATED_SLOTS && window.HUNTHUB_CURATED_SLOTS.length > 0)
+          ? window.HUNTHUB_CURATED_SLOTS
+          : (window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : []);
+        const matches = slots.filter(s => s.name.toLowerCase().includes(q) || (s.provider && s.provider.toLowerCase().includes(q))).slice(0, 8);
 
         if (matches.length === 0) {
           dropdown.style.display = 'none';
@@ -1237,7 +1243,7 @@ class AdminHubController {
 
         dropdown.innerHTML = matches.map(s => `
           <div class="slot-autocomplete-item" data-id="${s.id}" data-name="${s.name}" data-provider="${s.provider}" data-img="${s.image}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
-            <img src="${s.image}" alt="${s.name}" style="width: 34px; height: 34px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
+            <img src="${s.image}" alt="${s.name}" style="width: 33px; height: 44px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">
             <div style="flex: 1;">
               <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${s.name}</div>
               <div style="font-size: 11px; color: var(--gold);">${s.provider} · Max: ${s.maxWin || '10,000x'}</div>
@@ -1287,11 +1293,11 @@ class AdminHubController {
         const newBonus = {
           id: resolved ? resolved.id : (this.selectedSlot ? this.selectedSlot.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-')),
           name: resolved ? resolved.name : slotName,
-          provider: resolved ? (resolved.badge || resolved.provider) : (this.selectedSlot ? this.selectedSlot.provider : 'Casino Slot'),
+          provider: resolved ? (resolved.provider || resolved.badge) : (this.selectedSlot ? this.selectedSlot.provider : 'Casino Slot'),
           bet: bet || 2.0,
           payout: 0,
           caller: caller.startsWith('@') ? caller : '@' + caller,
-          image: resolved ? resolved.image : (this.selectedSlot ? this.selectedSlot.image : 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format')
+          image: resolved ? resolved.image : (this.selectedSlot ? this.selectedSlot.image : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format')
         };
 
         slots.push(newBonus);
@@ -1331,12 +1337,12 @@ class AdminHubController {
     if (btnDemo) {
       btnDemo.onclick = () => {
         const demoBonuses = [
-          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format' },
-          { id: 'gates-of-olympus', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format' },
-          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec?w=180&h=236&fit=min&auto=format' },
-          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png' },
-          { id: 'sweet-bonanza', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'https://mediumrare.imgix.net/2be43834316fa71dc75a5960ce01783f98292f9d854e4881f215099fbcfe327c?w=180&h=236&fit=min&auto=format' },
-          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Stake Originals', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=180&h=236&fit=min&auto=format' }
+          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
+          { id: 'gates-of-olympus-1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
+          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
+          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
+          { id: 'sweet-bonanza-1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
+          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' }
         ];
         localStorage.setItem('hunthub_hunt_slots', JSON.stringify(demoBonuses));
         localStorage.setItem('hunthub_hunt_active', 'true');
@@ -1407,7 +1413,13 @@ class AdminHubController {
           display.textContent = `🏆 WINNER: ${closest.user} (Guess: $${closest.guess.toFixed(2)} | Diff: $${minDiff.toFixed(2)})`;
         }
 
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (window.soundEngine) {
+          if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+            window.soundEngine.playVictoriousTrumpetFanfare();
+          } else if (typeof window.soundEngine.playWin === 'function') {
+            window.soundEngine.playWin();
+          }
+        }
         if (typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
         if (window.sonner) {
           window.sonner.toast({
@@ -1466,15 +1478,20 @@ class AdminHubController {
 
     tbody.innerHTML = slots.map((s, idx) => {
       const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : s;
+      const imgUrl = (canon && canon.image) ? canon.image : s.image;
+      const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+        ? window.SlotResolver.generateDataUriCard(s.name || 'Slot', s.provider || 'Casino')
+        : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">#${idx + 1}</td>
           <td>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <img src="${s.image}" alt="${s.name}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${imgUrl}" alt="${s.name}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
               <div>
                 <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
-                <div style="font-size: 11px; color: var(--text-dim);">${s.provider}</div>
+                <div style="font-size: 11px; color: var(--text-dim);">${canon && canon.provider ? canon.provider : s.provider}</div>
               </div>
             </div>
           </td>
@@ -1831,7 +1848,13 @@ class AdminHubController {
           window.tournamentPrediction.predictions = pred;
           window.tournamentPrediction.renderBracket();
         }
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (window.soundEngine) {
+          if (round === 'champion' && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+            window.soundEngine.playVictoriousTrumpetFanfare();
+          } else if (typeof window.soundEngine.playWin === 'function') {
+            window.soundEngine.playWin();
+          }
+        }
         if (round === 'champion' && typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
         if (window.sonner) window.sonner.toast({ title: 'Bracket Advanced! 🏆', message: `${winner} advanced in ${round}.`, type: 'green' });
         this.renderTournamentAdmin();
@@ -2255,7 +2278,13 @@ class AdminHubController {
   }
 
   awardKothGrandPrize(kingUsername, prizeAmount = 20, winsCount = 4) {
-    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+    if (window.soundEngine) {
+      if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+        window.soundEngine.playVictoriousTrumpetFanfare();
+      } else if (typeof window.soundEngine.playWin === 'function') {
+        window.soundEngine.playWin();
+      }
+    }
     if (typeof window.confetti === 'function') {
       window.confetti({ particleCount: 120, spread: 90 });
     }
@@ -2705,7 +2734,13 @@ class AdminHubController {
         cpBtn.disabled = false;
         cpBtn.textContent = '🎡 SPIN DUO WHEEL (Pick Winner & Fill Corner)';
       }
-      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+      if (window.soundEngine) {
+        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+          window.soundEngine.playVictoriousTrumpetFanfare();
+        } else if (typeof window.soundEngine.playWin === 'function') {
+          window.soundEngine.playWin();
+        }
+      }
       if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
 
       // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
@@ -2773,7 +2808,13 @@ class AdminHubController {
         btn.disabled = false;
         btn.textContent = '🎯 SPIN CS:GO WHEEL (PICK WINNER)';
       }
-      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+      if (window.soundEngine) {
+        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+          window.soundEngine.playVictoriousTrumpetFanfare();
+        } else if (typeof window.soundEngine.playWin === 'function') {
+          window.soundEngine.playWin();
+        }
+      }
       if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
 
       // Assign Spotlight Recommender in Bonus Hunt

@@ -203,30 +203,132 @@ class CelebrationOverlayApp {
     } catch (e) {}
   }
 
-  playFanfare() {
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    try {
+      const t = startTime;
+      const masterGain = this.audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volume, t);
+
+      // Resonant lowpass formant filter
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(3.6, t);
+
+      const minCutoff = Math.max(320, freq * 1.2);
+      const peakCutoff = Math.min(6800, freq * 5.4);
+      const sustainCutoff = Math.min(4200, freq * 3.2);
+
+      filter.frequency.setValueAtTime(minCutoff, t);
+      filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+      filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+      // Dual detuned sawtooth oscillators
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, t);
+      osc2.frequency.setValueAtTime(freq, t);
+      osc1.detune.setValueAtTime(-7, t);
+      osc2.detune.setValueAtTime(7, t);
+
+      // Warm sub-body
+      const subOsc = this.audioCtx.createOscillator();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(freq * 0.5, t);
+      const subGain = this.audioCtx.createGain();
+      subGain.gain.setValueAtTime(0.24, t);
+      subOsc.connect(subGain);
+      subGain.connect(filter);
+
+      // Vibrato LFO for long notes
+      if (!isStaccato && duration > 0.25) {
+        try {
+          const lfo = this.audioCtx.createOscillator();
+          const lfoGain = this.audioCtx.createGain();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(5.3, t);
+          lfoGain.gain.setValueAtTime(0, t);
+          lfoGain.gain.setValueAtTime(0, t + 0.16);
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+          lfo.connect(osc1.frequency);
+          lfo.connect(osc2.frequency);
+          lfo.start(t + 0.16);
+          lfo.stop(t + duration + 0.1);
+        } catch (_) {}
+      }
+
+      // Envelope
+      const noteGain = this.audioCtx.createGain();
+      const attackTime = isStaccato ? 0.018 : 0.035;
+      const releaseTime = isStaccato ? 0.06 : 0.25;
+
+      noteGain.gain.setValueAtTime(0.001, t);
+      noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+      if (isStaccato) {
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      } else {
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+      }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+      masterGain.connect(this.audioCtx.destination);
+
+      const stopTime = t + duration + releaseTime + 0.05;
+      osc1.start(t);
+      osc2.start(t);
+      subOsc.start(t);
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      subOsc.stop(stopTime);
+    } catch (_) {}
+  }
+
+  playVictoriousTrumpetFanfare() {
     if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
     try {
       const now = this.audioCtx.currentTime;
-      const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00, 2349.32]; // D Major high fanfare
 
-      notes.forEach((freq, idx) => {
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        const t = now + (idx * 0.07);
+      // Royal Entrance Motif in D Major
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 }, // A4 (ta)
+        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 }, // D5 (TAAA)
+        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 }, // A4 (ta)
+        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 }, // D5 (taa)
+        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 }, // F#5 (TAA!)
+      ];
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start(t);
-        osc.stop(t + 0.4);
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
       });
-    } catch (e) {}
+
+      // Grand Climax 5-Horn Chord at T + 1.42s
+      const climaxTime = now + 1.42;
+      const chord = [
+        { freq: 293.66, dur: 1.25, vol: 0.34 }, // D4 (Trombone)
+        { freq: 440.00, dur: 1.30, vol: 0.36 }, // A4 (French Horn)
+        { freq: 587.33, dur: 1.35, vol: 0.40 }, // D5 (Trumpet 2)
+        { freq: 739.99, dur: 1.40, vol: 0.44 }, // F#5 (Trumpet 1)
+        { freq: 880.00, dur: 1.45, vol: 0.48 }, // A5 (Lead Trumpet)
+      ];
+
+      chord.forEach(c => {
+        this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+      });
+    } catch (_) {}
+  }
+
+  playFanfare() {
+    this.playVictoriousTrumpetFanfare();
   }
 
   // Sharp, high-pitched metallic clinking coins
@@ -371,7 +473,7 @@ class CelebrationOverlayApp {
       if (found) slotImg = found.image;
     }
     if (!slotImg || slotImg.includes('.svg')) {
-      slotImg = 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
+      slotImg = 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
     }
 
     const statValue = data.statValue || (data.multiplier ? `${data.multiplier}x` : '150.00x');
@@ -409,7 +511,7 @@ class CelebrationOverlayApp {
       category: 'TOURNAMENT CHAMPION',
       username: '@LuckyStriker',
       slotName: 'Wanted Dead or a Wild',
-      slotImg: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format',
+      slotImg: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format',
       multiplier: '150.00',
       prize: 'PRIZE: $100.00 USD'
     });
@@ -442,7 +544,7 @@ class CelebrationOverlayApp {
           category: 'TOURNAMENT CHAMPION',
           username: '@SlotKing21',
           slotName: 'Gates of Olympus 1000',
-          slotImg: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format',
+          slotImg: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format',
           statValue: '250.00x',
           prize: 'PRIZE: 1ST: $150 USD'
         });
@@ -457,7 +559,7 @@ class CelebrationOverlayApp {
           category: 'Victory',
           username: '@AgusKick',
           slotName: 'San Quentin xWays',
-          slotImg: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png',
+          slotImg: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format',
           statValue: '84.20x',
           prize: 'PRIZE: $50.00 USD'
         });

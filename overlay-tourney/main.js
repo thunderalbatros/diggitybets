@@ -45,38 +45,128 @@ class TourneyOverlayApp {
     }, { once: true });
   }
 
-  playSlotWinFanfare() {
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    try {
+      const t = startTime;
+      const masterGain = this.audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volume, t);
+
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(3.6, t);
+
+      const minCutoff = Math.max(320, freq * 1.2);
+      const peakCutoff = Math.min(6800, freq * 5.4);
+      const sustainCutoff = Math.min(4200, freq * 3.2);
+
+      filter.frequency.setValueAtTime(minCutoff, t);
+      filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+      filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, t);
+      osc2.frequency.setValueAtTime(freq, t);
+      osc1.detune.setValueAtTime(-7, t);
+      osc2.detune.setValueAtTime(7, t);
+
+      const subOsc = this.audioCtx.createOscillator();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(freq * 0.5, t);
+      const subGain = this.audioCtx.createGain();
+      subGain.gain.setValueAtTime(0.24, t);
+      subOsc.connect(subGain);
+      subGain.connect(filter);
+
+      if (!isStaccato && duration > 0.25) {
+        try {
+          const lfo = this.audioCtx.createOscillator();
+          const lfoGain = this.audioCtx.createGain();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(5.3, t);
+          lfoGain.gain.setValueAtTime(0, t);
+          lfoGain.gain.setValueAtTime(0, t + 0.16);
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+          lfo.connect(osc1.frequency);
+          lfo.connect(osc2.frequency);
+          lfo.start(t + 0.16);
+          lfo.stop(t + duration + 0.1);
+        } catch (_) {}
+      }
+
+      const noteGain = this.audioCtx.createGain();
+      const attackTime = isStaccato ? 0.018 : 0.035;
+      const releaseTime = isStaccato ? 0.06 : 0.25;
+
+      noteGain.gain.setValueAtTime(0.001, t);
+      noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+      if (isStaccato) {
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      } else {
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+      }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+      masterGain.connect(this.audioCtx.destination);
+
+      const stopTime = t + duration + releaseTime + 0.05;
+      osc1.start(t);
+      osc2.start(t);
+      subOsc.start(t);
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      subOsc.stop(stopTime);
+    } catch (_) {}
+  }
+
+  playVictoriousTrumpetFanfare() {
     if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
 
-      // 1. Classic Slot Victory Chimes (arpeggiated bells)
-      const bells = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
-      for (let cycle = 0; cycle < 3; cycle++) {
-        bells.forEach((freq, idx) => {
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          const t = now + (cycle * 0.45) + (idx * 0.07);
+      // Royal Entrance Motif in D Major
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
+        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
+        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
+        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
+        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
+      ];
 
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, t);
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
+      });
 
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      // Grand Climax 5-Horn Chord at T + 1.42s
+      const climaxTime = now + 1.42;
+      const chord = [
+        { freq: 293.66, dur: 1.25, vol: 0.34 },
+        { freq: 440.00, dur: 1.30, vol: 0.36 },
+        { freq: 587.33, dur: 1.35, vol: 0.40 },
+        { freq: 739.99, dur: 1.40, vol: 0.44 },
+        { freq: 880.00, dur: 1.45, vol: 0.48 },
+      ];
 
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
+      chord.forEach(c => {
+        this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+      });
 
-          osc.start(t);
-          osc.stop(t + 0.28);
-        });
-      }
-
-      // 2. Metallic Jackpot Coin Drop Clicks (falling coins)
+      // Metallic Coin Drop Clicks (falling coins)
       for (let c = 0; c < 16; c++) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
-        const t = now + 0.3 + (c * 0.08) + (Math.random() * 0.04);
+        const t = climaxTime + 0.15 + (c * 0.08) + (Math.random() * 0.04);
 
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(1800 + Math.random() * 800, t);
@@ -91,7 +181,11 @@ class TourneyOverlayApp {
         osc.start(t);
         osc.stop(t + 0.05);
       }
-    } catch {}
+    } catch (_) {}
+  }
+
+  playSlotWinFanfare() {
+    this.playVictoriousTrumpetFanfare();
   }
 
   initBroadcastChannel() {
@@ -262,14 +356,14 @@ class TourneyOverlayApp {
 
   getDefaultDemoState() {
     const participants = [
-      { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead or a Wild', slotImage: 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format', seed: 1 },
-      { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates of Olympus 1000', slotImage: 'https://mediumrare.imgix.net/1ea93a0279a9ebc0e3a6288899532b27dbfc60a0f4a8e2cb924c5539ebf85eb3?w=180&h=236&fit=min&auto=format', seed: 8 },
-      { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin xWays', slotImage: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png', seed: 4 },
-      { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush 1000', slotImage: 'https://mediumrare.imgix.net/5d6f6e8e0d6b0b5711c2adad4f3914a38f714eb6c0c55f84eb430e3bb4a3ba45?w=180&h=236&fit=min&auto=format', seed: 5 },
-      { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'RIP City', slotImage: 'https://mediumrare.imgix.net/5a0c36b4ae9cbe588cf4ba27e57c661bb5ad4e85741f23ee9f3907c0879c3d4f?w=180&h=236&fit=min&auto=format', seed: 2 },
-      { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', slotImage: 'https://mediumrare.imgix.net/dddf1cfdf8c991b5d638be0a599f66dc0dfbf813501cb6982f6e91f6ebf8b66f?w=180&h=236&fit=min&auto=format', seed: 7 },
-      { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', slotImage: 'https://mediumrare.imgix.net/41da24e4d5885fe77bc95f5108fb26d70ae4f3fec14781cfc9fa6a8e805fe9e3?w=180&h=236&fit=min&auto=format', seed: 3 },
-      { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Le Bandit', slotImage: 'https://mediumrare.imgix.net/dbb3f6630f9a76bc88bfd52a2307ef0cb1e6a3c42878c43026ad1607fa48b8ec?w=180&h=236&fit=min&auto=format', seed: 6 },
+      { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead or a Wild', slotImage: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format', seed: 1 },
+      { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates of Olympus 1000', slotImage: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format', seed: 8 },
+      { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin xWays', slotImage: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format', seed: 4 },
+      { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush 1000', slotImage: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format', seed: 5 },
+      { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'RIP City', slotImage: 'https://mediumrare.imgix.net/34d643b7d8c0b23e734742e5d1c32eb6beb29ee34a69e7cd97486db6c125a2db?w=360&auto=format', seed: 2 },
+      { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', slotImage: 'https://mediumrare.imgix.net/98801318d067e57c3d22f9453d970d5278bf253365600c4d93841b9c994bf82a?w=360&auto=format', seed: 7 },
+      { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', slotImage: 'https://mediumrare.imgix.net/6cc2e6228b274e48ff6045944b153810db7131ad61d90cabce5aa35176c639e9?w=360&auto=format', seed: 3 },
+      { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Le Bandit', slotImage: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format', seed: 6 },
     ];
 
     const matches = [
@@ -379,7 +473,7 @@ class TourneyOverlayApp {
       const slotCover = (resolvedSlot && resolvedSlot.image) || p.slotImage;
 
       const imgHtml = slotCover
-        ? `<img src="${slotCover}" class="mini-slot-img" alt="${slotNameDisplay}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';">`
+        ? `<img src="${slotCover}" class="mini-slot-img" alt="${slotNameDisplay}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">`
         : `<div class="player-avatar">${initial}</div>`;
 
       return `
