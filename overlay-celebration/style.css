@@ -112,12 +112,12 @@ body.obs-mode, body.transparent-mode {
   background: #ffffff;
 }
 
-/* Floating Luxury Billboard */
+/* Floating Luxury Billboard (Centered on 1920x1080 Transparent Canvas) */
 .billboard-container {
   position: fixed;
-  top: 22%;
+  top: 50%;
   left: 50%;
-  transform: translate(-50%, -30px) scale(0.9);
+  transform: translate(-50%, -44%) scale(0.9);
   z-index: 50;
   opacity: 0;
   pointer-events: none;
@@ -127,13 +127,13 @@ body.obs-mode, body.transparent-mode {
 
 .billboard-container.active {
   opacity: 1;
-  transform: translate(-50%, 0) scale(1);
+  transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
 }
 
 .billboard-container.hiding {
   opacity: 0;
-  transform: translate(-50%, 40px) scale(0.9);
+  transform: translate(-50%, -40%) scale(0.9);
   transition: transform 0.5s ease-in, opacity 0.4s ease-in;
 }
 
@@ -275,9 +275,11 @@ body.obs-mode, body.transparent-mode {
 
 .slot-thumbnail {
   width: 58px;
-  height: 58px;
-  border-radius: 12px;
-  object-fit: cover;
+  height: 76px;
+  aspect-ratio: 180 / 236;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #070a12;
   border: 1.5px solid var(--gold-primary);
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
 }

@@ -35,6 +35,8 @@ class CelebrationOverlayApp {
     this.statValueEl = document.getElementById('winner-stat-value');
     this.prizeTagEl = document.getElementById('winner-prize-tag');
 
+    this.lastEventTimestamp = 0;
+
     this.initCanvasResize();
     this.initSpriteCache();
     this.initAudio();
@@ -42,10 +44,13 @@ class CelebrationOverlayApp {
     this.initEventListeners();
     this.initBroadcastChannel();
 
-    // Launch celebratory demonstration on load
-    setTimeout(() => {
-      this.triggerLiveDemo();
-    }, 400);
+    // Only launch live demo on load if ?demo=1 is explicitly in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('demo') === '1') {
+      setTimeout(() => {
+        this.triggerLiveDemo();
+      }, 400);
+    }
   }
 
   /* =========================================================================
@@ -367,16 +372,35 @@ class CelebrationOverlayApp {
   }
 
   playFullCelebrationAudio() {
-    this.resumeAudioIfNeeded();
-    this.playSubBassBoom();
-    this.playFanfare();
-    this.playCoinClatter(32);
+    if (!this.audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        this.audioCtx = new AudioContextClass();
+      }
+    }
+    if (!this.audioCtx) return;
+
+    const fireAudio = () => {
+      this.playSubBassBoom();
+      this.playFanfare();
+      this.playCoinClatter(36);
+    };
+
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().then(() => {
+        this.audioUnlocked = true;
+        if (this.audioGateEl) this.audioGateEl.classList.add('hidden');
+        fireAudio();
+      }).catch(() => {});
+    } else {
+      fireAudio();
+    }
   }
 
   /* =========================================================================
    * 4. HARDWARE ACCELERATED 60 FPS PARTICLE ENGINE (Optimized Pool)
    * ========================================================================= */
-  spawnCoinRain(amount = 85) {
+  spawnCoinRain(amount = 110) {
     for (let i = 0; i < amount; i++) {
       let p;
       if (this.particlePool.length > 0) {
@@ -386,9 +410,9 @@ class CelebrationOverlayApp {
       }
 
       const roll = Math.random();
-      p.type = roll < 0.7 ? 'coin' : (roll < 0.85 ? 'chipGold' : (roll < 0.93 ? 'chipCyan' : 'chipMagenta'));
+      p.type = roll < 0.72 ? 'coin' : (roll < 0.86 ? 'chipGold' : (roll < 0.93 ? 'chipCyan' : 'chipMagenta'));
       p.x = Math.random() * this.width;
-      p.y = -40 - Math.random() * (this.height * 0.6);
+      p.y = -40 - Math.random() * (this.height * 0.65);
       p.vx = (Math.random() - 0.5) * 3;
       p.vy = 5 + Math.random() * 7;
       p.gravity = 0.16 + Math.random() * 0.08;
@@ -459,29 +483,42 @@ class CelebrationOverlayApp {
    * 5. WINNER BILLBOARD TRIGGER
    * ========================================================================= */
   triggerCelebration(data) {
+    if (!data) return;
+    if (data.timestamp && data.timestamp === this.lastEventTimestamp) {
+      return;
+    }
+    if (data.timestamp) {
+      this.lastEventTimestamp = data.timestamp;
+    }
+
     clearTimeout(this.billboardTimer);
 
-    const icon = data.icon || (data.type === 'tourney' ? '🏆' : '⚔️');
-    const category = data.category || (data.type === 'tourney' ? 'TOURNAMENT CHAMPION' : 'Victory');
-    const username = data.username || '@LuckyStriker';
-    const slotName = data.slotName || 'Wanted Dead or a Wild';
-    let slotImg = data.slotImg;
-    if ((!slotImg || slotImg.includes('.svg')) && window.HUNTHUB_CURATED_SLOTS && slotName) {
-      const found = window.HUNTHUB_CURATED_SLOTS.find(
-        (s) => s.name.toLowerCase() === slotName.toLowerCase() || s.name.toLowerCase().includes(slotName.toLowerCase())
-      );
-      if (found) slotImg = found.image;
+    const isTourney = data.type === 'tourney' || (data.category && String(data.category).toLowerCase().includes('tourney')) || (data.category && String(data.category).toLowerCase().includes('tournament'));
+    const icon = data.icon || (isTourney ? '🏆' : '⚔️');
+    const category = data.category || (isTourney ? 'TOURNAMENT CHAMPION' : '1V1 BATTLE WINNER');
+    const rawUser = data.username || (data.winner && (data.winner.displayName || data.winner.username)) || '@Winner';
+    const rawSlot = data.slotName || (data.winner && data.winner.slotName) || 'Wanted Dead or a Wild';
+
+    let resolvedSlot = null;
+    if (window.SlotResolver) {
+      resolvedSlot = window.SlotResolver.resolve(rawSlot, '../');
     }
-    if (!slotImg || slotImg.includes('.svg')) {
+    const slotName = (resolvedSlot && resolvedSlot.name) || rawSlot;
+    let slotImg = (resolvedSlot && resolvedSlot.image) || data.slotImg || data.slotImage || (data.winner && data.winner.slotImage);
+    if (!slotImg) {
       slotImg = 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
     }
 
-    const statValue = data.statValue || (data.multiplier ? `${data.multiplier}x` : '150.00x');
-    const prize = data.prize || (data.type === 'tourney' ? 'PRIZE: 1ST: $150 · 2ND: $50 USD' : 'PRIZE: $50.00 USD');
+    const statValue = data.statValue || (data.multiplier ? (String(data.multiplier).endsWith('x') || data.multiplier === 'WIN' ? String(data.multiplier) : `${data.multiplier}x`) : 'WIN 🏆');
+    const prize = data.prize || data.prizeText || (isTourney ? 'TOURNAMENT WINNER 🏆' : '1V1 BATTLE VICTORY 👑');
 
+    const cleanUser = String(rawUser).replace(/^@/, '').trim() || 'Winner';
+    const formattedUser = `@${cleanUser}`;
     if (this.iconEl) this.iconEl.textContent = icon;
-    if (this.categoryEl) this.categoryEl.textContent = category.toUpperCase();
-    if (this.usernameEl) this.usernameEl.textContent = username.startsWith('@') ? username : `@${username}`;
+    if (this.categoryEl) this.categoryEl.textContent = String(category).toUpperCase();
+    if (this.usernameEl) {
+      this.scrambleText(this.usernameEl, formattedUser, 650);
+    }
     if (this.slotNameEl) this.slotNameEl.textContent = slotName;
     if (this.slotImgEl) {
       this.slotImgEl.src = slotImg;
@@ -496,12 +533,49 @@ class CelebrationOverlayApp {
       this.billboard.classList.add('active');
     }
 
-    this.spawnCoinRain(90);
+    this.spawnCoinRain(110);
     this.playFullCelebrationAudio();
 
     this.billboardTimer = setTimeout(() => {
       if (this.billboard) this.billboard.classList.remove('active');
-    }, 12000);
+    }, 8000);
+  }
+
+  scrambleText(el, targetText, duration = 650) {
+    if (!el) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = targetText;
+      return;
+    }
+    const chars = '0123456789$!#%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const finalStr = String(targetText);
+    const start = performance.now();
+
+    const frame = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const revealedCount = Math.floor(easedProgress * finalStr.length);
+
+      let output = '';
+      for (let i = 0; i < finalStr.length; i++) {
+        if (i < revealedCount) {
+          output += finalStr[i];
+        } else if (finalStr[i] === ' ') {
+          output += ' ';
+        } else {
+          output += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+      el.textContent = output;
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = finalStr;
+      }
+    };
+    requestAnimationFrame(frame);
   }
 
   triggerLiveDemo() {
@@ -513,16 +587,22 @@ class CelebrationOverlayApp {
       slotName: 'Wanted Dead or a Wild',
       slotImg: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format',
       multiplier: '150.00',
-      prize: 'PRIZE: $100.00 USD'
+      prize: 'PRIZE: $100.00 USD',
+      timestamp: Date.now(),
     });
   }
 
   initModeDetection() {
     const urlParams = new URLSearchParams(window.location.search);
-    const isObs = urlParams.get('obs') === '1' || urlParams.get('transparent') === '1';
-    if (isObs) {
+    const isPreview = urlParams.get('preview') === '1';
+    const controls = document.getElementById('streamer-controls');
+    if (isPreview) {
+      document.body.classList.remove('obs-mode');
+      document.body.classList.add('preview-mode');
+      if (controls) controls.style.display = 'flex';
+    } else {
       document.body.classList.remove('preview-mode');
-      const controls = document.getElementById('streamer-controls');
+      document.body.classList.add('obs-mode');
       if (controls) controls.style.display = 'none';
       if (this.audioGateEl) this.audioGateEl.style.display = 'none';
     }
@@ -544,9 +624,9 @@ class CelebrationOverlayApp {
           category: 'TOURNAMENT CHAMPION',
           username: '@SlotKing21',
           slotName: 'Gates of Olympus 1000',
-          slotImg: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format',
           statValue: '250.00x',
-          prize: 'PRIZE: 1ST: $150 USD'
+          prize: 'PRIZE: 1ST: $150 USD',
+          timestamp: Date.now(),
         });
       });
     }
@@ -556,20 +636,20 @@ class CelebrationOverlayApp {
         this.triggerCelebration({
           type: 'battle',
           icon: '⚔️',
-          category: 'Victory',
+          category: '1V1 BATTLE WINNER',
           username: '@AgusKick',
           slotName: 'San Quentin xWays',
-          slotImg: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format',
           statValue: '84.20x',
-          prize: 'PRIZE: $50.00 USD'
+          prize: 'KING OF THE HILL · +$5.00 USD',
+          timestamp: Date.now(),
         });
       });
     }
 
     if (btnCoins) {
       btnCoins.addEventListener('click', () => {
-        this.spawnCoinRain(80);
-        this.playCoinClatter(24);
+        this.spawnCoinRain(95);
+        this.playCoinClatter(28);
       });
     }
 
@@ -582,6 +662,7 @@ class CelebrationOverlayApp {
     if (btnToggleBg) {
       btnToggleBg.addEventListener('click', () => {
         document.body.classList.toggle('preview-mode');
+        document.body.classList.toggle('obs-mode');
       });
     }
 
@@ -612,6 +693,28 @@ class CelebrationOverlayApp {
       }
     });
 
+    // Lightweight localStorage timestamp check so cross-tab events are never missed
+    try {
+      const existing = localStorage.getItem('hunthub_celebration_event');
+      if (existing) {
+        const parsed = JSON.parse(existing);
+        if (parsed && parsed.timestamp) {
+          this.lastEventTimestamp = parsed.timestamp;
+        }
+      }
+    } catch (_) {}
+
+    setInterval(() => {
+      try {
+        const raw = localStorage.getItem('hunthub_celebration_event');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data && data.timestamp && data.timestamp > this.lastEventTimestamp && (Date.now() - data.timestamp) < 12000) {
+          this.triggerCelebration(data);
+        }
+      } catch (_) {}
+    }, 600);
+
     // Cross-Process OBS Browser Source WebSocket + /api/sync/state Sync (<50ms)
     this.initWebSocketSync();
   }
@@ -619,6 +722,10 @@ class CelebrationOverlayApp {
   initWebSocketSync() {
     const urlParams = new URLSearchParams(window.location.search);
     const port = urlParams.get('port') || '3001';
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (!isLocalHost && !urlParams.get('port')) {
+      return;
+    }
     const wsUrl = `ws://127.0.0.1:${port}/`;
     try {
       this.ws = new WebSocket(wsUrl);

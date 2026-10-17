@@ -137,6 +137,10 @@ class AdminHubController {
       try {
         this.channelTourney = new BroadcastChannel('hunthub_tourney');
       } catch (_) {}
+
+      try {
+        this.channelCelebration = new BroadcastChannel('hunthub_celebration');
+      } catch (_) {}
     }
 
     // Cross-tab localStorage listener so spinning directly in /wheel-duo/?obs=1 always updates Control Panel
@@ -158,6 +162,8 @@ class AdminHubController {
             this.renderDuoQueue();
           }
         } catch (_) {}
+      } else if (e.key === 'hunthub_tourney_state' && e.newValue) {
+        this.renderTournamentAdmin();
       }
     });
   }
@@ -1426,14 +1432,6 @@ class AdminHubController {
           display.textContent = `🏆 WINNER: ${closest.user} (Guess: $${closest.guess.toFixed(2)} | Diff: $${minDiff.toFixed(2)})`;
         }
 
-        if (window.soundEngine) {
-          if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-            window.soundEngine.playVictoriousTrumpetFanfare();
-          } else if (typeof window.soundEngine.playWin === 'function') {
-            window.soundEngine.playWin();
-          }
-        }
-        if (typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
         if (window.sonner) {
           window.sonner.toast({
             title: 'Guess The Balance Resolved! 🏆',
@@ -1501,7 +1499,7 @@ class AdminHubController {
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">#${idx + 1}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="${imgUrl}" alt="${s.name}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
+              <img src="${imgUrl}" alt="${s.name}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
               <div>
                 <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
                 <div style="font-size: 11px; color: var(--text-dim);">${canon && canon.provider ? canon.provider : s.provider}</div>
@@ -1535,7 +1533,6 @@ class AdminHubController {
           window.bonusHunt.renderMetrics();
           window.bonusHunt.renderSlotTable();
         }
-        if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') window.soundEngine.playCoin();
         this.renderBonusHuntAdmin();
       };
     });
@@ -1555,7 +1552,348 @@ class AdminHubController {
     });
   }
 
-  // 8-Bracket Tourney Controls
+  // ========================================================
+  // 8-BRACKET TOURNAMENT LIVE CONTROL & STATE MACHINE
+  // ========================================================
+
+  createEmptyTourneyState(mode = this.tourneyMode || 'BONUS_BUY') {
+    return {
+      status: 'LOBBY',
+      gameMode: mode,
+      isDemo: false,
+      participants: [],
+      matches: {
+        m1: { id: 'm1', round: 1, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m2: { id: 'm2', round: 1, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m3: { id: 'm3', round: 1, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m4: { id: 'm4', round: 1, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m5: { id: 'm5', round: 2, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m6: { id: 'm6', round: 2, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m7: { id: 'm7', round: 3, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' }
+      },
+      champion: null,
+      ts: Date.now()
+    };
+  }
+
+  createDemoTourneyState(mode = this.tourneyMode || 'BONUS_BUY') {
+    const demoEntries = [
+      { username: '@LuckyStriker', slotName: 'Wanted Dead or a Wild' },
+      { username: '@VegasKing', slotName: 'Gates of Olympus 1000' },
+      { username: '@SlotQueen', slotName: 'Sweet Bonanza 1000' },
+      { username: '@SpinMaster', slotName: 'Sugar Rush 1000' },
+      { username: '@Strike777', slotName: 'Le Bandit' },
+      { username: '@BigBassBob', slotName: 'Big Bass Splash' },
+      { username: '@NeonWolf', slotName: 'Mental' },
+      { username: '@RoyalFlush', slotName: 'RIP City' }
+    ].map(p => {
+      const meta = this.resolveSlotMeta(p.slotName);
+      return {
+        username: p.username,
+        slotName: meta.name,
+        slotProvider: meta.provider,
+        slotImage: meta.image
+      };
+    });
+
+    return {
+      status: 'IN_PROGRESS',
+      gameMode: mode,
+      isDemo: true,
+      participants: demoEntries,
+      matches: {
+        m1: { id: 'm1', round: 1, player1: demoEntries[0], player2: demoEntries[1], score1: 0, score2: 0, winner: null, status: 'IN_PROGRESS' },
+        m2: { id: 'm2', round: 1, player1: demoEntries[2], player2: demoEntries[3], score1: 0, score2: 0, winner: null, status: 'IN_PROGRESS' },
+        m3: { id: 'm3', round: 1, player1: demoEntries[4], player2: demoEntries[5], score1: 0, score2: 0, winner: null, status: 'IN_PROGRESS' },
+        m4: { id: 'm4', round: 1, player1: demoEntries[6], player2: demoEntries[7], score1: 0, score2: 0, winner: null, status: 'IN_PROGRESS' },
+        m5: { id: 'm5', round: 2, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m6: { id: 'm6', round: 2, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
+        m7: { id: 'm7', round: 3, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' }
+      },
+      champion: null,
+      ts: Date.now()
+    };
+  }
+
+  getTourneyState() {
+    try {
+      const raw = localStorage.getItem('hunthub_tourney_state');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.matches && parsed.matches.m1) {
+          // Sanitize any legacy pre-baked demo state that had status === 'FINISHED' & champion === '@SlotQueen'
+          if (parsed.status === 'FINISHED' && parsed.champion && parsed.champion.username === '@SlotQueen' && parsed.matches?.m7?.score1 === 890.5) {
+            const cleanDemo = this.createDemoTourneyState(parsed.gameMode || this.tourneyMode);
+            this.saveTourneyState(cleanDemo, false);
+            return cleanDemo;
+          }
+          return parsed;
+        }
+      }
+    } catch (_) {}
+
+    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || Boolean(window.hunthubStreamLive);
+    const initial = purged ? this.createEmptyTourneyState() : this.createDemoTourneyState();
+    this.saveTourneyState(initial, false);
+    return initial;
+  }
+
+  saveTourneyState(state, broadcast = true) {
+    state.ts = Date.now();
+    try {
+      localStorage.setItem('hunthub_tourney_state', JSON.stringify(state));
+    } catch (_) {}
+
+    const badge = document.getElementById('admin-tourney-status-badge');
+    if (badge) {
+      if (state.status === 'FINISHED' && state.champion) {
+        badge.textContent = `CHAMPION: ${state.champion.username}`;
+        badge.style.color = 'var(--gold)';
+        badge.style.borderColor = 'var(--gold)';
+      } else if (state.status === 'IN_PROGRESS') {
+        badge.textContent = state.isDemo ? 'DEMO BRACKET' : 'BRACKET LIVE';
+        badge.style.color = 'var(--kick-green)';
+        badge.style.borderColor = 'var(--kick-green)';
+      } else {
+        badge.textContent = 'LOBBY EMPTY';
+        badge.style.color = 'var(--cyan)';
+        badge.style.borderColor = 'var(--cyan)';
+      }
+    }
+
+    if (broadcast) {
+      if (this.channelTourney) {
+        try {
+          this.channelTourney.postMessage({ action: 'state_update', state, ts: state.ts });
+        } catch (_) {}
+      }
+      this.relayOverlaySyncEvent({
+        target: 'overlay-tourney',
+        type: 'TOURNEY_STATE',
+        state,
+        ts: state.ts
+      });
+    }
+  }
+
+  resetTourneyBracket(silent = false) {
+    const emptyState = this.createEmptyTourneyState(this.tourneyMode);
+    try {
+      localStorage.removeItem('hunthub_tourney_pred');
+      localStorage.setItem('hunthub_tourney_active', 'false');
+    } catch (_) {}
+    if (window.tournamentPrediction) {
+      window.tournamentPrediction.predictions = { semi1_a: null, semi1_b: null, semi2_a: null, semi2_b: null, final_a: null, final_b: null, champion: null };
+      if (typeof window.tournamentPrediction.renderBracket === 'function') {
+        window.tournamentPrediction.renderBracket();
+      }
+    }
+    this.saveTourneyState(emptyState, true);
+    if (this.channelTourney) {
+      try {
+        this.channelTourney.postMessage({ action: 'reset_tourney', state: emptyState, ts: Date.now() });
+      } catch (_) {}
+    }
+    try {
+      fetch('/api/tourney/reset', { method: 'POST' }).catch(() => {});
+    } catch (_) {}
+    this.renderTournamentAdmin();
+    if (!silent && window.sonner) {
+      window.sonner.toast({
+        title: '8-Bracket Reset 🗑️',
+        message: 'All matches, scores, and winners cleared across Control Panel & OBS Overlay.',
+        type: 'cyan'
+      });
+    }
+  }
+
+  loadDemoTourneyPlayers() {
+    const demoState = this.createDemoTourneyState(this.tourneyMode);
+    localStorage.setItem('hunthub_tourney_active', 'true');
+    this.saveTourneyState(demoState, true);
+    this.renderTournamentAdmin();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Demo 8-Bracket Loaded 🎲',
+        message: '8 example players populated in Quarterfinals M1–M4.',
+        type: 'cyan'
+      });
+    }
+  }
+
+  seedTourneyFromQueue() {
+    const rawSource = (Array.isArray(this.tourneyQueue) && this.tourneyQueue.length > 0)
+      ? this.tourneyQueue.map(p => ({ username: p.username || p.chatter, slotName: p.slotName || p.slot }))
+      : this.duoPool.map(p => ({ username: p.chatter || p.user, slotName: p.slot || p.slotName }));
+
+    if (rawSource.length === 0) {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Queue Empty',
+          message: 'No players in !tourney or Dual Wheel queue yet. Add players or click Load 8 Demo Players.',
+          type: 'danger'
+        });
+      }
+      return;
+    }
+
+    const state = this.createEmptyTourneyState(this.tourneyMode);
+    state.status = 'IN_PROGRESS';
+    state.isDemo = false;
+
+    const seeded = [];
+    for (let i = 0; i < 8; i++) {
+      const item = rawSource[i];
+      if (item && item.username) {
+        const cleanU = '@' + String(item.username).trim().replace(/^@/, '');
+        const meta = this.resolveSlotMeta(item.slotName || 'Gates of Olympus 1000');
+        seeded.push({
+          username: cleanU,
+          slotName: meta.name,
+          slotProvider: meta.provider,
+          slotImage: meta.image
+        });
+      } else {
+        seeded.push(null);
+      }
+    }
+
+    state.participants = seeded.filter(Boolean);
+    state.matches.m1.player1 = seeded[0];
+    state.matches.m1.player2 = seeded[1];
+    state.matches.m1.status = (seeded[0] || seeded[1]) ? 'IN_PROGRESS' : 'PENDING';
+
+    state.matches.m2.player1 = seeded[2];
+    state.matches.m2.player2 = seeded[3];
+    state.matches.m2.status = (seeded[2] || seeded[3]) ? 'IN_PROGRESS' : 'PENDING';
+
+    state.matches.m3.player1 = seeded[4];
+    state.matches.m3.player2 = seeded[5];
+    state.matches.m3.status = (seeded[4] || seeded[5]) ? 'IN_PROGRESS' : 'PENDING';
+
+    state.matches.m4.player1 = seeded[6];
+    state.matches.m4.player2 = seeded[7];
+    state.matches.m4.status = (seeded[6] || seeded[7]) ? 'IN_PROGRESS' : 'PENDING';
+
+    this.saveTourneyState(state, true);
+    this.renderTournamentAdmin();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: '8-Bracket Seeded from Queue! 🏆',
+        message: `Loaded ${state.participants.length} players into Quarterfinals M1–M4.`,
+        type: 'gold'
+      });
+    }
+  }
+
+  advanceTourneyMatch(matchId, winnerSide, rawScore1 = 0, rawScore2 = 0) {
+    const state = this.getTourneyState();
+    const m = state.matches[matchId];
+    if (!m) return;
+
+    const p1 = m.player1;
+    const p2 = m.player2;
+    const winningPlayer = winnerSide === 'p2' ? p2 : p1;
+    const losingPlayer = winnerSide === 'p2' ? p1 : p2;
+
+    if (!winningPlayer || !winningPlayer.username) {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Player Missing',
+          message: 'Assign a player to this slot before declaring a winner.',
+          type: 'danger'
+        });
+      }
+      return;
+    }
+
+    m.score1 = Number(rawScore1) || 0;
+    m.score2 = Number(rawScore2) || 0;
+    m.winner = winningPlayer.username;
+    m.status = 'FINISHED';
+    state.status = 'IN_PROGRESS';
+
+    const clonedWinner = {
+      username: winningPlayer.username,
+      slotName: winningPlayer.slotName,
+      slotProvider: winningPlayer.slotProvider,
+      slotImage: winningPlayer.slotImage
+    };
+
+    // Advance winner to next round
+    if (matchId === 'm1') {
+      state.matches.m5.player1 = clonedWinner;
+      if (state.matches.m5.status === 'PENDING') state.matches.m5.status = 'IN_PROGRESS';
+    } else if (matchId === 'm2') {
+      state.matches.m5.player2 = clonedWinner;
+      if (state.matches.m5.status === 'PENDING') state.matches.m5.status = 'IN_PROGRESS';
+    } else if (matchId === 'm3') {
+      state.matches.m6.player1 = clonedWinner;
+      if (state.matches.m6.status === 'PENDING') state.matches.m6.status = 'IN_PROGRESS';
+    } else if (matchId === 'm4') {
+      state.matches.m6.player2 = clonedWinner;
+      if (state.matches.m6.status === 'PENDING') state.matches.m6.status = 'IN_PROGRESS';
+    } else if (matchId === 'm5') {
+      state.matches.m7.player1 = clonedWinner;
+      if (state.matches.m7.status === 'PENDING') state.matches.m7.status = 'IN_PROGRESS';
+    } else if (matchId === 'm6') {
+      state.matches.m7.player2 = clonedWinner;
+      if (state.matches.m7.status === 'PENDING') state.matches.m7.status = 'IN_PROGRESS';
+    } else if (matchId === 'm7') {
+      const champScore = winnerSide === 'p2' ? m.score2 : m.score1;
+      state.champion = {
+        ...clonedWinner,
+        score: champScore
+      };
+      state.status = 'FINISHED';
+    }
+
+    this.saveTourneyState(state, true);
+
+    if (this.channelTourney) {
+      try {
+        this.channelTourney.postMessage({
+          action: state.gameMode === 'SPINS' ? 'match_winner_spins' : 'match_result',
+          matchId,
+          score1: m.score1,
+          score2: m.score2,
+          winner: winningPlayer.username,
+          state,
+          ts: Date.now()
+        });
+      } catch (_) {}
+    }
+
+    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS!
+    const isGrandFinal = matchId === 'm7';
+    const statLabel = state.gameMode === 'SPINS'
+      ? (isGrandFinal ? 'CHAMPION · SPINS WIN' : 'ROUND WIN · SPINS')
+      : `${Math.max(m.score1, m.score2).toFixed(2)}x`;
+
+    this.triggerStreamCelebrationOverlay({
+      type: isGrandFinal ? 'TOURNEY_CHAMPION' : 'TOURNEY_MATCH_WIN',
+      category: isGrandFinal ? '8-BRACKET TOURNAMENT CHAMPION' : `8-BRACKET TOURNEY · ${matchId.toUpperCase()} WINNER`,
+      icon: isGrandFinal ? '👑' : '🏆',
+      username: winningPlayer.username,
+      slotName: winningPlayer.slotName,
+      slotImg: winningPlayer.slotImage,
+      statValue: statLabel,
+      prize: isGrandFinal ? 'GRAND TOURNAMENT CHAMPION!' : `ADVANCES TO ${matchId === 'm5' || matchId === 'm6' ? 'GRAND FINAL' : 'SEMIFINALS'}`
+    });
+
+    this.renderTournamentAdmin();
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: isGrandFinal ? `👑 ${winningPlayer.username} Crowned Champion!` : `🏆 ${winningPlayer.username} Advances!`,
+        message: isGrandFinal
+          ? `${winningPlayer.username} (${winningPlayer.slotName}) won the 8-Bracket Tournament!`
+          : `${winningPlayer.username} defeated ${losingPlayer?.username || 'rival'} in ${matchId.toUpperCase()}.`,
+        type: 'gold'
+      });
+    }
+  }
+
   setupTournamentAdmin() {
     const btnOpen = document.getElementById('btn-admin-open-tourney');
     const btnDemo = document.getElementById('btn-admin-demo-tourney');
@@ -1572,66 +1910,35 @@ class AdminHubController {
 
     if (btnOpen) {
       btnOpen.onclick = () => {
+        const state = this.getTourneyState();
+        state.status = 'IN_PROGRESS';
+        state.gameMode = this.tourneyMode;
         localStorage.setItem('hunthub_tourney_active', 'true');
-        const badge = document.getElementById('admin-tourney-status-badge');
-        if (badge) {
-          badge.textContent = 'BRACKET LIVE';
-          badge.style.color = 'var(--kick-green)';
-          badge.style.borderColor = 'var(--kick-green)';
-        }
+        this.saveTourneyState(state, true);
         try {
           fetch('/api/tourney/open', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gameMode: this.tourneyMode })
-          });
+          }).catch(() => {});
         } catch (_) {}
         if (this.channelTourney) {
-          this.channelTourney.postMessage({ action: 'open_tourney', mode: this.tourneyMode });
+          this.channelTourney.postMessage({ action: 'open_tourney', mode: this.tourneyMode, state });
         }
-        if (window.sonner) window.sonner.toast({ title: 'Tournament Opened! 🏆', message: `Predictions unlocked in ${this.tourneyMode} mode.`, type: 'green' });
+        this.renderTournamentAdmin();
+        if (window.sonner) window.sonner.toast({ title: 'Tournament Opened! 🏆', message: `Bracket live in ${this.tourneyMode} mode.`, type: 'green' });
       };
     }
 
     if (btnDemo) {
-      btnDemo.onclick = () => {
-        const demoPred = {
-          semi1_a: 'wanted-dead-or-a-wild',
-          semi1_b: 'gates-of-olympus',
-          semi2_a: 'le-bandit',
-          semi2_b: 'san-quentin-xways',
-          final_a: 'gates-of-olympus',
-          final_b: 'le-bandit',
-          champion: 'gates-of-olympus'
-        };
-        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(demoPred));
-        localStorage.setItem('hunthub_tourney_active', 'true');
-        if (window.tournamentPrediction) {
-          window.tournamentPrediction.predictions = demoPred;
-          window.tournamentPrediction.renderBracket();
-        }
-        this.renderTournamentAdmin();
-        if (window.sonner) window.sonner.toast({ title: 'Demo Tournament Loaded 🎲', message: '8 competitors populated.', type: 'cyan' });
-      };
+      btnDemo.onclick = () => this.loadDemoTourneyPlayers();
     }
 
     if (btnReset) {
-      btnReset.onclick = () => {
-        localStorage.removeItem('hunthub_tourney_pred');
-        if (window.tournamentPrediction) {
-          window.tournamentPrediction.predictions = { semi1_a: null, semi1_b: null, semi2_a: null, semi2_b: null, final_a: null, final_b: null, champion: null };
-          window.tournamentPrediction.renderBracket();
-        }
-        try {
-          fetch('/api/tourney/reset', { method: 'POST' });
-        } catch (_) {}
-        if (this.channelTourney) {
-          this.channelTourney.postMessage({ action: 'reset_tourney' });
-        }
-        this.renderTournamentAdmin();
-        if (window.sonner) window.sonner.toast({ title: 'Bracket Reset ↩️', message: 'Fresh bracket ready.', type: 'default' });
-      };
+      btnReset.onclick = () => this.resetTourneyBracket(false);
     }
+
+    this.renderTournamentAdmin();
   }
 
   setTourneyMode(mode) {
@@ -1647,20 +1954,23 @@ class AdminHubController {
         btnSpins.className = 'btn-stake-primary';
       }
     }
+    const state = this.getTourneyState();
+    state.gameMode = mode;
+    this.saveTourneyState(state, true);
     try {
       fetch('/api/tourney/mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameMode: mode })
-      });
+      }).catch(() => {});
     } catch (_) {}
     if (this.channelTourney) {
-      this.channelTourney.postMessage({ action: 'set_mode', mode });
+      this.channelTourney.postMessage({ action: 'set_mode', mode, state });
     }
     this.renderTournamentAdmin();
     if (window.sonner) {
       window.sonner.toast({
-        title: `Tournament Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : 'Spins 🎰'}`,
+        title: `Tournament Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : 'Spins 1-Click 🎰'}`,
         message: mode === 'BONUS_BUY' ? 'Multiplier comparisons enabled.' : '1-click winner resolution active.',
         type: 'cyan'
       });
@@ -1671,206 +1981,170 @@ class AdminHubController {
     const container = document.getElementById('admin-tourney-rounds-container');
     if (!container) return;
 
-    let pred = {};
-    try { pred = JSON.parse(localStorage.getItem('hunthub_tourney_pred') || '{}'); } catch (e) {}
+    const state = this.getTourneyState();
+    const isSpins = (state.gameMode || this.tourneyMode) === 'SPINS';
 
-    const isSpins = this.tourneyMode === 'SPINS';
+    const renderMatchCard = (mId, titleLabel, allowInlineEdit = false) => {
+      const m = state.matches[mId] || { id: mId, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' };
+      const p1 = m.player1 || { username: '', slotName: '' };
+      const p2 = m.player2 || { username: '', slotName: '' };
+      const isP1Win = Boolean(m.winner && p1.username && m.winner === p1.username);
+      const isP2Win = Boolean(m.winner && p2.username && m.winner === p2.username);
 
-    const matches = [
-      { id: 'm1', round: 'semi1_a', label: 'Match 1', p1: 'Wanted Dead', id1: 'wanted-dead-or-a-wild', p2: 'Rip City', id2: 'rip-city', defScore1: 2.01, defScore2: 1.01 },
-      { id: 'm2', round: 'semi1_b', label: 'Match 2', p1: 'Gates 1000', id1: 'gates-of-olympus', p2: 'Sugar Rush', id2: 'sugar-rush', defScore1: 2.45, defScore2: 0.85 },
-      { id: 'm3', round: 'semi2_a', label: 'Match 3', p1: 'Le Bandit', id1: 'le-bandit', p2: 'Chaos Crew 2', id2: 'chaos-crew-2', defScore1: 3.10, defScore2: 1.20 },
-      { id: 'm4', round: 'semi2_b', label: 'Match 4', p1: 'San Quentin', id1: 'san-quentin-xways', p2: 'Zeus vs Hades', id2: 'zeus-vs-hades', defScore1: 1.80, defScore2: 0.95 },
-    ];
+      return `
+        <div class="admin-tourney-match-box" style="padding: 9px 10px; background: rgba(7, 11, 22, 0.85); border: 1px solid ${m.status === 'FINISHED' ? 'rgba(83,252,24,0.35)' : 'rgba(255,255,255,0.08)'}; border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 10.5px; font-weight: 900; color: var(--gold); letter-spacing: 0.05em;">${titleLabel}</span>
+            ${m.winner ? `<span class="reward-badge-pill" style="font-size: 9.5px; color: #53fc18; border-color: #53fc18; background: rgba(83,252,24,0.12);">✓ WINNER: ${m.winner}</span>` : `<span style="font-size: 9.5px; color: #64748b;">${m.status}</span>`}
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch;">
+            <!-- Player 1 -->
+            <div style="padding: 7px; background: rgba(0, 229, 255, 0.06); border: 1px solid ${isP1Win ? '#53fc18' : 'rgba(0, 229, 255, 0.22)'}; border-radius: 8px; opacity: ${isP2Win ? '0.45' : '1'};">
+              ${allowInlineEdit ? `
+                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player1" value="${p1.username || ''}" placeholder="@Player1" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
+                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player1" value="${p1.slotName || ''}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
+              ` : `
+                <div style="font-weight: 800; font-size: 11.5px; color: ${isP1Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p1.username || 'TBD (Waiting...)'}</div>
+                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p1.slotName || '—'}</div>
+              `}
+              ${!isSpins ? `
+                <div style="margin-top: 5px; display: flex; align-items: center; gap: 4px;">
+                  <input type="number" step="0.01" class="slots-search-input" id="tourney-score-${mId}-1" value="${m.score1 || 0}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800;">
+                  <span style="font-size: 10px; color: #94a3b8; font-weight: 800;">x</span>
+                </div>
+              ` : `
+                <button type="button" class="btn-stake-secondary btn-tourney-win-1click" data-match="${mId}" data-side="p1" style="margin-top: 5px; width: 100%; padding: 4px 6px; font-size: 10.5px; font-weight: 900; ${isP1Win ? 'background: #53fc18; color: #000; border-color: #53fc18;' : 'color: #53fc18; border-color: rgba(83,252,24,0.4);'}">
+                  🏆 WIN
+                </button>
+              `}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #64748b;">VS</div>
+
+            <!-- Player 2 -->
+            <div style="padding: 7px; background: rgba(255, 42, 95, 0.06); border: 1px solid ${isP2Win ? '#53fc18' : 'rgba(255, 42, 95, 0.22)'}; border-radius: 8px; opacity: ${isP1Win ? '0.45' : '1'};">
+              ${allowInlineEdit ? `
+                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player2" value="${p2.username || ''}" placeholder="@Player2" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
+                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player2" value="${p2.slotName || ''}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
+              ` : `
+                <div style="font-weight: 800; font-size: 11.5px; color: ${isP2Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p2.username || 'TBD (Waiting...)'}</div>
+                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p2.slotName || '—'}</div>
+              `}
+              ${!isSpins ? `
+                <div style="margin-top: 5px; display: flex; align-items: center; gap: 4px;">
+                  <input type="number" step="0.01" class="slots-search-input" id="tourney-score-${mId}-2" value="${m.score2 || 0}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800;">
+                  <span style="font-size: 10px; color: #94a3b8; font-weight: 800;">x</span>
+                </div>
+              ` : `
+                <button type="button" class="btn-stake-secondary btn-tourney-win-1click" data-match="${mId}" data-side="p2" style="margin-top: 5px; width: 100%; padding: 4px 6px; font-size: 10.5px; font-weight: 900; ${isP2Win ? 'background: #53fc18; color: #000; border-color: #53fc18;' : 'color: #53fc18; border-color: rgba(83,252,24,0.4);'}">
+                  🏆 WIN
+                </button>
+              `}
+            </div>
+          </div>
+
+          ${!isSpins ? `
+            <button type="button" class="btn-stake-primary btn-tourney-compare-mult" data-match="${mId}" style="margin-top: 6px; width: 100%; padding: 5px 8px; font-size: 10.5px; font-weight: 800;">
+              ⚡ Compare Multipliers & Advance Winner ✓
+            </button>
+          ` : ''}
+        </div>
+      `;
+    };
 
     container.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="font-size: 11px; font-weight: 800; color: var(--cyan); display: flex; justify-content: space-between;">
-          <span>QUARTERFINALS (${isSpins ? 'SPINS 1-CLICK' : 'BONUS BUY MULTIPLIERS'}):</span>
-          <span style="color: var(--gold);">${isSpins ? 'Click 🏆 to advance winner' : 'Auto-compares multipliers'}</span>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 900; color: var(--cyan); margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>ROUND 1 — QUARTERFINALS (M1–M4)</span>
+            <span style="color: #94a3b8; font-weight: 700;">Editable @User & Slot</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;">
+            ${renderMatchCard('m1', 'MATCH 1 (QF1)', true)}
+            ${renderMatchCard('m2', 'MATCH 2 (QF2)', true)}
+            ${renderMatchCard('m3', 'MATCH 3 (QF3)', true)}
+            ${renderMatchCard('m4', 'MATCH 4 (QF4)', true)}
+          </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${matches.map(m => {
-            const currentWinner = pred[m.round];
-            const isP1Winner = currentWinner === m.id1;
-            const isP2Winner = currentWinner === m.id2;
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 900; color: var(--gold); margin-bottom: 6px;">ROUND 2 — SEMIFINALS (M5–M6)</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${renderMatchCard('m5', 'SEMIFINAL 1 (M1 vs M2)', false)}
+              ${renderMatchCard('m6', 'SEMIFINAL 2 (M3 vs M4)', false)}
+            </div>
+          </div>
 
-            return `
-              <div class="admin-tourney-match-box" style="padding: 8px 10px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 10px; font-weight: 800; color: var(--text-dim);">${m.label}</span>
-                  ${currentWinner ? `<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">ADVANCED: ${currentWinner}</span>` : ''}
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;">
-                  <!-- Competitor 1 -->
-                  <div style="padding: 6px; background: rgba(0,100,255,0.08); border: 1px solid ${isP1Winner ? 'var(--kick-green)' : (isP2Winner ? 'rgba(255,255,255,0.04)' : 'rgba(0,150,255,0.2)')}; border-radius: 6px; opacity: ${isP2Winner ? '0.45' : '1'};">
-                    <div style="font-weight: 700; font-size: 11px; color: ${isP1Winner ? 'var(--kick-green)' : '#ffffff'};">${m.p1}</div>
-                    ${!isSpins ? `
-                      <div style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                        <input type="number" step="0.01" class="slots-search-input match-score-input" id="score-${m.id}-1" value="${m.defScore1}" style="width: 60px; padding: 2px 4px; font-size: 11px;">
-                        <span style="font-size: 10px; color: var(--text-dim);">x</span>
-                      </div>
-                    ` : `
-                      <button type="button" class="btn-stake-secondary btn-tourney-spins-winner" data-match="${m.id}" data-round="${m.round}" data-winner="${m.id1}" data-loser="${m.id2}" data-label="${m.p1}" style="margin-top: 4px; width: 100%; padding: 3px 6px; font-size: 10px; ${isP1Winner ? 'background: var(--kick-green); color: #000; font-weight: 900;' : ''}">
-                        🏆 Winner
-                      </button>
-                    `}
-                  </div>
-
-                  <span style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VS</span>
-
-                  <!-- Competitor 2 -->
-                  <div style="padding: 6px; background: rgba(255,42,95,0.08); border: 1px solid ${isP2Winner ? 'var(--kick-green)' : (isP1Winner ? 'rgba(255,255,255,0.04)' : 'rgba(255,42,95,0.2)')}; border-radius: 6px; opacity: ${isP1Winner ? '0.45' : '1'};">
-                    <div style="font-weight: 700; font-size: 11px; color: ${isP2Winner ? 'var(--kick-green)' : '#ffffff'};">${m.p2}</div>
-                    ${!isSpins ? `
-                      <div style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                        <input type="number" step="0.01" class="slots-search-input match-score-input" id="score-${m.id}-2" value="${m.defScore2}" style="width: 60px; padding: 2px 4px; font-size: 11px;">
-                        <span style="font-size: 10px; color: var(--text-dim);">x</span>
-                      </div>
-                    ` : `
-                      <button type="button" class="btn-stake-secondary btn-tourney-spins-winner" data-match="${m.id}" data-round="${m.round}" data-winner="${m.id2}" data-loser="${m.id1}" data-label="${m.p2}" style="margin-top: 4px; width: 100%; padding: 3px 6px; font-size: 10px; ${isP2Winner ? 'background: var(--kick-green); color: #000; font-weight: 900;' : ''}">
-                        🏆 Winner
-                      </button>
-                    `}
-                  </div>
-                </div>
-
-                ${!isSpins ? `
-                  <button type="button" class="btn-stake-primary btn-calc-match-winner" data-match="${m.id}" data-round="${m.round}" data-id1="${m.id1}" data-id2="${m.id2}" data-lbl1="${m.p1}" data-lbl2="${m.p2}" style="margin-top: 6px; width: 100%; padding: 4px 8px; font-size: 10px;">
-                    Compare & Advance Higher Multiplier ✓
-                  </button>
-                ` : ''}
+          <div>
+            <div style="font-size: 11px; font-weight: 900; color: #53fc18; margin-bottom: 6px;">ROUND 3 — GRAND FINAL (M7)</div>
+            ${renderMatchCard('m7', '👑 GRAND FINAL (M5 vs M6)', false)}
+            ${state.champion ? `
+              <div style="margin-top: 8px; padding: 10px 12px; background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(83,252,24,0.12)); border: 1px solid var(--gold); border-radius: 10px; text-align: center;">
+                <div style="font-size: 10px; font-weight: 900; color: var(--gold); letter-spacing: 0.08em;">👑 TOURNAMENT CHAMPION</div>
+                <div style="font-size: 15px; font-weight: 900; color: #fff; margin-top: 2px;">${state.champion.username}</div>
+                <div style="font-size: 11px; color: #53fc18; font-weight: 700;">${state.champion.slotName || ''}</div>
               </div>
-            `;
-          }).join('')}
-        </div>
-
-        <div style="font-size: 11px; font-weight: 800; color: var(--gold); margin-top: 6px;">SEMIFINALS & GRAND CHAMPION:</div>
-        <div style="display: flex; gap: 6px;">
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="final_a" data-winner="gates-of-olympus" style="flex: 1; padding: 6px; font-size: 11px;">
-            Semi 1: Gates 1000 ✓
-          </button>
-          <button type="button" class="btn-stake-secondary btn-adv-tourney" data-round="final_b" data-winner="le-bandit" style="flex: 1; padding: 6px; font-size: 11px;">
-            Semi 2: Le Bandit ✓
-          </button>
-          <button type="button" class="btn-stake-primary btn-adv-tourney" data-round="champion" data-winner="gates-of-olympus" style="flex: 1.2; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #ffd700, #ffb300); color: #000; font-weight: 900;">
-            👑 Crown Champion
-          </button>
+            ` : ''}
+          </div>
         </div>
       </div>
     `;
 
-    // Bind BONUS_BUY multiplier comparison buttons
-    container.querySelectorAll('.btn-calc-match-winner').forEach(b => {
-      b.onclick = () => {
-        const mid = b.dataset.match;
-        const round = b.dataset.round;
-        const id1 = b.dataset.id1;
-        const id2 = b.dataset.id2;
-        const lbl1 = b.dataset.lbl1;
-        const lbl2 = b.dataset.lbl2;
+    // Bind inline edits for Quarterfinals M1–M4 players & slots
+    const bindInlineEdit = () => {
+      const curState = this.getTourneyState();
+      container.querySelectorAll('.tourney-edit-user, .tourney-edit-slot').forEach(inp => {
+        inp.onchange = () => {
+          const mId = inp.dataset.match;
+          const side = inp.dataset.side;
+          const matchObj = curState.matches[mId];
+          if (!matchObj) return;
 
-        const val1 = parseFloat(document.getElementById(`score-${mid}-1`)?.value || '0');
-        const val2 = parseFloat(document.getElementById(`score-${mid}-2`)?.value || '0');
+          const userInp = container.querySelector(`.tourney-edit-user[data-match="${mId}"][data-side="${side}"]`);
+          const slotInp = container.querySelector(`.tourney-edit-slot[data-match="${mId}"][data-side="${side}"]`);
+          const rawUser = (userInp?.value || '').trim();
+          const rawSlot = (slotInp?.value || '').trim() || 'Gates of Olympus 1000';
 
-        const winnerId = val1 >= val2 ? id1 : id2;
-        const winnerLbl = val1 >= val2 ? lbl1 : lbl2;
-        const winningScore = Math.max(val1, val2);
-        const losingScore = Math.min(val1, val2);
-
-        pred[round] = winnerId;
-        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
-        if (window.tournamentPrediction) {
-          window.tournamentPrediction.predictions = pred;
-          window.tournamentPrediction.renderBracket();
-        }
-
-        try {
-          fetch('/api/tourney/result', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ matchId: mid, score1: val1, score2: val2 })
-          });
-        } catch (_) {}
-
-        if (this.channelTourney) {
-          this.channelTourney.postMessage({ action: 'match_result', matchId: mid, score1: val1, score2: val2, winner: winnerId });
-        }
-
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: `${winnerLbl} Advances! (${winningScore.toFixed(2)}x vs ${losingScore.toFixed(2)}x) 🏆`,
-            message: `Advanced to ${round}.`,
-            type: 'green'
-          });
-        }
-        this.renderTournamentAdmin();
-      };
-    });
-
-    // Bind SPINS 1-click winner buttons
-    container.querySelectorAll('.btn-tourney-spins-winner').forEach(b => {
-      b.onclick = () => {
-        const mid = b.dataset.match;
-        const round = b.dataset.round;
-        const winner = b.dataset.winner;
-        const label = b.dataset.label;
-
-        pred[round] = winner;
-        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
-        if (window.tournamentPrediction) {
-          window.tournamentPrediction.predictions = pred;
-          window.tournamentPrediction.renderBracket();
-        }
-
-        try {
-          fetch('/api/tourney/result-spins', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ matchId: mid, winnerSelector: winner })
-          });
-        } catch (_) {}
-
-        if (this.channelTourney) {
-          this.channelTourney.postMessage({ action: 'match_winner_spins', matchId: mid, winner });
-        }
-
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: `${label} Won Spins Duel! 🏆`,
-            message: `Rival marked as LOSER. Advanced to ${round}.`,
-            type: 'green'
-          });
-        }
-        this.renderTournamentAdmin();
-      };
-    });
-
-    // Bind Semis and Champion buttons
-    container.querySelectorAll('.btn-adv-tourney').forEach(b => {
-      b.onclick = () => {
-        const round = b.dataset.round;
-        const winner = b.dataset.winner;
-        pred[round] = winner;
-        localStorage.setItem('hunthub_tourney_pred', JSON.stringify(pred));
-        if (window.tournamentPrediction) {
-          window.tournamentPrediction.predictions = pred;
-          window.tournamentPrediction.renderBracket();
-        }
-        if (window.soundEngine) {
-          if (round === 'champion' && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-            window.soundEngine.playVictoriousTrumpetFanfare();
-          } else if (typeof window.soundEngine.playWin === 'function') {
-            window.soundEngine.playWin();
+          if (!rawUser) {
+            matchObj[side] = null;
+          } else {
+            const cleanUser = '@' + rawUser.replace(/^@/, '');
+            const meta = this.resolveSlotMeta(rawSlot);
+            matchObj[side] = {
+              username: cleanUser,
+              slotName: meta.name,
+              slotProvider: meta.provider,
+              slotImage: meta.image
+            };
+            curState.isDemo = false;
+            if (curState.status === 'LOBBY') curState.status = 'IN_PROGRESS';
+            if (matchObj.status === 'PENDING') matchObj.status = 'IN_PROGRESS';
           }
-        }
-        if (round === 'champion' && typeof window.confetti === 'function') window.confetti({ particleCount: 100, spread: 70 });
-        if (window.sonner) window.sonner.toast({ title: 'Bracket Advanced! 🏆', message: `${winner} advanced in ${round}.`, type: 'green' });
-        this.renderTournamentAdmin();
+          this.saveTourneyState(curState, true);
+        };
+      });
+    };
+    bindInlineEdit();
+
+    // Bind BONUS_BUY multiplier compare buttons
+    container.querySelectorAll('.btn-tourney-compare-mult').forEach(btn => {
+      btn.onclick = () => {
+        const mId = btn.dataset.match;
+        const s1 = parseFloat(document.getElementById(`tourney-score-${mId}-1`)?.value || '0');
+        const s2 = parseFloat(document.getElementById(`tourney-score-${mId}-2`)?.value || '0');
+        const side = s1 >= s2 ? 'p1' : 'p2';
+        this.advanceTourneyMatch(mId, side, s1, s2);
+      };
+    });
+
+    // Bind SPINS 1-click WIN buttons
+    container.querySelectorAll('.btn-tourney-win-1click').forEach(btn => {
+      btn.onclick = () => {
+        const mId = btn.dataset.match;
+        const side = btn.dataset.side;
+        this.advanceTourneyMatch(mId, side, side === 'p1' ? 1 : 0, side === 'p2' ? 1 : 0);
       };
     });
   }
@@ -2229,9 +2503,38 @@ class AdminHubController {
         this.kothState.awaitingDecision = false;
         this.awardKothGrandPrize(this.kothState.king, 20, 4);
         this.showKothBanner(`👑 Congratulations @${this.kothState.king} you won $20! (4/4 Max Streak Champion!)`, 'gold');
+
+        const champEvt = {
+          action: 'koth_grand_champion',
+          type: 'koth_grand_champion',
+          king: this.kothState.king,
+          prize: 20,
+          streak: 4,
+          announcement: `👑 Congratulations @${this.kothState.king} you won $20! (4/4 Max Streak Champion!)`,
+          ts: Date.now()
+        };
+        try { localStorage.setItem('hunthub_koth_event', JSON.stringify(champEvt)); } catch (_) {}
+        if (this.channelBattle) this.channelBattle.postMessage(champEvt);
+        try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(champEvt); } catch (_) {}
+        window.dispatchEvent(new CustomEvent('hunthub:battle-celebration', { detail: champEvt }));
       } else {
         this.kothState.awaitingDecision = true;
         this.showKothBanner(`👑 WINNER: @${this.kothState.king} (Streak ${this.kothState.streak}/4 — $${currentPrize} banked)! Type !continue or !cashout`, 'cyan');
+
+        const winEvt = {
+          action: 'resolve_battle',
+          type: 'resolve_battle',
+          winner: winnerSlot,
+          winningName: `@${winUserClean}`,
+          losingName,
+          kothStreak: this.kothState.streak,
+          awaitingDecision: true,
+          ts: Date.now()
+        };
+        try { localStorage.setItem('hunthub_koth_event', JSON.stringify(winEvt)); } catch (_) {}
+        if (this.channelBattle) this.channelBattle.postMessage(winEvt);
+        try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(winEvt); } catch (_) {}
+        window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: winEvt }));
       }
 
       localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState));
@@ -2280,7 +2583,20 @@ class AdminHubController {
       });
     }
 
-    if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS (zero audio/confetti inside Control Panel)
+    const streakNum = this.kothState.active ? (this.kothState.streak || 1) : 1;
+    const prizeUsd = Math.min(20, streakNum * 5);
+    this.triggerStreamCelebrationOverlay({
+      type: streakNum >= 4 ? 'KOTH_CHAMPION' : 'BATTLE_WIN',
+      category: streakNum >= 4 ? 'KING OF THE HILL · 4/4 CHAMPION' : `1V1 BATTLE WINNER · STREAK ${streakNum}/4`,
+      icon: streakNum >= 4 ? '👑' : '⚔️',
+      username: winUserClean,
+      slotName: resolvedSlot.name,
+      slotImg: resolvedSlot.image,
+      statValue: scoreDetail || 'WIN',
+      prize: streakNum >= 4 ? '$20 USD GRAND PRIZE!' : `$${prizeUsd} USD BANKED (${streakNum}/4)`
+    });
+
     if (window.sonner) {
       window.sonner.toast({
         title: `@${winUserClean} Won Duel! ⚔️`,
@@ -2291,17 +2607,6 @@ class AdminHubController {
   }
 
   awardKothGrandPrize(kingUsername, prizeAmount = 20, winsCount = 4) {
-    if (window.soundEngine) {
-      if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-        window.soundEngine.playVictoriousTrumpetFanfare();
-      } else if (typeof window.soundEngine.playWin === 'function') {
-        window.soundEngine.playWin();
-      }
-    }
-    if (typeof window.confetti === 'function') {
-      window.confetti({ particleCount: 120, spread: 90 });
-    }
-
     let claims = [];
     try { claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]'); } catch (_) {}
 
@@ -2390,14 +2695,18 @@ class AdminHubController {
       });
     } catch (_) {}
 
-    if (this.channelBattle) {
-      this.channelBattle.postMessage({
-        action: 'koth_continue',
-        king: kingName,
-        slot: kingSlot,
-        streak: this.kothState.streak
-      });
-    }
+    const contEvt = {
+      action: 'koth_continue',
+      type: 'koth_continue',
+      king: kingName,
+      slot: kingSlot,
+      streak: this.kothState.streak,
+      ts: Date.now()
+    };
+    try { localStorage.setItem('hunthub_koth_event', JSON.stringify(contEvt)); } catch (_) {}
+    if (this.channelBattle) this.channelBattle.postMessage(contEvt);
+    try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(contEvt); } catch (_) {}
+    window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: contEvt }));
 
     this.showKothBanner(`⚔️ @${kingName} chose !continue (Streak ${this.kothState.streak}/4)! Spin Duo Wheel to pick Red Corner (Player B).`, 'cyan');
     this.renderKothDeck();
@@ -2432,15 +2741,19 @@ class AdminHubController {
       });
     } catch (_) {}
 
-    if (this.channelBattle) {
-      this.channelBattle.postMessage({
-        action: 'koth_retire',
-        retiredKing: retired,
-        streak,
-        prizeAmount,
-        announcement
-      });
-    }
+    const retireEvt = {
+      action: 'koth_retire',
+      type: 'koth_cashout',
+      retiredKing: retired,
+      streak,
+      prizeAmount,
+      announcement,
+      ts: Date.now()
+    };
+    try { localStorage.setItem('hunthub_koth_event', JSON.stringify(retireEvt)); } catch (_) {}
+    if (this.channelBattle) this.channelBattle.postMessage(retireEvt);
+    try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(retireEvt); } catch (_) {}
+    window.dispatchEvent(new CustomEvent('hunthub:battle-celebration', { detail: retireEvt }));
 
     // Clear both corners and reset wheel target to Player A (Blue Corner)
     this.clearBothBattleCorners();
@@ -2745,10 +3058,6 @@ class AdminHubController {
       body: JSON.stringify({ mode: this.duoMode, username: cleanWinnerUser })
     }).catch(() => {});
 
-    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') {
-      window.soundEngine.playDiceRoll();
-    }
-
     setTimeout(() => {
       if (btn) {
         btn.disabled = false;
@@ -2758,14 +3067,6 @@ class AdminHubController {
         cpBtn.disabled = false;
         cpBtn.textContent = '🎡 SPIN DUO WHEEL (Pick Winner & Fill Corner)';
       }
-      if (window.soundEngine) {
-        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-          window.soundEngine.playVictoriousTrumpetFanfare();
-        } else if (typeof window.soundEngine.playWin === 'function') {
-          window.soundEngine.playWin();
-        }
-      }
-      if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
 
       // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
       if (this.duoMode === 'battle') {
@@ -2787,8 +3088,8 @@ class AdminHubController {
     const countEl = document.getElementById('admin-chatters-count');
     if (!listEl) return;
 
-    // Seed realistic chatters if map empty
-    if (this.recentChatters.size === 0) {
+    // Seed realistic chatters if map empty and demo users have not been purged
+    if (this.recentChatters.size === 0 && !this._demoUsersPurgedForLive && localStorage.getItem('hunthub_demo_users_purged') !== 'true') {
       const now = Date.now();
       this.recentChatters.set('NachoGamer', { user: 'NachoGamer', ts: now - 12000 });
       this.recentChatters.set('SlotKing21', { user: 'SlotKing21', ts: now - 28000 });
@@ -2800,12 +3101,17 @@ class AdminHubController {
     const arr = Array.from(this.recentChatters.values());
     if (countEl) countEl.textContent = arr.length.toString();
 
+    if (arr.length === 0) {
+      listEl.innerHTML = `<span style="font-size: 11px; color: #64748b;">No active chatters in last 90s.</span>`;
+      return;
+    }
+
     listEl.innerHTML = arr.map(c => {
       const secAgo = Math.floor((Date.now() - c.ts) / 1000);
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
-          <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${c.user}</span>
-          <span style="font-size: 10.5px; color: var(--kick-green);">${secAgo}s ago</span>
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+          <span style="font-weight: 700; color: #ffffff; font-size: 11px;">@${c.user}</span>
+          <span style="font-size: 10px; color: var(--kick-green);">${secAgo}s</span>
         </div>
       `;
     }).join('');
@@ -2813,9 +3119,14 @@ class AdminHubController {
 
   spinCSGOWheel(demo = false) {
     const btn = document.getElementById('btn-spin-csgo-wheel');
+    const cpBtn = document.getElementById('cp-btn-spin-csgo');
     if (btn) {
       btn.disabled = true;
       btn.textContent = '🎯 SPINNING CS:GO REEL...';
+    }
+    if (cpBtn) {
+      cpBtn.disabled = true;
+      cpBtn.textContent = '🎯 SPINNING CS:GO...';
     }
 
     const arr = Array.from(this.recentChatters.values());
@@ -2825,21 +3136,15 @@ class AdminHubController {
       this.channelGiveaway.postMessage({ type: demo ? 'test_spin' : 'spin', winner, ts: Date.now() });
     }
 
-    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') window.soundEngine.playDiceRoll();
-
     setTimeout(() => {
       if (btn) {
         btn.disabled = false;
         btn.textContent = '🎯 SPIN CS:GO WHEEL (PICK WINNER)';
       }
-      if (window.soundEngine) {
-        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
-          window.soundEngine.playVictoriousTrumpetFanfare();
-        } else if (typeof window.soundEngine.playWin === 'function') {
-          window.soundEngine.playWin();
-        }
+      if (cpBtn) {
+        cpBtn.disabled = false;
+        cpBtn.textContent = '🎯 SPIN CS:GO CHATTER';
       }
-      if (typeof window.confetti === 'function') window.confetti({ particleCount: 80, spread: 60 });
 
       // Assign Spotlight Recommender in Bonus Hunt
       const callerInput = document.getElementById('admin-hunt-caller-input');
@@ -2868,9 +3173,14 @@ class AdminHubController {
     const cat = catSelect ? catSelect.value : 'all';
 
     const btn = document.getElementById('btn-spin-slot-wheel');
+    const cpBtn = document.getElementById('cp-btn-spin-slots');
     if (btn) {
       btn.disabled = true;
       btn.textContent = '🎰 SPINNING 60 FPS ROULETTE...';
+    }
+    if (cpBtn) {
+      cpBtn.disabled = true;
+      cpBtn.textContent = '🎰 SPINNING SLOTS...';
     }
 
     if (this.channelSlotWheel) {
@@ -2884,14 +3194,15 @@ class AdminHubController {
       ts: Date.now()
     });
 
-    if (window.soundEngine && typeof window.soundEngine.playDiceRoll === 'function') window.soundEngine.playDiceRoll();
-
     setTimeout(() => {
       if (btn) {
         btn.disabled = false;
         btn.textContent = '🎰 SPIN RANDOM SLOT WHEEL';
       }
-      if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+      if (cpBtn) {
+        cpBtn.disabled = false;
+        cpBtn.textContent = '🎰 SPIN SLOT ROULETTE';
+      }
 
       const slots = window.HUNTHUB_CURATED_SLOTS || [];
       const pool = cat === 'all' ? slots : slots.filter(s => s.category === cat);
@@ -2909,6 +3220,41 @@ class AdminHubController {
         });
       }
     }, 5000);
+  }
+
+  triggerStreamCelebrationOverlay(opts = {}) {
+    const rawUser = String(opts.username || 'DiggityWinner').trim().replace(/^@/, '') || 'DiggityWinner';
+    const rawSlot = String(opts.slotName || 'Wanted Dead or a Wild').trim();
+    const meta = this.resolveSlotMeta(rawSlot);
+    const payload = {
+      type: opts.type || 'BATTLE_WIN',
+      category: opts.category || (opts.type === 'TOURNEY_CHAMPION' ? '8-BRACKET TOURNAMENT CHAMPION' : '1V1 BATTLE WINNER'),
+      icon: opts.icon || (opts.type === 'TOURNEY_CHAMPION' ? '👑' : '⚔️'),
+      username: `@${rawUser}`,
+      slotName: meta.name,
+      slotImg: opts.slotImg || meta.image,
+      statValue: opts.statValue || 'VICTORY',
+      prize: opts.prize || '+500 $DIG & STREAM GLORY',
+      ts: Date.now()
+    };
+
+    try {
+      localStorage.setItem('hunthub_celebration_event', JSON.stringify(payload));
+      localStorage.setItem('hunthub_celebration_trigger', JSON.stringify(payload));
+    } catch (_) {}
+
+    if (this.channelCelebration) {
+      try {
+        this.channelCelebration.postMessage(payload);
+      } catch (_) {}
+    }
+
+    this.relayOverlaySyncEvent({
+      target: 'overlay-celebration',
+      type: 'CELEBRATION',
+      data: payload,
+      ts: payload.ts
+    });
   }
 
   relayOverlaySyncEvent(overlayEvent) {
@@ -3152,6 +3498,11 @@ class AdminHubController {
     if (this.channelBattle) {
       this.channelBattle.postMessage({ action: 'battle_update', type: 'battle_update', state: statePayload, ...statePayload });
     }
+    try {
+      const chBus = new BroadcastChannel('hunthub_battle_bus');
+      chBus.postMessage({ action: 'battle_update', type: 'battle_update', state: statePayload, ...statePayload });
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: statePayload }));
   }
 
   clearBothBattleCorners() {
@@ -3171,9 +3522,15 @@ class AdminHubController {
     if (multB) multB.value = '';
 
     this.pushCornersToOverlay();
+    const resetEvt = { action: 'reset_battle', type: 'RESET_BATTLE', ts: Date.now() };
     if (this.channelBattle) {
-      this.channelBattle.postMessage({ action: 'reset_battle', type: 'RESET_BATTLE', ts: Date.now() });
+      this.channelBattle.postMessage(resetEvt);
     }
+    try {
+      const chBus = new BroadcastChannel('hunthub_battle_bus');
+      chBus.postMessage(resetEvt);
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: resetEvt }));
     try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
 
     this.renderKothDeck();
@@ -3366,21 +3723,57 @@ class AdminHubController {
       };
     }
 
-    // Live slot cover preview when editing slot A or B inputs
+    // Live slot cover preview & reactive corner synchronization when editing user or slot inputs
+    const userAInput = document.getElementById('cp-battle-user-a');
+    const userBInput = document.getElementById('cp-battle-user-b');
     const slotAInput = document.getElementById('cp-battle-slot-a');
     const slotBInput = document.getElementById('cp-battle-slot-b');
+
+    if (userAInput) {
+      const handleUserA = () => {
+        const u = userAInput.value.trim().replace(/^@/, '');
+        const imgA = document.getElementById('cp-battle-img-a');
+        if (!u) {
+          if (imgA) imgA.src = this.getEmptyCornerPlaceholderSvg('A');
+          this.kothState.king = null;
+          this.kothState.streak = 0;
+          this.syncCondensedControlPanelUI();
+        }
+        this.pushCornersToOverlay();
+      };
+      userAInput.addEventListener('input', handleUserA);
+      userAInput.addEventListener('change', handleUserA);
+    }
+
+    if (userBInput) {
+      const handleUserB = () => {
+        const u = userBInput.value.trim().replace(/^@/, '');
+        const imgB = document.getElementById('cp-battle-img-b');
+        if (!u) {
+          if (imgB) imgB.src = this.getEmptyCornerPlaceholderSvg('B');
+        }
+        this.pushCornersToOverlay();
+      };
+      userBInput.addEventListener('input', handleUserB);
+      userBInput.addEventListener('change', handleUserB);
+    }
+
     if (slotAInput) {
       slotAInput.addEventListener('input', () => {
-        const meta = this.resolveSlotMeta(slotAInput.value);
+        const hasUser = Boolean((document.getElementById('cp-battle-user-a')?.value || '').trim());
+        const meta = hasUser ? this.resolveSlotMeta(slotAInput.value) : { image: this.getEmptyCornerPlaceholderSvg('A') };
         const imgA = document.getElementById('cp-battle-img-a');
         if (imgA) imgA.src = meta.image;
+        this.pushCornersToOverlay();
       });
     }
     if (slotBInput) {
       slotBInput.addEventListener('input', () => {
-        const meta = this.resolveSlotMeta(slotBInput.value);
+        const hasUser = Boolean((document.getElementById('cp-battle-user-b')?.value || '').trim());
+        const meta = hasUser ? this.resolveSlotMeta(slotBInput.value) : { image: this.getEmptyCornerPlaceholderSvg('B') };
         const imgB = document.getElementById('cp-battle-img-b');
         if (imgB) imgB.src = meta.image;
+        this.pushCornersToOverlay();
       });
     }
 
@@ -3496,27 +3889,7 @@ class AdminHubController {
     // 3. Tournament & Bonus Hunt Quick Controls
     const btnSeedTourney = document.getElementById('cp-btn-seed-tourney');
     if (btnSeedTourney) {
-      btnSeedTourney.onclick = () => {
-        const seedSource = this.tourneyQueue.length > 0 ? this.tourneyQueue : this.duoPool.map(p => ({ username: p.chatter, slotName: p.slot }));
-        for (let i = 0; i < 8; i++) {
-          const item = seedSource[i];
-          const pInput = document.getElementById(`admin-tourney-p${i + 1}`);
-          const sInput = document.getElementById(`admin-tourney-s${i + 1}`);
-          if (item && pInput && sInput) {
-            pInput.value = `@${String(item.username || '').replace(/^@/, '')}`;
-            sInput.value = item.slotName || 'Gates of Olympus 1000';
-          }
-        }
-        const startBtn = document.getElementById('btn-admin-start-tourney');
-        if (startBtn) startBtn.click();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: '8-Bracket Tournament Seeded! 🏆',
-            message: 'Players and slots loaded into the 8-Bracket Tournament.',
-            type: 'gold'
-          });
-        }
-      };
+      btnSeedTourney.onclick = () => this.seedTourneyFromQueue();
     }
 
     const btnBhAdd = document.getElementById('cp-btn-bh-add');
@@ -3529,7 +3902,7 @@ class AdminHubController {
         const adminSearch = document.getElementById('admin-hunt-slot-search');
         const adminBet = document.getElementById('admin-hunt-bet-input');
         const adminCaller = document.getElementById('admin-hunt-caller-input');
-        const adminAddBtn = document.getElementById('btn-admin-add-hunt-slot');
+        const adminAddBtn = document.getElementById('btn-admin-add-bonus');
         if (adminSearch) adminSearch.value = slot;
         if (adminBet) adminBet.value = String(bet);
         if (adminCaller) adminCaller.value = caller;
@@ -3538,7 +3911,7 @@ class AdminHubController {
       };
     }
 
-    // 4. Copy OBS Overlay URLs from #control-panel
+    // 4. Copy OBS Overlay URLs & Test Celebration Overlay from #control-panel
     const copyObsHelper = (path, label, btnEl) => {
       const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:'))
         ? window.location.origin
@@ -3567,6 +3940,8 @@ class AdminHubController {
     const obsSlots = document.getElementById('cp-btn-obs-slots');
     const obsTourney = document.getElementById('cp-btn-obs-tourney');
     const obsBh = document.getElementById('cp-btn-obs-bh');
+    const obsCelebration = document.getElementById('cp-btn-obs-celebration');
+    const btnTestCelebration = document.getElementById('cp-btn-test-celebration');
 
     if (obsBattle) obsBattle.onclick = () => copyObsHelper('/overlay-battle/index.html', '1v1 Battle', obsBattle);
     if (obsDuo) obsDuo.onclick = () => copyObsHelper('/wheel-duo/index.html', 'Dual Wheel', obsDuo);
@@ -3574,6 +3949,30 @@ class AdminHubController {
     if (obsSlots) obsSlots.onclick = () => copyObsHelper('/wheel-slots/overlay/index.html', 'Slot Wheel', obsSlots);
     if (obsTourney) obsTourney.onclick = () => copyObsHelper('/overlay-tourney/index.html', '8-Bracket Tourney', obsTourney);
     if (obsBh) obsBh.onclick = () => copyObsHelper('/overlay-bonushunt/index.html', 'Bonus Hunt', obsBh);
+    if (obsCelebration) obsCelebration.onclick = () => copyObsHelper('/overlay-celebration/index.html', 'Winner Celebration (1920x1080)', obsCelebration);
+
+    if (btnTestCelebration) {
+      btnTestCelebration.onclick = () => {
+        const testUser = (document.getElementById('cp-battle-user-a')?.value || this.kothState.king || '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
+        const testSlot = (document.getElementById('cp-battle-slot-a')?.value || this.kothState.kingSlot || 'Wanted Dead or a Wild').trim();
+        this.triggerStreamCelebrationOverlay({
+          type: 'BATTLE_WIN',
+          category: '1V1 BATTLE & TOURNEY CELEBRATION',
+          icon: '🎺',
+          username: testUser,
+          slotName: testSlot,
+          statValue: 'WINNER!',
+          prize: 'FALLING COINS & TRUMPET FANFARE ACTIVE'
+        });
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '🎺 Celebration Sent to OBS Overlay!',
+            message: `Displaying @${testUser} on /overlay-celebration/index.html?obs=1 (1920x1080 Transparent).`,
+            type: 'gold'
+          });
+        }
+      };
+    }
 
     // 5. Manual Command Dispatch Bar in #control-panel
     const btnSendCmd = document.getElementById('cp-btn-send-cmd');
@@ -3631,6 +4030,7 @@ class AdminHubController {
       for (const [k] of this.recentChatters.entries()) {
         if (isDemo(k)) this.recentChatters.delete(k);
       }
+      this.renderActiveChatters();
     }
 
     // 3. Clean Corners A & B if holding a demo user
@@ -3650,8 +4050,36 @@ class AdminHubController {
       this.pushCornersToOverlay();
     }
 
-    // 4. Clean Bonus Hunt demo guesses
+    // 4. Clean 8-Bracket Tournament if holding demo users
     try {
+      const tourneyState = this.getTourneyState();
+      const hasDemoTourney = Boolean(tourneyState.isDemo) ||
+        ['m1', 'm2', 'm3', 'm4'].some(mId => {
+          const m = tourneyState.matches?.[mId];
+          return (m?.player1?.username && isDemo(m.player1.username)) ||
+                 (m?.player2?.username && isDemo(m.player2.username));
+        });
+      if (hasDemoTourney) {
+        this.resetTourneyBracket(true);
+      }
+    } catch (_) {}
+
+    // 5. Clean Community Bonus Hunt demo slots & demo guesses
+    try {
+      const savedSlots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]');
+      if (Array.isArray(savedSlots) && savedSlots.length > 0) {
+        const realSlots = savedSlots.filter(s => !s.caller || !isDemo(s.caller));
+        if (realSlots.length !== savedSlots.length) {
+          localStorage.setItem('hunthub_hunt_slots', JSON.stringify(realSlots));
+          if (window.bonusHunt) {
+            window.bonusHunt.slots = realSlots;
+            if (typeof window.bonusHunt.renderMetrics === 'function') window.bonusHunt.renderMetrics();
+            if (typeof window.bonusHunt.renderSlotTable === 'function') window.bonusHunt.renderSlotTable();
+          }
+          this.renderBonusHuntAdmin();
+        }
+      }
+
       const savedGuesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
       if (Array.isArray(savedGuesses)) {
         const realGuesses = savedGuesses.filter(g => !isDemo(g.user || g.username));
@@ -3666,7 +4094,7 @@ class AdminHubController {
     if (window.sonner) {
       window.sonner.toast({
         title: '🟢 Live Stream Mode Active',
-        message: 'Demo/example users were automatically cleared for live Kick viewers.',
+        message: 'Demo users were automatically cleared from 1v1 Battle, 8-Bracket Tourney, Bonus Hunt, and Wheels.',
         type: 'green'
       });
     }

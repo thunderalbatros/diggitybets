@@ -1249,43 +1249,46 @@
               </div>
             </div>
 
+            <!-- Live Winner & Decision Announcement Banner -->
+            <div id="pub-koth-announcement-banner" style="display: none; margin-bottom: 18px; padding: 14px 20px; border-radius: 12px; font-family: var(--font-display); font-size: 14px; font-weight: 900; text-align: center; letter-spacing: 0.5px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+
             <!-- Two Fighter Slots Display -->
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; margin-bottom: 20px;">
               <!-- Blue Corner: King -->
-              <div style="padding: 16px; background: rgba(0, 100, 255, 0.08); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
+              <div id="pub-koth-card-king" style="padding: 16px; background: rgba(0, 100, 255, 0.08); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: all 0.3s ease;">
                 <div>
                   <span class="reward-badge-pill" style="font-size: 9px; color: var(--cyan); border-color: var(--cyan); margin-bottom: 6px;">👑 REIGNING KING (BLUE)</span>
-                  <div id="pub-koth-king-avatar" style="font-size: 28px; margin-bottom: 4px;">👑</div>
-                  <div id="pub-koth-king-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: #ffffff;">No Reigning King</div>
+                  <div id="pub-koth-king-avatar" style="font-size: 28px; margin-bottom: 4px; opacity: 0.4; transition: opacity 0.3s ease;">👑</div>
+                  <div id="pub-koth-king-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--text-dim);">No Reigning King</div>
                 </div>
                 <!-- Slot Cover Showcase (Exact 180:236 3:4 Portrait Format) -->
                 <div style="margin: 10px auto; width: 144px; height: 189px; aspect-ratio: 180 / 236; position: relative; border-radius: 10px; overflow: hidden; background: #070a12; border: 1.5px solid rgba(0, 150, 255, 0.45); box-shadow: 0 6px 18px rgba(0,0,0,0.6);">
-                  <img id="pub-koth-king-slot-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="King Slot" style="width: 100%; height: 100%; object-fit: contain; display: block;">
-                  <span id="pub-koth-king-slot-badge" class="badge-tag" style="position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(5,8,14,0.88); border: 1px solid var(--cyan); color: var(--cyan);">HACKSAW</span>
+                  <img id="pub-koth-king-slot-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%2300e5ff%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%2300e5ff%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20A%3C%2Ftext%3E%3C%2Fsvg%3E" alt="King Slot" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                  <span id="pub-koth-king-slot-badge" class="badge-tag" style="display: none; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(5,8,14,0.88); border: 1px solid var(--cyan); color: var(--cyan);">WAITING</span>
                 </div>
                 <div>
-                  <div id="pub-koth-king-slot" style="font-size: 13px; font-weight: 700; color: var(--gold); margin-top: 2px;">Throne Open for Challengers</div>
-                  <div id="pub-koth-king-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: var(--cyan); margin-top: 4px;">0.00x</div>
+                  <div id="pub-koth-king-slot" style="font-size: 13px; font-weight: 700; color: var(--text-dim); margin-top: 2px;">Throne Open for Challengers</div>
+                  <div id="pub-koth-king-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: var(--cyan); margin-top: 4px;">0 Wins</div>
                 </div>
               </div>
 
               <div style="display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 20px; font-weight: 900; color: var(--text-dim);">VS</div>
 
               <!-- Red Corner: Challenger -->
-              <div style="padding: 16px; background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
+              <div id="pub-koth-card-chal" style="padding: 16px; background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: all 0.3s ease;">
                 <div>
                   <span class="reward-badge-pill" style="font-size: 9px; color: #ff6b8b; border-color: #ff6b8b; margin-bottom: 6px;">⚔️ CHALLENGER (RED)</span>
-                  <div id="pub-koth-chal-avatar" style="font-size: 28px; margin-bottom: 4px;">🥊</div>
-                  <div id="pub-koth-chal-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: #ffffff;">Awaiting Challenger</div>
+                  <div id="pub-koth-chal-avatar" style="font-size: 28px; margin-bottom: 4px; opacity: 0.4; transition: opacity 0.3s ease;">🥊</div>
+                  <div id="pub-koth-chal-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--text-dim);">Awaiting Challenger</div>
                 </div>
                 <!-- Slot Cover Showcase (Exact 180:236 3:4 Portrait Format) -->
                 <div style="margin: 10px auto; width: 144px; height: 189px; aspect-ratio: 180 / 236; position: relative; border-radius: 10px; overflow: hidden; background: #070a12; border: 1.5px solid rgba(255, 42, 95, 0.45); box-shadow: 0 6px 18px rgba(0,0,0,0.6);">
-                  <img id="pub-koth-chal-slot-img" src="https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format" alt="Challenger Slot" style="width: 100%; height: 100%; object-fit: contain; display: block;">
-                  <span id="pub-koth-chal-slot-badge" class="badge-tag" style="position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(5,8,14,0.88); border: 1px solid #ff6b8b; color: #ff6b8b;">PRAGMATIC</span>
+                  <img id="pub-koth-chal-slot-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20236%22%3E%3Crect%20width%3D%22180%22%20height%3D%22236%22%20rx%3D%2214%22%20fill%3D%22%23070a12%22%20stroke%3D%22%23ff2a5f%22%20stroke-opacity%3D%220.35%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%204%22%2F%3E%3Ctext%20x%3D%2290%22%20y%3D%22112%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2244%22%20fill%3D%22%23ff2a5f%22%20fill-opacity%3D%220.45%22%3E%3F%3C%2Ftext%3E%3Ctext%20x%3D%2290%22%20y%3D%22152%22%20text-anchor%3D%22middle%22%20font-family%3D%22Chakra%20Petch%2C%20sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2214%22%20fill%3D%22%2364748b%22%20letter-spacing%3D%221.5%22%3EEMPTY%20B%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Challenger Slot" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                  <span id="pub-koth-chal-slot-badge" class="badge-tag" style="display: none; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 8px; white-space: nowrap; background: rgba(5,8,14,0.88); border: 1px solid #ff6b8b; color: #ff6b8b;">WAITING</span>
                 </div>
                 <div>
                   <div id="pub-koth-chal-slot" style="font-size: 13px; font-weight: 700; color: var(--text-dim); margin-top: 2px;">Type !battle &lt;slot&gt; in chat</div>
-                  <div id="pub-koth-chal-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #ff6b8b; margin-top: 4px;">0.00x</div>
+                  <div id="pub-koth-chal-score" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #ff6b8b; margin-top: 4px;">—</div>
                 </div>
               </div>
             </div>
@@ -1322,44 +1325,96 @@
       <div class="section-header-row">
         <div>
           <h2 class="section-title"><span>💎</span> COMMUNITY <span class="accent">BONUS HUNT TRACKER</span></h2>
-          <p class="section-subtitle">Exact bonushunt.gg/bht.bet metrics · Caller names, slot art, and guess the final balance contest</p>
+          <p class="section-subtitle">bonushunt.gg architecture · Real-time Run & Req Avg, Best/Lucky Wins, GTB podium & Provably Fair Verifiers</p>
         </div>
-        <div style="font-family: var(--font-display); font-size: 12px; color: var(--text-muted);">
-          STATUS: <span style="color: var(--kick-green); font-weight: 800;">ACTIVE LIVE SESSION</span>
+        <div style="font-family: var(--font-display); font-size: 12px; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--text-dim);">STATUS:</span>
+          <span class="reward-badge-pill" id="bh-live-status-pill" style="background: rgba(0, 230, 118, 0.15); border: 1px solid #00e676; color: #00e676; font-size: 0.72rem; padding: 4px 10px; font-weight: 800; border-radius: 9999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="width: 7px; height: 7px; background: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676; animation: pulse 2s infinite;"></span>
+            <span id="bh-live-status-text">LIVE HUNT IN PROGRESS</span>
+          </span>
         </div>
       </div>
 
-      <!-- Four Core Financial Metrics Cards -->
-      <div class="bh-metrics-grid">
+      <!-- SOTA 2026: Six Core Financial & Mathematical Metrics Cards -->
+      <div class="bh-metrics-grid-6">
         <div class="bh-metric-card">
           <div class="bh-metric-label">TOTAL COST (BUY-IN)</div>
-          <div class="bh-metric-value highlight" id="bh-metric-cost">$0.00</div>
-          <div class="bh-metric-sub">Calculated at $2.00 avg bet</div>
+          <div class="bh-metric-val highlight" id="bh-metric-cost">$0.00</div>
+          <div class="bh-metric-sub" style="font-size: 11px; color: var(--text-dim);">Start cost pool</div>
         </div>
         <div class="bh-metric-card">
           <div class="bh-metric-label">TOTAL PAID OUT</div>
-          <div class="bh-metric-value" id="bh-metric-paid">$0.00</div>
-          <div class="bh-metric-sub">Cumulative bonus wins</div>
+          <div class="bh-metric-val green" id="bh-metric-paid">$0.00</div>
+          <div class="bh-metric-sub" style="font-size: 11px; color: var(--text-dim);">Cumulative returns</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">PROFIT / LOSS (P&L)</div>
+          <div class="bh-metric-val" id="bh-metric-pnl">$0.00</div>
+          <div class="bh-metric-sub" id="bh-metric-pnl-sub" style="font-size: 11px; color: var(--text-dim);">0.0% ROI</div>
         </div>
         <div class="bh-metric-card">
           <div class="bh-metric-label">BONUSES OPENED</div>
-          <div class="bh-metric-value" id="bh-metric-opened">0 / 0</div>
-          <div class="bh-metric-sub">Progress of hunt</div>
+          <div class="bh-metric-val" id="bh-metric-opened" style="color: #ffffff;">0 / 0</div>
+          <div class="bh-metric-sub" id="bh-metric-remaining-sub" style="font-size: 11px; color: var(--text-dim);">0 remaining</div>
         </div>
         <div class="bh-metric-card">
-          <div class="bh-metric-label">REQUIRED AVG MULTIPLIER</div>
-          <div class="bh-metric-value" id="bh-metric-reqavg" style="color: var(--cyan);">—</div>
-          <div class="bh-metric-sub">Needed to break even</div>
+          <div class="bh-metric-label">AVG X (CURRENT RUN)</div>
+          <div class="bh-metric-val cyan" id="bh-metric-runavg">0.00x</div>
+          <div class="bh-metric-sub" style="font-size: 11px; color: var(--text-dim);">Run average multi</div>
+        </div>
+        <div class="bh-metric-card">
+          <div class="bh-metric-label">REQ AVG (BREAK-EVEN)</div>
+          <div class="bh-metric-val gold" id="bh-metric-reqavg">—</div>
+          <div class="bh-metric-sub" style="font-size: 11px; color: var(--text-dim);">Needed to break even</div>
+        </div>
+      </div>
+
+      <!-- SOTA 2026: Highlights Row (Best Win $ & Lucky Win X) -->
+      <div class="bh-highlights-grid">
+        <div class="bh-highlight-card best-win">
+          <img id="bh-best-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="" style="width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.4);" onerror="this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'">
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: #ffd700; letter-spacing: 1px; display: flex; align-items: center; gap: 4px;">
+              <span>🏆</span> BEST WIN (HIGHEST $)
+            </div>
+            <div id="bh-best-name" style="font-size: 14px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">—</div>
+            <div id="bh-best-caller" style="font-size: 11px; color: var(--text-dim);">Call by: —</div>
+          </div>
+          <div style="text-align: right;">
+            <div id="bh-best-val" style="font-size: 18px; font-family: var(--font-display); font-weight: 900; color: #00e676; tabular-nums: true;">$0.00</div>
+            <div id="bh-best-mult" style="font-size: 11px; font-weight: 700; color: #ffd700;">0.00x</div>
+          </div>
+        </div>
+
+        <div class="bh-highlight-card lucky-win">
+          <img id="bh-lucky-img" src="https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format" alt="" style="width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; border: 1px solid rgba(0, 229, 255, 0.4);" onerror="this.src='https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format'">
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: var(--cyan); letter-spacing: 1px; display: flex; align-items: center; gap: 4px;">
+              <span>🍀</span> LUCKY WIN (HIGHEST X)
+            </div>
+            <div id="bh-lucky-name" style="font-size: 14px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">—</div>
+            <div id="bh-lucky-caller" style="font-size: 11px; color: var(--text-dim);">Call by: —</div>
+          </div>
+          <div style="text-align: right;">
+            <div id="bh-lucky-mult" style="font-size: 18px; font-family: var(--font-display); font-weight: 900; color: var(--cyan); tabular-nums: true;">0.00x</div>
+            <div id="bh-lucky-val" style="font-size: 11px; font-weight: 700; color: #00e676;">$0.00</div>
+          </div>
         </div>
       </div>
 
       <!-- Bonus Hunt Slots Table -->
       <div class="bh-table-card">
-        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
             🎰 COLLECTED BONUSES & CALLERS
           </h3>
-          <span style="font-size: 12px; color: var(--text-dim);">Live Hunt Sync</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-dim);">Live Sync</span>
+            <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px; text-decoration: none; border-color: rgba(0, 229, 255, 0.4); color: var(--cyan);">
+              📺 Open OBS Overlay
+            </a>
+          </div>
         </div>
         <div style="overflow-x: auto;">
           <table class="bh-table">
@@ -1380,26 +1435,49 @@
         </div>
       </div>
 
-      <!-- Guess the Final Balance Contest -->
+      <!-- SOTA 2026: Guess the Final Balance Contest & Automated Podium -->
       <div class="bh-guesses-panel" style="margin-top: 24px;">
-        <!-- Guess Submission Form -->
+        <!-- Guess Submission Form & Live Settle Button -->
         <div class="bh-guess-form-card">
-          <h4 style="font-family: var(--font-display); font-size: 16px; color: var(--gold); margin-bottom: 6px;">
-            🎯 GUESS THE FINAL BALANCE CONTEST
-          </h4>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-            Predict the exact final dollar payout of this bonus hunt. The viewer with the closest prediction wins the streamer bounty!
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h4 style="font-family: var(--font-display); font-size: 16px; color: var(--gold);">
+              🎯 GUESS THE FINAL BALANCE CONTEST
+            </h4>
+            <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; padding: 2px 8px; font-weight: 800; border-radius: 4px;">TOP 3 WIN $DIG</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Predict the exact final dollar payout of this bonus hunt. Closest predictions win: 🥇 500 $DIG · 🥈 250 $DIG · 🥉 100 $DIG!
           </p>
 
           <form id="bh-guess-form" novalidate onsubmit="return false;">
             <div style="margin-bottom: 12px;">
               <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">YOUR PREDICTED FINAL AMOUNT ($ USD)</label>
-              <input type="number" id="bh-input-guess" class="slots-search-input" placeholder="e.g. 1750" min="1" step="1">
+              <div style="display: flex; gap: 8px;">
+                <input type="number" id="bh-input-guess" class="slots-search-input" placeholder="e.g. 1750" min="1" step="1" style="flex: 1;">
+                <button type="submit" class="btn-game-action primary" id="bh-btn-submit-guess" style="padding: 0 20px;">
+                  Lock 🎯
+                </button>
+              </div>
             </div>
-            <button type="submit" class="btn-game-action primary" id="bh-btn-submit-guess" style="width: 100%;">
-              Lock My Prediction 🎯
-            </button>
           </form>
+
+          <!-- Settle GTB Button (Streamer / Admin Control) -->
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-dim);">Streamer Settlement:</span>
+            <button type="button" class="btn-stake-primary" id="bh-btn-settle-gtb" style="padding: 6px 14px; font-size: 11px; background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); color: #000; font-weight: 800; border-radius: 6px; border: none; cursor: pointer;">
+              🏆 Settle GTB & Award $DIG
+            </button>
+          </div>
+
+          <!-- Live Winners Podium (Visible when settled) -->
+          <div id="bh-gtb-podium-card" style="display: none; margin-top: 16px; padding: 14px; background: rgba(0, 0, 0, 0.4); border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.3);">
+            <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #ffd700; text-align: center; margin-bottom: 8px;">
+              🎉 OFFICIAL GUESS THE BALANCE WINNERS
+            </div>
+            <div class="bh-podium-container" id="bh-podium-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
         </div>
 
         <!-- Recent Community Predictions Feed -->
@@ -1412,6 +1490,117 @@
           </div>
           <div class="bh-guesses-list" id="bh-guesses-list">
             <!-- Rendered dynamically by bonushunt.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SOTA 2026: Viewer Slot Requests & Interactive Roulette Wheel -->
+      <div class="bh-wheel-section" id="bh-sr-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+              <span>🎡</span> COMMUNITY <span class="accent">SLOT REQUESTS & ROULETTE</span>
+            </h3>
+            <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+              Viewers submit favorite slots via chat (!sr) or web. Spin the wheel live on stream to pick the next game!
+            </p>
+          </div>
+          <button type="button" class="btn-game-action primary" id="bh-btn-spin-wheel" style="padding: 10px 22px; font-size: 13px; font-weight: 900; background: linear-gradient(135deg, #00e5ff 0%, #9272ff 100%); border: none; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 16px rgba(0, 229, 255, 0.35);">
+            🎡 Spin Requests Wheel!
+          </button>
+        </div>
+
+        <div class="bh-wheel-layout">
+          <!-- Wheel Canvas -->
+          <div class="bh-wheel-canvas-box">
+            <div class="bh-wheel-pointer"></div>
+            <canvas id="bh-wheel-canvas" width="300" height="300" style="border-radius: 50%; box-shadow: 0 0 24px rgba(0,0,0,0.8); background: #070913;"></canvas>
+          </div>
+
+          <!-- Requests Queue & Submission -->
+          <div style="min-width: 0; flex: 1;">
+            <form id="bh-sr-form" style="display: flex; gap: 8px; margin-bottom: 14px;" onsubmit="return false;">
+              <input type="text" id="bh-sr-input" class="slots-search-input" placeholder="Request a slot (e.g. San Quentin, Gates 1000...)" style="flex: 1;">
+              <button type="submit" class="btn-stake-primary" id="bh-sr-submit-btn" style="padding: 0 16px; font-size: 12px; white-space: nowrap;">
+                + Add Request
+              </button>
+            </form>
+
+            <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); margin-bottom: 8px;">
+              ACTIVE QUEUE (<span id="bh-sr-count">0</span> REQUESTS)
+            </div>
+            <div id="bh-sr-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOTA 2026: Stake Originals Provably Fair Verifiers (Keno & Mines) -->
+      <div class="verifier-card" id="bh-verifiers-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+              <span>🛡️</span> STAKE ORIGINALS <span class="accent">PROVABLY FAIR VERIFIER</span>
+            </h3>
+            <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+              Official HMAC-SHA256 mathematical verifier for Stake Keno and Mines. 100% transparent and client-side verifiable.
+            </p>
+          </div>
+          <!-- Verifier Mode Tabs -->
+          <div style="display: flex; gap: 6px; background: rgba(0, 0, 0, 0.4); padding: 4px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <button type="button" class="btn-chat-toggle active" id="btn-verifier-tab-keno" style="padding: 6px 14px; font-size: 11px; border: none; border-radius: 6px;">
+              Keno Verifier
+            </button>
+            <button type="button" class="btn-chat-toggle" id="btn-verifier-tab-mines" style="padding: 6px 14px; font-size: 11px; border: none; border-radius: 6px;">
+              Mines Verifier
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Parameters Form -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div>
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SERVER SEED</label>
+            <input type="text" id="vf-server-seed" class="slots-search-input" placeholder="e.g. 7f8a9b..." value="demo_server_seed_diggitybets_2026">
+          </div>
+          <div>
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CLIENT SEED</label>
+            <input type="text" id="vf-client-seed" class="slots-search-input" placeholder="e.g. custom_seed" value="kick_community_session">
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <div style="flex: 1;">
+              <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">NONCE</label>
+              <input type="number" id="vf-nonce" class="slots-search-input" value="1" min="1" step="1">
+            </div>
+            <div id="vf-mines-count-box" style="width: 80px; display: none;">
+              <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">MINES</label>
+              <input type="number" id="vf-mine-count" class="slots-search-input" value="3" min="1" max="24" step="1">
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-stake-primary" id="btn-run-verifier" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 800;">
+          🔍 Run Cryptographic Verification
+        </button>
+
+        <!-- Keno Board Container -->
+        <div id="vf-keno-view" style="margin-top: 18px;">
+          <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #00e676; margin-bottom: 6px;">
+            DRAWN NUMBERS (10 / 40): <span id="vf-keno-drawn-list" style="color: #ffffff; font-weight: 600;">—</span>
+          </div>
+          <div class="keno-grid-board" id="vf-keno-board">
+            <!-- 40 tiles rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Mines Board Container -->
+        <div id="vf-mines-view" style="display: none; margin-top: 18px;">
+          <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #ef4444; text-align: center; margin-bottom: 6px;">
+            5×5 GRID SIMULATION (MINES: <span id="vf-mines-total-display">3</span>):
+          </div>
+          <div class="mines-grid-board" id="vf-mines-board">
+            <!-- 25 tiles rendered dynamically -->
           </div>
         </div>
       </div>
@@ -1982,7 +2171,7 @@
           <h2 class="section-title">
             <span>👑</span> STREAMER <span class="accent">COMMAND CENTER</span>
           </h2>
-          <p class="section-subtitle">Exclusive master deck for <strong>@diggitybets</strong> · Store vouchers, Sunday raffle, Anti-Sybil radar, Games manager & Live Wheels</p>
+          <p class="section-subtitle">Exclusive master deck for <strong>@diggitybets</strong> · Store vouchers, Sunday raffle, Stake Partners &amp; Anti-Sybil radar</p>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">🟢 LIVE SYNC ACTIVE</span>
@@ -2010,19 +2199,13 @@
         </div>
       </div>
 
-      <!-- 4 TABS NAVIGATION FOR ADMIN CONTROL DECK -->
+      <!-- 2 TABS NAVIGATION FOR ADMIN CONTROL DECK -->
       <div class="admin-tabs-nav-bar" style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; overflow-x: auto;">
         <button type="button" class="btn-game-action primary admin-subtab-btn active" data-subtab="vouchers-stake" id="btn-subtab-vouchers" style="padding: 10px 18px; font-size: 13px;">
-          <span>📦</span> Vouchers, Raffles & Stake
+          <span>📦</span> Vouchers, Raffles &amp; Stake
         </button>
         <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="anti-sybil" id="btn-subtab-sybil" style="padding: 10px 18px; font-size: 13px;">
           <span>🛡️</span> Alertas Anti-Sybil
-        </button>
-        <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="games-ctrl" id="btn-subtab-games" style="padding: 10px 18px; font-size: 13px;">
-          <span>🎮</span> Control Maestro de Juegos
-        </button>
-        <button type="button" class="btn-stake-secondary admin-subtab-btn" data-subtab="wheels-ctrl" id="btn-subtab-wheels" style="padding: 10px 18px; font-size: 13px;">
-          <span>🎡</span> Control de Wheels en Vivo
         </button>
       </div>
 
@@ -2128,7 +2311,7 @@
               <div style="display: flex; align-items: center; gap: 10px;">
                 <img src="site/images/stake-official-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake" style="height: 28px; width: auto; object-fit: contain;">
                 <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--kick-green); margin: 0;">
-                  STAKE PARTNERS REFERRALS & BULK SYNC
+                  STAKE PARTNERS REFERRALS &amp; BULK SYNC
                 </h3>
               </div>
               <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
@@ -2181,7 +2364,7 @@
           <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <span>🛡️</span> ANTI-SYBIL RADAR & MULTI-ACCOUNT ALERTS (1 PC / 1 USER)
+                <span>🛡️</span> ANTI-SYBIL RADAR &amp; MULTI-ACCOUNT ALERTS (1 PC / 1 USER)
               </h3>
               <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
                 Flags 2 or more accounts attempting to farm points or claim vouchers from the same PC hardware hash (ThumbmarkJS), IP subnet, or shared Stake account.
@@ -2211,337 +2394,6 @@
                 <!-- Rendered dynamically by admin-hub.js -->
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==========================================
-           TAB 3: CONTROL MAESTRO DE JUEGOS
-           ========================================== -->
-      <div class="admin-subtab-pane" id="pane-admin-games-ctrl" style="display: none;">
-        <!-- 1. Community Bonus Hunt Master Deck -->
-        <div class="bh-table-card" style="margin-bottom: 28px;">
-          <div style="padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <span>💎</span> COMMUNITY BONUS HUNT MASTER CONTROL
-              </h3>
-              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                Search catalog slots, add callers, record live payouts, calculate average multiplier, and resolve Guess The Balance winners.
-              </p>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-bonushunt" data-obs-path="/overlay-bonushunt/index.html" data-obs-size="1920x1080" style="padding: 6px 12px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
-              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-celebration" data-obs-path="/overlay-celebration/index.html" data-obs-size="1920x1080" style="padding: 6px 12px; font-size: 11px; border-color: rgba(255, 215, 0, 0.45); color: var(--gold);">📋 Copy Celebration URL (1920x1080)</button>
-              <button type="button" class="btn-stake-primary" id="btn-admin-start-hunt" style="padding: 6px 14px; font-size: 12px;">Start New Hunt</button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-hunt" style="padding: 6px 12px; font-size: 12px;">🎲 Load 12 Demo Bonuses</button>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-hunt" style="padding: 6px 12px; font-size: 12px; color: var(--magenta);">Reset Hunt</button>
-            </div>
-          </div>
-
-          <!-- Add Bonus Bar with Autocomplete Slot Search -->
-          <div style="padding: 18px 22px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--border-subtle);">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
-              <div style="flex: 2; min-width: 200px; position: relative;">
-                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
-                <input type="text" id="admin-hunt-slot-search" class="slots-search-input" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off">
-                <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
-              </div>
-              <div style="flex: 1; min-width: 120px;">
-                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
-                <input type="text" id="admin-hunt-caller-input" class="slots-search-input" placeholder="@Viewer">
-              </div>
-              <div style="width: 90px;">
-                <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
-                <input type="number" id="admin-hunt-bet-input" class="slots-search-input" value="1.0" step="0.2">
-              </div>
-              <button type="button" class="btn-game-action primary" id="btn-admin-add-bonus" style="padding: 10px 18px; font-size: 13px;">
-                + Add Bonus
-              </button>
-            </div>
-          </div>
-
-          <!-- Live Bonuses Table -->
-          <div style="overflow-x: auto;">
-            <table class="bh-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>SLOT MACHINE</th>
-                  <th>CALLER</th>
-                  <th>BET ($)</th>
-                  <th>PAYOUT ($) (ENTER IN LIVE)</th>
-                  <th>MULTIPLIER</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody id="admin-hunt-bonuses-tbody">
-                <!-- Rendered dynamically -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Guess The Balance Resolution Bar -->
-          <div style="padding: 16px 22px; background: rgba(0, 0, 0, 0.4); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--gold);">FINAL BALANCE ($):</span>
-              <input type="number" id="admin-hunt-final-balance" class="slots-search-input" placeholder="e.g. 1420.50" style="width: 140px;">
-              <button type="button" class="btn-game-action primary" id="btn-admin-resolve-guess" style="padding: 8px 16px; font-size: 12px;">
-                🏆 Resolve Guess The Balance Winner
-              </button>
-            </div>
-            <div id="admin-guess-winner-display" style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--kick-green);"></div>
-          </div>
-        </div>
-
-        <!-- 2-COLUMN DECK: 8-BRACKET TOURNEY & 1V1 BATTLES -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 24px;">
-          <!-- 2. 8-Bracket Tourney Control -->
-          <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <h3 class="profile-card-title"><span>🏆</span> 8-BRACKET TOURNAMENT CONTROL</h3>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-tourney" data-obs-path="/overlay-tourney/index.html" data-obs-size="1920x1080" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
-                <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">LOBBY OPEN</span>
-              </div>
-            </div>
-
-            <!-- Tourney Game Mode Switcher -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
-              <span style="font-size: 11px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px;">GAME MODE:</span>
-              <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn-stake-primary" id="btn-admin-tourney-mode-buy" style="padding: 4px 10px; font-size: 11px;">🎁 Bonus Buy</button>
-                <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 4px 10px; font-size: 11px;">🎰 Spins</button>
-              </div>
-            </div>
-
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-              Manage the 8 tournament competitors, advance match winners through Quarterfinals and Semifinals, and crown the Grand Champion.
-            </p>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-              <button type="button" class="btn-stake-primary" id="btn-admin-open-tourney" style="flex: 1; padding: 8px 12px; font-size: 12px;">Open Bracket</button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-tourney" style="flex: 1; padding: 8px 12px; font-size: 12px;">🎲 8 Demo Players</button>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
-            </div>
-
-            <div id="admin-tourney-rounds-container" style="max-height: 320px; overflow-y: auto;">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
-
-          <!-- 3. 1v1 Battle Control -->
-          <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <h3 class="profile-card-title"><span>⚔️</span> 1V1 BATTLE LIVE CONTROLLER</h3>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-battle" data-obs-path="/overlay-battle/index.html" data-obs-size="1920x1080" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (1920x1080)</button>
-                <span class="reward-badge-pill" id="admin-battle-status-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">READY</span>
-              </div>
-            </div>
-
-            <!-- Battle Game Mode Switcher -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
-              <span style="font-size: 11px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px;">GAME MODE:</span>
-              <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn-stake-primary" id="btn-admin-battle-mode-buy" style="padding: 4px 10px; font-size: 11px;">🎁 Bonus Buy</button>
-                <button type="button" class="btn-stake-secondary" id="btn-admin-battle-mode-spins" style="padding: 4px 10px; font-size: 11px;">🎰 Spins</button>
-              </div>
-            </div>
-
-            <!-- King of the Hill HUD Deck -->
-            <div id="admin-battle-koth-deck" style="padding: 10px 12px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <div style="font-size: 11px; font-weight: 900; color: var(--gold); display: flex; align-items: center; gap: 6px;">
-                  <span>👑</span> KING OF THE HILL (MAX 4 WINS / $20)
-                </div>
-                <span class="reward-badge-pill" id="admin-koth-streak-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">STREAK: 0/4</span>
-              </div>
-              <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                <div id="koth-pill-1" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">1/4</div>
-                <div id="koth-pill-2" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">2/4</div>
-                <div id="koth-pill-3" class="koth-streak-step" style="flex: 1; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim);">3/4</div>
-                <div id="koth-pill-4" class="koth-streak-step" style="flex: 1.2; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px dashed rgba(255,215,0,0.4);">4/4 ($20 PRIZE)</div>
-              </div>
-              <div id="admin-koth-king-info" style="font-size: 11px; color: #ffffff; margin-bottom: 6px;">
-                Reigning King: <span id="admin-koth-king-name" style="color: var(--cyan); font-weight: 700;">None (Throne Open)</span>
-              </div>
-              <!-- King Decision Buttons (shown on wins 1, 2, 3) -->
-              <div id="admin-koth-decision-box" style="display: none; gap: 8px; margin-top: 8px;">
-                <button type="button" class="btn-stake-primary" id="btn-admin-koth-continue" style="flex: 1; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
-                  👑 King Continues (Defend Throne)
-                </button>
-                <button type="button" class="btn-chat-toggle" id="btn-admin-koth-retire" style="flex: 1; padding: 6px 10px; font-size: 11px; color: var(--gold); border-color: var(--gold);">
-                  💰 King Retires / Cashout
-                </button>
-              </div>
-              <!-- King Champion 4-Streak Banner (shown on win 4) -->
-              <div id="admin-koth-champion-box" style="display: none; padding: 8px; background: rgba(83, 252, 24, 0.15); border: 1px solid var(--kick-green); border-radius: 6px; text-align: center;">
-                <div style="font-weight: 900; color: #53fc18; font-size: 12px;">🎉 4-STREAK KING OF THE HILL CHAMPION! $20 CASH PRIZE!</div>
-                <div style="font-size: 11px; color: #ffffff; margin-top: 4px;">Prize logged to Tab 1 Store Redemptions Queue for 1-click payout.</div>
-                <button type="button" class="btn-stake-primary" id="btn-admin-koth-new-game" style="margin-top: 6px; padding: 4px 12px; font-size: 11px;">👑 Start New King of the Hill</button>
-              </div>
-            </div>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-              <button type="button" class="btn-stake-primary" id="btn-admin-open-battle" style="flex: 1; padding: 8px 12px; font-size: 12px;">Open Battle</button>
-              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-battle" style="flex: 1; padding: 8px 12px; font-size: 12px;">🎲 2 Demo Players</button>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-battle" style="padding: 8px 12px; font-size: 12px; color: var(--magenta);">Reset</button>
-            </div>
-
-            <!-- Two Competitors Cards -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-              <div id="admin-card-player-a" style="padding: 12px; background: rgba(0, 100, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 8px; transition: opacity 0.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 11px; font-weight: 800; color: var(--cyan);">PLAYER A (BLUE)</span>
-                  <span id="admin-battle-badge-a" class="reward-badge-pill" style="display: none; font-size: 9px;"></span>
-                </div>
-                <div id="admin-battle-player-a-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerA</div>
-                <div id="admin-battle-buy-inputs-a">
-                  <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT / MULTIPLIER ($ / X):</label>
-                  <input type="number" id="admin-battle-payout-a" class="slots-search-input" value="2.01" step="0.01" style="padding: 4px 8px; font-size: 12px;">
-                </div>
-                <div id="admin-battle-spins-actions-a" style="display: none; margin-top: 8px;">
-                  <div style="font-size: 10px; color: var(--cyan); font-weight: 800; margin-bottom: 5px;">50 SPINS PROFIT / LOSS:</div>
-                  <div style="display: flex; gap: 6px;">
-                    <button type="button" class="btn-stake-primary" id="btn-admin-winner-a" style="flex: 1; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 900;">
-                      🏆 WIN (A)
-                    </button>
-                    <button type="button" class="btn-chat-toggle" id="btn-admin-loser-a" style="flex: 1; padding: 6px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 900;">
-                      ❌ LOSE (A)
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div id="admin-card-player-b" style="padding: 12px; background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 8px; transition: opacity 0.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #ff6b8b;">PLAYER B (RED)</span>
-                  <span id="admin-battle-badge-b" class="reward-badge-pill" style="display: none; font-size: 9px;"></span>
-                </div>
-                <div id="admin-battle-player-b-name" style="font-weight: 800; color: #ffffff; font-size: 13px; margin-bottom: 6px;">@PlayerB</div>
-                <div id="admin-battle-buy-inputs-b">
-                  <label style="font-size: 10px; color: var(--text-dim); display: block;">PAYOUT / MULTIPLIER ($ / X):</label>
-                  <input type="number" id="admin-battle-payout-b" class="slots-search-input" value="1.01" step="0.01" style="padding: 4px 8px; font-size: 12px;">
-                </div>
-                <div id="admin-battle-spins-actions-b" style="display: none; margin-top: 8px;">
-                  <div style="font-size: 10px; color: #ff6b8b; font-weight: 800; margin-bottom: 5px;">50 SPINS PROFIT / LOSS:</div>
-                  <div style="display: flex; gap: 6px;">
-                    <button type="button" class="btn-stake-primary" id="btn-admin-winner-b" style="flex: 1; padding: 6px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 900;">
-                      🏆 WIN (B)
-                    </button>
-                    <button type="button" class="btn-chat-toggle" id="btn-admin-loser-b" style="flex: 1; padding: 6px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 900;">
-                      ❌ LOSE (B)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="btn-game-action primary" id="btn-admin-resolve-battle" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900;">
-              🏆 Resolve Winner & Award Prize
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==========================================
-           TAB 4: CONTROL DE WHEELS EN VIVO
-           ========================================== -->
-      <div class="admin-subtab-pane" id="pane-admin-wheels-ctrl" style="display: none;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
-          <!-- 1. Wheel Dual (wheel-duo) -->
-          <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-              <h3 class="profile-card-title"><span>🎰</span> WHEEL DUAL (DUO-WHEEL)</h3>
-              <span class="reward-badge-pill" id="admin-duo-mode-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan);">1V1 BATTLE</span>
-            </div>
-            <div style="margin-bottom: 10px;">
-              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-duo" data-obs-path="/wheel-duo/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
-            </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-              Syncs chatter and slot machine together. Dispatches winner automatically to free seat in battle or tourney.
-            </p>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-              <button type="button" class="btn-stake-primary" id="btn-duo-mode-battle" style="flex: 1; padding: 6px 10px; font-size: 11px;">⚔️ Mode: 1v1 Battle</button>
-              <button type="button" class="btn-stake-secondary" id="btn-duo-mode-tourney" style="flex: 1; padding: 6px 10px; font-size: 11px;">🏆 Mode: Tourney</button>
-            </div>
-
-            <button type="button" class="btn-game-action primary" id="btn-spin-duo-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 14px;">
-              🎰 SPIN DUO-WHEEL (SELECT WINNER)
-            </button>
-
-            <div style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); margin-bottom: 6px;">QUEUE PAIRS (<span id="admin-duo-count">0</span>):</div>
-            <div id="admin-duo-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px;"></div>
-
-            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-              <input type="text" id="admin-duo-input-user" class="slots-search-input" placeholder="@Chatter" style="flex: 1; padding: 6px 8px; font-size: 11px;">
-              <input type="text" id="admin-duo-input-slot" class="slots-search-input" placeholder="Slot Name" style="flex: 1.5; padding: 6px 8px; font-size: 11px;">
-              <button type="button" class="btn-stake-secondary" id="btn-admin-add-duo" style="padding: 6px 12px; font-size: 11px;">+ Add</button>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button type="button" class="btn-stake-secondary" id="btn-admin-restore-demo-duos" style="flex: 1; padding: 6px; font-size: 11px;">🎲 Restore 8 Duos</button>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-clear-duos" style="flex: 1; padding: 6px; font-size: 11px; color: var(--magenta);">Clear</button>
-            </div>
-          </div>
-
-          <!-- 2. CS:GO Active Chatter Wheel (wheel-csgo) -->
-          <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-              <h3 class="profile-card-title"><span>🎯</span> CS:GO ACTIVE CHATTER WHEEL</h3>
-              <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green);">90s WINDOW</span>
-            </div>
-            <div style="margin-bottom: 10px;">
-              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-csgo" data-obs-path="/wheel-csgo/overlay/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
-            </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-              Selects organic chatters active in the last 90 seconds (emote spam stripped) as Spotlight Recommenders.
-            </p>
-
-            <button type="button" class="btn-game-action primary" id="btn-spin-csgo-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 8px;">
-              🎯 SPIN CS:GO WHEEL (PICK WINNER)
-            </button>
-            <button type="button" class="btn-stake-secondary" id="btn-demo-csgo-wheel" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 14px;">
-              🧪 Test Demo Reel
-            </button>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim);">ACTIVE CHATTERS (<span id="admin-chatters-count">0</span>):</span>
-              <button type="button" class="btn-chat-toggle" id="btn-admin-clear-cooldowns" style="padding: 2px 6px; font-size: 10px; color: var(--gold);">Reset Cooldowns</button>
-            </div>
-            <div id="admin-chatters-list" style="max-height: 180px; overflow-y: auto;">
-              <div style="font-size: 11px; color: var(--text-muted); padding: 8px;">Listening for live chatters...</div>
-            </div>
-          </div>
-
-          <!-- 3. Random Slot Wheel (wheel-slots) -->
-          <div class="profile-glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-              <h3 class="profile-card-title"><span>🎰</span> RANDOM SLOT WHEEL</h3>
-              <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold);">4,889 SLOTS</span>
-            </div>
-            <div style="margin-bottom: 10px;">
-              <button type="button" class="btn-stake-secondary btn-copy-obs-url" id="btn-copy-obs-wheel-slots" data-obs-path="/wheel-slots/overlay/index.html" data-obs-size="620x620" style="width: 100%; padding: 5px 10px; font-size: 11px; border-color: rgba(0, 229, 255, 0.45); color: var(--cyan);">📋 Copy OBS Browser URL (620x620)</button>
-            </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-              60 FPS roulette weighted with Provider TIERS (Stake Exclusives 6.25x, Pragmatic/Hacksaw 4.5x).
-            </p>
-
-            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CATEGORY FILTER:</label>
-            <select id="admin-slot-category-select" class="slots-search-input" style="width: 100%; margin-bottom: 14px; padding: 8px 10px;">
-              <option value="all">ALL SLOTS (4,889)</option>
-              <option value="stake">💎 ONLY ON STAKE</option>
-              <option value="pragmatic">⚡ PRAGMATIC PLAY</option>
-              <option value="hacksaw">🪚 HACKSAW GAMING</option>
-              <option value="nolimit">💀 NOLIMIT CITY</option>
-            </select>
-
-            <button type="button" class="btn-game-action primary" id="btn-spin-slot-wheel" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 900; margin-bottom: 8px;">
-              🎰 SPIN RANDOM SLOT WHEEL
-            </button>
-            <button type="button" class="btn-stake-secondary" id="btn-demo-slot-wheel" style="width: 100%; padding: 8px; font-size: 12px;">
-              🧪 Test Demo Slot Spin
-            </button>
           </div>
         </div>
       </div>
@@ -2621,10 +2473,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-family: var(--font-display); font-size: 13px; font-weight: 900; color: #00e5ff; letter-spacing: 0.6px;">
-              🔗 ACTIVE OBS BROWSER SOURCE OVERLAYS & LIVE TESTER URLS
+              🔗 ACTIVE OBS BROWSER SOURCE OVERLAYS &amp; LIVE TESTER URLS
             </span>
             <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: #53fc18; color: #53fc18; font-size: 10px; font-weight: 900;">
-              6 OVERLAYS ONLINE
+              7 OVERLAYS ONLINE
             </span>
           </div>
           <span style="font-size: 11px; color: var(--text-dim);">
@@ -2640,8 +2492,8 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-battle/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-battle/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: #00e5ff; color: #00e5ff;">📋 Copy</button>
-              <a href="/overlay-battle/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-battle" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-battle/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: #00e5ff; color: #00e5ff;">📋 Copy</button>
+              <a href="/overlay-battle/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
 
@@ -2652,8 +2504,8 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/wheel-duo/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-duo/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
-              <a href="/wheel-duo/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-wheel-duo" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-duo/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
+              <a href="/wheel-duo/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
 
@@ -2664,8 +2516,8 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/wheel-csgo/overlay/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-csgo/overlay/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">📋 Copy</button>
-              <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-wheel-csgo" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-csgo/overlay/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">📋 Copy</button>
+              <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
 
@@ -2676,8 +2528,8 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/wheel-slots/overlay/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-slots/overlay/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: #c084fc; color: #c084fc;">📋 Copy</button>
-              <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-wheel-slots" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/wheel-slots/overlay/index.html" data-obs-size="620x620" style="padding: 4px 8px; font-size: 10px; border-color: #c084fc; color: #c084fc;">📋 Copy</button>
+              <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
 
@@ -2688,8 +2540,8 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-tourney/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-tourney/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
-              <a href="/overlay-tourney/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-tourney" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-tourney/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
+              <a href="/overlay-tourney/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
 
@@ -2700,8 +2552,21 @@
               <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-bonushunt/index.html?obs=1</code>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button type="button" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-bonushunt/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">📋 Copy</button>
-              <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+              <button type="button" id="btn-copy-obs-bonushunt" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-bonushunt/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">📋 Copy</button>
+              <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
+            </div>
+          </div>
+
+          <!-- 7. Winner Celebration Transparent Overlay (Coins + Trumpets) -->
+          <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(245, 158, 11, 0.06)); border: 1px solid rgba(255, 215, 0, 0.55); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; grid-column: 1 / -1;">
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-size: 11px; font-weight: 900; color: var(--gold);">🎺 Winner Celebration Overlay — Falling Coins &amp; Trumpet Fanfare (1920x1080 Transparent · Always Active in OBS)</div>
+              <code style="font-size: 10px; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://diggitybets.vip/overlay-celebration/index.html?obs=1</code>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button type="button" id="cp-btn-test-celebration" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 10px; border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.12);">🎺 Test Celebration</button>
+              <button type="button" id="btn-copy-obs-celebration" class="btn-chat-toggle btn-copy-obs-url" data-obs-path="/overlay-celebration/index.html" data-obs-size="1920x1080" style="padding: 4px 8px; font-size: 10px; border-color: var(--gold); color: var(--gold);">📋 Copy</button>
+              <a href="/overlay-celebration/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️ Open</a>
             </div>
           </div>
         </div>
@@ -2715,7 +2580,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0;">
-                ⚔️ 1v1 BATTLE & KING OF THE HILL
+                ⚔️ 1v1 BATTLE &amp; KING OF THE HILL
               </h3>
               <p style="font-size: 12px; color: var(--text-dim); margin: 2px 0 0 0;">
                 Each win = <strong style="color: #53fc18;">$5 USD</strong> · Max 4 consecutive wins = <strong style="color: var(--gold);">$20 USD Cap</strong>
@@ -2728,7 +2593,7 @@
               <button type="button" id="cp-btn-obs-battle" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--cyan); color: var(--cyan);">
                 📋 OBS URL
               </button>
-              <a href="/overlay-battle/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+              <a href="/overlay-battle/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
                 ↗️ Open
               </a>
             </div>
@@ -2861,7 +2726,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <div>
               <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0;">
-                🎡 DUAL WHEEL & OVERLAY WHEELS
+                🎡 DUAL WHEEL &amp; OVERLAY WHEELS
               </h3>
               <p style="font-size: 12px; color: var(--text-dim); margin: 2px 0 0 0;">
                 Auto-selects <strong style="color:#00e5ff;">Player A (Blue)</strong> first, then <strong style="color:#ff2a5f;">Player B (Red)</strong>, removing winners from the pool.
@@ -2871,7 +2736,7 @@
               <button type="button" id="cp-btn-obs-duo" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--gold); color: var(--gold);">
                 📋 OBS Duo URL
               </button>
-              <a href="/wheel-duo/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+              <a href="/wheel-duo/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
                 ↗️ Open
               </a>
             </div>
@@ -2894,7 +2759,7 @@
           <!-- SPIN DUO WHEEL BUTTON & MODE SWITCH -->
           <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
             <button type="button" id="cp-btn-spin-duo" class="btn-stake-primary" style="flex: 2; padding: 12px 16px; font-size: 13px; font-weight: 900;">
-              🎡 SPIN DUO WHEEL (Pick Winner & Fill Corner)
+              🎡 SPIN DUO WHEEL (Pick Winner &amp; Fill Corner)
             </button>
             <button type="button" id="cp-btn-duo-mode-battle" class="btn-chat-toggle" style="padding: 10px 12px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">
               ⚔️ !battle Queue
@@ -2927,95 +2792,174 @@
             </div>
           </div>
 
-          <!-- CS:GO ACTIVE CHATTER WHEEL & SLOT WHEEL QUICK BAR -->
+          <!-- CS:GO ACTIVE CHATTER WHEEL & SLOT WHEEL FULL CONTROLS -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-              <button type="button" id="cp-btn-spin-csgo" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--kick-green); color: var(--kick-green);">
-                🎯 Spin CS:GO Wheel
+            <!-- CS:GO Active Chatter Wheel Box -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(83, 252, 24, 0.22); border-radius: 10px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 800; color: var(--kick-green);">🎯 CS:GO Chatter (<span id="admin-chatters-count">0</span>)</span>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" id="btn-admin-clear-cooldowns" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; color: var(--gold);">Reset CD</button>
+                  <button type="button" id="cp-btn-obs-csgo" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
+                  <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+                </div>
+              </div>
+              <button type="button" id="cp-btn-spin-csgo" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: var(--kick-green); color: var(--kick-green); font-weight: 800; margin-bottom: 6px;">
+                🎯 Spin CS:GO Active Chatter Wheel
               </button>
-              <div style="display: flex; gap: 4px;">
-                <button type="button" id="cp-btn-obs-csgo" class="btn-chat-toggle" style="font-size: 10px; padding: 4px 8px;">📋 URL</button>
-                <a href="/wheel-csgo/overlay/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 10px; padding: 4px 8px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+              <div id="admin-chatters-list" style="max-height: 58px; overflow-y: auto; font-size: 10px; color: var(--text-muted);">
+                Listening for active chatters (90s window)...
               </div>
             </div>
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-              <button type="button" id="cp-btn-spin-slots" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: #a855f7; color: #a855f7;">
-                🎰 Spin Slot Wheel
-              </button>
-              <div style="display: flex; gap: 4px;">
-                <button type="button" id="cp-btn-obs-slots" class="btn-chat-toggle" style="font-size: 10px; padding: 4px 8px;">📋 URL</button>
-                <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 10px; padding: 4px 8px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+
+            <!-- Random Slot Wheel Box -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 800; color: #c084fc;">🎰 Random Slot Wheel</span>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" id="cp-btn-obs-slots" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px;">📋 URL</button>
+                  <a href="/wheel-slots/overlay/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 9.5px; padding: 3px 6px; text-decoration: none; border-color: #53fc18; color: #53fc18;">↗️</a>
+                </div>
               </div>
+              <select id="admin-slot-category-select" class="form-input-dark" style="width: 100%; margin-bottom: 6px; padding: 5px 8px; font-size: 11px;">
+                <option value="all">ALL SLOTS (4,889)</option>
+                <option value="stake">💎 ONLY ON STAKE</option>
+                <option value="pragmatic">⚡ PRAGMATIC PLAY</option>
+                <option value="hacksaw">🪚 HACKSAW GAMING</option>
+                <option value="nolimit">💀 NOLIMIT CITY</option>
+              </select>
+              <button type="button" id="cp-btn-spin-slots" class="btn-chat-toggle" style="width: 100%; font-size: 11px; padding: 7px 10px; border-color: #a855f7; color: #c084fc; font-weight: 800;">
+                🎰 Spin Random Slot Wheel
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 3. BOTTOM 2-COLUMN GRID: 8-BRACKET TOURNAMENT + COMMUNITY BONUS HUNT -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px;">
-        <!-- 8-BRACKET TOURNAMENT QUICK CONTROL -->
-        <div class="glass-panel" style="padding: 20px; border-color: rgba(255, 215, 0, 0.28);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <!-- 3. FULL EVENT CONTROLLERS: 8-BRACKET TOURNAMENT + COMMUNITY BONUS HUNT -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 20px;">
+
+        <!-- 8-BRACKET TOURNAMENT FULL LIVE CONTROL -->
+        <div class="glass-panel" style="padding: 22px; border-color: rgba(255, 215, 0, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
             <div>
-              <h3 style="font-family: var(--font-display); font-size: 1.05rem; font-weight: 900; color: var(--gold); margin: 0;">
-                🏆 8-BRACKET TOURNAMENT QUICK DECK
+              <h3 style="font-family: var(--font-display); font-size: 1.12rem; font-weight: 900; color: var(--gold); margin: 0;">
+                🏆 8-BRACKET TOURNAMENT LIVE CONTROL
               </h3>
               <p style="font-size: 12px; color: var(--text-dim); margin: 2px 0 0 0;">
-                Synced with <code style="color:var(--gold);">!tourney &lt;slot&gt;</code> chat entries (<strong id="cp-tourney-q-count" style="color:#fff;">0</strong> queued).
+                Synced with <code style="color:var(--gold);">!tourney &lt;slot&gt;</code> chat entries (<strong id="cp-tourney-q-count" style="color:#fff;">0</strong> queued) &amp; Dual Wheel.
               </p>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="reward-badge-pill" id="admin-tourney-status-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">LOBBY OPEN</span>
               <button type="button" id="cp-btn-obs-tourney" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--gold); color: var(--gold);">
                 📋 OBS Bracket URL
               </button>
-              <a href="/overlay-tourney/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+              <a href="/overlay-tourney/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
                 ↗️ Open
               </a>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="button" id="cp-btn-seed-tourney" class="btn-stake-primary" style="flex: 1; padding: 9px 14px; font-size: 12px;">
-              ⚡ Auto-Seed 8 Players from !tourney Queue
-            </button>
-            <button type="button" class="btn-chat-toggle" onclick="window.switchView('#admin-hub');" style="padding: 9px 14px; font-size: 12px;">
-              👑 Full Bracket Editor
-            </button>
-            <button type="button" class="btn-chat-toggle" onclick="window.switchView('#tournament');" style="padding: 9px 14px; font-size: 12px;">
-              👁️ View Public Bracket
-            </button>
+
+          <!-- Tourney Game Mode Switcher + Actions -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: rgba(0,0,0,0.38); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 800; color: var(--gold);">MODE:</span>
+              <button type="button" class="btn-stake-primary" id="btn-admin-tourney-mode-buy" style="padding: 5px 10px; font-size: 11px;">🎁 Bonus Buy (Mult)</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 5px 10px; font-size: 11px;">🎰 Spins (1-Click)</button>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" id="cp-btn-seed-tourney" class="btn-stake-primary" style="padding: 6px 10px; font-size: 11px;">
+                ⚡ Auto-Seed (!tourney)
+              </button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-open-tourney" style="padding: 6px 10px; font-size: 11px;">Open Lobby</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-tourney" style="padding: 6px 10px; font-size: 11px;">🎲 8 Demo Players</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-tourney" style="padding: 6px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 800;">🗑️ Reset Bracket</button>
+            </div>
+          </div>
+
+          <!-- Interactive 3-Round Bracket Matches (QF M1-M4, SF M5-M6, Final M7) -->
+          <div id="admin-tourney-rounds-container" style="max-height: 460px; overflow-y: auto; padding-right: 4px;">
+            <!-- Rendered dynamically by admin-hub.js -->
           </div>
         </div>
 
-        <!-- COMMUNITY BONUS HUNT QUICK CONTROL -->
-        <div class="glass-panel" style="padding: 20px; border-color: rgba(83, 252, 24, 0.28);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <!-- COMMUNITY BONUS HUNT FULL MASTER CONTROL -->
+        <div class="glass-panel" style="padding: 22px; border-color: rgba(83, 252, 24, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
             <div>
-              <h3 style="font-family: var(--font-display); font-size: 1.05rem; font-weight: 900; color: var(--kick-green); margin: 0;">
-                💎 COMMUNITY BONUS HUNT QUICK DECK
+              <h3 style="font-family: var(--font-display); font-size: 1.12rem; font-weight: 900; color: var(--kick-green); margin: 0;">
+                💎 COMMUNITY BONUS HUNT MASTER CONTROL
               </h3>
               <p style="font-size: 12px; color: var(--text-dim); margin: 2px 0 0 0;">
                 Synced with <code style="color:#53fc18;">!guess &lt;amount&gt;</code> (<strong id="cp-bh-guess-count" style="color:#fff;">0</strong> guesses) · <span id="cp-bh-summary">0 Bonuses</span>
               </p>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
               <button type="button" id="cp-btn-obs-bh" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: var(--kick-green); color: var(--kick-green);">
                 📋 OBS Hunt URL
               </button>
-              <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+              <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
                 ↗️ Open
               </a>
+              <button type="button" class="btn-stake-primary" id="btn-admin-start-hunt" style="padding: 5px 10px; font-size: 11px;">Start New</button>
+              <button type="button" class="btn-stake-secondary" id="btn-admin-demo-hunt" style="padding: 5px 10px; font-size: 11px;">🎲 Demo</button>
+              <button type="button" class="btn-chat-toggle" id="btn-admin-reset-hunt" style="padding: 5px 10px; font-size: 11px; border-color: #ef4444; color: #ef4444; font-weight: 800;">🗑️ Reset Hunt</button>
             </div>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="cp-bh-slot" class="form-input-dark" placeholder="Slot Name (e.g. Le Bandit)" style="flex: 2; min-width: 140px; padding: 7px 10px; font-size: 12px;" />
-            <input type="number" id="cp-bh-bet" class="form-input-dark" placeholder="Bet ($)" value="2.00" step="0.20" style="width: 85px; padding: 7px 8px; font-size: 12px;" />
-            <input type="text" id="cp-bh-user" class="form-input-dark" placeholder="@caller" style="width: 110px; padding: 7px 8px; font-size: 12px;" />
-            <button type="button" id="cp-btn-bh-add" class="btn-stake-primary" style="padding: 7px 14px; font-size: 12px;">
-              + Add Bonus
-            </button>
-            <button type="button" class="btn-chat-toggle" onclick="window.switchView('#bonushunt');" style="padding: 7px 12px; font-size: 12px;">
-              💎 Open Tracker
-            </button>
+
+          <!-- Add Bonus Bar with Catalog Autocomplete -->
+          <div style="padding: 12px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; margin-bottom: 12px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+              <div style="flex: 2; min-width: 170px; position: relative;">
+                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
+                <input type="text" id="admin-hunt-slot-search" class="form-input-dark" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+                <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
+              </div>
+              <div style="flex: 1; min-width: 105px;">
+                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
+                <input type="text" id="admin-hunt-caller-input" class="form-input-dark" placeholder="@Viewer" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+              </div>
+              <div style="width: 82px;">
+                <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
+                <input type="number" id="admin-hunt-bet-input" class="form-input-dark" value="2.00" step="0.20" style="width: 100%; padding: 7px 8px; font-size: 12px;">
+              </div>
+              <button type="button" class="btn-stake-primary" id="btn-admin-add-bonus" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
+                + Add Bonus
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Bonuses Table -->
+          <div style="overflow-x: auto; max-height: 290px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; margin-bottom: 12px;">
+            <table class="bh-table" style="font-size: 12px;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>SLOT MACHINE</th>
+                  <th>CALLER</th>
+                  <th>BET ($)</th>
+                  <th>PAYOUT ($)</th>
+                  <th>MULT</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="admin-hunt-bonuses-tbody">
+                <!-- Rendered dynamically by admin-hub.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Guess The Balance Resolution Bar -->
+          <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-family: var(--font-display); font-size: 11px; font-weight: 800; color: var(--gold);">FINAL BALANCE ($):</span>
+              <input type="number" id="admin-hunt-final-balance" class="form-input-dark" placeholder="e.g. 1420.50" style="width: 120px; padding: 6px 8px; font-size: 12px;">
+              <button type="button" class="btn-stake-primary" id="btn-admin-resolve-guess" style="padding: 6px 12px; font-size: 11px; font-weight: 800;">
+                🏆 Resolve !guess Winner
+              </button>
+            </div>
+            <div id="admin-guess-winner-display" style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--kick-green);"></div>
           </div>
         </div>
       </div>
@@ -3053,23 +2997,23 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=18.0"></script>
-  <script src="site/js/slot-resolver.js?v=18.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=18.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=18.0"></script>
-  <script src="site/js/audio.js?v=18.0"></script>
-  <script src="site/js/provably-fair.js?v=18.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=18.0"></script>
-  <script src="site/js/avatar-generator.js?v=18.0"></script>
-  <script src="site/js/user-store.js?v=18.0"></script>
-  <script src="site/js/auth-oauth.js?v=18.0"></script>
-  <script src="site/js/admin-hub.js?v=18.0"></script>
-  <script src="site/js/house-games.js?v=18.0"></script>
-  <script src="site/js/tournament-prediction.js?v=18.0"></script>
-  <script src="site/js/bonushunt.js?v=18.0"></script>
-  <script src="site/js/motion-fx.js?v=18.0"></script>
-  <script src="site/js/sonner-toast.js?v=18.0"></script>
-  <script src="site/js/app.js?v=18.0"></script>
+  <script src="data/curated_slots.js?v=19.0"></script>
+  <script src="site/js/slot-resolver.js?v=19.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=19.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=19.0"></script>
+  <script src="site/js/audio.js?v=19.0"></script>
+  <script src="site/js/provably-fair.js?v=19.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=19.0"></script>
+  <script src="site/js/avatar-generator.js?v=19.0"></script>
+  <script src="site/js/user-store.js?v=19.0"></script>
+  <script src="site/js/auth-oauth.js?v=19.0"></script>
+  <script src="site/js/admin-hub.js?v=19.0"></script>
+  <script src="site/js/house-games.js?v=19.0"></script>
+  <script src="site/js/tournament-prediction.js?v=19.0"></script>
+  <script src="site/js/bonushunt.js?v=19.0"></script>
+  <script src="site/js/motion-fx.js?v=19.0"></script>
+  <script src="site/js/sonner-toast.js?v=19.0"></script>
+  <script src="site/js/app.js?v=19.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 
