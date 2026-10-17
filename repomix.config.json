@@ -1,0 +1,58 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "parsableStyle": true,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "showLineNumbers": true,
+    "copyToClipboard": false,
+    "topFilesLength": 15
+  },
+  "include": [
+    "site/**/*.{js,css,html}",
+    "core/**/*.{ts,js,json}",
+    "data/**/*.{json,js}",
+    "tools/**/*.{mjs,js,py}",
+    "knowledge/**/*.{md,txt}",
+    "docs/**/*.{md,txt}",
+    "index.html",
+    "package.json",
+    "wrangler.toml"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "*.dll",
+      "*.exe",
+      "*.zip",
+      "*.pdb",
+      "*.mdb",
+      "*.wasm",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.ico",
+      "*.mp4",
+      "*.webm",
+      "*.ogg",
+      "*.mp3",
+      "*.wav",
+      ".env*",
+      ".dev.vars*",
+      "references/**",
+      "backup/**",
+      "dist/**",
+      "logs/**",
+      "scratch/**",
+      "Streamer.bot.exe.WebView2/**",
+      "repomix-output.*",
+      "node_modules/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

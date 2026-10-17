@@ -171,18 +171,32 @@
         tone({ at, f0: 170, f1: 40, dur: 0.55, vol: 0.9, wet: 0.2 });
         noise({ at, dur: 0.28, vol: 0.5, type: 'lowpass', f0: 600, f1: 120, attack: 0.002 });
       },
+      // Victorious royal trumpet fanfare: D Major entrance + 5-horn climax
       fanfare(delay = 0) {
         if (!ensure()) return;
         const base = T(delay);
-        const arp = [523.25, 659.25, 783.99, 1046.5];
-        arp.forEach((f, i) => {
-          const at = base + i * 0.11;
-          tone({ at, f0: f, dur: 0.38, type: 'sawtooth', vol: 0.12, detune: -6, lp: 3600, wet: 0.35 });
-          tone({ at, f0: f, dur: 0.38, type: 'square', vol: 0.06, detune: 7, lp: 3000, wet: 0.35 });
+        const motif = [
+          { f: 440.00, t: 0.00, dur: 0.11, vol: 0.16 }, // A4
+          { f: 440.00, t: 0.13, dur: 0.11, vol: 0.16 }, // A4
+          { f: 440.00, t: 0.26, dur: 0.11, vol: 0.18 }, // A4
+          { f: 587.33, t: 0.39, dur: 0.36, vol: 0.20 }, // D5
+          { f: 440.00, t: 0.80, dur: 0.12, vol: 0.16 }, // A4
+          { f: 587.33, t: 0.94, dur: 0.18, vol: 0.18 }, // D5
+          { f: 739.99, t: 1.15, dur: 0.22, vol: 0.22 }, // F#5
+        ];
+        motif.forEach((m) => {
+          const at = base + m.t;
+          tone({ at, f0: m.f, dur: m.dur, type: 'sawtooth', vol: m.vol, detune: -7, lp: 4600, wet: 0.3 });
+          tone({ at, f0: m.f, dur: m.dur, type: 'sawtooth', vol: m.vol * 0.9, detune: 7, lp: 4200, wet: 0.3 });
+          tone({ at, f0: m.f * 0.5, dur: m.dur, type: 'triangle', vol: m.vol * 0.5, lp: 2200, wet: 0.2 });
         });
-        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f) => {
-          tone({ at: base + 0.52, f0: f, dur: 1.5, type: 'sawtooth', vol: 0.085, attack: 0.02, detune: -5, lp: 3200, wet: 0.5 });
-          tone({ at: base + 0.52, f0: f, dur: 1.5, type: 'triangle', vol: 0.09, attack: 0.02, detune: 5, wet: 0.5 });
+        // Grand 5-Horn Climax at T + 1.42s
+        const cAt = base + 1.42;
+        [293.66, 440.00, 587.33, 739.99, 880.00].forEach((f, idx) => {
+          const v = 0.08 + idx * 0.015;
+          tone({ at: cAt, f0: f, dur: 1.4, type: 'sawtooth', vol: v, attack: 0.02, detune: -6, lp: 4800, wet: 0.4 });
+          tone({ at: cAt, f0: f, dur: 1.4, type: 'sawtooth', vol: v, attack: 0.02, detune: 6, lp: 4400, wet: 0.4 });
+          tone({ at: cAt, f0: f * 0.5, dur: 1.4, type: 'triangle', vol: v * 0.6, attack: 0.02, wet: 0.3 });
         });
       },
       sparkle(delay = 0, count = 16) {

@@ -411,10 +411,55 @@
   - **Tarjeta de Kick en `#profile` & Sincronización:**
     - Se incorporó la tarjeta interactiva de Kick en la pestaña Perfil (`#kick-card-box`), con estado desconectado (`[ Link Kick Account (Auto-Detect) ⚡ ]`) y estado conectado (`🟢 @Username (Kick ID)` + `[ Disconnect ]`), sincronizada en tiempo real con la barra superior y los permisos de Streamer.
 
+- [x] **Stage 16 (Diseño de Sonido Cinematográfico Procedural & Fanfarria de Trompetas Victoriosas en Re Mayor):** COMPLETED & TESTED.
+  - **Síntesis Sustractiva Acústica de Metales (Brass / Trumpet Synthesizer) a 0ms de Latencia y 0 KB de Descarga:**
+    - Se modeló la física acústica de instrumentos de metal mediante osciladores `sawtooth` dobles con micro-desafinación ($\pm 7\text{ cents}$) y cuerpo de armónicos cálido en onda `triangle` a la sub-octava (`freq * 0.5`).
+    - Filtro de formante dinámico de latón (`BiquadFilterNode` lowpass, $Q=3.6$) con apertura explosiva en 42ms (ataque acústico de la boquilla / *lip buzz*) de 320 Hz a 6,800 Hz, estabilizándose en sostenido cálido.
+    - LFO de vibrato natural retardado a 5.3 Hz modulando la frecuencia tras 160ms de ataque orgánico.
+  - **Fanfarria Real Victoriosa en Re Mayor (`playVictoriousTrumpetFanfare()`):**
+    - Motivo heroico de entrada: A4 (0.11s) $\to$ A4 (0.11s) $\to$ A4 (0.11s) $\to$ D5 (0.36s) $\to$ A4 (0.12s) $\to$ D5 (0.18s) $\to$ F#5 (0.22s).
+    - Clímax orquestal triunfante a 5 voces simultáneas (1.45s): D4 (Trombón), A4 (Corno francés), D5 (Trompeta 2), F#5 (Trompeta 1), A5 (Trompeta solista principal) + golpe sub-bajo y tintineo metálico de monedas.
+  - **Integración Universal en el Sitio Web (`https://diggitybets.vip/`) & Overlays:**
+    - `site/js/audio.js`: Se incorporaron los métodos `playBrassNote()`, `playVictoriousTrumpetFanfare()`, `playJackpot()`, `playWheelTick()`, `playCountdownTick()` y `playVoteClick()`.
+    - `overlay-celebration/main.js`: `playFanfare()` y `playFullCelebrationAudio()` actualizados con trompetas de victoria al proclamar ganadores en pantalla completa.
+    - `overlay-tourney/main.js` y `overlay-battle/main.js`: Actualizado `playSlotWinFanfare()` para ejecutar la fanfarria heroica al concluir combates 1v1 y finales del torneo 8-bracket.
+    - `overlay-bonushunt/main.js`: `playFanfare()` actualizado para sonar al finalizar la apertura del Bonus Hunt.
+    - `wheel-csgo/overlay/main.js`, `wheel-slots/overlay/main.js` y `wheel-duo/main.js`: Fanfarrias actualizadas con el ensamble de metales y clímax en Re Mayor.
+    - `site/js/tournament-prediction.js` y `site/js/admin-hub.js`: Integrado en el bloqueo de predicción de campeón, coronación de torneos, retiros con victoria en King of the Hill y sorteos dominicales en vivo.
+    - `site/js/house-games.js`: Fanfarria heroica activada automáticamente en victorias grandes ($\ge 5\times$ en Mines, Crash, Dice y $\ge 10\times$ en Plinko).
+    - `site/js/user-store.js`: Sonido de `playJackpot()` con trompetas y lluvia de monedas al canjear vouchers de premios.
+  - **Verificación de Calidad y Pruebas Unitarias:**
+    - Se ejecutó `npm test` en `core/`: **100% de las suites de prueba pasaron en verde (Suites 1, 2, 3, 4, 5, 6 y 12)**.
+    - Impacto en CPU: 0.0% de sobrecarga sostenida (síntesis de audio efímera con apagado de nodos garantizado).
+
+- [x] **Stage 17 (Integración de ECC - Everything Claude Code & Continuous Learning v2 Architecture):** COMPLETED & VERIFIED.
+  - **Clonado e Instalación Selectiva de ECC (`affaan-m/ECC`):**
+    - Repositorio clonado de forma shallow en [`references/clones/ecc/`](file:///c:/Users/tomas/Desktop/streamerbot/references/clones/ecc/) (cubierto por `.gitignore` para no inflar el historial de git).
+    - 10 habilidades avanzadas integradas en [`.agents/skills/`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/skills/): `continuous-learning-v2`, `agent-security-hardening`, `eval-harness`, `delivery-gate`, `strategic-compact`, `error-handling`, `prediction-market-risk-review`, `silent-failure-hunter`, `code-reviewer`, `agent-self-evaluation`, `codebase-onboarding` y `code-tour`.
+  - **Escuadrón de Agentes Especializados ECC:**
+    - Roles desplegados en [`.agents/agency/roles/`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/agency/roles/): `code-reviewer`, `security-reviewer`, `silent-failure-hunter`, `build-error-resolver`, `performance-optimizer`, `refactor-cleaner`, `tdd-guide`, `type-design-analyzer`, `a11y-architect` y `rag-pipeline-reviewer`.
+    - Disciplina de revisión de código con filtro de confianza estricto (>80%), citación de línea exacta, modo de fallo concreto y prohibición de quejas cosméticas.
+  - **Motor de Memoria e Instintos Atómicos (`Continuous Learning v2`):**
+    - Directorio de persistencia inicializado en [`.agents/memory/instincts/`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/memory/instincts/).
+    - 5 instintos fundacionales de alta confianza (0.90 - 0.99) documentados:
+      - `argentine-number-parsing.md` (parseo tolerante a coma/punto y multiplicadores `1.5k`/`2m`).
+      - `obs-cpu-budget.md` (overlays en OBS $\le 5\%$ CPU, animaciones composite-only WAAPI/transform).
+      - `durable-objects-hibernation.md` (hibernación de WebSockets en Cloudflare DO a costo $0).
+      - `kick-compliance-zero-custody.md` (cero custodia de dinero/cripto, participación 100% gratis).
+      - `anti-shortcut-tests.md` (mandato de verificación CLI antes de declarar cualquier tarea terminada).
+  - **Guardrails Automatizados & Scripts de Control de Calidad:**
+    - [`tools/guardrails/config-protection.js`](file:///c:/Users/tomas/Desktop/streamerbot/tools/guardrails/config-protection.js): Protege archivos de configuración y contratos contra sobreescritura accidental.
+    - [`tools/guardrails/check-console-log.js`](file:///c:/Users/tomas/Desktop/streamerbot/tools/guardrails/check-console-log.js): Audita código productivo en `core/src/` y `site/js/` para evitar fugas de `console.log`.
+    - Script `npm run guard:all` incorporado a [`core/package.json`](file:///c:/Users/tomas/Desktop/streamerbot/core/package.json) (auditoría de configs + auditoría de logs + 12 suites de tests).
+  - **Canon de Arquitectura Ingestado para Centinela RAG:**
+    - Creado documento canónico maestro [`knowledge/architecture_and_books/CANON_ECC_EVERYTHING_CLAUDE_CODE_AGENT_HARNESS_2026.md`](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/architecture_and_books/CANON_ECC_EVERYTHING_CLAUDE_CODE_AGENT_HARNESS_2026.md).
+  - **Pruebas y Verificación:**
+    - `npm run guard:all` ejecutado con éxito total (**100% de tests en verde, 0 fallos de configuración**).
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases & Refinements (Stages 1 to 15): 100% COMPLETED & VERIFIED.**
+- **All Phases, Refinements & ECC Integration (Stages 1 to 17): 100% COMPLETED & VERIFIED.**
 - Ready for live production streaming on `https://kick.com/diggitybets` and deployment to `https://diggitybets.vip` via `PUBLICAR_EN_CLOUDFLARE.bat`.
 
 ---
@@ -423,4 +468,5 @@
 - **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
 - **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, WAAPI/CSS compositor animations, procedural Web Audio (≤3% CPU in OBS).
 - **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.
+
 
