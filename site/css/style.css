@@ -7238,4 +7238,18 @@ footer.site-footer {
   text-align: center;
 }
 
+/* Addy Osmani Web-Quality-Skills & Critical CSS Containment */
+#control-panel .glass-panel {
+  contain: layout style;
+}
+
+/* Addy Osmani Visibly.js Background Tab Governor */
+body.is-tab-hidden *,
+body.is-tab-hidden *::before,
+body.is-tab-hidden *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+
 

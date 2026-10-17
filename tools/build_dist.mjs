@@ -28,11 +28,13 @@ function copyRecursive(src, dest) {
   }
 }
 
-// 2. Copy core web assets
-console.log('• Copying index.html and site assets...');
+// 2. Copy core web assets & Agentic SEO / Governance manifests
+console.log('• Copying index.html, Agentic SEO manifests (llms.txt, robots.txt, CONSTRAINTS.md) and site assets...');
 fs.copyFileSync(path.join(root, 'index.html'), path.join(dist, 'index.html'));
-if (fs.existsSync(path.join(root, 'favicon.ico'))) {
-  fs.copyFileSync(path.join(root, 'favicon.ico'), path.join(dist, 'favicon.ico'));
+for (const rootDoc of ['favicon.ico', 'llms.txt', 'robots.txt', 'AGENTS.md', 'CONSTRAINTS.md']) {
+  if (fs.existsSync(path.join(root, rootDoc))) {
+    fs.copyFileSync(path.join(root, rootDoc), path.join(dist, rootDoc));
+  }
 }
 copyRecursive(path.join(root, 'site'), path.join(dist, 'site'));
 

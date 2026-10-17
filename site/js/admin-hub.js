@@ -4438,7 +4438,67 @@ class AdminHubController {
         applyModuleSwitchUI(modId);
       };
     });
+
+    // Addy Osmani Web-Quality-Skills + Visibly.js Governor & Live Telemetry Pill
+    this.initWebQualityAndVisiblyGovernor();
   }
+
+  initWebQualityAndVisiblyGovernor() {
+    if (this._webQualityInitialized) return;
+    this._webQualityInitialized = true;
+
+    const pillEl = document.getElementById('cp-webvitals-pill');
+    let latestInpMs = 12;
+    let currentFps = 60;
+
+    // 1. Visibly.js pattern: pause CSS animations & loops when tab is hidden
+    const syncVisibility = () => {
+      const hidden = document.visibilityState === 'hidden';
+      document.body.classList.toggle('is-tab-hidden', hidden);
+    };
+    document.addEventListener('visibilitychange', syncVisibility);
+    syncVisibility();
+
+    // 2. PerformanceObserver for Interaction to Next Paint (INP / Event Timing)
+    if (typeof PerformanceObserver !== 'undefined') {
+      try {
+        const obs = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.duration && entry.duration > 0) {
+              latestInpMs = Math.round(entry.duration);
+            }
+          }
+        });
+        obs.observe({ type: 'event', buffered: true, durationThreshold: 16 });
+      } catch (_) {}
+    }
+
+    // 3. Lightweight FPS sampler (runs only when Control Panel is active & tab visible)
+    let frames = 0;
+    let lastSample = performance.now();
+    const tickFps = (now) => {
+      if (document.visibilityState === 'visible') {
+        frames++;
+        const elapsed = now - lastSample;
+        if (elapsed >= 2000) {
+          currentFps = Math.min(60, Math.max(1, Math.round((frames * 1000) / elapsed)));
+          frames = 0;
+          lastSample = now;
+          if (pillEl) {
+            const activeMods = Object.values(this.cpModuleSwitches || {}).filter(Boolean).length;
+            const statusDot = currentFps >= 50 && latestInpMs < 200 ? '🟢' : '🟡';
+            pillEl.textContent = `${statusDot} ${currentFps} FPS · INP ${latestInpMs}ms · ${activeMods}/4 Active`;
+          }
+        }
+      } else {
+        frames = 0;
+        lastSample = now;
+      }
+      requestAnimationFrame(tickFps);
+    };
+    requestAnimationFrame(tickFps);
+  }
+
 
   // ========================================================
   // LIVE KICK CHAT PUSHER BRIDGE (https://kick.com/diggitybets)
