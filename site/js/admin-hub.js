@@ -3513,16 +3513,22 @@ class AdminHubController {
     const rawUser = String(opts.username || 'DiggityWinner').trim().replace(/^@/, '') || 'DiggityWinner';
     const rawSlot = String(opts.slotName || 'Wanted Dead or a Wild').trim();
     const meta = this.resolveSlotMeta(rawSlot);
+    const now = Date.now();
+    const isGrandType = opts.tier === 'grand' || opts.type === 'TOURNEY_CHAMPION' || opts.type === 'KOTH_CHAMPION' || opts.type === 'KOTH_CASHOUT';
     const payload = {
+      tier: opts.tier || (isGrandType ? 'grand' : 'partial'),
       type: opts.type || 'BATTLE_WIN',
       category: opts.category || (opts.type === 'TOURNEY_CHAMPION' ? '8-BRACKET TOURNAMENT CHAMPION' : '1V1 BATTLE WINNER'),
-      icon: opts.icon || (opts.type === 'TOURNEY_CHAMPION' ? '👑' : '⚔️'),
+      ribbon: opts.ribbon || (isGrandType ? '👑 GRAND CHAMPION' : '⚔️ ROUND VICTORY'),
+      icon: opts.icon || (isGrandType ? '👑' : '⚔️'),
       username: `@${rawUser}`,
+      avatarUrl: opts.avatarUrl || '',
       slotName: meta.name,
       slotImg: opts.slotImg || meta.image,
       statValue: opts.statValue || 'VICTORY',
-      prize: opts.prize || '+500 $DIG & STREAM GLORY',
-      ts: Date.now()
+      prize: opts.prize || 'ROUND WINNER',
+      timestamp: now,
+      ts: now
     };
 
     try {
@@ -3535,6 +3541,14 @@ class AdminHubController {
         this.channelCelebration.postMessage(payload);
       } catch (_) {}
     }
+
+    try {
+      fetch('/api/overlay/celebration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ celebration: payload })
+      }).catch(() => {});
+    } catch (_) {}
 
     this.relayOverlaySyncEvent({
       target: 'overlay-celebration',
@@ -4270,6 +4284,7 @@ class AdminHubController {
     const obsTourney = document.getElementById('cp-btn-obs-tourney');
     const obsBh = document.getElementById('cp-btn-obs-bh');
     const obsCelebration = document.getElementById('cp-btn-obs-celebration');
+    const btnTestCelebrationPartial = document.getElementById('cp-btn-test-celebration-partial');
     const btnTestCelebration = document.getElementById('cp-btn-test-celebration');
 
     if (obsBattle) obsBattle.onclick = () => copyObsHelper('/overlay-battle/index.html', '1v1 Battle', obsBattle);
@@ -4280,23 +4295,50 @@ class AdminHubController {
     if (obsBh) obsBh.onclick = () => copyObsHelper('/overlay-bonushunt/index.html', 'Bonus Hunt', obsBh);
     if (obsCelebration) obsCelebration.onclick = () => copyObsHelper('/overlay-celebration/index.html', 'Winner Celebration (1920x1080)', obsCelebration);
 
-    if (btnTestCelebration) {
-      btnTestCelebration.onclick = () => {
+    if (btnTestCelebrationPartial) {
+      btnTestCelebrationPartial.onclick = () => {
         const testUser = (document.getElementById('cp-battle-user-a')?.value || this.kothState.king || '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
         const testSlot = (document.getElementById('cp-battle-slot-a')?.value || this.kothState.kingSlot || 'Wanted Dead or a Wild').trim();
         this.triggerStreamCelebrationOverlay({
+          tier: 'partial',
           type: 'BATTLE_WIN',
-          category: '1V1 BATTLE & TOURNEY CELEBRATION',
-          icon: '🎺',
+          category: '1V1 BATTLE · ROUND WINNER',
+          ribbon: '⚔️ ROUND VICTORY (1/4)',
+          icon: '⚔️',
           username: testUser,
           slotName: testSlot,
-          statValue: 'WINNER!',
-          prize: 'FALLING COINS & TRUMPET FANFARE ACTIVE'
+          statValue: 'ROUND WIN',
+          prize: 'STREAK 1/4 · $5.00 USD BANKED'
         });
         if (window.sonner) {
           window.sonner.toast({
-            title: '🎺 Celebration Sent to OBS Overlay!',
-            message: `Displaying @${testUser} on /overlay-celebration/index.html?obs=1 (1920x1080 Transparent).`,
+            title: '🎺 Partial Win Celebration Sent to OBS!',
+            message: `Short animation (~4.2s) triggered for @${testUser} on /overlay-celebration/index.html?obs=1.`,
+            type: 'cyan'
+          });
+        }
+      };
+    }
+
+    if (btnTestCelebration) {
+      btnTestCelebration.onclick = () => {
+        const testUser = (document.getElementById('cp-battle-user-a')?.value || this.kothState.king || '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
+        const testSlot = (document.getElementById('cp-battle-slot-a')?.value || this.kothState.kingSlot || 'Gates of Olympus 1000').trim();
+        this.triggerStreamCelebrationOverlay({
+          tier: 'grand',
+          type: 'KOTH_CHAMPION',
+          category: 'KING OF THE HILL · GRAND CHAMPION',
+          ribbon: '👑 $20.00 USD MAX PRIZE / !CASHOUT',
+          icon: '👑',
+          username: testUser,
+          slotName: testSlot,
+          statValue: 'CHAMPION 🏆',
+          prize: '🏆 GRAND PRIZE LOCKED: $20.00 USD!'
+        });
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '👑 Special Grand Celebration Sent to OBS!',
+            message: `Special animation (~8.5s) triggered for @${testUser} on /overlay-celebration/index.html?obs=1.`,
             type: 'gold'
           });
         }
