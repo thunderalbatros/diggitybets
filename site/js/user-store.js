@@ -53,6 +53,13 @@ class UserStoreController {
   }
 
   init() {
+    if (this.username && (this.username.startsWith('@KickUser_') || this.username.startsWith('KickUser_'))) {
+      setTimeout(() => {
+        if (window.oauthEngine) {
+          window.oauthEngine.syncKickProfile('diggitybets');
+        }
+      }, 150);
+    }
     this.initStoreStockState();
     this.updateUserUI();
     this.bindAuthButtons();
@@ -223,6 +230,25 @@ class UserStoreController {
 
     if (logoutBtn) logoutBtn.addEventListener('click', handleKickLogout);
     if (profLogoutBtn) profLogoutBtn.addEventListener('click', handleKickLogout);
+
+    const syncBtn = document.getElementById('btn-profile-sync-kick');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', () => {
+        const target = (this.username || 'diggitybets').replace(/^@/, '');
+        if (window.oauthEngine) {
+          window.oauthEngine.syncKickProfile(target);
+        }
+      });
+    }
+
+    const sessionCard = document.querySelector('.user-session-card');
+    if (sessionCard) {
+      sessionCard.addEventListener('click', () => {
+        if (this.username.startsWith('@KickUser_')) {
+          if (window.oauthEngine) window.oauthEngine.syncKickProfile('diggitybets');
+        }
+      });
+    }
   }
 
   bindProfileControls() {

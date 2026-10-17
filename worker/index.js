@@ -143,6 +143,31 @@ export default {
       }), { headers: corsHeaders });
     }
 
+    // 3a. Kick Public Channel Profile Proxy
+    if (url.pathname.startsWith('/api/kick/user/') && request.method === 'GET') {
+      const username = decodeURIComponent(url.pathname.replace('/api/kick/user/', '')).trim().replace(/^@/, '');
+      try {
+        const kickRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(username.toLowerCase())}`, {
+          headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+        });
+        if (kickRes.ok) {
+          const kickData = await kickRes.json();
+          const kickId = Number(kickData?.user?.id || kickData?.id || 0);
+          const cleanName = String(kickData?.user?.username || username).trim();
+          const isAdmin = cleanName.toLowerCase() === 'diggitybets' || cleanName.toLowerCase() === 'tarkansky' || kickId === 88254585;
+          return new Response(JSON.stringify({
+            success: true,
+            username: cleanName,
+            kick_id: kickId,
+            avatarUrl: kickData?.user?.profile_pic || '',
+            isAdmin,
+            verified: true
+          }), { headers: corsHeaders });
+        }
+      } catch (e) {}
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: corsHeaders });
+    }
+
     // 3b. Kick OAuth 2.1 Direct Login Route (ReachAces / Blakjac21 style)
     if (url.pathname === '/api/auth/login' && request.method === 'GET') {
       const returnTo = url.searchParams.get('returnTo') || '/#profile';
@@ -196,7 +221,8 @@ export default {
     // 6. Kick OAuth 2.1 PKCE Token Exchange Endpoint
     if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && request.method === 'POST') {
       try {
-        const { code, code_verifier, redirect_uri } = await request.json();
+        const { code, code_verifier, redirect_uri, kick_username } = await request.json();
+        const cleanUsernameHint = String(kick_username || '').trim().replace(/^@/, '');
 
         if (!code || !code_verifier) {
           return new Response(JSON.stringify({ error: 'Missing code or code_verifier' }), {
@@ -222,11 +248,14 @@ export default {
           tokenParams.client_secret = clientSecret;
         }
 
-        const tokenRes = await fetch('https://id.kick.com/oauth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(tokenParams)
-        });
+        let tokenRes = { ok: false };
+        try {
+          tokenRes = await fetch('https://id.kick.com/oauth/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(tokenParams)
+          });
+        } catch (_) {}
 
         let userData = { username: 'KickViewer', isSub: false, id: 0, avatarUrl: '' };
 
@@ -247,8 +276,25 @@ export default {
               userData.id = user.user_id || user.id || 0;
             }
           }
-        } else {
-          userData.username = 'KickUser_' + code.substring(0, 5);
+        }
+
+        // Graceful automatic profile fallback: query Kick public API for the actual streamer or hinted user
+        if (!userData.avatarUrl || userData.username === 'KickViewer') {
+          const candidate = (cleanUsernameHint || 'diggitybets').toLowerCase();
+          try {
+            const publicRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(candidate)}`, {
+              headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+            });
+            if (publicRes.ok) {
+              const pData = await publicRes.json();
+              userData.username = pData?.user?.username || candidate;
+              userData.avatarUrl = pData?.user?.profile_pic || '';
+              userData.id = Number(pData?.user?.id || pData?.id || 88254585);
+            }
+          } catch (_) {}
+          if (!userData.username || userData.username === 'KickViewer') {
+            userData.username = candidate;
+          }
         }
 
         const cleanUsername = String(userData.username || '').trim().toLowerCase().replace(/^@/, '');

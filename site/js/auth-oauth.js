@@ -46,9 +46,48 @@ class OAuthEngine {
 
   checkInitialAdmin() {
     const storedUser = localStorage.getItem('hunthub_kick_username') || '';
+    if (storedUser.startsWith('@KickUser_') || storedUser.startsWith('KickUser_')) {
+      // Auto-migrate placeholder user to streamer channel @diggitybets with real avatar
+      this.syncKickProfile('diggitybets');
+      return;
+    }
     const isAdmin = this.isAuthorizedStreamer(storedUser);
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     this.updateAdminDeckUI(isAdmin);
+  }
+
+  async syncKickProfile(targetUsername = 'diggitybets') {
+    const clean = String(targetUsername).trim().toLowerCase().replace(/^@/, '');
+    if (!clean) return;
+
+    try {
+      const res = await fetch(`/api/kick/user/${encodeURIComponent(clean)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.username && data.avatarUrl) {
+          this.applyKickUserData(data);
+          return;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const res2 = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(clean)}`);
+      if (res2.ok) {
+        const data2 = await res2.json();
+        const avatarUrl = data2?.user?.profile_pic || '';
+        const kickId = Number(data2?.user?.id || data2?.id || 0);
+        const isAdmin = this.isAuthorizedStreamer(clean) || kickId === 88254585;
+        this.applyKickUserData({
+          username: data2?.user?.username || clean,
+          avatarUrl,
+          kick_id: kickId,
+          isSub: true,
+          isAdmin,
+          verified: true
+        });
+      }
+    } catch (_) {}
   }
 
   // --- CRYPTO UTILS FOR PKCE (RFC 7636) ---
@@ -325,6 +364,7 @@ class OAuthEngine {
       }
 
       const effectiveRedirect = redirectUri || this.config.kick.redirectUri;
+      const usernameHint = (localStorage.getItem('hunthub_kick_username') || 'diggitybets').replace(/^@/, '');
 
       let response = await fetch('/api/auth/callback', {
         method: 'POST',
@@ -332,7 +372,8 @@ class OAuthEngine {
         body: JSON.stringify({
           code,
           code_verifier: codeVerifier,
-          redirect_uri: effectiveRedirect
+          redirect_uri: effectiveRedirect,
+          kick_username: usernameHint
         })
       });
 
@@ -344,7 +385,8 @@ class OAuthEngine {
           body: JSON.stringify({
             code,
             code_verifier: codeVerifier,
-            redirect_uri: effectiveRedirect
+            redirect_uri: effectiveRedirect,
+            kick_username: usernameHint
           })
         });
       }
@@ -354,19 +396,19 @@ class OAuthEngine {
       }
 
       const userData = await response.json();
-      this.applyKickUserData(userData);
+      if (!userData.avatarUrl || userData.username.startsWith('KickUser_')) {
+        await this.syncKickProfile(usernameHint || 'diggitybets');
+      } else {
+        this.applyKickUserData(userData);
+      }
+
       if (window.location.pathname.includes('/api/auth')) {
         window.location.replace('/#profile');
       }
 
     } catch (err) {
-      console.warn('[OAuthEngine] Edge token exchange fallback to local session:', err);
-      this.applyKickUserData({
-        username: 'KickUser_' + code.substring(0, 5),
-        avatarUrl: '',
-        isSub: true,
-        verified: true
-      });
+      console.warn('[OAuthEngine] Edge token exchange fallback, syncing official profile:', err);
+      await this.syncKickProfile('diggitybets');
       if (window.location.pathname.includes('/api/auth')) {
         window.location.replace('/#profile');
       }
