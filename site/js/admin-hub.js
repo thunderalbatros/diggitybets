@@ -4365,6 +4365,79 @@ class AdminHubController {
         }
       });
     }
+
+    // 6. Initialize Per-Game ON/OFF Performance Switches in #control-panel
+    this.initControlPanelModuleSwitches();
+  }
+
+  initControlPanelModuleSwitches() {
+    const STORAGE_KEY = 'hunthub_cp_module_switches';
+    const defaultSwitches = {
+      battle: true,
+      wheels: true,
+      slotrequests: true,
+      bracket: true,
+      bonushunt: true
+    };
+
+    let switchState = { ...defaultSwitches };
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (saved && typeof saved === 'object') {
+        switchState = { ...defaultSwitches, ...saved };
+      }
+    } catch (_) {}
+
+    this.cpModuleSwitches = switchState;
+    window.isControlPanelModuleActive = (moduleId) => {
+      return this.cpModuleSwitches ? this.cpModuleSwitches[moduleId] !== false : true;
+    };
+
+    const applyModuleSwitchUI = (moduleId) => {
+      const isOn = this.cpModuleSwitches[moduleId] !== false;
+      const bodyEl = document.getElementById(`cp-module-body-${moduleId}`);
+      const standbyEl = document.getElementById(`cp-module-standby-${moduleId}`);
+      const cardEl = document.getElementById(`cp-module-card-${moduleId}`);
+
+      if (bodyEl) bodyEl.style.display = isOn ? '' : 'none';
+      if (standbyEl) standbyEl.style.display = isOn ? 'none' : 'block';
+      if (cardEl) cardEl.style.opacity = isOn ? '1' : '0.78';
+
+      const toggleBtns = document.querySelectorAll(`[data-cp-module-toggle="${moduleId}"]`);
+      toggleBtns.forEach((btn) => {
+        btn.classList.toggle('is-on', isOn);
+        btn.classList.toggle('is-off', !isOn);
+        const stateLabel = btn.querySelector('.cp-switch-state');
+        if (stateLabel) stateLabel.textContent = isOn ? 'ON' : 'OFF';
+      });
+
+      if (isOn) {
+        if (moduleId === 'slotrequests' && window.bonusHunt) {
+          window.bonusHunt.renderSlotRequests();
+          window.bonusHunt.drawSlotWheel(window.bonusHunt.wheelAngle || 0);
+        } else if (moduleId === 'wheels') {
+          this.renderDuoQueue();
+        } else if (moduleId === 'bracket' && typeof this.renderTournamentAdmin === 'function') {
+          this.renderTournamentAdmin();
+        } else if (moduleId === 'bonushunt' && typeof this.renderHuntAdmin === 'function') {
+          this.renderHuntAdmin();
+        }
+      }
+    };
+
+    Object.keys(defaultSwitches).forEach((modId) => applyModuleSwitchUI(modId));
+
+    document.querySelectorAll('[data-cp-module-toggle]').forEach((btn) => {
+      btn.onclick = () => {
+        const modId = btn.getAttribute('data-cp-module-toggle');
+        if (!modId) return;
+        this.cpModuleSwitches[modId] = !(this.cpModuleSwitches[modId] !== false);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.cpModuleSwitches));
+        } catch (_) {}
+        applyModuleSwitchUI(modId);
+      };
+    });
   }
 
   // ========================================================
@@ -4687,6 +4760,37 @@ class AdminHubController {
           message: `Added @${cleanUser} with "${slotName}" to Duo Wheel Battle Queue.`,
           type: 'cyan'
         });
+      }
+      return;
+    }
+
+    if (cmd === '!sr' || cmd === '!slot') {
+      const slotName = arg || 'Gates of Olympus 1000';
+      if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+        window.bonusHunt.addSlotRequest(cleanUser, slotName, false);
+      } else {
+        try {
+          const meta = this.resolveSlotMeta(slotName);
+          const list = JSON.parse(localStorage.getItem('hunthub_slot_requests') || '[]');
+          const handle = `@${cleanUser}`;
+          const entry = {
+            user: handle,
+            caller: handle,
+            name: meta.name || slotName,
+            provider: meta.provider || 'Official Slot',
+            img: meta.image || '',
+            image: meta.image || '',
+            ts: Date.now()
+          };
+          const idx = list.findIndex((r) => String(r.user || r.caller || '').toLowerCase() === handle.toLowerCase());
+          if (idx >= 0) list[idx] = entry;
+          else list.push(entry);
+          localStorage.setItem('hunthub_slot_requests', JSON.stringify(list));
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('hunthub_sr_wheel');
+            bc.postMessage({ type: 'SYNC_QUEUE', queue: list, ts: Date.now() });
+          }
+        } catch (_) {}
       }
       return;
     }

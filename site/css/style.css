@@ -7189,3 +7189,53 @@ footer.site-footer {
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
 }
 
+/* ========================================================
+   CONTROL PANEL ON/OFF GAME MODULE POWER SWITCHES
+   ======================================================== */
+.cp-power-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.55);
+  color: #53fc18;
+}
+
+.cp-power-switch .cp-switch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #53fc18;
+  box-shadow: 0 0 8px #53fc18;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cp-power-switch.is-off {
+  background: rgba(100, 116, 139, 0.14);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+}
+
+.cp-power-switch.is-off .cp-switch-dot {
+  background: #64748b;
+  box-shadow: none;
+}
+
+.cp-module-standby {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px dashed rgba(148, 163, 184, 0.32);
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+

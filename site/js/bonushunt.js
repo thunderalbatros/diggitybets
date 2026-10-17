@@ -563,8 +563,107 @@ class BonusHuntController {
   }
 
   // ==========================================
-  // 4. VIEWER SLOT REQUESTS & ROULETTE WHEEL
+  // 4. VIEWER SLOT REQUESTS (!sr) & ROULETTE WHEEL
   // ==========================================
+  broadcastSlotRequestsOverlay(packet) {
+    const payload = {
+      ...packet,
+      queue: this.slotRequests,
+      ts: packet.ts || Date.now()
+    };
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        if (!this.bcSrWheel) {
+          this.bcSrWheel = new BroadcastChannel('hunthub_sr_wheel');
+        }
+        this.bcSrWheel.postMessage(payload);
+      }
+    } catch (_) {}
+
+    if (payload.type === 'SPIN_WHEEL') {
+      try {
+        localStorage.setItem('hunthub_sr_spin_cmd', JSON.stringify(payload));
+      } catch (_) {}
+    }
+
+    try {
+      fetch('/api/sync/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          overlayEvent: {
+            target: 'overlay-slotrequests',
+            ...payload
+          }
+        })
+      }).catch(() => {});
+    } catch (_) {}
+  }
+
+  addSlotRequest(username, slotQuery, silentToast = false) {
+    const rawSlot = String(slotQuery || '').trim();
+    if (!rawSlot) return null;
+
+    const cleanUser = String(username || 'Viewer').trim().replace(/^@/, '') || 'Viewer';
+    const handle = `@${cleanUser}`;
+    const canon = window.SlotResolver
+      ? window.SlotResolver.resolve(rawSlot)
+      : { name: rawSlot, provider: 'Official Slot', img: '', image: '' };
+
+    const slotImg = canon.img || canon.image || '';
+    const entry = {
+      user: handle,
+      caller: handle,
+      name: canon.name || rawSlot,
+      provider: canon.provider || 'Official Slot',
+      img: slotImg,
+      image: slotImg,
+      ts: Date.now()
+    };
+
+    // Update existing request from same user or push new entry
+    const existingIdx = this.slotRequests.findIndex(
+      (r) => String(r.user || r.caller || '').toLowerCase() === handle.toLowerCase()
+    );
+    if (existingIdx >= 0) {
+      this.slotRequests[existingIdx] = entry;
+    } else {
+      this.slotRequests.push(entry);
+    }
+
+    this.save();
+    this.renderSlotRequests();
+    this.drawSlotWheel(this.wheelAngle);
+    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+
+    if (!silentToast && window.sonner) {
+      window.sonner.toast({
+        title: `🎰 !sr Queued (${handle})`,
+        message: `${entry.name} added to the Slot Requests Roulette!`,
+        type: 'cyan'
+      });
+    }
+    return entry;
+  }
+
+  removeSlotRequest(idx) {
+    if (idx < 0 || idx >= this.slotRequests.length) return;
+    this.slotRequests.splice(idx, 1);
+    this.save();
+    this.renderSlotRequests();
+    this.drawSlotWheel(this.wheelAngle);
+    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+  }
+
+  clearSlotRequests() {
+    this.slotRequests = [];
+    this.save();
+    this.renderSlotRequests();
+    this.drawSlotWheel(0);
+    this.broadcastSlotRequestsOverlay({ type: 'CLEAR_WINNER' });
+    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+  }
+
   renderSlotRequests() {
     const listEl = document.getElementById('bh-sr-list');
     const countEl = document.getElementById('bh-sr-count');
@@ -572,7 +671,7 @@ class BonusHuntController {
     if (!listEl) return;
 
     if (this.slotRequests.length === 0) {
-      listEl.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 20px; font-size: 12px;">No requests in queue. Submit one above!</div>`;
+      listEl.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px; font-size: 11.5px;">Queue empty — Viewers type <code style="color:#c084fc;">!sr &lt;slot&gt;</code> in Kick chat or add above!</div>`;
       return;
     }
 
@@ -580,19 +679,29 @@ class BonusHuntController {
     const esc = window.escapeHTML || (x => x);
 
     this.slotRequests.forEach((req, idx) => {
+      const userHandle = req.user || req.caller || '@Viewer';
+      const canon = window.SlotResolver ? window.SlotResolver.resolve(req.name) : null;
+      const thumbUrl = req.img || req.image || (canon && (canon.img || canon.image)) || '';
+
       const item = document.createElement('div');
-      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; font-size: 12px;';
+      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 6px 10px; font-size: 12px;';
       item.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-          <span style="color: var(--text-dim); font-size: 10px;">#${idx + 1}</span>
-          <div style="min-width: 0;">
-            <div style="font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(req.name)}</div>
-            <div style="font-size: 10px; color: var(--cyan);">${esc(req.caller)} · ${esc(req.provider || 'Slot')}</div>
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+          <span style="color: var(--text-dim); font-size: 10px; font-weight: 800;">#${idx + 1}</span>
+          ${thumbUrl ? `<img src="${esc(thumbUrl)}" alt="" style="width: 26px; height: 34px; aspect-ratio: 180/236; border-radius: 4px; object-fit: contain; background: #070a12; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;" />` : ''}
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(req.name)}</div>
+            <div style="font-size: 10.5px; color: var(--gold); font-weight: 700;">${esc(userHandle)} <span style="color: var(--text-dim);">· ${esc(req.provider || 'Slot')}</span></div>
           </div>
         </div>
-        <button type="button" class="btn-chat-toggle" onclick="window.bonusHunt.addRequestToHunt(${idx})" style="padding: 3px 8px; font-size: 10px; border-color: rgba(255,215,0,0.4); color: #ffd700; white-space: nowrap;">
-          + Add
-        </button>
+        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+          <button type="button" class="btn-chat-toggle" onclick="window.bonusHunt.addRequestToHunt(${idx})" style="padding: 3px 7px; font-size: 10px; border-color: rgba(83,252,24,0.45); color: #53fc18; white-space: nowrap;">
+            + Hunt
+          </button>
+          <button type="button" class="btn-chat-toggle" onclick="window.bonusHunt.removeSlotRequest(${idx})" style="padding: 3px 7px; font-size: 10px; border-color: rgba(239,68,68,0.45); color: #ef4444;">
+            ✕
+          </button>
+        </div>
       `;
       listEl.appendChild(item);
     });
@@ -607,55 +716,120 @@ class BonusHuntController {
       provider: req.provider || 'Provider',
       bet: 2.0,
       payout: 0,
-      caller: req.caller,
-      image: req.image
+      caller: req.user || req.caller || '@Viewer',
+      image: req.img || req.image
     });
     this.slotRequests.splice(idx, 1);
     this.save();
     this.renderSlotRequests();
     this.drawSlotWheel(this.wheelAngle);
+    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
     if (window.sonner) {
       window.sonner.toast({
         title: 'Slot Added to Hunt! 🎰',
-        message: `${req.name} added to the active bonus hunt collection!`,
+        message: `${req.name} (${req.user || req.caller || '@Viewer'}) added to Bonus Hunt!`,
         type: 'green'
       });
     }
   }
 
+  showSlotRequestWinnerCard(winner) {
+    if (!winner) return;
+    this.lastSrWinner = winner;
+    const userHandle = String(winner.user || winner.caller || '@Viewer').trim();
+    const cleanUser = userHandle.replace(/^@/, '') || 'Viewer';
+    const canon = window.SlotResolver
+      ? window.SlotResolver.resolve(winner.name)
+      : { name: winner.name, provider: winner.provider || 'Official Slot', img: winner.img || winner.image || '' };
+
+    const statusEl = document.getElementById('cp-sr-winner-status');
+    const userEl = document.getElementById('cp-sr-winner-user');
+    const avatarEl = document.getElementById('cp-sr-winner-avatar');
+    const slotImgEl = document.getElementById('cp-sr-winner-slot-img');
+    const providerEl = document.getElementById('cp-sr-winner-provider');
+    const slotNameEl = document.getElementById('cp-sr-winner-slot-name');
+
+    if (statusEl) {
+      statusEl.textContent = '🎉 WINNER SELECTED';
+      statusEl.style.color = '#53fc18';
+    }
+    if (userEl) userEl.textContent = `@${cleanUser}`;
+    if (providerEl) providerEl.textContent = canon.provider || winner.provider || 'OFFICIAL SLOT';
+    if (slotNameEl) slotNameEl.textContent = canon.name || winner.name;
+
+    if (slotImgEl) {
+      const slotArt = canon.img || canon.image || winner.img || winner.image || '';
+      if (slotArt) slotImgEl.src = slotArt;
+    }
+
+    if (avatarEl) {
+      const fallbackAvatar = typeof window.getDeterministicAvatarDataUri === 'function'
+        ? window.getDeterministicAvatarDataUri(cleanUser)
+        : avatarEl.src;
+      avatarEl.onerror = () => {
+        avatarEl.onerror = null;
+        avatarEl.src = fallbackAvatar;
+      };
+      avatarEl.src = fallbackAvatar;
+      fetch(`/api/kick/user/${encodeURIComponent(cleanUser)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          const remotePic = data?.profile_pic || data?.user?.profile_pic;
+          if (remotePic && typeof remotePic === 'string') {
+            avatarEl.src = remotePic;
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
   initSlotRequestsForm() {
     const form = document.getElementById('bh-sr-form');
-    if (!form) return;
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('bh-sr-input');
+        const userInput = document.getElementById('bh-sr-user-input');
+        const val = input ? input.value.trim() : '';
+        if (!val) return;
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('bh-sr-input');
-      const val = input ? input.value.trim() : '';
-      if (!val) return;
+        const manualUser = userInput && userInput.value.trim()
+          ? userInput.value.trim()
+          : (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@KickViewer';
 
-      const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
-      const canon = window.SlotResolver ? window.SlotResolver.resolve(val) : { name: val, provider: 'Casino', image: '' };
-
-      this.slotRequests.push({
-        name: canon.name || val,
-        provider: canon.provider || 'Casino',
-        caller: activeUser,
-        image: canon.image || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
+        this.addSlotRequest(manualUser, val, false);
+        if (input) input.value = '';
       });
+    }
 
-      this.save();
-      this.renderSlotRequests();
-      this.drawSlotWheel(this.wheelAngle);
-      input.value = '';
+    const clearBtn = document.getElementById('bh-sr-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => this.clearSlotRequests());
+    }
 
-      if (window.sonner) {
-        window.sonner.toast({
-          title: 'Request Queued! 🎡',
-          message: `${canon.name} has been added to the roulette wheel!`,
-          type: 'cyan'
+    const addWinnerHuntBtn = document.getElementById('cp-sr-winner-add-hunt');
+    if (addWinnerHuntBtn) {
+      addWinnerHuntBtn.addEventListener('click', () => {
+        if (!this.lastSrWinner) return;
+        const w = this.lastSrWinner;
+        this.addSlotToHunt({
+          id: w.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          name: w.name,
+          provider: w.provider || 'Provider',
+          bet: 2.0,
+          payout: 0,
+          caller: w.user || w.caller || '@Viewer',
+          image: w.img || w.image
         });
-      }
-    });
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Winner Added to Bonus Hunt! 💎',
+            message: `${w.name} (${w.user || w.caller}) added to active Bonus Hunt!`,
+            type: 'green'
+          });
+        }
+      });
+    }
 
     const spinBtn = document.getElementById('bh-btn-spin-wheel');
     if (spinBtn) {
@@ -668,6 +842,9 @@ class BonusHuntController {
   }
 
   drawSlotWheel(angle) {
+    if (typeof window.isControlPanelModuleActive === 'function' && !window.isControlPanelModuleActive('slotrequests')) {
+      return;
+    }
     const canvas = document.getElementById('bh-wheel-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -679,9 +856,29 @@ class BonusHuntController {
 
     ctx.clearRect(0, 0, w, h);
 
-    const items = this.slotRequests.length > 0 ? this.slotRequests : [
-      { name: 'Wanted Dead' }, { name: 'Gates 1000' }, { name: 'San Quentin' }, { name: 'Le Bandit' }
-    ];
+    if (this.slotRequests.length === 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = '#070b16';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)';
+      ctx.stroke();
+
+      ctx.fillStyle = '#c084fc';
+      ctx.font = '900 12px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('WAITING FOR !SR <SLOT>', cx, cy - 6);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '700 10px "Inter", sans-serif';
+      ctx.fillText('Viewers type !sr in Kick chat', cx, cy + 12);
+      ctx.restore();
+      return;
+    }
+
+    const items = this.slotRequests;
     const numSlices = items.length;
     const sliceAngle = (2 * Math.PI) / numSlices;
 
@@ -704,20 +901,22 @@ class BonusHuntController {
       ctx.strokeStyle = '#06080d';
       ctx.stroke();
 
-      // Draw text
+      // Draw @username + Slot Name on each wheel slice
       ctx.save();
       ctx.rotate(startAngle + sliceAngle / 2);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#06080d';
-      ctx.font = 'bold 12px "Outfit", sans-serif';
-      ctx.fillText(items[i].name.slice(0, 14), r - 16, 4);
+      const cleanUser = String(items[i].user || items[i].caller || 'Viewer').replace(/^@/, '').slice(0, 10);
+      const cleanSlot = String(items[i].name || 'Slot').slice(0, 12);
+      ctx.font = '900 10.5px "Chakra Petch", sans-serif';
+      ctx.fillText(`@${cleanUser} · ${cleanSlot}`, r - 12, 4);
       ctx.restore();
     }
 
     // Center pin
     ctx.beginPath();
     ctx.arc(0, 0, 18, 0, 2 * Math.PI);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0b1120';
     ctx.fill();
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#ffd700';
@@ -731,8 +930,8 @@ class BonusHuntController {
     if (this.slotRequests.length === 0) {
       if (window.sonner) {
         window.sonner.toast({
-          title: 'Wheel Empty',
-          message: 'Add at least one slot request to spin the roulette wheel!',
+          title: 'Slot Requests Wheel Empty',
+          message: 'Wait for viewers to type !sr <slot> in chat or add a slot request first!',
           type: 'gold'
         });
       }
@@ -740,33 +939,41 @@ class BonusHuntController {
     }
 
     this.isSpinning = true;
-    const canvas = document.getElementById('bh-wheel-canvas');
-    const items = this.slotRequests;
+    const items = [...this.slotRequests];
     const numSlices = items.length;
     const sliceAngle = (2 * Math.PI) / numSlices;
 
     // Pick random winning index
     const winIdx = Math.floor(Math.random() * numSlices);
+    const winner = items[winIdx];
+
+    // Broadcast spin command immediately so /overlay-slotrequests/index.html?obs=1 spins in sync!
+    this.broadcastSlotRequestsOverlay({
+      type: 'SPIN_WHEEL',
+      winnerIndex: winIdx,
+      winner,
+      queue: items,
+      durationMs: 4200,
+      ts: Date.now()
+    });
+
     // Pointer is at the top (-PI/2)
-    // To land slice winIdx at top, final rotation needs:
     const targetSliceAngle = (2 * Math.PI) - (winIdx * sliceAngle + sliceAngle / 2) - (Math.PI / 2);
     const fullSpins = (5 + Math.floor(Math.random() * 3)) * (2 * Math.PI);
     const targetAngle = fullSpins + targetSliceAngle;
 
     const startAngle = this.wheelAngle % (2 * Math.PI);
     const totalRotation = targetAngle - startAngle;
-    const duration = 4000;
+    const duration = 4200;
     const startTime = performance.now();
     let lastTickAngle = startAngle;
 
     const animateWheel = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(1, elapsed / duration);
-      // Cubic ease-out
       const easeOut = 1 - Math.pow(1 - progress, 3);
       this.wheelAngle = startAngle + totalRotation * easeOut;
 
-      // Audio click on slice crossings
       if (Math.abs(this.wheelAngle - lastTickAngle) >= sliceAngle) {
         lastTickAngle = this.wheelAngle;
         if (window.soundEngine && typeof window.soundEngine.playVoteClick === 'function') {
@@ -780,19 +987,24 @@ class BonusHuntController {
         requestAnimationFrame(animateWheel);
       } else {
         this.isSpinning = false;
-        const winner = items[winIdx];
+        this.showSlotRequestWinnerCard(winner);
 
-        if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
-          window.soundEngine.playVictoryFanfare();
-        }
-        if (typeof confetti === 'function') {
-          confetti({ particleCount: 75, spread: 60, origin: { y: 0.7 } });
+        // Remove selected winner from active pool so next spin picks a fresh request
+        const removeIdx = this.slotRequests.findIndex(
+          (r) => r.name === winner.name && (r.user || r.caller) === (winner.user || winner.caller)
+        );
+        if (removeIdx >= 0) {
+          this.slotRequests.splice(removeIdx, 1);
+          this.save();
+          this.renderSlotRequests();
+          this.drawSlotWheel(this.wheelAngle);
+          this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
         }
 
         if (window.sonner) {
           window.sonner.toast({
-            title: `🎰 WHEEL WINNER: ${winner.name}!`,
-            message: `Selected by the wheel! Click "+ Add" in queue to include in hunt.`,
+            title: `🎰 !SR WINNER: ${winner.user || winner.caller} — ${winner.name}!`,
+            message: `Winner Avatar + @Username + Official Slot Card revealed on stream!`,
             type: 'green'
           });
         }
