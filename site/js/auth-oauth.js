@@ -18,7 +18,7 @@ class OAuthEngine {
         clientId: window.HUNT_CONFIG?.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ',
         authUrl: 'https://id.kick.com/oauth/authorize',
         scope: 'user:read',
-        redirectUri: `${redirectBase}/api/auth/kick/callback`
+        redirectUri: `${redirectBase}/api/auth/callback`
       },
       discord: {
         clientId: window.HUNT_CONFIG?.DISCORD_CLIENT_ID || '1314567890123456789',
