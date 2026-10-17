@@ -456,10 +456,31 @@
   - **Pruebas y Verificación:**
     - `npm run guard:all` ejecutado con éxito total (**100% de tests en verde, 0 fallos de configuración**).
 
+- [x] **Stage 18 (SOTA 2026: Memoria Temporal/Procedimental, Edición AST y Motor Audiovisual de Casino):** COMPLETED & TESTED.
+  - **Indexación Omni-RAG & Repositorios SOTA (`references/sota-2026/` + `emil-skills/`):**
+    - `tools/intelligence/rag_pipeline.mjs` actualizado con escaneo profundo (profundidad 8) de `references/sota-2026/agent-evolution/` (`graphiti`, `langmem`, `mem0`, `serena-mcp`, `ast-grep`, `playwright-mcp`, `promptfoo`) y `references/sota-2026/casino-fx-audio/` (`tonejs`, `zzfx`, `tsparticles`, `pixijs-v8`, `rive-wasm`), más `references/clones/emil-skills/skills/`.
+    - Verificado con consultas vectoriales CLI (ast-grep, emil-design-eng, tsparticles).
+  - **Motor de Memoria Procedimental e Instintos con Validez Temporal (`instincts_engine.mjs`):**
+    - Creado `tools/intelligence/instincts_engine.mjs` y `.agents/memory/temporal_ledger.json` con grafo de validez temporal inspirado en Graphiti y auto-refinamiento procedimental de LangMem.
+    - Registradas 5 reglas arquitectónicas activas y marcadas como INVALIDADAS las pilas no permitidas (Rainbet external sponsorship y mobile React Native/Expo).
+    - Incorporado *Pre-Flight Check* (`--preflight`) y *Judge Harness* (`--judge`) ejecutando las 12 suites de tests, guardrails de configuración y auditoría de fugas de logs.
+  - **Motor de Diseño Sonoro de Casino (`pro-fx-audio.js`):**
+    - Creado `site/js/pro-fx-audio.js` y sincronizado en `casino-suite/shared/pro-fx-audio.js` y `wheel-csgo/overlay/libs/pro-fx-audio.js`.
+    - `playRoyalTrumpets()`: Fanfarria polifónica triunfal en Re Mayor con osciladores dual-sawtooth desafinados, mordida de filtro de latón metálico y reverberación convolutiva de gran sala.
+    - `playConfettiBurst()`: Golpe neumático sub-grave (160Hz -> 30Hz) + siseo y aleteo de papel en el aire con ruido filtrado y micro-ráfaga ZzFX.
+    - `playSkyCoinShower(duration, coinCount)`: Cascada metálica inarmónica (`MetalSynth` FM con ratios 1.0, 1.483, 1.932, 2.546) y paneo estéreo dinámico (-0.8 a +0.8) con rebotes físicos en bandeja.
+  - **Motor Visual VIP Casino Reel y Lluvia de Monedas 3D (`wheel-csgo/` & `motion-fx.js`):**
+    - `wheel-csgo` transformado en **"Diggity VIP Casino Reel"** con estética minimalista de lujo (`#07090e`/`#0f141f`, bordes `1px solid rgba(255,255,255,0.08)`, acentos `#ffd700` y `#53fc18`), eliminando cualquier temática de Counter-Strike.
+    - `spawnCasinoCoinRain(options)`: Monedas de oro vectoriales `$DIG` con físicas 3D continuas de rotación (`roll`), cabeceo (`tilt`), bamboleo oscilante (`wobble`), destellos especulares y rebotes físicos amortiguados contra el piso de la pantalla.
+    - `spawnSideConfettiCannons(options)`: Cañones duales en las esquinas inferiores disparando serpentinas y confeti 3D giratorio.
+    - Integrado globalmente en `site/js/motion-fx.js` e `index.html` activándose en jackpots y premios de juegos.
+  - **Verificación Total:**
+    - Judge Harness ejecutado en verde: 12/12 suites de tests pasadas (100% de éxito), 0 fallos de configuración.
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements & ECC Integration (Stages 1 to 17): 100% COMPLETED & VERIFIED.**
+- **All Phases, Refinements & SOTA 2026 Evolution (Stages 1 to 18): 100% COMPLETED & VERIFIED.**
 - Ready for live production streaming on `https://kick.com/diggitybets` and deployment to `https://diggitybets.vip` via `PUBLICAR_EN_CLOUDFLARE.bat`.
 
 ---
