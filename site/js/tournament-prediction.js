@@ -700,10 +700,43 @@ class TournamentPredictionController {
     const streak = (battle && typeof battle.currentStreak === 'number')
       ? Math.min(4, Math.max(0, battle.currentStreak))
       : Math.min(4, Math.max(0, koth.streak || 0));
+    const currentPrizeUsd = Math.min(20, streak * 5);
 
     const badge = document.getElementById('public-koth-streak-badge');
     if (badge) {
-      badge.textContent = `STREAK: ${streak}/${koth.maxStreak || 4}`;
+      badge.textContent = `STREAK: ${streak}/${koth.maxStreak || 4} ($${currentPrizeUsd})`;
+    }
+
+    const modeBadge = document.getElementById('public-koth-mode-badge');
+    const bMode = battle?.gameMode || battle?.mode || localStorage.getItem('hunthub_battle_mode') || 'BONUS_BUY';
+    if (modeBadge) {
+      modeBadge.textContent = bMode === 'SPINS' ? 'MODE: 50 SPINS (WIN / LOSE)' : 'MODE: BONUS BUY (MULT)';
+    }
+
+    const statusTextEl = document.getElementById('pub-battle-status-text');
+    if (statusTextEl) {
+      if (koth.awaitingDecision && pAName) {
+        statusTextEl.textContent = `👑 @${pAName} AWAITING DECISION (!continue / !cashout)`;
+      } else if (pAName && pBName) {
+        statusTextEl.textContent = `⚔️ DUEL IN PROGRESS: @${pAName} VS @${pBName}`;
+      } else if (pAName) {
+        statusTextEl.textContent = `👑 @${pAName} IN BLUE CORNER · WAITING CHALLENGER B`;
+      } else {
+        statusTextEl.textContent = 'LIVE ARENA · !BATTLE QUEUE OPEN';
+      }
+    }
+
+    const currentUser = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '').toLowerCase();
+    const isStreamer = currentUser === 'diggitybets' || currentUser === 'diggity_bets' || currentUser === 'tarkansky';
+    const adminLink = document.getElementById('pub-battle-admin-link');
+    if (adminLink) {
+      adminLink.style.display = isStreamer ? 'inline-flex' : 'none';
+    }
+
+    // Pre-fill Join User input if logged in and currently empty
+    const joinUserEl = document.getElementById('pub-battle-join-user');
+    if (joinUserEl && !joinUserEl.value && currentUser) {
+      joinUserEl.value = `@${currentUser}`;
     }
 
     // Update streak steps 1..4
@@ -751,11 +784,16 @@ class TournamentPredictionController {
         kingSlotEl.style.color = 'var(--gold)';
       }
       if (kingScoreEl) {
-        kingScoreEl.textContent = streak > 0 ? `${streak} Streak 🔥` : 'Contender (Blue)';
+        const multA = Number(battle?.playerA?.multiplier || 0);
+        if (multA > 0) {
+          kingScoreEl.textContent = `${multA.toFixed(2)}x${streak > 0 ? ` · ${streak}/4 🔥` : ''}`;
+        } else {
+          kingScoreEl.textContent = streak > 0 ? `${streak}/4 Wins ($${currentPrizeUsd}) 🔥` : 'Ready in Blue Corner';
+        }
         kingScoreEl.style.color = 'var(--cyan)';
       }
       if (kingSlotImg) {
-        kingSlotImg.src = slotImgUrl;
+        kingSlotImg.src = slotImgUrl || this.getEmptyCornerPlaceholderSvg('A');
         kingSlotImg.onerror = () => {
           kingSlotImg.src = this.getEmptyCornerPlaceholderSvg('A');
         };
@@ -817,15 +855,15 @@ class TournamentPredictionController {
 
       if (chalSlotEl) {
         chalSlotEl.textContent = slotDisplayName;
-        chalSlotEl.style.color = 'var(--text-dim)';
+        chalSlotEl.style.color = 'var(--gold)';
       }
       if (chalScoreEl) {
-        const multVal = battle?.playerB?.multiplier;
-        chalScoreEl.textContent = multVal ? `${Number(multVal).toFixed(2)}x` : 'Challenger Ready 🥊';
+        const multVal = Number(battle?.playerB?.multiplier || 0);
+        chalScoreEl.textContent = multVal > 0 ? `${multVal.toFixed(2)}x` : 'Challenger Ready 🥊';
         chalScoreEl.style.color = '#ff6b8b';
       }
       if (chalSlotImg) {
-        chalSlotImg.src = slotImgUrl;
+        chalSlotImg.src = slotImgUrl || this.getEmptyCornerPlaceholderSvg('B');
         chalSlotImg.onerror = () => {
           chalSlotImg.src = this.getEmptyCornerPlaceholderSvg('B');
         };
@@ -860,26 +898,175 @@ class TournamentPredictionController {
       }
     }
 
-    // King decision actions (if current viewer is the King and awaiting decision)
-    const currentUser = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '').toLowerCase();
+    // King decision actions (visible when awaiting decision for the King or Streamer)
     const kingUser = (pAName || koth.king || '').replace(/^@/, '').toLowerCase();
     const actionBox = document.getElementById('pub-koth-king-actions');
 
     if (actionBox) {
-      if (koth.awaitingDecision && currentUser && kingUser && currentUser === kingUser) {
+      if (koth.awaitingDecision && kingUser && (isStreamer || !currentUser || currentUser === kingUser)) {
         actionBox.style.display = 'block';
       } else {
         actionBox.style.display = 'none';
       }
     }
+
+    this.renderPublicBattleQueue();
+  }
+
+  renderPublicBattleQueue() {
+    const listEl = document.getElementById('pub-battle-queue-list');
+    const countEl = document.getElementById('pub-battle-queue-count');
+    if (!listEl) return;
+
+    const demoUsers = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter'
+    ]);
+
+    let pool = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || '[]');
+      if (Array.isArray(saved)) {
+        pool = saved.filter(p => {
+          const u = String(p?.chatter || p?.user || '').trim().toLowerCase().replace(/^@/, '');
+          return u && !demoUsers.has(u);
+        });
+      }
+    } catch (_) {}
+
+    if (countEl) {
+      countEl.textContent = `${pool.length} IN QUEUE`;
+    }
+
+    if (pool.length === 0) {
+      listEl.innerHTML = `<span style="font-size: 12px; color: var(--text-muted);">Queue is open and empty — enter a slot above or type <code>!battle &lt;slot&gt;</code> in Kick chat!</span>`;
+      return;
+    }
+
+    const esc = window.escapeHTML || (s => String(s));
+    listEl.innerHTML = pool.map(item => {
+      const user = String(item.chatter || item.user || 'Viewer').replace(/^@/, '');
+      const rawSlot = item.slot || item.slotName || 'Wanted Dead or a Wild';
+      const meta = (window.SlotResolver && typeof window.SlotResolver.resolve === 'function')
+        ? window.SlotResolver.resolve(rawSlot)
+        : { name: rawSlot, provider: item.provider || 'Casino', image: item.imageUrl || '' };
+      const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+        ? window.SlotResolver.generateDataUriCard(meta.name || rawSlot, meta.provider || 'Casino')
+        : '';
+      const imgSrc = meta.image || item.imageUrl || fallbackSvg;
+      return `
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; font-size: 12px;">
+          <img src="${imgSrc}" alt="" style="width: 26px; height: 34px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';" />
+          <strong style="color: #fff;">@${esc(user)}</strong>
+          <span style="color: var(--gold); font-weight: 700;">${esc(meta.name || rawSlot)}</span>
+        </div>
+      `;
+    }).join('');
   }
 
   bindKothActions() {
     const btnContinue = document.getElementById('btn-pub-koth-continue');
     const btnRetire = document.getElementById('btn-pub-koth-retire');
+    const datalist = document.getElementById('pub-battle-slot-datalist');
+    const btnJoin = document.getElementById('btn-pub-battle-join');
+    const btnCopyCmd = document.getElementById('btn-pub-battle-copy-cmd');
+    const joinUserEl = document.getElementById('pub-battle-join-user');
+    const joinSlotEl = document.getElementById('pub-battle-join-slot');
+
+    // Populate slot autocomplete datalist for 1v1 Battle Queue
+    if (datalist && Array.isArray(window.HUNTHUB_CURATED_SLOTS)) {
+      datalist.innerHTML = window.HUNTHUB_CURATED_SLOTS
+        .map(s => `<option value="${(window.escapeHTML || (x => x))(s.name)}">${(window.escapeHTML || (x => x))(s.provider || 'Casino')}</option>`)
+        .join('');
+    }
+
+    const submitBattleQueueEntry = () => {
+      const rawUser = (joinUserEl?.value || localStorage.getItem('hunthub_kick_username') || '').trim().replace(/^@/, '');
+      const rawSlot = (joinSlotEl?.value || '').trim();
+      if (!rawUser) {
+        if (window.sonner) window.sonner.toast({ title: 'Username Required', message: 'Enter your @KickUsername to join the 1v1 Battle queue.', type: 'danger' });
+        if (joinUserEl) joinUserEl.focus();
+        return;
+      }
+      if (!rawSlot) {
+        if (window.sonner) window.sonner.toast({ title: 'Slot Required', message: 'Select or type a slot name to enter the 1v1 Battle queue.', type: 'danger' });
+        if (joinSlotEl) joinSlotEl.focus();
+        return;
+      }
+
+      if (window.adminHub && typeof window.adminHub.addDuoEntry === 'function') {
+        window.adminHub.addDuoEntry(rawUser, rawSlot, 'battle');
+      } else {
+        const meta = (window.SlotResolver && typeof window.SlotResolver.resolve === 'function')
+          ? window.SlotResolver.resolve(rawSlot)
+          : { name: rawSlot, provider: 'Casino', image: '' };
+        let pool = [];
+        try { pool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || '[]'); } catch (_) {}
+        pool = pool.filter(p => String(p.chatter || p.user || '').toLowerCase().replace(/^@/, '') !== rawUser.toLowerCase());
+        pool.unshift({
+          chatter: rawUser,
+          user: rawUser,
+          slot: meta.name || rawSlot,
+          provider: meta.provider || 'Casino',
+          imageUrl: meta.image || '',
+          icon: '🎰'
+        });
+        try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(pool)); } catch (_) {}
+        try {
+          const chDuo = new BroadcastChannel('hunthub_duo_wheel');
+          chDuo.postMessage({ action: 'set_pool', pool });
+        } catch (_) {}
+      }
+
+      if (joinSlotEl) joinSlotEl.value = '';
+      this.renderPublicBattleQueue();
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: '⚔️ Added to 1v1 Battle Queue!',
+          message: `@${rawUser} entered with "${rawSlot}". Synced with Dual Wheel!`,
+          type: 'cyan'
+        });
+      }
+    };
+
+    if (btnJoin) {
+      btnJoin.addEventListener('click', submitBattleQueueEntry);
+    }
+    if (joinSlotEl) {
+      joinSlotEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitBattleQueueEntry();
+        }
+      });
+    }
+
+    if (btnCopyCmd) {
+      btnCopyCmd.addEventListener('click', () => {
+        const slot = (joinSlotEl?.value || 'Wanted Dead or a Wild').trim();
+        const cmd = `!battle ${slot}`;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(cmd).catch(() => {});
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '📋 Copied Kick Chat Command!',
+            message: `Copied "${cmd}" — paste it in kick.com/diggitybets chat.`,
+            type: 'cyan'
+          });
+        }
+      });
+    }
 
     if (btnContinue) {
       btnContinue.addEventListener('click', async () => {
+        if (window.adminHub && typeof window.adminHub.kothContinue === 'function') {
+          window.adminHub.kothContinue();
+          this.renderKoth();
+          return;
+        }
         try {
           await fetch('/api/battle/koth/decision', {
             method: 'POST',
@@ -935,6 +1122,11 @@ class TournamentPredictionController {
 
     if (btnRetire) {
       btnRetire.addEventListener('click', async () => {
+        if (window.adminHub && typeof window.adminHub.kothRetire === 'function') {
+          window.adminHub.kothRetire();
+          this.renderKoth();
+          return;
+        }
         try {
           await fetch('/api/battle/koth/decision', {
             method: 'POST',
@@ -1038,11 +1230,17 @@ class TournamentPredictionController {
       this.bcBattleBus.onmessage = (e) => handleEvent(e.data);
     } catch (_) {}
 
+    try {
+      this.bcDuo = new BroadcastChannel('hunthub_duo_wheel');
+      this.bcDuo.onmessage = () => this.renderPublicBattleQueue();
+    } catch (_) {}
+
     window.addEventListener('hunthub:battle-sync', (e) => handleEvent(e.detail));
     window.addEventListener('hunthub:battle-celebration', (e) => handleEvent(e.detail));
+    window.addEventListener('hunthub:auth-updated', () => this.renderKoth());
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hunthub_koth_state' || e.key === 'hunthub_battle_state' || e.key === 'hunthub_battle_assign') {
+      if (e.key === 'hunthub_koth_state' || e.key === 'hunthub_battle_state' || e.key === 'hunthub_battle_assign' || e.key === 'hunthub_duo_pool_v2') {
         this.renderKoth();
       } else if (e.key === 'hunthub_koth_event' && e.newValue) {
         try { handleEvent(JSON.parse(e.newValue)); } catch (_) {}

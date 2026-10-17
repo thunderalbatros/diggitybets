@@ -255,8 +255,9 @@ class BonusHuntOverlayApp {
     const openedBonuses = opened.length;
     const remainingBonuses = Math.max(0, totalBonuses - openedBonuses);
     const winnings = bonuses.reduce((acc, b) => acc + b.payout, 0);
-    const startCost = Number(localStorage.getItem('hunthub_hunt_start_cost') || 500);
-    const profit = winnings - startCost;
+    const isHuntActive = localStorage.getItem('hunthub_hunt_active') === 'true' && totalBonuses > 0;
+    const startCost = totalBonuses === 0 ? 0 : Number(localStorage.getItem('hunthub_hunt_start_cost') || (isHuntActive ? 500 : 0));
+    const profit = totalBonuses === 0 ? 0 : (winnings - startCost);
     const runAverageX = openedBonuses > 0 ? opened.reduce((a, b) => a + b.multiplier, 0) / openedBonuses : 0;
     const needed = Math.max(0, startCost - winnings);
     const remBetSum = bonuses.filter(b => b.payout <= 0).reduce((a, b) => a + b.betSize, 0);
@@ -269,7 +270,7 @@ class BonusHuntOverlayApp {
       id: 'hunt_live',
       title: 'COMMUNITY BONUS HUNT',
       startCost,
-      status: totalBonuses === 0 ? 'COLLECTING' : (remainingBonuses === 0 ? 'FINISHED' : 'OPENING'),
+      status: totalBonuses === 0 ? 'WAITING' : (remainingBonuses === 0 ? 'FINISHED' : 'OPENING'),
       bonuses,
       guesses: [],
       metrics: {
@@ -372,30 +373,31 @@ class BonusHuntOverlayApp {
   }
 
   loadInitialDemo() {
+    const demoCallers = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter'
+    ]);
     try {
       const savedSlots = localStorage.getItem('hunthub_hunt_slots');
       if (savedSlots !== null) {
         const parsedSlots = JSON.parse(savedSlots);
         if (Array.isArray(parsedSlots)) {
-          this.handleStateUpdate(this.buildStateFromHuntSlots(parsedSlots));
+          const cleanSlots = parsedSlots.filter(s => {
+            const c = String(s?.caller || s?.callerUsername || '').trim().toLowerCase().replace(/^@/, '');
+            return !demoCallers.has(c);
+          });
+          if (cleanSlots.length !== parsedSlots.length) {
+            try { localStorage.setItem('hunthub_hunt_slots', JSON.stringify(cleanSlots)); } catch {}
+          }
+          this.handleStateUpdate(this.buildStateFromHuntSlots(cleanSlots));
           return;
         }
       }
-      const saved = localStorage.getItem('hunthub_bonushunt_state');
-      if (saved) {
-        this.handleStateUpdate(JSON.parse(saved));
-        return;
-      }
     } catch {}
 
-    if (localStorage.getItem('hunthub_demo_users_purged') === 'true') {
-      this.handleStateUpdate(this.buildStateFromHuntSlots([]));
-      return;
-    }
-
-    // Default Demo State with Slot Images
-    const demo = this.getDefaultDemoState();
-    this.handleStateUpdate(demo);
+    // Always default to an empty Bonus Hunt state until the streamer starts a hunt or adds slots
+    this.handleStateUpdate(this.buildStateFromHuntSlots([]));
   }
 
   getDefaultDemoState() {
@@ -541,18 +543,20 @@ class BonusHuntOverlayApp {
     const oldStatus = this.currentState ? this.currentState.status : null;
     this.currentState = state;
 
+    const m = state.metrics || {};
+
     // Headers in English
     if (this.titleEl) this.titleEl.textContent = (state.title || 'COMMUNITY BONUS HUNT').toUpperCase();
     if (this.statusTextEl) {
       const map = {
-        COLLECTING: 'COLLECTING BONUSES',
+        WAITING: 'WAITING FOR HUNT',
+        COLLECTING: (m.totalBonuses || 0) === 0 ? 'WAITING FOR HUNT' : 'COLLECTING BONUSES',
         OPENING: 'OPENING BONUSES LIVE',
         FINISHED: 'HUNT COMPLETED',
       };
-      this.statusTextEl.textContent = map[state.status] || state.status;
+      this.statusTextEl.textContent = map[state.status] || state.status || 'WAITING FOR HUNT';
     }
 
-    const m = state.metrics || {};
     this.animateNumberFlow(this.startCostEl, m.startCost || state.startCost || 0, '$', '', 2);
     if (this.bonusesCountEl) this.bonusesCountEl.textContent = `${m.openedBonuses || 0} / ${m.totalBonuses || 0}`;
     if (this.remainingCountEl) this.remainingCountEl.textContent = `${m.remainingBonuses || 0} remaining`;
@@ -575,26 +579,41 @@ class BonusHuntOverlayApp {
         const res = window.SlotResolver.resolve(m.bestWin.slotName || m.bestWin, '../');
         if (res && res.name) bwName = res.name;
       }
-      this.bestWinGame.textContent = bwName;
-      this.bestWinCaller.textContent = `Call by @${m.bestWin.callerUsername}`;
-      this.bestWinPayout.textContent = `$${Number(m.bestWin.payout).toFixed(2)}`;
-      this.bestWinMult.textContent = `${Number(m.bestWin.multiplier).toFixed(2)}x`;
+      if (this.bestWinGame) this.bestWinGame.textContent = bwName;
+      if (this.bestWinCaller) this.bestWinCaller.textContent = `Call by @${String(m.bestWin.callerUsername || 'Viewer').replace(/^@/, '')}`;
+      if (this.bestWinPayout) this.bestWinPayout.textContent = `$${Number(m.bestWin.payout).toFixed(2)}`;
+      if (this.bestWinMult) this.bestWinMult.textContent = `${Number(m.bestWin.multiplier).toFixed(2)}x`;
+    } else {
+      if (this.bestWinGame) this.bestWinGame.textContent = '—';
+      if (this.bestWinCaller) this.bestWinCaller.textContent = 'Waiting for bonuses...';
+      if (this.bestWinPayout) this.bestWinPayout.textContent = '$0.00';
+      if (this.bestWinMult) this.bestWinMult.textContent = '0.00x';
     }
+
     if (m.luckyWin) {
       let lwName = m.luckyWin.slotName;
       if (window.SlotResolver) {
         const res = window.SlotResolver.resolve(m.luckyWin.slotName || m.luckyWin, '../');
         if (res && res.name) lwName = res.name;
       }
-      this.luckyWinGame.textContent = lwName;
-      this.luckyWinCaller.textContent = `Call by @${m.luckyWin.callerUsername}`;
-      this.luckyWinPayout.textContent = `$${Number(m.luckyWin.payout).toFixed(2)}`;
-      this.luckyWinMult.textContent = `${Number(m.luckyWin.multiplier).toFixed(2)}x`;
+      if (this.luckyWinGame) this.luckyWinGame.textContent = lwName;
+      if (this.luckyWinCaller) this.luckyWinCaller.textContent = `Call by @${String(m.luckyWin.callerUsername || 'Viewer').replace(/^@/, '')}`;
+      if (this.luckyWinPayout) this.luckyWinPayout.textContent = `$${Number(m.luckyWin.payout).toFixed(2)}`;
+      if (this.luckyWinMult) this.luckyWinMult.textContent = `${Number(m.luckyWin.multiplier).toFixed(2)}x`;
+    } else {
+      if (this.luckyWinGame) this.luckyWinGame.textContent = '—';
+      if (this.luckyWinCaller) this.luckyWinCaller.textContent = 'Waiting for bonuses...';
+      if (this.luckyWinPayout) this.luckyWinPayout.textContent = '$0.00';
+      if (this.luckyWinMult) this.luckyWinMult.textContent = '0.00x';
     }
 
     // Top guess ticker
-    if (m.closestGuess && this.topGuessUserEl) {
-      this.topGuessUserEl.textContent = `@${m.closestGuess.username} ($${m.closestGuess.guess.toFixed(2)} · Diff: $${m.closestGuess.diff.toFixed(2)})`;
+    if (this.topGuessUserEl) {
+      if (m.closestGuess) {
+        this.topGuessUserEl.textContent = `@${m.closestGuess.username} ($${m.closestGuess.guess.toFixed(2)} · Diff: $${m.closestGuess.diff.toFixed(2)})`;
+      } else {
+        this.topGuessUserEl.textContent = 'No guesses yet (!guess <amount>)';
+      }
     }
 
     // Heal any cached bonus images via SlotResolver before rendering
@@ -676,6 +695,19 @@ class BonusHuntOverlayApp {
   renderTable(bonuses) {
     if (!this.tableBodyEl) return;
     this.tableBodyEl.innerHTML = '';
+
+    if (!Array.isArray(bonuses) || bonuses.length === 0) {
+      this.tableBodyEl.classList.remove('ticker-loop-active');
+      const emptyEl = document.createElement('div');
+      emptyEl.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 48px 20px; color: #94a3b8; font-family: "Chakra Petch", sans-serif; text-align: center;';
+      emptyEl.innerHTML = `
+        <span style="font-size: 28px; opacity: 0.7;">💎</span>
+        <strong style="font-size: 15px; color: #cbd5e1; letter-spacing: 1px;">NO BONUSES LOADED YET — WAITING FOR HUNT TO START</strong>
+        <span style="font-size: 12px; color: #64748b;">Bonuses added from the Control Panel will appear here in real time.</span>
+      `;
+      this.tableBodyEl.appendChild(emptyEl);
+      return;
+    }
 
     const isTickerActive = Array.isArray(bonuses) && bonuses.length > 8;
     this.tableBodyEl.classList.toggle('ticker-loop-active', isTickerActive);

@@ -21,7 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Design System Stylesheet -->
-  <link rel="stylesheet" href="site/css/style.css?v=18.0">
+  <link rel="stylesheet" href="site/css/style.css?v=21.0">
 </head>
 <body>
 
@@ -1164,51 +1164,68 @@
          SECTION 2.5: 1v1 BATTLE ARENA & KING OF THE HILL (KOTH)
          ======================================================== -->
     <section class="section-container view-section" id="battle" style="display: none;">
-      <div class="section-header-row">
+      <div class="section-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div>
           <h2 class="section-title"><span>⚔️</span> 1v1 BATTLE &amp; <span class="accent">KING OF THE HILL</span></h2>
           <p class="section-subtitle">Live duel throne · Contenders clash 1v1 to capture $5/win up to $20 USD Cash Cap</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="reward-badge-pill" id="pub-battle-status-pill" style="background: rgba(0, 230, 118, 0.15); border: 1px solid #00e676; color: #00e676; font-size: 11px; padding: 5px 12px; font-weight: 900; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00e676; box-shadow: 0 0 8px #00e676;"></span>
+            <span id="pub-battle-status-text">LIVE ARENA · !BATTLE QUEUE OPEN</span>
+          </span>
+          <a href="/overlay-battle/index.html?obs=1" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 6px 12px; font-size: 11px; text-decoration: none; border-color: var(--cyan); color: var(--cyan); font-weight: 800;">
+            📺 Open 1v1 OBS Overlay
+          </a>
+          <a href="#control-panel" data-target="#control-panel" id="pub-battle-admin-link" class="btn-chat-toggle" style="display: none; padding: 6px 12px; font-size: 11px; text-decoration: none; border-color: var(--gold); color: var(--gold); font-weight: 800;">
+            🎛️ Streamer Control Panel
+          </a>
         </div>
       </div>
 
       <!-- King of the Hill (1v1 Battle Arena) Panel -->
       <div id="tourney-koth-panel" style="display: block;">
-        <div class="tourney-prediction-container" style="max-width: 900px; margin: 0 auto;">
-          <div class="profile-glass-card" style="padding: 24px; border: 1px solid rgba(255, 215, 0, 0.3); background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.08), rgba(0, 0, 0, 0.5));">
+        <div class="tourney-prediction-container" style="max-width: 960px; margin: 0 auto;">
+          <div class="profile-glass-card" style="padding: 24px; border: 1px solid rgba(255, 215, 0, 0.3); background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.08), rgba(0, 0, 0, 0.5)); margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
               <div>
                 <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: var(--gold); display: flex; align-items: center; gap: 8px;">
                   <span>👑</span> KING OF THE HILL ARENA
                 </h3>
                 <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                  1v1 Battle Throne · Win 4 duels in a row to capture the <strong>$20.00 CASH PRIZE</strong>!
+                  1v1 Battle Throne · Each win banks <strong style="color:#53fc18;">$5.00 USD</strong> · Win 4 duels in a row to capture the <strong style="color:var(--gold);">$20.00 CASH PRIZE</strong>!
                 </p>
               </div>
-              <span class="reward-badge-pill" id="public-koth-streak-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold); font-size: 12px; padding: 4px 12px;">
-                STREAK: 0/4
-              </span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="reward-badge-pill" id="public-koth-mode-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); color: var(--cyan); font-size: 11px; padding: 4px 10px;">
+                  MODE: BONUS BUY
+                </span>
+                <span class="reward-badge-pill" id="public-koth-streak-badge" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold); font-size: 12px; padding: 4px 12px;">
+                  STREAK: 0/4 ($0)
+                </span>
+              </div>
             </div>
 
             <!-- Streak Progress Bar -->
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
               <div id="pub-koth-step-1" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
                 <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 1</div>
-                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">1/4</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">1/4 · $5</div>
                 <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
               </div>
               <div id="pub-koth-step-2" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
                 <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 2</div>
-                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">2/4</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">2/4 · $10</div>
                 <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
               </div>
               <div id="pub-koth-step-3" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
                 <div style="font-size: 10px; color: var(--text-dim); font-weight: 800;">VICTORY 3</div>
-                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">3/4</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: #ffffff; font-size: 14px;">3/4 · $15</div>
                 <div style="font-size: 10px; color: var(--kick-green); margin-top: 2px;">Defend / Cashout</div>
               </div>
               <div id="pub-koth-step-4" style="text-align: center; padding: 10px 4px; border-radius: 8px; background: rgba(255,215,0,0.1); border: 1px dashed var(--gold);">
                 <div style="font-size: 10px; color: var(--gold); font-weight: 900;">GRAND CHAMPION</div>
-                <div style="font-family: var(--font-display); font-weight: 900; color: var(--gold); font-size: 14px;">4/4</div>
+                <div style="font-family: var(--font-display); font-weight: 900; color: var(--gold); font-size: 14px;">4/4 · $20</div>
                 <div style="font-size: 10px; color: #53fc18; font-weight: 800; margin-top: 2px;">$20.00 CASH</div>
               </div>
             </div>
@@ -1221,7 +1238,7 @@
               <!-- Blue Corner: King -->
               <div id="pub-koth-card-king" style="padding: 16px; background: rgba(0, 100, 255, 0.08); border: 1px solid rgba(0, 150, 255, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: all 0.3s ease;">
                 <div>
-                  <span class="reward-badge-pill" style="font-size: 9px; color: var(--cyan); border-color: var(--cyan); margin-bottom: 6px;">👑 REIGNING KING (BLUE)</span>
+                  <span class="reward-badge-pill" style="font-size: 9px; color: var(--cyan); border-color: var(--cyan); margin-bottom: 6px;">👑 REIGNING KING / PLAYER A (BLUE)</span>
                   <div id="pub-koth-king-avatar" style="font-size: 28px; margin-bottom: 4px; opacity: 0.4; transition: opacity 0.3s ease;">👑</div>
                   <div id="pub-koth-king-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--text-dim);">No Reigning King</div>
                 </div>
@@ -1241,7 +1258,7 @@
               <!-- Red Corner: Challenger -->
               <div id="pub-koth-card-chal" style="padding: 16px; background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3); border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: all 0.3s ease;">
                 <div>
-                  <span class="reward-badge-pill" style="font-size: 9px; color: #ff6b8b; border-color: #ff6b8b; margin-bottom: 6px;">⚔️ CHALLENGER (RED)</span>
+                  <span class="reward-badge-pill" style="font-size: 9px; color: #ff6b8b; border-color: #ff6b8b; margin-bottom: 6px;">⚔️ CHALLENGER / PLAYER B (RED)</span>
                   <div id="pub-koth-chal-avatar" style="font-size: 28px; margin-bottom: 4px; opacity: 0.4; transition: opacity 0.3s ease;">🥊</div>
                   <div id="pub-koth-chal-name" style="font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--text-dim);">Awaiting Challenger</div>
                 </div>
@@ -1257,17 +1274,17 @@
               </div>
             </div>
 
-            <!-- King Decision Box (Visible if logged-in user is the King & awaiting decision) -->
+            <!-- King Decision Box (Visible when King is awaiting decision) -->
             <div id="pub-koth-king-actions" style="display: none; padding: 14px; background: rgba(255, 215, 0, 0.12); border: 1px solid var(--gold); border-radius: 8px; text-align: center; margin-bottom: 12px;">
               <div style="font-weight: 900; color: var(--gold); font-size: 13px; margin-bottom: 8px;">
-                👑 YOU ARE THE REIGNING KING! CHOOSE YOUR MOVE:
+                👑 REIGNING KING DECISION — DEFEND THRONE OR CASHOUT ($5/WIN):
               </div>
               <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button type="button" class="btn-stake-primary" id="btn-pub-koth-continue" style="padding: 8px 18px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 900;">
-                  ⚔️ Defend Throne (Go for Next Win / $20)
+                  ⚔️ Defend Throne (!continue · Go for Next Win)
                 </button>
                 <button type="button" class="btn-chat-toggle" id="btn-pub-koth-retire" style="padding: 8px 18px; font-size: 12px; color: var(--gold); border-color: var(--gold);">
-                  💰 Cashout & Retire Now
+                  💰 Cashout &amp; Retire Now (!cashout)
                 </button>
               </div>
             </div>
@@ -1275,7 +1292,45 @@
             <!-- Rules & Chat Command Helper -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; gap: 8px;">
               <div>💬 Join via Kick chat: <code style="color: var(--cyan); font-family: monospace;">!battle &lt;slot name&gt;</code></div>
-              <div>👑 King decisions via chat: <code style="color: var(--kick-green); font-family: monospace;">!continue</code> or <code style="color: var(--gold); font-family: monospace;">!retire</code></div>
+              <div>👑 King decisions via chat: <code style="color: var(--kick-green); font-family: monospace;">!continue</code> or <code style="color: var(--gold); font-family: monospace;">!cashout</code></div>
+            </div>
+          </div>
+
+          <!-- Interactive 1v1 Battle Queue Entry & Live Contenders Pool -->
+          <div class="profile-glass-card" style="padding: 22px; border: 1px solid rgba(0, 229, 255, 0.3); background: rgba(7, 11, 20, 0.85);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+              <div>
+                <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #00e5ff; margin: 0;">
+                  ⚡ JOIN 1v1 BATTLE QUEUE &amp; LIVE CONTENDER POOL
+                </h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0 0;">
+                  Pick your slot below to enter the live Dual Wheel pool or copy the <code style="color:var(--cyan);">!battle &lt;slot&gt;</code> command for Kick chat.
+                </p>
+              </div>
+              <span class="reward-badge-pill" id="pub-battle-queue-count" style="background: rgba(83, 252, 24, 0.15); border-color: #53fc18; color: #53fc18; font-size: 11px; font-weight: 900;">
+                0 IN QUEUE
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+              <input type="text" id="pub-battle-join-user" class="form-input-dark" placeholder="@KickUsername" style="flex: 1; min-width: 150px; padding: 10px 12px; font-size: 13px;" />
+              <input type="text" id="pub-battle-join-slot" list="pub-battle-slot-datalist" class="form-input-dark" placeholder="Select or type slot (e.g. Wanted Dead or a Wild)" style="flex: 2; min-width: 220px; padding: 10px 12px; font-size: 13px;" />
+              <datalist id="pub-battle-slot-datalist"></datalist>
+              <button type="button" id="btn-pub-battle-join" class="btn-stake-primary" style="padding: 10px 18px; font-size: 12px; font-weight: 900;">
+                ⚔️ Enter 1v1 Queue (!battle)
+              </button>
+              <button type="button" id="btn-pub-battle-copy-cmd" class="btn-chat-toggle" style="padding: 10px 14px; font-size: 12px; border-color: var(--cyan); color: var(--cyan);">
+                📋 Copy !battle Command
+              </button>
+            </div>
+
+            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.6px;">
+                🎡 Active 1v1 Challenger Pool (Synced with Dual Wheel):
+              </div>
+              <div id="pub-battle-queue-list" style="display: flex; gap: 8px; flex-wrap: wrap; max-height: 150px; overflow-y: auto;">
+                <span style="font-size: 12px; color: var(--text-muted);">Queue is open and empty — enter a slot above or type <code>!battle &lt;slot&gt;</code> in Kick chat!</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1344,7 +1399,7 @@
           <span style="color: var(--text-dim);">STATUS:</span>
           <span class="reward-badge-pill" id="bh-live-status-pill" style="background: rgba(0, 230, 118, 0.15); border: 1px solid #00e676; color: #00e676; font-size: 0.72rem; padding: 4px 10px; font-weight: 800; border-radius: 9999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
             <span style="width: 7px; height: 7px; background: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676; animation: pulse 2s infinite;"></span>
-            <span id="bh-live-status-text">LIVE HUNT IN PROGRESS</span>
+            <span id="bh-live-status-text">WAITING FOR HUNT</span>
           </span>
         </div>
       </div>
@@ -1384,9 +1439,10 @@
       </div>
 
       <!-- SOTA 2026: Highlights Row (Best Win $ & Lucky Win X) -->
-      <div class="bh-highlights-grid">
-        <div class="bh-highlight-card best-win">
-          <img id="bh-best-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="" style="width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.4);" onerror="this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'">
+      <div class="bh-highlights-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div class="bh-highlight-card best-win" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 215, 0, 0.28); border-radius: 12px;">
+          <div id="bh-best-placeholder" style="width: 46px; height: 60px; border-radius: 8px; background: rgba(255, 215, 0, 0.08); border: 1px dashed rgba(255, 215, 0, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">🏆</div>
+          <img id="bh-best-img" src="" alt="" style="display: none; width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.4); flex-shrink: 0;">
           <div style="min-width: 0; flex: 1;">
             <div style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: #ffd700; letter-spacing: 1px; display: flex; align-items: center; gap: 4px;">
               <span>🏆</span> BEST WIN (HIGHEST $)
@@ -1394,14 +1450,15 @@
             <div id="bh-best-name" style="font-size: 14px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">—</div>
             <div id="bh-best-caller" style="font-size: 11px; color: var(--text-dim);">Call by: —</div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; flex-shrink: 0;">
             <div id="bh-best-val" style="font-size: 18px; font-family: var(--font-display); font-weight: 900; color: #00e676; tabular-nums: true;">$0.00</div>
             <div id="bh-best-mult" style="font-size: 11px; font-weight: 700; color: #ffd700;">0.00x</div>
           </div>
         </div>
 
-        <div class="bh-highlight-card lucky-win">
-          <img id="bh-lucky-img" src="https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format" alt="" style="width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; border: 1px solid rgba(0, 229, 255, 0.4);" onerror="this.src='https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format'">
+        <div class="bh-highlight-card lucky-win" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 12px;">
+          <div id="bh-lucky-placeholder" style="width: 46px; height: 60px; border-radius: 8px; background: rgba(0, 229, 255, 0.08); border: 1px dashed rgba(0, 229, 255, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">🍀</div>
+          <img id="bh-lucky-img" src="" alt="" style="display: none; width: 46px; height: 60px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 8px; border: 1px solid rgba(0, 229, 255, 0.4); flex-shrink: 0;">
           <div style="min-width: 0; flex: 1;">
             <div style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: var(--cyan); letter-spacing: 1px; display: flex; align-items: center; gap: 4px;">
               <span>🍀</span> LUCKY WIN (HIGHEST X)
@@ -1409,7 +1466,7 @@
             <div id="bh-lucky-name" style="font-size: 14px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">—</div>
             <div id="bh-lucky-caller" style="font-size: 11px; color: var(--text-dim);">Call by: —</div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; flex-shrink: 0;">
             <div id="bh-lucky-mult" style="font-size: 18px; font-family: var(--font-display); font-weight: 900; color: var(--cyan); tabular-nums: true;">0.00x</div>
             <div id="bh-lucky-val" style="font-size: 11px; font-weight: 700; color: #00e676;">$0.00</div>
           </div>
@@ -3012,23 +3069,23 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=20.0"></script>
-  <script src="site/js/slot-resolver.js?v=20.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=20.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=20.0"></script>
-  <script src="site/js/audio.js?v=20.0"></script>
-  <script src="site/js/provably-fair.js?v=20.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=20.0"></script>
-  <script src="site/js/avatar-generator.js?v=20.0"></script>
-  <script src="site/js/user-store.js?v=20.0"></script>
-  <script src="site/js/auth-oauth.js?v=20.0"></script>
-  <script src="site/js/admin-hub.js?v=20.0"></script>
-  <script src="site/js/house-games.js?v=20.0"></script>
-  <script src="site/js/tournament-prediction.js?v=20.0"></script>
-  <script src="site/js/bonushunt.js?v=20.0"></script>
-  <script src="site/js/motion-fx.js?v=20.0"></script>
-  <script src="site/js/sonner-toast.js?v=20.0"></script>
-  <script src="site/js/app.js?v=20.0"></script>
+  <script src="data/curated_slots.js?v=21.0"></script>
+  <script src="site/js/slot-resolver.js?v=21.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=21.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=21.0"></script>
+  <script src="site/js/audio.js?v=21.0"></script>
+  <script src="site/js/provably-fair.js?v=21.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=21.0"></script>
+  <script src="site/js/avatar-generator.js?v=21.0"></script>
+  <script src="site/js/user-store.js?v=21.0"></script>
+  <script src="site/js/auth-oauth.js?v=21.0"></script>
+  <script src="site/js/admin-hub.js?v=21.0"></script>
+  <script src="site/js/house-games.js?v=21.0"></script>
+  <script src="site/js/tournament-prediction.js?v=21.0"></script>
+  <script src="site/js/bonushunt.js?v=21.0"></script>
+  <script src="site/js/motion-fx.js?v=21.0"></script>
+  <script src="site/js/sonner-toast.js?v=21.0"></script>
+  <script src="site/js/app.js?v=21.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 

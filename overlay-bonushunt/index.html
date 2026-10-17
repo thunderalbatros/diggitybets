@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HuntHub — Community Bonus Hunt Overlay</title>
-  <link rel="stylesheet" href="style.css?v=18.0">
-  <script src="../data/curated_slots.js?v=18.0"></script>
-  <script src="../site/js/slot-resolver.js?v=18.0"></script>
+  <link rel="stylesheet" href="style.css?v=21.0">
+  <script src="../data/curated_slots.js?v=21.0"></script>
+  <script src="../site/js/slot-resolver.js?v=21.0"></script>
   <script src="libs/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -22,7 +22,7 @@
       </div>
       <div class="status-pill" id="hunt-status-pill">
         <span class="status-dot"></span>
-        <span id="hunt-status-text">OPENING BONUSES</span>
+        <span id="hunt-status-text">WAITING FOR HUNT</span>
       </div>
     </header>
 
@@ -30,31 +30,31 @@
     <section class="kpi-dashboard">
       <div class="kpi-card">
         <span class="kpi-label">STARTING BALANCE</span>
-        <span class="kpi-value" id="kpi-start-cost">$500.00</span>
+        <span class="kpi-value" id="kpi-start-cost">$0.00</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">AMOUNT OF BONUSES</span>
         <div class="kpi-split">
-          <span class="kpi-value" id="kpi-bonuses-count">4 / 8</span>
-          <span class="kpi-sub" id="kpi-remaining-count">4 remaining</span>
+          <span class="kpi-value" id="kpi-bonuses-count">0 / 0</span>
+          <span class="kpi-sub" id="kpi-remaining-count">0 remaining</span>
         </div>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">REQ AVG (BREAK-EVEN)</span>
         <div class="kpi-split">
-          <span class="kpi-value kpi-gold" id="kpi-req-avg-x">24.50x</span>
-          <span class="kpi-sub" id="kpi-req-avg-dollars">$49.00 / bonus</span>
+          <span class="kpi-value kpi-gold" id="kpi-req-avg-x">0.00x</span>
+          <span class="kpi-sub" id="kpi-req-avg-dollars">$0.00 / bonus</span>
         </div>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">AVG X (CURRENT)</span>
-        <span class="kpi-value kpi-cyan" id="kpi-run-avg-x">82.40x</span>
+        <span class="kpi-value kpi-cyan" id="kpi-run-avg-x">0.00x</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">WINNINGS (BALANCE)</span>
         <div class="kpi-split">
-          <span class="kpi-value kpi-green" id="kpi-winnings">$483.00</span>
-          <span class="kpi-sub" id="kpi-profit">-$17.00 P/L</span>
+          <span class="kpi-value kpi-green" id="kpi-winnings">$0.00</span>
+          <span class="kpi-sub" id="kpi-profit">+$0.00 P/L</span>
         </div>
       </div>
     </section>
@@ -66,12 +66,12 @@
         <div class="hl-content">
           <div class="hl-icon">🎰</div>
           <div class="hl-meta">
-            <span class="hl-game" id="best-win-game">Wanted Dead or a Wild</span>
-            <span class="hl-caller" id="best-win-caller">Call by @LuckyStriker</span>
+            <span class="hl-game" id="best-win-game">—</span>
+            <span class="hl-caller" id="best-win-caller">Waiting for bonuses...</span>
           </div>
           <div class="hl-stat">
-            <span class="hl-payout" id="best-win-payout">$245.50</span>
-            <span class="hl-mult" id="best-win-mult">122.75x</span>
+            <span class="hl-payout" id="best-win-payout">$0.00</span>
+            <span class="hl-mult" id="best-win-mult">0.00x</span>
           </div>
         </div>
       </div>
@@ -81,12 +81,12 @@
         <div class="hl-content">
           <div class="hl-icon">⚡</div>
           <div class="hl-meta">
-            <span class="hl-game" id="lucky-win-game">San Quentin xWays</span>
-            <span class="hl-caller" id="lucky-win-caller">Call by @SlotQueen</span>
+            <span class="hl-game" id="lucky-win-game">—</span>
+            <span class="hl-caller" id="lucky-win-caller">Waiting for bonuses...</span>
           </div>
           <div class="hl-stat">
-            <span class="hl-payout" id="lucky-win-payout">$120.00</span>
-            <span class="hl-mult" id="lucky-win-mult">300.00x</span>
+            <span class="hl-payout" id="lucky-win-payout">$0.00</span>
+            <span class="hl-mult" id="lucky-win-mult">0.00x</span>
           </div>
         </div>
       </div>
@@ -118,7 +118,7 @@
       </div>
       <div class="footer-guess-ticker">
         <span class="ticker-label">🎯 LEADING GUESS:</span>
-        <span class="ticker-user" id="top-guess-user">@LuckyStriker ($620.00)</span>
+        <span class="ticker-user" id="top-guess-user">No guesses yet (!guess &lt;amount&gt;)</span>
       </div>
     </footer>
 
@@ -127,16 +127,16 @@
       <div class="modal-card">
         <div class="modal-trophy">🎉</div>
         <div class="modal-tag">BONUS HUNT COMPLETED!</div>
-        <h1 class="modal-final-balance" id="modal-final-balance">$1,240.50</h1>
-        <div class="modal-stats-summary" id="modal-summary">Avg X: 112.4x · Net Profit: +$740.50</div>
+        <h1 class="modal-final-balance" id="modal-final-balance">$0.00</h1>
+        <div class="modal-stats-summary" id="modal-summary">Avg X: 0.0x · Net Profit: +$0.00</div>
         <div class="modal-winner-box">
           <span class="winner-title">👑 PREDICTION WINNER (!GUESS):</span>
-          <span class="winner-name" id="modal-winner-guess">@LuckyStriker with $1,250.00 (Diff: $9.50)</span>
+          <span class="winner-name" id="modal-winner-guess">No guesses recorded</span>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="main.js?v=18.0"></script>
+  <script src="main.js?v=21.0"></script>
 </body>
 </html>
