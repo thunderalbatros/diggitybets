@@ -23,16 +23,16 @@ class BonusHuntController {
         bet: 2.0, 
         payout: 184.50, 
         caller: '@NachoGamer', 
-        image: 'site/images/slots/wanted-dead-or-a-wild.svg' 
+        image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' 
       },
       { 
-        id: 'gates-of-olympus', 
+        id: 'gates-of-olympus-1000', 
         name: 'Gates of Olympus 1000', 
         provider: 'Pragmatic Play', 
         bet: 2.0, 
         payout: 312.00, 
         caller: '@SlotKing21', 
-        image: 'site/images/slots/gates-of-olympus.svg' 
+        image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' 
       },
       { 
         id: 'le-bandit', 
@@ -41,7 +41,7 @@ class BonusHuntController {
         bet: 2.0, 
         payout: 74.00, 
         caller: '@DiggityFan', 
-        image: 'site/images/slots/le-bandit.svg' 
+        image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' 
       },
       { 
         id: 'san-quentin-xways', 
@@ -50,25 +50,25 @@ class BonusHuntController {
         bet: 2.0, 
         payout: 0, 
         caller: '@AgusKick', 
-        image: 'site/images/slots/san-quentin-xways.svg' 
+        image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' 
       },
       { 
-        id: 'sweet-bonanza', 
+        id: 'sweet-bonanza-1000', 
         name: 'Sweet Bonanza 1000', 
         provider: 'Pragmatic Play', 
         bet: 2.0, 
         payout: 0, 
         caller: '@Valen99', 
-        image: 'site/images/slots/sweet-bonanza.svg' 
+        image: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' 
       },
       { 
         id: 'ghost-rush', 
         name: 'Ghost Rush', 
-        provider: 'Stake Originals', 
+        provider: 'Paperclip Gaming', 
         bet: 2.0, 
         payout: 0, 
         caller: '@StakeHunter', 
-        image: 'site/images/slots/ghost-rush.svg' 
+        image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' 
       }
     ];
 
@@ -77,7 +77,16 @@ class BonusHuntController {
       try { 
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map(s => {
+            if (window.SlotResolver && s && s.name) {
+              const canon = window.SlotResolver.resolve(s.name);
+              if (canon && canon.image) {
+                s.image = canon.image;
+                if (!s.provider || s.provider === 'Provider') s.provider = canon.provider;
+              }
+            }
+            return s;
+          });
         }
       } catch (e) {}
     }
@@ -110,8 +119,14 @@ class BonusHuntController {
   }
 
   addSlotToHunt(slot) {
-    if (!slot.image) {
-      slot.image = `site/images/slots/${slot.id}.svg`;
+    if (window.SlotResolver && slot && slot.name) {
+      const canon = window.SlotResolver.resolve(slot.name);
+      if (canon && canon.image) {
+        slot.image = canon.image;
+        if (!slot.provider) slot.provider = canon.provider;
+      }
+    } else if (!slot.image) {
+      slot.image = 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
     }
     this.slots.push(slot);
     this.save();
@@ -180,23 +195,23 @@ class BonusHuntController {
       const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : {
         name: s.name,
         provider: s.provider || 'Provider',
-        image: s.image || 'site/images/slots/wanted-dead-or-a-wild.svg'
+        image: s.image || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
       };
-      const imgSrc = window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s.image || canon.image) : (s.image || canon.image);
+      const imgSrc = canon.image || (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s) : s.image);
       const esc = window.escapeHTML || (x => x);
       const slotName = esc(canon.name || s.name || 'Slot');
       const slotProvider = esc(canon.provider || s.provider || 'Provider');
       const callerName = esc(s.caller || '—');
       const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
         ? window.SlotResolver.generateDataUriCard(canon.name || s.name || 'Slot', canon.provider || s.provider || 'Casino')
-        : 'site/images/slots/wanted-dead-or-a-wild.svg';
+        : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
 
       tr.className = isOpened ? 'bh-row-opened' : 'bh-row-pending';
       tr.innerHTML = `
         <td class="bh-td-num">#${idx + 1}</td>
         <td class="bh-td-slot">
           <div class="bh-slot-info">
-            <img class="bh-slot-thumb" src="${imgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackSvg}';">
+            <img class="bh-slot-thumb" src="${imgSrc}" alt="" loading="lazy" onerror="this.onerror=null; this.src='${fallbackSvg}';">
             <div>
               <span class="bh-slot-name">${slotName}</span>
               <span class="bh-slot-provider">${slotProvider}</span>

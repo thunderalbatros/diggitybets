@@ -413,38 +413,128 @@ class BattleOverlayApp {
     } catch {}
   }
 
-  playSlotWinFanfare() {
+  playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    try {
+      const t = startTime;
+      const masterGain = this.audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volume, t);
+
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(3.6, t);
+
+      const minCutoff = Math.max(320, freq * 1.2);
+      const peakCutoff = Math.min(6800, freq * 5.4);
+      const sustainCutoff = Math.min(4200, freq * 3.2);
+
+      filter.frequency.setValueAtTime(minCutoff, t);
+      filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
+      filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
+
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, t);
+      osc2.frequency.setValueAtTime(freq, t);
+      osc1.detune.setValueAtTime(-7, t);
+      osc2.detune.setValueAtTime(7, t);
+
+      const subOsc = this.audioCtx.createOscillator();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(freq * 0.5, t);
+      const subGain = this.audioCtx.createGain();
+      subGain.gain.setValueAtTime(0.24, t);
+      subOsc.connect(subGain);
+      subGain.connect(filter);
+
+      if (!isStaccato && duration > 0.25) {
+        try {
+          const lfo = this.audioCtx.createOscillator();
+          const lfoGain = this.audioCtx.createGain();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(5.3, t);
+          lfoGain.gain.setValueAtTime(0, t);
+          lfoGain.gain.setValueAtTime(0, t + 0.16);
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
+          lfo.connect(osc1.frequency);
+          lfo.connect(osc2.frequency);
+          lfo.start(t + 0.16);
+          lfo.stop(t + duration + 0.1);
+        } catch (_) {}
+      }
+
+      const noteGain = this.audioCtx.createGain();
+      const attackTime = isStaccato ? 0.018 : 0.035;
+      const releaseTime = isStaccato ? 0.06 : 0.25;
+
+      noteGain.gain.setValueAtTime(0.001, t);
+      noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
+
+      if (isStaccato) {
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      } else {
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
+        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
+      }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+      masterGain.connect(this.audioCtx.destination);
+
+      const stopTime = t + duration + releaseTime + 0.05;
+      osc1.start(t);
+      osc2.start(t);
+      subOsc.start(t);
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      subOsc.stop(stopTime);
+    } catch (_) {}
+  }
+
+  playVictoriousTrumpetFanfare() {
     if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
 
-      // 1. Classic Slot Victory Chimes (arpeggiated bells)
-      const bells = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
-      for (let cycle = 0; cycle < 3; cycle++) {
-        bells.forEach((freq, idx) => {
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          const t = now + (cycle * 0.45) + (idx * 0.07);
+      // Royal Entrance Motif in D Major
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
+        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
+        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
+        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
+        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
+      ];
 
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, t);
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
+      });
 
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      // Grand Climax 5-Horn Chord at T + 1.42s
+      const climaxTime = now + 1.42;
+      const chord = [
+        { freq: 293.66, dur: 1.25, vol: 0.34 },
+        { freq: 440.00, dur: 1.30, vol: 0.36 },
+        { freq: 587.33, dur: 1.35, vol: 0.40 },
+        { freq: 739.99, dur: 1.40, vol: 0.44 },
+        { freq: 880.00, dur: 1.45, vol: 0.48 },
+      ];
 
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
+      chord.forEach(c => {
+        this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
+      });
 
-          osc.start(t);
-          osc.stop(t + 0.28);
-        });
-      }
-
-      // 2. Metallic Jackpot Coin Drop Clicks (falling coins)
+      // Metallic Coin Drop Clicks (falling coins)
       for (let c = 0; c < 16; c++) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
-        const t = now + 0.3 + (c * 0.08) + (Math.random() * 0.04);
+        const t = climaxTime + 0.15 + (c * 0.08) + (Math.random() * 0.04);
 
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(1800 + Math.random() * 800, t);
@@ -459,7 +549,11 @@ class BattleOverlayApp {
         osc.start(t);
         osc.stop(t + 0.05);
       }
-    } catch {}
+    } catch (_) {}
+  }
+
+  playSlotWinFanfare() {
+    this.playVictoriousTrumpetFanfare();
   }
 
   initWebSocket() {
@@ -656,14 +750,14 @@ class BattleOverlayApp {
       return;
     }
 
-    const canon = (window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player.slotImage || player, '../') : null) || {
+    const canon = (window.SlotResolver ? window.SlotResolver.resolve(player.slotName || player, '../') : null) || {
       name: player.slotName || 'Wanted Dead or a Wild',
       provider: player.slotProvider || 'Hacksaw Gaming',
       image: player.slotImage || ''
     };
 
     dom.nameEl.textContent = `@${player.displayName || player.username}`;
-    dom.tagEl.textContent = `${canon.name}`;
+    dom.tagEl.textContent = `${canon.name} · ${canon.provider}`;
     dom.monogramEl.textContent = (player.displayName || player.username).charAt(0).toUpperCase();
     dom.slotNameEl.textContent = canon.name;
     dom.slotProvEl.textContent = canon.provider;
@@ -676,7 +770,10 @@ class BattleOverlayApp {
       if (dom.captionProvEl) dom.captionProvEl.textContent = canon.provider;
     }
 
-    let slotImg = (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(player.slotImage || canon.image, '../') : (player.slotImage || canon.image));
+    const preferredImg = (canon.image && !String(canon.image).startsWith('data:'))
+      ? canon.image
+      : (player.slotImage || canon.image);
+    let slotImg = (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(preferredImg, '../') : preferredImg);
     if (!slotImg && window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
       slotImg = window.SlotResolver.generateDataUriCard(canon.name, canon.provider);
     }

@@ -13,14 +13,14 @@ class TournamentPredictionController {
     this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
 
     this.slots = [
-      { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw', img: 'site/images/slots/wanted-dead-or-a-wild.svg' },
-      { id: 'gates-of-olympus', name: 'Gates of Olympus 1000', provider: 'Pragmatic', img: 'site/images/slots/gates-of-olympus.svg' },
-      { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw', img: 'site/images/slots/le-bandit.svg' },
-      { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', img: 'site/images/slots/san-quentin-xways.svg' },
-      { id: 'sweet-bonanza', name: 'Sweet Bonanza 1000', provider: 'Pragmatic', img: 'site/images/slots/sweet-bonanza.svg' },
-      { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Stake Originals', img: 'site/images/slots/ghost-rush.svg' },
-      { id: 'tombstone-rip', name: 'Tombstone R.I.P.', provider: 'Nolimit City', img: 'site/images/slots/tombstone-rip.svg' },
-      { id: 'sugar-rush', name: 'Sugar Rush 1000', provider: 'Pragmatic', img: 'site/images/slots/sugar-rush.svg' }
+      { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
+      { id: 'gates-of-olympus-1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
+      { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
+      { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
+      { id: 'sweet-bonanza-1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
+      { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', img: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' },
+      { id: 'tombstone-r-i-p', name: 'Tombstone R.I.P.', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/40f3f2cfeadebaa5169a9636218f289a34209bd6e91d44de733ecdf69b4b93fe?w=360&auto=format' },
+      { id: 'sugar-rush-1000', name: 'Sugar Rush 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format' }
     ];
 
     this.predictions = {
@@ -329,7 +329,7 @@ class TournamentPredictionController {
       const res = window.SlotResolver.resolve(slotId);
       return res.image;
     }
-    if (!slotId) return 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
+    if (!slotId) return 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
     const s = this.slots.find(x => x.id === slotId);
     let img = s ? s.img : null;
     if ((!img || img.includes('.svg')) && window.HUNTHUB_CURATED_SLOTS) {
@@ -338,7 +338,7 @@ class TournamentPredictionController {
       );
       if (found) img = found.image;
     }
-    return img || 'https://mediumrare.imgix.net/8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299?w=180&h=236&fit=min&auto=format';
+    return img || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
   }
 
   bindClickHandlers() {
@@ -416,7 +416,13 @@ class TournamentPredictionController {
       localStorage.setItem('hunthub_tourney_pred_locked', 'true');
       this.savePrediction();
 
-      if (window.soundEngine) window.soundEngine.playWin();
+      if (window.soundEngine) {
+        if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+          window.soundEngine.playVictoriousTrumpetFanfare();
+        } else {
+          window.soundEngine.playWin();
+        }
+      }
       this.updateStatusBanner();
       this.renderStandings();
 
@@ -644,7 +650,13 @@ class TournamentPredictionController {
         } catch (_) {}
 
         this.renderKoth();
-        if (window.soundEngine && typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
+        if (window.soundEngine) {
+          if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
+            window.soundEngine.playVictoriousTrumpetFanfare();
+          } else if (typeof window.soundEngine.playWin === 'function') {
+            window.soundEngine.playWin();
+          }
+        }
         if (window.sonner) {
           window.sonner.toast({
             title: '👑 Throne Defended!',
@@ -683,7 +695,13 @@ class TournamentPredictionController {
         } catch (_) {}
 
         this.renderKoth();
-        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') window.soundEngine.playChip();
+        if (window.soundEngine) {
+          if (typeof window.soundEngine.playJackpot === 'function') {
+            window.soundEngine.playJackpot();
+          } else if (typeof window.soundEngine.playChip === 'function') {
+            window.soundEngine.playChip();
+          }
+        }
         if (window.sonner) {
           window.sonner.toast({
             title: '💰 Throne Relinquished / Cashout',

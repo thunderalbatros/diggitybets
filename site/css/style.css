@@ -1979,11 +1979,13 @@ body {
 }
 
 .bh-slot-thumb {
-  width: 36px;
-  height: 48px;
+  width: 45px;
+  height: 59px;
+  aspect-ratio: 180 / 236;
   border-radius: 6px;
-  object-fit: cover;
-  background: #000000;
+  object-fit: contain;
+  background: #070a12;
+  flex-shrink: 0;
 }
 
 .bh-slot-name {
@@ -3517,11 +3519,12 @@ footer.site-footer {
 }
 
 .bh-slot-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  object-fit: cover;
-  background: #090e18;
+  width: 45px;
+  height: 59px;
+  aspect-ratio: 180 / 236;
+  border-radius: 7px;
+  object-fit: contain;
+  background: #070a12;
   border: 1px solid rgba(255, 215, 0, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   flex-shrink: 0;
@@ -4164,13 +4167,14 @@ footer.site-footer {
 }
 
 .bh-slot-thumb {
-  width: 44px;
-  height: 58px;
-  object-fit: cover;
-  border-radius: 6px;
+  width: 45px;
+  height: 59px;
+  aspect-ratio: 180 / 236;
+  object-fit: contain;
+  border-radius: 7px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  background: #0f1923;
+  background: #070a12;
   flex-shrink: 0;
 }
 
