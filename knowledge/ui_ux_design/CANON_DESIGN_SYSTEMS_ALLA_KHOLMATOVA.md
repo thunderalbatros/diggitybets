@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -29,7 +30,5 @@ Un Design System no es solo una biblioteca de componentes Figma o código React;
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
 - [[DESIGN_SYSTEM_MAP]]
 - [[YDS_Catalog]]

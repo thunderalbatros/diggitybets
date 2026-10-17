@@ -8,7 +8,7 @@
  *   2. In-Memory Lexical & Fuzzy Search:
  *      - MiniSearch BM25 engine with prefix search and typo tolerance (sub-millisecond).
  *   3. Qdrant Cloud Vector & Tantivy Full-Text Search:
- *      - Fast payload search across all 8,384 nodes in 'centinela_knowledge' and 'yendo_obsidian_vault'.
+ *      - Fast payload search across streaming, security and web architecture nodes.
  *   4. Reciprocal Rank Fusion (RRF):
  *      - Merges lexical BM25 and cloud knowledge rankings using RRF formula (k=60).
  *   5. Groq LLM Ultra-Fast Synthesis:
@@ -42,8 +42,7 @@ function loadEnv() {
   const envCandidates = [
     path.join(ROOT, '.env'),
     path.join(ROOT, '.env.txt'),
-    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/.env',
-    'C:/Users/tomas/yendo_mobile/.env'
+    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/.env'
   ];
 
   for (const p of envCandidates) {
@@ -346,10 +345,10 @@ export async function queryKnowledge(query, limit = 8) {
 
   rankedLists.push(localResults);
 
-  // 2. Qdrant Cloud Full-Text Search across Centinela & Yendo
+  // 2. Qdrant Cloud Full-Text Search across technical knowledge
   const searchTerms = significantTerms.length > 0 ? significantTerms : qTerms;
   if (QDRANT_API_KEY && searchTerms.length > 0) {
-    const collections = ['centinela_knowledge', 'yendo_obsidian_vault'];
+    const collections = ['centinela_knowledge'];
     const qdrantResults = [];
 
     const searchFilters = searchTerms.map(term => ({
@@ -548,7 +547,7 @@ Do not invoke tools or JSON function calls. Output pure markdown text and cite t
 export async function getClusterStats() {
   if (!QDRANT_API_KEY) return { error: 'No QDRANT_API_KEY' };
   const stats = {};
-  for (const col of ['centinela_knowledge', 'yendo_obsidian_vault']) {
+  for (const col of ['centinela_knowledge']) {
     try {
       const res = await fetch(`${QDRANT_HOST}/collections/${col}`, {
         headers: { 'api-key': QDRANT_API_KEY }
@@ -582,7 +581,7 @@ if (process.argv.includes('--stats')) {
   const qIdx = process.argv.indexOf('--query') + 1;
   const q = process.argv[qIdx] || 'kick';
   const lim = parseInt(process.argv[qIdx + 1], 10) || 5;
-  console.log(`\n🔎 Querying RAG Knowledge across Centinela & Yendo for: "${q}"...`);
+  console.log(`\n🔎 Querying RAG Knowledge for: "${q}"...`);
   queryKnowledge(q, lim).then(res => {
     console.log(`\nFound ${res.length} matches:`);
     res.forEach((r, i) => {

@@ -80,7 +80,7 @@ The hallmark innovation of ECC is **Continuous Learning v2**, which abandons mon
 ### Structure of an Atomic Instinct
 ```yaml
 ---
-id: argentine-number-parsing
+id: multi-locale-currency-parsing
 trigger: "when parsing numbers, balance amounts, currency, bets, or chat guesses"
 confidence: 0.95
 domain: "math-and-currency"
@@ -90,15 +90,15 @@ project_id: "streamerbot-hunthub"
 project_name: "HuntHub & DiggityBets"
 ---
 
-# Argentine and Multi-Locale Currency Parsing
+# Multi-Locale Web Currency Parsing
 
 ## Action
-Always use the robust number parser (core/src/number-parser.ts) that handles Argentine
-punctuation conventions (dot for thousands, comma for decimals: 1.500,50 = 1500.50).
+Always use the robust number parser (core/src/number-parser.ts) that handles multi-locale
+currency conventions (dot/comma for thousands, decimals, and suffixes like 1.5k, 2m).
 
 ## Evidence
-- Streamer Tomás and chatters input bets like "1.500" or "1,5k". Standard parseFloat()
-  parses as 1.5, causing severe under-crediting.
+- Streamer chatters input bets like "1.500", "1,500.50" or "1.5k". Standard parseFloat()
+  fails on multipliers or misinterprets separators, causing incorrect balances.
 ```
 
 ### Confidence Evolution Lifecycle

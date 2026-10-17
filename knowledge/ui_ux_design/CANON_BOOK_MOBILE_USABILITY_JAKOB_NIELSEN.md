@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -22,14 +23,12 @@ Estudio empírico de usabilidad en dispositivos móviles. Regla de oro: en panta
 - **Direct Copywriting**
 - **Zero Unnecessary Form Fields**
 
-## 🚀 Aplicación Directa al ADN Yendo (Mobile, Backend & GTM)
+## 🚀 Aplicación en Arquitectura Web & HuntHub
 Onboarding de cero teclado con selección por tarjetas, tipografía Inter con ratio WCAG AAA > 7:1 y zona del pulgar optimizada.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_LIBRARY]]
-- [[YENDO_DNA]]
 - [[CANON_UI_UX_BIBLIOTECA_CENTRAL]]
 - [[CANON_ESTUDIO_PSICOLOGIA_ETICA]]
 - [[CANON_DYNAMIC_COMPONENTS_PERFORMANCE_2026]]

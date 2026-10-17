@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -24,14 +25,12 @@ La referencia mundial de diseño de formularios y recolección de datos. Demuest
 - **Visual Hierarchy in Inputs**
 - **Tappable Target Sizing**
 
-## 🚀 Aplicación Directa al ADN Yendo (Mobile, Backend & GTM)
-Arquitectura de onboarding en Yendo con 0 inputs de texto libre para preferencias: selección ágil por tags táctiles de 44dp, selección de barrio por geolocalización y login en 1-tap con biometría.
+## 🚀 Aplicación en Arquitectura Web & HuntHub
+Arquitectura de onboarding en HuntHub Web con 0 inputs de texto libre para preferencias: selección ágil por tags táctiles de 44dp, selección rápida por categorías y login en 1-tap con biometría.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_LIBRARY]]
-- [[YENDO_DNA]]
 - [[CANON_UI_UX_BIBLIOTECA_CENTRAL]]
 - [[CANON_ESTUDIO_PSICOLOGIA_ETICA]]
 - [[CANON_DYNAMIC_COMPONENTS_PERFORMANCE_2026]]

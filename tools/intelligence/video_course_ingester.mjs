@@ -28,8 +28,7 @@ function loadEnv() {
   const envCandidates = [
     path.join(ROOT, '.env'),
     path.join(ROOT, '.env.txt'),
-    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/.env',
-    'C:/Users/tomas/yendo_mobile/.env'
+    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/.env'
   ];
 
   for (const p of envCandidates) {

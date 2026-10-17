@@ -252,10 +252,10 @@
   - `.agents/skills/channel-points-bridge/`
   - `.agents/skills/bracket-8/`
   - `.agents/skills/fair-draws/`
-- [x] **Omni-RAG Intelligence & MCP Supercharge (Centinela & Yendo Integration):**
-  - **Qdrant Cloud Vector DB Connection:** Ingested & querying 8,384 nodes across `centinela_knowledge` (3,608 SOTA nodes: Kick API, anti-fraud, live streaming) and `yendo_obsidian_vault` (4,776 nodes: design tokens, UI worklets, mobile UX).
-  - **Omni-RAG Pipeline (`tools/intelligence/rag_pipeline.mjs`):** Multi-source retrieval across local Markdown, Centinela KB, and Qdrant Cloud with Groq LLM synthesis (`qwen/qwen3.8-27b`) in ~3.5 seconds.
-  - **7 Configured MCP Servers (`~/.gemini/config/mcp_config.json`):** `centinela-kb`, `centinela-kick`, `centinela-firecrawl`, `yendo-rag`, `github`, `postgres`, `figma`.
+- [x] **Omni-RAG Intelligence & MCP Supercharge (Web Development & Streaming):**
+  - **Qdrant Cloud Vector DB Connection:** Ingested & querying technical nodes across `centinela_knowledge` (Kick API, anti-fraud, live streaming) and local web design engineering canons.
+  - **Omni-RAG Pipeline (`tools/intelligence/rag_pipeline.mjs`):** Multi-source retrieval across local web canons, Centinela KB, and Qdrant Cloud with Groq LLM synthesis in ~3.5 seconds.
+  - **Configured MCP Servers (`~/.gemini/config/mcp_config.json`):** `centinela-kb`, `centinela-kick`, `centinela-firecrawl`, `github`, `postgres`, `figma`.
   - **Imported High-Value Skills into `.agents/skills/`:**
     - `kb-retrieval` (Dual-stage retrieve & rerank protocol, Hit@5 = 100%, MRR = 0.885)
     - `kb-writing` (Systematic documentation and knowledge persistence)
@@ -442,7 +442,7 @@
   - **Motor de Memoria e Instintos Atómicos (`Continuous Learning v2`):**
     - Directorio de persistencia inicializado en [`.agents/memory/instincts/`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/memory/instincts/).
     - 5 instintos fundacionales de alta confianza (0.90 - 0.99) documentados:
-      - `argentine-number-parsing.md` (parseo tolerante a coma/punto y multiplicadores `1.5k`/`2m`).
+      - `multi-locale-currency-parsing.md` (parseo tolerante a coma/punto y multiplicadores `1.5k`/`2m`).
       - `obs-cpu-budget.md` (overlays en OBS $\le 5\%$ CPU, animaciones composite-only WAAPI/transform).
       - `durable-objects-hibernation.md` (hibernación de WebSockets en Cloudflare DO a costo $0).
       - `kick-compliance-zero-custody.md` (cero custodia de dinero/cripto, participación 100% gratis).

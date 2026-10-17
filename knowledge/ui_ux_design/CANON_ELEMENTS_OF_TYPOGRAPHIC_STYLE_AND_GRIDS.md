@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -25,11 +26,11 @@ Bringhurst establece que el ritmo tipográfico debe gobernarse por principios an
 
 ---
 
-## 2. La Proporción Áurea ($\phi = 1.618$) en la Jerarquía de Textos de Yendo
+## 2. La Proporción Áurea ($\phi = 1.618$) en la Jerarquía de Textos de HuntHub Web
 
-En lugar de elegir tamaños de fuente aleatorios (12, 14, 17, 21), Yendo adopta una **escala modular armónica basada en la Proporción Áurea y la escala Mayor Tercera (1.25 / 1.618)**:
+En lugar de elegir tamaños de fuente aleatorios (12, 14, 17, 21), HuntHub Web adopta una **escala modular armónica basada en la Proporción Áurea y la escala Mayor Tercera (1.25 / 1.618)**:
 
-| Nivel de Token | Tamaño de Fuente (pt) | Line Height (Interlineado) | Familia Tipográfica | Uso en Yendo Mobile |
+| Nivel de Token | Tamaño de Fuente (pt) | Line Height (Interlineado) | Familia Tipográfica | Uso en la plataforma web |
 | :--- | :--- | :--- | :--- | :--- |
 | `display` | **32pt** | **38pt** | `Plus Jakarta Sans` ExtraBold | Título de impacto en Onboarding y Headliners de Festivales |
 | `h1` | **24pt** | **30pt** | `Plus Jakarta Sans` Bold | Nombre del Venue / Título del Evento principal |
@@ -44,7 +45,7 @@ En lugar de elegir tamaños de fuente aleatorios (12, 14, 17, 21), Yendo adopta 
 
 Beth Tondreau detalla cómo las grillas modulares generan cohesión visual subconsciente y eliminan la ambigüedad en el diseño de layouts.
 
-### Reglas de la Grilla Yendo:
+### Reglas de la Grilla HuntHub Web:
 1. **Espaciado Múltiplo de 8 (y 4 para micro-alineación):**
    - Márgenes laterales de pantalla: `16dp` o `24dp`.
    - Separación entre tarjetas: `16dp`.
@@ -58,9 +59,6 @@ Beth Tondreau detalla cómo las grillas modulares generan cohesión visual subco
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
-- [[Biblia_Maestra_Visual_3D_Motion_Yendo]]
 - [[golden_ratio_design_sources]]
 - [[golden_ratio_ui_synthesis]]
 - [[DESIGN_SYSTEM_MAP]]

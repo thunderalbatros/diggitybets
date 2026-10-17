@@ -1,6 +1,6 @@
 ---
 name: kb-retrieval
-description: Cómo consultar y mantener la base de conocimiento vectorial de Centinela en Qdrant. Úsalo cuando necesites documentación oficial, benchmarks, decisiones previas o lecciones aprendidas en lugar de adivinar; y cuando quieras añadir conocimiento nuevo.
+description: Cómo consultar y mantener la base de conocimiento vectorial de HuntHub en Qdrant. Úsalo cuando necesites documentación técnica oficial, benchmarks, decisiones arquitectónicas previas o lecciones aprendidas en lugar de adivinar; y cuando quieras añadir conocimiento nuevo.
 ---
 
 # Knowledge Base — Retrieval sobre Qdrant
@@ -12,8 +12,7 @@ description: Cómo consultar y mantener la base de conocimiento vectorial de Cen
 | Elemento | Valor |
 |----------|-------|
 | Vector DB | Qdrant Cloud (free tier) |
-| Colección Centinela | `centinela_knowledge` (~1.8k puntos, 2026-10-04) |
-| Colección legacy | `yendo_obsidian_vault` (4.776 puntos, no mezclar) |
+| Colección Principal | `hunthub_knowledge` / `centinela_knowledge` |
 | Modelo de embeddings | `Xenova/paraphrase-multilingual-MiniLM-L12-v2` |
 | Dimensiones | **384**, distancia Cosine |
 | Coste | **$0** (modelo local en CPU, sin API) |

@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -43,7 +44,7 @@ Cuando un usuario interactúa con un smartphone moderno (pantallas de 6.1" a 6.7
 └─────────────────────────┘
 ```
 
-### Reglas Innegociables de Ergonomía Táctil para Yendo:
+### Reglas Innegociables de Ergonomía Táctil para HuntHub Web:
 1. **Acciones Primarias en el Tercio Inferior:**
    - Prohibido ubicar el botón principal de confirmación o reserva en la barra superior (Top Bar).
    - Todos los flujos críticos (Confirmar Check-in, Unirse al Squad, Filtrar Mapa) se resuelven mediante **Floating Action Buttons (FABs)** o **Bottom Sheets interactivos** en el tercio inferior.
@@ -57,15 +58,12 @@ Cuando un usuario interactúa con un smartphone moderno (pantallas de 6.1" a 6.7
 
 ## 3. Gestualidad Física y Retroalimentación
 
-- **Deslizar (Swipe) vs. Tocar (Tap):** En movimiento, deslizar una tarjeta es un 40% más fácil y natural que acertar a un botón pequeño. Yendo implementa el rechazo o guardado de eventos mediante swipe gestual fluido con física Reanimated.
+- **Deslizar (Swipe) vs. Tocar (Tap):** En movimiento, deslizar una tarjeta es un 40% más fácil y natural que acertar a un botón pequeño. HuntHub Web implementa el rechazo o guardado de eventos mediante swipe gestual fluido con física Reanimated.
 - **Micro-háptica Inmediata:** Toda confirmación táctil debe responder en menos de 16 milisegundos con un clic háptico en el motor Taptic Engine / haptic actuator del dispositivo para confirmar físicamente que el comando fue recibido.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
-- [[Biblia_Maestra_Visual_3D_Motion_Yendo]]
 - [[CANON_LAWS_OF_UX_PSYCHOLOGY_FRAMEWORKS]]
 - [[DESIGN_SYSTEM_MAP]]
 - [[Reanimated]]

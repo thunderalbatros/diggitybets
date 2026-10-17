@@ -1,15 +1,20 @@
 /**
- * HuntHub — Fullscreen Celebration Overlay Styles
- * High Performance Dark Glassmorphism, 60 FPS CSS transitions, Zero-CPU Idle
+ * HuntHub — Fullscreen Winner Celebration Overlay Styles
+ * 100% Transparent when idle (Zero CPU in OBS), Dual-Tier Animations:
+ * - tier-partial: Fast, punchy celebration for single round/match wins
+ * - tier-grand: Special extended celebration with golden god-rays, shockwave rings,
+ *   crown drop, and champion aura for 1v1 !cashout, $20 Max Streak, & 8-Bracket Champion
  */
 
 :root {
   --bg-dark: #07090e;
   --gold-primary: #ffd700;
-  --gold-glow: rgba(255, 215, 0, 0.45);
+  --gold-glow: rgba(255, 215, 0, 0.55);
   --gold-dark: #d4af37;
+  --kick-green: #53fc18;
+  --kick-green-glow: rgba(83, 252, 24, 0.45);
   --cyan-accent: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.4);
+  --cyan-glow: rgba(0, 229, 255, 0.45);
   --magenta-accent: #ff2a5f;
   --font-display: 'Chakra Petch', sans-serif;
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -28,19 +33,20 @@ html, body {
   font-family: var(--font-sans);
   color: #ffffff;
   user-select: none;
+  background: transparent !important;
 }
 
-/* Preview mode (default for browser testing so it's not a blank white page!) */
+/* Preview mode (only when ?preview=1 is explicitly passed) */
 body.preview-mode {
-  background: radial-gradient(circle at 50% 30%, #121826 0%, #07090e 70%, #030407 100%);
+  background: radial-gradient(circle at 50% 35%, #131b2e 0%, #07090e 70%, #030407 100%) !important;
 }
 
-/* OBS Studio Mode (100% transparent for stream overlay) */
+/* OBS Studio Mode — strictly 100% transparent */
 body.obs-mode, body.transparent-mode {
   background: transparent !important;
 }
 
-/* Fullscreen Particle Canvas */
+/* Fullscreen Particle Canvas (Background Layer: Coins Falling from the Sky) */
 #fx-canvas {
   position: fixed;
   top: 0;
@@ -51,7 +57,7 @@ body.obs-mode, body.transparent-mode {
   pointer-events: none;
 }
 
-/* Audio Gate Prompt */
+/* Audio Gate Prompt (Preview Mode Only) */
 .audio-gate {
   position: fixed;
   top: 24px;
@@ -82,16 +88,6 @@ body.obs-mode, body.transparent-mode {
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
-  animation: pulse-gate 2s infinite ease-in-out;
-}
-
-@keyframes pulse-gate {
-  0%, 100% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.3); }
-  50% { box-shadow: 0 0 28px rgba(255, 215, 0, 0.7); }
-}
-
-.gate-icon {
-  font-size: 20px;
 }
 
 .gate-btn {
@@ -104,72 +100,158 @@ body.obs-mode, body.transparent-mode {
   padding: 6px 14px;
   border-radius: 20px;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
 }
 
-.gate-btn:hover {
-  transform: scale(1.06);
-  background: #ffffff;
-}
-
-/* Floating Luxury Billboard (Centered on 1920x1080 Transparent Canvas) */
+/* =========================================================================
+ * FOREGROUND CENTER STAGE (#winner-billboard)
+ * ========================================================================= */
 .billboard-container {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -44%) scale(0.9);
+  transform: translate(-50%, -44%) scale(0.82);
   z-index: 50;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s ease,
+    visibility 0.32s ease;
   will-change: transform, opacity;
 }
 
 .billboard-container.active {
   opacity: 1;
+  visibility: visible;
   transform: translate(-50%, -50%) scale(1);
-  pointer-events: auto;
 }
 
-.billboard-container.hiding {
+.billboard-container.tier-grand {
+  transition:
+    transform 0.62s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    opacity 0.45s ease,
+    visibility 0.45s ease;
+}
+
+/* Pause all child animations when idle so OBS Browser Source consumes 0% CPU */
+.billboard-container:not(.active) *,
+.billboard-container:not(.active) *::before,
+.billboard-container:not(.active) *::after {
+  animation-play-state: paused !important;
+}
+
+/* =========================================================================
+ * SPECIAL GRAND WIN EFFECTS (Rotating Sunburst + Expanding Shockwaves)
+ * ========================================================================= */
+.grand-sunburst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(920px, 115vmin);
+  height: min(920px, 115vmin);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.22) 0deg 10deg,
+    transparent 10deg 24deg,
+    rgba(83, 252, 24, 0.12) 24deg 30deg,
+    transparent 30deg 45deg
+  );
+  -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 18%, rgba(0,0,0,0.45) 52%, transparent 72%);
+  mask-image: radial-gradient(circle, rgba(0,0,0,1) 18%, rgba(0,0,0,0.45) 52%, transparent 72%);
+  z-index: -2;
   opacity: 0;
-  transform: translate(-50%, -40%) scale(0.9);
-  transition: transform 0.5s ease-in, opacity 0.4s ease-in;
+  pointer-events: none;
+  animation: rotate-sunburst 16s linear infinite;
 }
 
-/* Ambient Ray Aura */
+.billboard-container.active.tier-grand .grand-sunburst {
+  opacity: 1;
+}
+
+@keyframes rotate-sunburst {
+  from { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  50%  { transform: translate(-50%, -50%) rotate(180deg) scale(1.08); }
+  to   { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+}
+
+.grand-shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  transform: translate(-50%, -50%) scale(0.4);
+  border-radius: 50%;
+  border: 3px solid rgba(255, 215, 0, 0.85);
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.6), inset 0 0 25px rgba(83, 252, 24, 0.4);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.billboard-container.active.tier-grand .grand-shockwave.ring-1 {
+  animation: shockwave-burst 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.billboard-container.active.tier-grand .grand-shockwave.ring-2 {
+  border-color: rgba(83, 252, 24, 0.8);
+  animation: shockwave-burst 2.1s cubic-bezier(0.16, 1, 0.3, 1) 0.65s infinite;
+}
+
+@keyframes shockwave-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.45);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.9);
+    opacity: 0;
+  }
+}
+
+/* Ambient Radial Glow Backdrop */
 .billboard-glow-backdrop {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 750px;
-  height: 480px;
+  width: min(680px, 92vw);
+  height: min(460px, 75vh);
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, var(--gold-glow) 0%, rgba(255, 215, 0, 0.08) 50%, transparent 75%);
-  filter: blur(40px);
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.32) 0%, rgba(255, 215, 0, 0.14) 48%, transparent 74%);
+  filter: blur(36px);
   z-index: -1;
-  animation: pulse-glow 3s infinite ease-in-out;
+  animation: pulse-glow 2.4s infinite ease-in-out;
+}
+
+.billboard-container.tier-grand .billboard-glow-backdrop {
+  width: min(820px, 96vw);
+  height: min(560px, 85vh);
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.55) 0%, rgba(83, 252, 24, 0.25) 45%, transparent 75%);
 }
 
 @keyframes pulse-glow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  0%, 100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.82; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
 }
 
-/* Luxury Glass Card */
+/* =========================================================================
+ * MAIN FOREGROUND CARD
+ * ========================================================================= */
 .billboard-card {
-  width: 660px;
-  max-width: 90vw;
-  background: rgba(10, 14, 24, 0.92);
-  border: 2px solid rgba(255, 215, 0, 0.7);
-  box-shadow: 
-    0 24px 60px rgba(0, 0, 0, 0.9),
-    0 0 40px rgba(255, 215, 0, 0.45),
-    inset 0 1px 2px rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 24px;
-  padding: 32px 36px;
+  width: min(540px, 88vw);
+  background: rgba(8, 12, 22, 0.92);
+  border: 2px solid rgba(0, 229, 255, 0.65);
+  box-shadow:
+    0 22px 55px rgba(0, 0, 0, 0.88),
+    0 0 32px rgba(0, 229, 255, 0.32),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 26px;
+  padding: 24px 30px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,17 +260,36 @@ body.obs-mode, body.transparent-mode {
   overflow: hidden;
 }
 
-/* Top Subtle Shine Bar */
+.billboard-container.tier-grand .billboard-card {
+  width: min(620px, 90vw);
+  padding: 28px 36px 30px;
+  background: linear-gradient(165deg, rgba(14, 18, 32, 0.95) 0%, rgba(7, 10, 18, 0.96) 100%);
+  border: 2.5px solid #ffd700;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.95),
+    0 0 55px rgba(255, 215, 0, 0.58),
+    0 0 95px rgba(83, 252, 24, 0.28),
+    inset 0 0 24px rgba(255, 215, 0, 0.22);
+  animation: grand-card-float 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes grand-card-float {
+  from { transform: translateY(-3px) scale(1); }
+  to   { transform: translateY(4px) scale(1.018); }
+}
+
+/* Subtle diagonal light sweep across card */
 .billboard-card::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 200%;
+  left: -120%;
+  width: 220%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
   transform: rotate(25deg);
-  animation: shine-pass 4s infinite linear;
+  animation: shine-pass 3.2s infinite linear;
+  pointer-events: none;
 }
 
 @keyframes shine-pass {
@@ -196,92 +297,202 @@ body.obs-mode, body.transparent-mode {
   100% { transform: translateX(100%) rotate(25deg); }
 }
 
-/* Header Emblem */
-.billboard-header {
-  display: flex;
+/* Top Category Pill */
+.billboard-top-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 8px;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  margin-bottom: 16px;
 }
 
-.chip-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.7));
-  animation: chip-float 2s infinite ease-in-out alternate;
+.billboard-container.tier-grand .billboard-top-pill {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.24), rgba(83, 252, 24, 0.2));
+  border: 1.5px solid #ffd700;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
 }
 
-.chip-icon.left { animation-delay: 0.2s; }
-.chip-icon.right { animation-delay: 0.6s; }
-
-@keyframes chip-float {
-  from { transform: translateY(-4px) rotate(-6deg); }
-  to { transform: translateY(4px) rotate(6deg); }
-}
-
-.trophy-emblem {
-  font-size: 56px;
+.top-pill-icon {
+  font-size: 16px;
   line-height: 1;
-  filter: drop-shadow(0 0 24px #ffd700);
-  animation: trophy-bounce 1.5s infinite ease-in-out alternate;
-}
-
-@keyframes trophy-bounce {
-  from { transform: scale(0.95); }
-  to { transform: scale(1.12); }
 }
 
 .billboard-category {
   font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  color: var(--gold-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  color: var(--cyan-accent);
   text-transform: uppercase;
-  margin-bottom: 12px;
-  text-shadow: 0 0 12px var(--gold-glow);
 }
 
-/* Winner Username */
+.billboard-container.tier-grand .billboard-category {
+  color: var(--gold-primary);
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+/* =========================================================================
+ * WINNER SPECTATOR AVATAR STAGE (CENTERPIECE)
+ * ========================================================================= */
+.winner-avatar-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.winner-avatar-crown {
+  font-size: 42px;
+  line-height: 1;
+  margin-bottom: -12px;
+  z-index: 4;
+  filter: drop-shadow(0 4px 16px rgba(255, 215, 0, 0.9));
+  display: none;
+  animation: crown-bounce 1.2s ease-in-out infinite alternate;
+}
+
+.billboard-container.tier-grand .winner-avatar-crown {
+  display: block;
+}
+
+@keyframes crown-bounce {
+  from { transform: translateY(-5px) rotate(-5deg) scale(1); }
+  to   { transform: translateY(2px) rotate(5deg) scale(1.14); }
+}
+
+.winner-avatar-ring {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(135deg, #00e5ff 0%, #ffd700 100%);
+  box-shadow:
+    0 0 26px rgba(0, 229, 255, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.billboard-container.tier-grand .winner-avatar-ring {
+  width: 136px;
+  height: 136px;
+  padding: 5px;
+  background: linear-gradient(135deg, #ffd700 0%, #53fc18 50%, #ffae00 100%);
+  box-shadow:
+    0 0 42px rgba(255, 215, 0, 0.85),
+    0 0 70px rgba(83, 252, 24, 0.45),
+    0 12px 30px rgba(0, 0, 0, 0.85);
+  animation: ring-pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes ring-pulse {
+  from { transform: scale(0.98); box-shadow: 0 0 32px rgba(255, 215, 0, 0.75), 0 0 55px rgba(83, 252, 24, 0.35); }
+  to   { transform: scale(1.05); box-shadow: 0 0 52px rgba(255, 215, 0, 1), 0 0 85px rgba(83, 252, 24, 0.65); }
+}
+
+.winner-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #070a12;
+  display: block;
+}
+
+.winner-tier-ribbon {
+  margin-top: -12px;
+  z-index: 3;
+  padding: 3px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: #091326;
+  color: #00e5ff;
+  border: 1.5px solid #00e5ff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
+}
+
+.billboard-container.tier-grand .winner-tier-ribbon {
+  background: linear-gradient(90deg, #ffd700, #ffae00);
+  color: #05070b;
+  border-color: #ffffff;
+  font-size: 11.5px;
+  padding: 4px 18px;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.85);
+}
+
+/* =========================================================================
+ * WINNER USERNAME (CENTER FOREGROUND)
+ * ========================================================================= */
 .winner-title-wrapper {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  max-width: 100%;
 }
 
 .winner-username {
   font-family: var(--font-display);
-  font-size: 46px;
+  font-size: clamp(28px, 4.5vw, 44px);
   font-weight: 900;
   letter-spacing: 1px;
   color: #ffffff;
-  background: linear-gradient(135deg, #ffffff 0%, #ffd700 70%, #ffae00 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #00e5ff 60%, #ffd700 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 16px rgba(255, 215, 0, 0.7));
+  filter: drop-shadow(0 4px 14px rgba(0, 229, 255, 0.45));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Winning Slot Info Pill */
+.billboard-container.tier-grand .winner-username {
+  font-size: clamp(32px, 5.2vw, 52px);
+  background: linear-gradient(135deg, #ffffff 0%, #ffd700 50%, #53fc18 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 20px rgba(255, 215, 0, 0.85));
+}
+
+/* =========================================================================
+ * WINNING SLOT & SCORE PILL
+ * ========================================================================= */
 .winner-slot-pill {
   width: 100%;
-  background: rgba(18, 24, 38, 0.9);
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  border-radius: 16px;
-  padding: 12px 20px;
+  background: rgba(15, 22, 36, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  gap: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.billboard-container.tier-grand .winner-slot-pill {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(18, 25, 42, 0.95);
 }
 
 .slot-thumbnail {
-  width: 58px;
-  height: 76px;
+  width: 48px;
+  height: 64px;
   aspect-ratio: 180 / 236;
-  border-radius: 10px;
+  border-radius: 8px;
   object-fit: contain;
   background: #070a12;
   border: 1.5px solid var(--gold-primary);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+  flex-shrink: 0;
 }
 
 .slot-text-group {
@@ -294,15 +505,15 @@ body.obs-mode, body.transparent-mode {
 
 .slot-label {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.4px;
   color: #94a3b8;
 }
 
 .slot-name {
   font-family: var(--font-sans);
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 800;
   color: #ffffff;
   white-space: nowrap;
@@ -311,46 +522,60 @@ body.obs-mode, body.transparent-mode {
 }
 
 .stat-badge {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 174, 0, 0.15));
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 174, 0, 0.12));
   border: 1.5px solid var(--gold-primary);
   border-radius: 10px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--gold-primary);
   text-shadow: 0 0 8px var(--gold-glow);
+  white-space: nowrap;
 }
 
-/* Prize Tag */
+/* =========================================================================
+ * PRIZE / ADVANCEMENT FOOTER BANNER
+ * ========================================================================= */
 .prize-tag {
   background: rgba(0, 229, 255, 0.12);
   border: 1px solid var(--cyan-accent);
-  border-radius: 20px;
-  padding: 6px 18px;
+  border-radius: 999px;
+  padding: 6px 20px;
   font-family: var(--font-display);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
   color: var(--cyan-accent);
-  box-shadow: 0 0 12px var(--cyan-glow);
+  box-shadow: 0 0 14px var(--cyan-glow);
 }
 
-/* Streamer Test Toolbar */
+.billboard-container.tier-grand .prize-tag {
+  background: linear-gradient(90deg, rgba(83, 252, 24, 0.2), rgba(255, 215, 0, 0.22));
+  border: 1.5px solid var(--kick-green);
+  color: var(--kick-green);
+  font-size: 15px;
+  padding: 8px 24px;
+  box-shadow: 0 0 22px var(--kick-green-glow);
+}
+
+/* =========================================================================
+ * STREAMER PREVIEW TOOLBAR (?preview=1 ONLY)
+ * ========================================================================= */
 .test-controls-bar {
   position: fixed;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   background: rgba(10, 14, 24, 0.95);
   border: 1.5px solid rgba(255, 215, 0, 0.4);
   border-radius: 16px;
-  padding: 10px 20px;
+  padding: 10px 18px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
   pointer-events: auto !important;
   z-index: 9999;
@@ -358,10 +583,9 @@ body.obs-mode, body.transparent-mode {
 
 .controls-label {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--gold-primary);
-  margin-right: 4px;
   letter-spacing: 1px;
 }
 
@@ -370,49 +594,33 @@ body.obs-mode, body.transparent-mode {
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
   color: #ffffff;
-  padding: 8px 16px;
+  padding: 7px 14px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  pointer-events: auto !important;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .test-btn:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .test-btn.tourney {
-  background: rgba(255, 215, 0, 0.15);
+  background: rgba(255, 215, 0, 0.16);
   border-color: var(--gold-primary);
   color: var(--gold-primary);
 }
-.test-btn.tourney:hover {
-  box-shadow: 0 0 14px var(--gold-glow);
-}
 
 .test-btn.battle {
-  background: rgba(255, 42, 95, 0.15);
-  border-color: var(--magenta-accent);
-  color: var(--magenta-accent);
-}
-.test-btn.battle:hover {
-  box-shadow: 0 0 14px rgba(255, 42, 95, 0.5);
-}
-
-.test-btn.coins {
   background: rgba(0, 229, 255, 0.15);
   border-color: var(--cyan-accent);
   color: var(--cyan-accent);
 }
-.test-btn.coins:hover {
-  box-shadow: 0 0 14px var(--cyan-glow);
-}
 
-.test-btn.obs-toggle {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: #64748b;
-  color: #cbd5e1;
+.test-btn.coins {
+  background: rgba(83, 252, 24, 0.15);
+  border-color: var(--kick-green);
+  color: var(--kick-green);
 }

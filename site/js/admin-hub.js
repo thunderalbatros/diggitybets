@@ -2039,16 +2039,19 @@ class AdminHubController {
     const statLabel = state.gameMode === 'SPINS'
       ? (isGrandFinal ? 'CHAMPION · SPINS WIN' : 'ROUND WIN · SPINS')
       : `${Math.max(Number(m.score1) || 0, Number(m.score2) || 0).toFixed(2)}x`;
+    const nextRoundName = (matchId === 'm5' || matchId === 'm6') ? 'GRAND FINAL' : 'SEMIFINALS';
 
     this.triggerStreamCelebrationOverlay({
+      tier: isGrandFinal ? 'grand' : 'partial',
       type: isGrandFinal ? 'TOURNEY_CHAMPION' : 'TOURNEY_MATCH_WIN',
       category: isGrandFinal ? '8-BRACKET TOURNAMENT CHAMPION' : `8-BRACKET TOURNEY · ${matchId.toUpperCase()} WINNER`,
+      ribbon: isGrandFinal ? '🏆 GRAND TOURNAMENT CHAMPION' : `⚡ ADVANCES TO ${nextRoundName}`,
       icon: isGrandFinal ? '👑' : '🏆',
       username: winningPlayer.username,
       slotName: winningPlayer.slotName,
       slotImg: winningPlayer.slotImage,
       statValue: statLabel,
-      prize: isGrandFinal ? 'GRAND TOURNAMENT CHAMPION!' : `ADVANCES TO ${matchId === 'm5' || matchId === 'm6' ? 'GRAND FINAL' : 'SEMIFINALS'}`
+      prize: isGrandFinal ? '👑 1ST PLACE TOURNAMENT CHAMPION!' : `ADVANCES TO ${nextRoundName}`
     });
 
     this.renderTournamentAdmin();
@@ -2799,15 +2802,18 @@ class AdminHubController {
     // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS (zero audio/confetti inside Control Panel)
     const streakNum = this.kothState.active ? (this.kothState.streak || 1) : 1;
     const prizeUsd = Math.min(20, streakNum * 5);
+    const isMaxPrize = streakNum >= 4;
     this.triggerStreamCelebrationOverlay({
-      type: streakNum >= 4 ? 'KOTH_CHAMPION' : 'BATTLE_WIN',
-      category: streakNum >= 4 ? 'KING OF THE HILL · 4/4 CHAMPION' : `1V1 BATTLE WINNER · STREAK ${streakNum}/4`,
-      icon: streakNum >= 4 ? '👑' : '⚔️',
+      tier: isMaxPrize ? 'grand' : 'partial',
+      type: isMaxPrize ? 'KOTH_CHAMPION' : 'BATTLE_WIN',
+      category: isMaxPrize ? 'KING OF THE HILL · $20 MAX CHAMPION' : `1V1 BATTLE WINNER · STREAK ${streakNum}/4`,
+      ribbon: isMaxPrize ? '👑 $20.00 USD MAX PRIZE CHAMPION' : `⚔️ ROUND VICTORY (${streakNum}/4)`,
+      icon: isMaxPrize ? '👑' : '⚔️',
       username: winUserClean,
       slotName: resolvedSlot.name,
       slotImg: resolvedSlot.image,
       statValue: scoreDetail || 'WIN',
-      prize: streakNum >= 4 ? '$20 USD GRAND PRIZE!' : `$${prizeUsd} USD BANKED (${streakNum}/4)`
+      prize: isMaxPrize ? '🏆 MAX PRIZE WON: $20.00 USD!' : `STREAK ${streakNum}/4 · $${prizeUsd}.00 USD BANKED`
     });
 
     if (window.sonner) {
@@ -2936,6 +2942,8 @@ class AdminHubController {
 
   kothRetire() {
     const retired = this.kothState.king || (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '') || 'Winner';
+    const retiredSlot = this.kothState.kingSlot || (document.getElementById('cp-battle-slot-a')?.value || '').trim() || 'Wanted Dead or a Wild';
+    const resolvedRetireSlot = this.resolveSlotMeta(retiredSlot);
     const streak = Math.max(1, this.kothState.streak || 1);
     const prizeAmount = Math.min(20, streak * 5);
     const announcement = `Congratulations @${retired} you won $${prizeAmount}`;
@@ -2943,6 +2951,20 @@ class AdminHubController {
     if (retired && retired !== 'Winner') {
       this.awardKothGrandPrize(retired, prizeAmount, streak);
     }
+
+    // Trigger Special Grand Celebration Overlay in OBS when !cashout is executed!
+    this.triggerStreamCelebrationOverlay({
+      tier: 'grand',
+      type: 'KOTH_CASHOUT',
+      category: '1V1 KING OF THE HILL · !CASHOUT WINNER',
+      ribbon: '💰 CASHOUT LOCKED IN',
+      icon: '💰',
+      username: retired,
+      slotName: resolvedRetireSlot.name,
+      slotImg: resolvedRetireSlot.image,
+      statValue: `${streak}/4 WINS`,
+      prize: `💰 CASHOUT PRIZE: $${prizeAmount.toFixed(2)} USD!`
+    });
 
     this.showKothBanner(`💰 ${announcement}! (${streak}/4 Wins — Both corners cleared for new contenders)`, 'gold');
 

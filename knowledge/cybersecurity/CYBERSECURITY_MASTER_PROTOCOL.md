@@ -1,21 +1,22 @@
 ---
-version: 1.0.0
+version: 1.1.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - cybersecurity
   - architecture
-  - en-progreso
+  - app-integrity
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
-ultima_revision: 2026-08-27
+ultima_revision: 2026-10-17
 ---
 
-# 🛡️ PROTOCOLO MAESTRO DE CIBERSEGURIDAD YENDO (Zero Trust & App Integrity)
+# 🛡️ PROTOCOLO MAESTRO DE CIBERSEGURIDAD WEB (Zero Trust & App Integrity)
 
 ## 1. Declaración Constitucional de Seguridad
-En **Yendo**, la ciberseguridad no es una capa añadida al final del ciclo de vida; es un **invariante arquitectónico inviolable**. 
-Dado que Yendo gestiona identidades humanas, geolocalización en tiempo real y encuentros presenciales en el mundo físico entre personas previamente desconocidas (Terceros Lugares), un compromiso de seguridad no es simplemente un fallo técnico de software: **es un riesgo directo para la integridad física y la privacidad de nuestros usuarios**.
+En **HuntHub Web**, la ciberseguridad no es una capa añadida al final del ciclo de vida; es un **invariante arquitectónico inviolable**. 
+Dado que HuntHub Web gestiona identidades de streaming, interacciones en tiempo real vía WebSocket y participación en vivo de espectadores (torneos, ruleta, bonushunts), un compromiso de seguridad no es simplemente un fallo técnico: **es un riesgo directo para la integridad de los eventos en vivo y la privacidad de la comunidad**.
 
-Todo código, pull request, migración de base de datos o pipeline de agente DEBE contrastarse y validarse de forma obligatoria contra las directivas de este documento antes de su aprobación o despliegue.
+Todo código, pull request, configuración de headers HTTP o pipeline de agente DEBE contrastarse y validarse de forma obligatoria contra las directivas de este documento antes de su aprobación o despliegue.
 
 ---
 
@@ -23,23 +24,23 @@ Todo código, pull request, migración de base de datos o pipeline de agente DEB
 
 ```mermaid
 graph TD
-    subgraph Capa 1: Dispositivo Móvil & Cliente
-        A[Expo SDK 57 + React Native 0.86] --> B[Hardware Keystore / SecureStore]
-        A --> C[Hermes Bytecode + R8 Proguard]
-        A --> D[Anti-Jailbreak / Anti-Frida / Anti-Root]
+    subgraph Capa 1: Navegador & Cliente Web
+        A[HTML5 + Vanilla JS + CSS3] --> B[Content Security Policy Level 3]
+        A --> C[Enforcement de textContent & Cero innerHTML sin Sanitizar]
+        A --> D[Cloudflare Turnstile Anti-Bot & Rate Limiting]
     end
-    subgraph Capa 2: Transporte & Tránsito
-        E[TLS 1.3 RFC 8446] --> F[Certificate Transparency]
-        E --> G[Zero Cleartext / ATS & NetworkConfig]
+    subgraph Capa 2: Transporte & Streaming
+        E[TLS 1.3 RFC 8446] --> F[WSS WebSocket Seguro con Hibernación]
+        E --> G[Firma Criptográfica Webhook Kick RSA-SHA256 / HMAC]
     end
-    subgraph Capa 3: Plataforma de Datos & Lógica
-        H[Supabase PostgreSQL + PostGIS] --> I[Zero Trust RLS en Toda Tabla PII]
-        H --> J[Funciones Atómicas SECURITY DEFINER con search_path Fijo]
-        H --> K[Supabase Auth PKCE + JWT AAL2 para Finanzas]
+    subgraph Capa 3: Edge Workers & Durable Objects
+        H[Cloudflare Workers + Durable Objects SQLite] --> I[Máquinas de Estado Deterministas & Aislamiento de Memoria]
+        H --> J[Transacciones Atómicas de Créditos & Cero Modulo Bias]
+        H --> K[OAuth 2.1 PKCE RFC 7636 para Kick API]
     end
-    subgraph Capa 4: Cloud Worker & Agentic AI
-        L[Google Cloud Run + Secret Manager] --> M[Workload Identity / SA Least Privilege]
-        L --> N[Sanitización de PII previo a Vertex AI RAG]
+    subgraph Capa 4: Secretos & CI/CD Integrity
+        L[Cloudflare Secrets & .dev.vars] --> M[Principio de Mínimo Privilegio & Git Secret Scanning]
+        L --> N[Sanitización de Datos de Chat & Cero Telemetría PII]
     end
 ```
 
@@ -47,59 +48,51 @@ graph TD
 
 ## 3. Modelo de Amenazas y Controles Mandatorios (Threat Model)
 
-### 3.1 Cliente Móvil (OWASP MASVS v2.0 Compliance)
-1. **Almacenamiento de Credenciales (MASVS-STORAGE):**
-   - **Prohibido:** Almacenar tokens JWT, refresh tokens, datos bancarios o PII no anonimizada en `AsyncStorage`, `localStorage` web o `MMKV` sin cifrar.
-   - **Mandatorio:** Usar exclusivamente `expo-secure-store` / Keychain (iOS) y EncryptedSharedPreferences / Android Keystore con respaldo en hardware criptográfico (Secure Enclave / StrongBox).
-2. **Integridad del Binario y Código (MASVS-CODE):**
-   - Ofuscación y optimización forzada vía ProGuard / R8 en release builds.
-   - Compilación exclusiva a bytecode de Hermes (cero JavaScript plano en el asset bundle de producción).
-   - Bloqueo de screenshots en pantallas críticas (entradas digitales, QR dinámico, pases de seguridad) mediante `expo-screen-capture`.
-3. **Comunicaciones y Red (MASVS-NETWORK):**
-   - Enlace estricto a HTTPS con TLS 1.3 (`RFC 8446`). 
-   - Prohibido tráfico HTTP no cifrado (`cleartextTrafficPermitted="false"` en `network_security_config.xml` y exclusión de excepciones en `Info.plist` de iOS ATS).
+### 3.1 Cliente Web y Navegador (OWASP ASVS v4.0 Compliance)
+1. **Prevención de Cross-Site Scripting (XSS - ASVS V5):**
+   - **Prohibido:** Renderizar inputs de usuarios o mensajes de chat de Kick mediante `innerHTML`, `outerHTML` o `document.write`.
+   - **Mandatorio:** Usar exclusivamente `element.textContent`, `element.setAttribute()` o sanitización estricta con DOMPurify cuando se requieran formatos visuales.
+   - Filtrar caracteres de control RTL (Right-to-Left override) y secuencias unicode maliciosas antes del renderizado en OBS overlays.
+2. **Políticas de Seguridad de Contenido (CSP Level 3 - ASVS V14):**
+   - Headers HTTP estrictos: `default-src 'self'`, `script-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'` (o restringido a OBS/Kick streamers autorizados).
+   - Bloqueo absoluto de scripts inline sin hash/nonce (`unsafe-inline` prohibido en producción).
+3. **Comunicaciones y Red (ASVS V9):**
+   - Enlace estricto a HTTPS y WSS con TLS 1.3 (`RFC 8446`).
+   - Cookies de sesión con atributos mandatorios: `Secure`, `HttpOnly`, `SameSite=Strict`.
 
-### 3.2 Backend y Base de Datos (Supabase Zero Trust & NIST SP 800-207)
-1. **Row-Level Security (RLS) Obligatorio:**
-   - Ninguna tabla puede crearse sin `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`.
-   - Políticas explícitas `RESTRICTIVE` o `PERMISSIVE` basadas exclusivamente en el contexto del token firmado `auth.uid()`.
-   - Prohibición del uso de `service_role` en el cliente móvil. Cualquier intento de instanciar un cliente de Supabase con `service_role` en `src/` activa bloqueo automático por el Safety Gate.
-2. **Defensa contra SQL Injection en RPCs y Funciones PL/pgSQL:**
-   - Toda función PostgreSQL debe especificar `SET search_path = public, pg_temp;` para evitar secuestro de esquemas.
-   - Uso de sentencias parametrizadas y funciones atómicas (ej. `join_group_atomic`) con bloqueos explícitos (`FOR UPDATE`) para evitar condiciones de carrera (TOCTOU).
-3. **Autenticación y Ciclo de Vida de Identidad (NIST SP 800-63B & RFC 6749/7519):**
-   - Flujo OAuth 2.0 con PKCE (Proof Key for Code Exchange) para proveedores SSO (Google, Apple).
-   - Rotación automática de refresh tokens con detección de reuso de tokens.
+### 3.2 Backend Edge, WebSockets y Durable Objects (NIST SP 800-207)
+1. **Aislamiento de Estado y Concurrencia:**
+   - Todo estado en tiempo real (torneo, ruleta, bonushunt) reside en una instancia única de Cloudflare Durable Object por canal, garantizando consistencia secuencial estricta y evitando condiciones de carrera (TOCTOU).
+   - Persistencia local en SQLite dentro de Durable Objects con transacciones atómicas `ctx.storage.transaction()`.
+2. **Validación Criptográfica de Inbound Webhooks:**
+   - Todo webhook entrante desde Kick.com u oráculos externos DEBE verificar la firma digital (RSA-SHA256 o HMAC-SHA256) antes de encolar cualquier evento.
+   - Rechazo inmediato de solicitudes con timestamp desfasado (> 300 s) para mitigar ataques de repetición (Replay Attacks).
+3. **Autenticación Kick OAuth 2.1 PKCE (RFC 7636):**
+   - Flujo de autorización con `code_challenge` SHA-256 y `code_verifier` efímero.
+   - Rotación y cifrado de refresh tokens en Cloudflare KV / Secrets.
 
-### 3.3 Infraestructura Cloud y Pipelines IA (Google Cloud Platform)
+### 3.3 Infraestructura Edge y Pipelines de Código
 1. **Gestión de Secretos:**
-   - Cero secretos en repositorios git. Prohibido commitear archivos `.env`, `gcp-key.json` o credenciales.
-   - Todo secreto en entornos serverless debe recuperarse mediante **GCP Secret Manager** en tiempo de ejecución.
-2. **Identidad de Máquina con Privilegio Mínimo:**
-   - Service Accounts restringidas a los roles exactos requeridos (ej. `roles/aiplatform.user` para Vertex AI, sin permisos de Project Editor/Owner).
+   - Cero secretos en repositorios git. Prohibido commitear archivos `.env`, `.dev.vars` o tokens de producción.
+   - Los secretos de entorno se configuran mediante `wrangler secret put` en Cloudflare.
+2. **Protección Contra Bots y Abuso:**
+   - Desafío Turnstile (Cloudflare) para acciones críticas (claim de premios, registro de apuestas).
+   - Rate limiting a nivel de IP y Kick User ID en el worker edge.
 
 ---
 
 ## 4. Matriz de Auditoría Obligatoria para PRs (Quality Gate)
 
-Antes de fusionar cualquier cambio a `main`, el **QUALITY_RELIABILITY_SQUAD** debe certificar:
-1. `npm run security:scan` ejecutado y con 0 secretos detectados.
-2. `npm run security:check` (o `npm audit`) libre de vulnerabilidades de severidad alta o crítica.
-3. Validación estricta de RLS en toda nueva tabla o migración SQL.
-4. Cobertura de tests de invariantes (`npm run test:invariants`).
-5. Verificación de compilación TypeScript (`npx tsc --noEmit`) sin flags `--skipLibCheck`.
+Antes de fusionar cualquier cambio a `main`, el pipeline de CI/CD debe certificar:
+1. `npm run security:scan` ejecutado con 0 secretos detectados.
+2. `npm run guard:all` o `npm audit` libre de vulnerabilidades de severidad alta o crítica.
+3. Cobertura de tests unitarios y de invariantes (`npm run test`).
+4. Verificación de CSP y ausencia de `innerHTML` inseguro en el árbol de componentes web.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
-- [[01_CANON_PAPERS_SEMINALES_CRIPTOGRAFIA_PROTOCOLOS]]
-- [[02_ARSENAL_EDUCATIVO_CURSOS_AUDITORIAS_YOUTUBE]]
-- [[03_DEFENSA_PROFUNDIDAD_STACK_YENDO_APLICADA]]
 - [[CANON_CYBERSECURITY_DEVSECOPS_2026]]
-- [[CANON_ESTUDIO_CIBERSEGURIDAD]]
-- [[Supabase]]
-- [[Protocolo_Anti_Voyeurismo_Privacidad_Progresiva]]
-- [[Terceros Lugares]]
-- [[PostGIS]]
+- [[fair-draws]]
+- [[provably-fair-games]]
+- [[anti-fraud-fingerprinting]]
