@@ -31,6 +31,8 @@
   "author": "Antigravity",
   "license": "MIT",
   "dependencies": {
-    "ws": "^8.22.0"
+    "minisearch": "^7.2.0",
+    "ws": "^8.22.0",
+    "youtube-transcript": "^1.3.1"
   }
 }

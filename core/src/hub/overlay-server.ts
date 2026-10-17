@@ -275,6 +275,32 @@ export class OverlayServer {
         return;
       }
 
+      // Kick OAuth 2.1 Direct Login Route (ReachAces / Blakjac21 style)
+      if (url.pathname === '/api/auth/login' && req.method === 'GET') {
+        const returnTo = url.searchParams.get('returnTo') || '/#profile';
+        const state = crypto.randomBytes(16).toString('hex');
+        const codeVerifier = crypto.randomBytes(32).toString('hex');
+        const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+        const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+        const host = req.headers.host || '';
+        const redirectBase = host.includes('diggitybets.vip') ? 'https://diggitybets.vip' : (host.includes('3000') || host.includes('3001') ? `http://${host}` : 'http://127.0.0.1:3000');
+        const redirectUri = `${redirectBase}/api/auth/callback`;
+
+        const authorizeUrl = new URL('https://id.kick.com/oauth/authorize');
+        authorizeUrl.searchParams.set('response_type', 'code');
+        authorizeUrl.searchParams.set('client_id', clientId);
+        authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+        authorizeUrl.searchParams.set('scope', 'user:read');
+        authorizeUrl.searchParams.set('state', state);
+        authorizeUrl.searchParams.set('code_challenge', codeChallenge);
+        authorizeUrl.searchParams.set('code_challenge_method', 'S256');
+
+        res.writeHead(302, { 'Location': authorizeUrl.toString() });
+        res.end();
+        return;
+      }
+
       // Kick OAuth 2.1 GET Redirect Handler
       if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && req.method === 'GET') {
         const code = url.searchParams.get('code') || '';

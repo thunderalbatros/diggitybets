@@ -139,6 +139,42 @@ export default {
       }), { headers: corsHeaders });
     }
 
+    // 3b. Kick OAuth 2.1 Direct Login Route (ReachAces / Blakjac21 style)
+    if (url.pathname === '/api/auth/login' && request.method === 'GET') {
+      const returnTo = url.searchParams.get('returnTo') || '/#profile';
+      const state = crypto.randomUUID().replace(/-/g, '') + Date.now().toString(16);
+      const codeVerifier = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+      
+      const encoder = new TextEncoder();
+      const data = encoder.encode(codeVerifier);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      const clientId = env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+      const redirectUri = url.origin.includes('diggitybets.vip') ? 'https://diggitybets.vip/api/auth/callback' : `${url.origin}/api/auth/callback`;
+
+      const authorizeUrl = new URL('https://id.kick.com/oauth/authorize');
+      authorizeUrl.searchParams.set('response_type', 'code');
+      authorizeUrl.searchParams.set('client_id', clientId);
+      authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+      authorizeUrl.searchParams.set('scope', 'user:read');
+      authorizeUrl.searchParams.set('state', state);
+      authorizeUrl.searchParams.set('code_challenge', codeChallenge);
+      authorizeUrl.searchParams.set('code_challenge_method', 'S256');
+
+      const cookiePayload = encodeURIComponent(JSON.stringify({ state, codeVerifier, returnTo, redirectUri }));
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': authorizeUrl.toString(),
+          'Set-Cookie': `hh_kick_oauth=${cookiePayload}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1800; Secure`
+        }
+      });
+    }
+
     // 4. Kick OAuth 2.1 GET Redirect Handler
     if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && request.method === 'GET') {
       const code = url.searchParams.get('code') || '';
@@ -169,7 +205,7 @@ export default {
         const clientSecret = env.KICK_CLIENT_SECRET || '';
 
         // Determine matching redirect_uri
-        const effectiveRedirectUri = redirect_uri || (url.origin.includes('diggitybets.vip') ? 'https://diggitybets.vip/api/auth/kick/callback' : `${url.origin}/api/auth/kick/callback`);
+        const effectiveRedirectUri = redirect_uri || (url.origin.includes('diggitybets.vip') ? 'https://diggitybets.vip/api/auth/callback' : `${url.origin}/api/auth/callback`);
 
         const tokenRes = await fetch('https://id.kick.com/oauth/token', {
           method: 'POST',
