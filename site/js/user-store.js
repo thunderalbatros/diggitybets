@@ -50,9 +50,19 @@ class UserStoreController {
       { rank: 7, casinoUser: 'StakeAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 0, avatar: '🪙', verified: true },
       { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 0, avatar: '🤠', verified: true }
     ];
+    this.lastUserInteractionTs = Date.now();
+    this.lastVerifiedKickChatTs = Number(localStorage.getItem('hunthub_last_kick_chat_ts') || '0');
   }
 
   init() {
+    if (!localStorage.getItem('hunthub_offline_points_purged_v1')) {
+      localStorage.setItem('hunthub_balance', '0');
+      localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
+      if (window.houseGames) {
+        window.houseGames.balance = 0;
+        window.houseGames.renderBalance();
+      }
+    }
     if (this.username && (this.username.startsWith('@KickUser_') || this.username.startsWith('KickUser_'))) {
       setTimeout(() => {
         if (window.oauthEngine) {
@@ -60,6 +70,10 @@ class UserStoreController {
         }
       }, 150);
     }
+    const markInteraction = () => { this.lastUserInteractionTs = Date.now(); };
+    ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((evtName) => {
+      window.addEventListener(evtName, markInteraction, { passive: true });
+    });
     this.initStoreStockState();
     this.updateUserUI();
     this.bindAuthButtons();
@@ -71,6 +85,17 @@ class UserStoreController {
     this.startTotpTimer();
     this.startWatchHeartbeat();
     this.syncStoreStockFromServer();
+  }
+
+  recordVerifiedKickChatActivity(sender, content) {
+    if (!this.isLoggedIn || !this.username || !sender) return;
+    const cleanSender = String(sender).trim().replace(/^@/, '').toLowerCase();
+    const cleanSelf = String(this.username).trim().replace(/^@/, '').toLowerCase();
+    if (cleanSender && cleanSender === cleanSelf && String(content || '').trim().length > 0) {
+      this.lastVerifiedKickChatTs = Date.now();
+      this.lastUserInteractionTs = Date.now();
+      localStorage.setItem('hunthub_last_kick_chat_ts', String(this.lastVerifiedKickChatTs));
+    }
   }
 
   updateUserUI() {
@@ -890,31 +915,46 @@ class UserStoreController {
   }
 
   /**
-   * Phase 6 Watch-to-Earn Heartbeat:
-   * +10 $DIG every 15 minutes (900_000 ms) in #watch for logged-in users when stream is live (max 40 $DIG/h).
+   * Phase 6 Watch-to-Earn Heartbeat (Strict Anti-Abuse):
+   * +10 $DIG every 15 minutes (900_000 ms) ONLY when:
+   * 1) Stream https://kick.com/diggitybets is LIVE
+   * 2) User has active tab presence & interaction (not AFK/hidden)
+   * 3) User sent at least 1 real message in kick.com/diggitybets live chat within the last 15 minutes
    */
   startWatchHeartbeat() {
     if (this.watchHeartbeatInterval) clearInterval(this.watchHeartbeatInterval);
     this.watchHeartbeatInterval = setInterval(async () => {
       if (!this.isLoggedIn || !this.username) return;
-      const watchSection = document.getElementById('watch');
-      const isViewingWatch = !window.location.hash || window.location.hash === '#watch' || (watchSection && watchSection.classList.contains('active'));
-      if (!isViewingWatch) return;
+      if (document.hidden) return;
+      const now = Date.now();
+      if (now - (this.lastUserInteractionTs || 0) > 900_000) return;
+      if (window.hunthubStreamLive === false) return;
+
+      const lastChatActivityMs = now - (this.lastVerifiedKickChatTs || 0);
+      const verifiedChatActive = Boolean(this.lastVerifiedKickChatTs > 0 && lastChatActivityMs <= 900_000);
+      if (!verifiedChatActive) return;
 
       try {
         const res = await fetch('/api/watch/heartbeat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: this.username })
+          body: JSON.stringify({
+            username: this.username,
+            verifiedChatActive,
+            lastChatActivityMs
+          })
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.awarded && data.amount > 0 && window.houseGames) {
+          if (typeof data.isStreamLive === 'boolean') {
+            window.hunthubStreamLive = data.isStreamLive;
+          }
+          if (data.awarded && data.amount > 0 && data.isStreamLive && window.houseGames) {
             window.houseGames.adjustBalance(data.amount);
             if (window.sonner) {
               window.sonner.toast({
-                title: '+10 $DIG Watch-to-Earn! 📺',
-                message: 'Earned +10 $DIG for watching the live stream (15m heartbeat).',
+                title: '+10 $DIG Live Stream Reward! 📺',
+                message: 'Earned +10 $DIG for active participation in kick.com/diggitybets live stream.',
                 type: 'green'
               });
             }

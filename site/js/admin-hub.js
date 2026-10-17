@@ -3384,18 +3384,40 @@ class AdminHubController {
 
   async initLiveKickChatBridge() {
     let chatroomId = 2672891; // Default diggitybets Kick chatroom ID
-    try {
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 2500);
-      const res = await fetch('https://kick.com/api/v2/channels/diggitybets', { signal: controller.signal });
-      clearTimeout(t);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.chatroom?.id) {
-          chatroomId = Number(data.chatroom.id);
+    window.hunthubStreamLive = false;
+
+    const refreshStreamStatus = async () => {
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch('/api/kick/stream-status', { signal: controller.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.chatroomId) chatroomId = Number(data.chatroomId);
+          window.hunthubStreamLive = Boolean(data?.isStreamLive);
+          return;
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch('https://kick.com/api/v2/channels/diggitybets', { signal: controller.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.chatroom?.id) {
+            chatroomId = Number(data.chatroom.id);
+          }
+          window.hunthubStreamLive = Boolean(data?.livestream && data.livestream.is_live !== false);
+        }
+      } catch (_) {}
+    };
+
+    await refreshStreamStatus();
+    if (this._streamStatusPoll) clearInterval(this._streamStatusPoll);
+    this._streamStatusPoll = setInterval(refreshStreamStatus, 120_000);
 
     const connectPusher = () => {
       try {
@@ -3423,6 +3445,9 @@ class AdminHubController {
               const content = String(msgData?.content || '').trim();
               if (sender) {
                 this.recentChatters.set(sender, { user: sender, ts: Date.now() });
+                if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
+                  window.userStore.recordVerifiedKickChatActivity(sender, content);
+                }
               }
               if (content.startsWith('!')) {
                 this.processLiveChatCommand(sender, content);
