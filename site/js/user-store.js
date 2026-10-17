@@ -72,6 +72,11 @@ class UserStoreController {
     const userLabelEl = document.getElementById('auth-username-label');
     const subBadgeEl = document.getElementById('auth-sub-badge');
 
+    const kickProfDisc = document.getElementById('kick-prof-disconnected-state');
+    const kickProfConn = document.getElementById('kick-prof-connected-state');
+    const kickProfUser = document.getElementById('kick-prof-username-display');
+    const kickProfBadge = document.getElementById('kick-prof-status-badge');
+
     if (this.isLoggedIn) {
       if (authGuestEl) authGuestEl.style.display = 'none';
       if (authUserEl) authUserEl.style.display = 'flex';
@@ -80,9 +85,26 @@ class UserStoreController {
         subBadgeEl.style.display = this.isSub ? 'inline-block' : 'none';
         subBadgeEl.textContent = this.isSub ? 'SUB (2X)' : '';
       }
+      if (kickProfDisc) kickProfDisc.style.display = 'none';
+      if (kickProfConn) kickProfConn.style.display = 'flex';
+      if (kickProfUser) kickProfUser.textContent = this.username;
+      if (kickProfBadge) {
+        kickProfBadge.textContent = 'CONNECTED ✓';
+        kickProfBadge.style.background = 'rgba(83, 252, 24, 0.2)';
+        kickProfBadge.style.borderColor = 'var(--kick-green)';
+        kickProfBadge.style.color = 'var(--kick-green)';
+      }
     } else {
       if (authGuestEl) authGuestEl.style.display = 'flex';
       if (authUserEl) authUserEl.style.display = 'none';
+      if (kickProfDisc) kickProfDisc.style.display = 'block';
+      if (kickProfConn) kickProfConn.style.display = 'none';
+      if (kickProfBadge) {
+        kickProfBadge.textContent = 'NOT LINKED';
+        kickProfBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        kickProfBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        kickProfBadge.style.color = 'var(--text-dim)';
+      }
     }
 
     // Update avatar displays
@@ -165,38 +187,42 @@ class UserStoreController {
 
   bindAuthButtons() {
     const loginBtn = document.getElementById('btn-kick-login');
+    const profLoginBtn = document.getElementById('btn-profile-link-kick');
     const logoutBtn = document.getElementById('btn-kick-logout');
+    const profLogoutBtn = document.getElementById('btn-profile-unlink-kick');
 
-    if (loginBtn) {
-      loginBtn.addEventListener('click', () => {
-        if (window.oauthEngine) {
-          window.oauthEngine.loginKick();
-        }
-      });
-    }
+    const handleKickLogin = () => {
+      if (window.oauthEngine) {
+        window.oauthEngine.loginKick();
+      }
+    };
 
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        this.username = '';
-        this.isLoggedIn = false;
-        localStorage.removeItem('hunthub_kick_username');
-        localStorage.removeItem('hunthub_is_sub');
-        localStorage.removeItem('hunthub_is_admin');
-        localStorage.removeItem('hunthub_streamer_admin_unlocked');
-        if (window.oauthEngine) {
-          window.oauthEngine.updateAdminDeckUI(false);
-        }
-        this.updateUserUI();
-        if (window.soundEngine) window.soundEngine.playChip();
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Account Unlinked',
-            message: 'Your Kick account was disconnected from this browser.',
-            type: 'default'
-          });
-        }
-      });
-    }
+    if (loginBtn) loginBtn.addEventListener('click', handleKickLogin);
+    if (profLoginBtn) profLoginBtn.addEventListener('click', handleKickLogin);
+
+    const handleKickLogout = () => {
+      this.username = '';
+      this.isLoggedIn = false;
+      localStorage.removeItem('hunthub_kick_username');
+      localStorage.removeItem('hunthub_is_sub');
+      localStorage.removeItem('hunthub_is_admin');
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      if (window.oauthEngine) {
+        window.oauthEngine.updateAdminDeckUI(false);
+      }
+      this.updateUserUI();
+      if (window.soundEngine) window.soundEngine.playChip();
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Account Unlinked',
+          message: 'Your Kick account was disconnected from this browser.',
+          type: 'default'
+        });
+      }
+    };
+
+    if (logoutBtn) logoutBtn.addEventListener('click', handleKickLogout);
+    if (profLogoutBtn) profLogoutBtn.addEventListener('click', handleKickLogout);
   }
 
   bindProfileControls() {
