@@ -187,11 +187,19 @@ function createDocumentChunks(filePath) {
 }
 
 /**
+ * Invalidate in-memory cache to force re-indexing
+ */
+export function invalidateIndexCache() {
+  cachedIndex = null;
+  lastIndexTime = 0;
+}
+
+/**
  * Builds or retrieves cached MiniSearch index
  */
-function getOrBuildMiniSearchIndex() {
+export function getOrBuildMiniSearchIndex(force = false) {
   const now = Date.now();
-  if (cachedIndex && now - lastIndexTime < 300_000) {
+  if (!force && cachedIndex && now - lastIndexTime < 300_000) {
     return cachedIndex;
   }
 
