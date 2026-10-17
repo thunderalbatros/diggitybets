@@ -1,12 +1,18 @@
 /**
- * HuntHub — Fullscreen Victory & Celebration Screen Overlay
+ * HuntHub — Fullscreen Winner Celebration Overlay (1920x1080 Transparent)
  * =============================================================================
- * Features:
- * 1. 60 FPS Hardware-Accelerated Offscreen Sprite Particle Engine (Zero CPU slowdown)
- * 2. High-Pitched Crisp Metallic Gold Coin Clink Synthesizer
- * 3. Luxury Floating Winner Billboard with Chakra Petch & Glassmorphism
- * 4. Dual-channel Listener: BroadcastChannel('hunthub_celebration') + LocalStorage
- * 5. Auto-Demo on load + Audio Gate prompt for browser gesture policy
+ * 1. 100% Transparent when idle (Zero CPU in OBS Browser Source)
+ * 2. Audio Sequence: Trumpet Fanfare first -> Falling Metallic Coins sound
+ * 3. Visual Layout: 3D Gold Coins falling from the sky in the background +
+ *    Spectator Avatar & @Username centered in the foreground
+ * 4. Dual Celebration Tiers:
+ *    - 'partial' (~4.2s): Fast, punchy celebration for 1v1 single round wins
+ *      (Streak 1..3) and 8-Bracket Quarterfinal / Semifinal match wins.
+ *    - 'grand' (~8.5s): Special extended celebration with rotating golden
+ *      sunburst rays, expanding shockwave rings, royal crown drop, and
+ *      multi-wave coin/sparkle rain for 1v1 !cashout, 1v1 $20 Max Prize (4/4),
+ *      and 8-Bracket Tournament Champion!
+ * 5. Cross-Process Sync: BroadcastChannel + localStorage + Edge /api/overlay/celebration
  * =============================================================================
  */
 
@@ -22,33 +28,39 @@ class CelebrationOverlayApp {
     this.audioCtx = null;
     this.audioUnlocked = false;
     this.billboardTimer = null;
+    this.waveTimers = [];
+    this.avatarCache = new Map();
 
     // DOM Elements
     this.audioGateEl = document.getElementById('audio-gate-prompt');
     this.billboard = document.getElementById('winner-billboard');
     this.iconEl = document.getElementById('billboard-icon');
     this.categoryEl = document.getElementById('billboard-category');
+    this.avatarImgEl = document.getElementById('winner-avatar-img');
+    this.tierRibbonEl = document.getElementById('winner-tier-ribbon');
     this.usernameEl = document.getElementById('winner-username');
     this.slotImgEl = document.getElementById('winner-slot-img');
+    this.slotLabelEl = document.getElementById('winner-slot-label');
     this.slotNameEl = document.getElementById('winner-slot-name');
     this.statBadgeEl = document.getElementById('winner-stat-badge');
     this.statValueEl = document.getElementById('winner-stat-value');
     this.prizeTagEl = document.getElementById('winner-prize-tag');
+    this.prizeTextEl = document.getElementById('winner-prize-text');
 
-    this.lastEventTimestamp = 0;
+    this.lastEventTimestamp = Date.now() - 2500;
 
     this.initCanvasResize();
     this.initSpriteCache();
     this.initAudio();
     this.initModeDetection();
     this.initEventListeners();
-    this.initBroadcastChannel();
+    this.initSyncChannels();
 
-    // Only launch live demo on load if ?demo=1 is explicitly in URL
+    // Optional explicit demo mode (?demo=1)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('demo') === '1') {
       setTimeout(() => {
-        this.triggerLiveDemo();
+        this.triggerLiveDemo('grand');
       }, 400);
     }
   }
@@ -74,8 +86,9 @@ class CelebrationOverlayApp {
     this.sprites = {
       coin: this.createOffscreenCoinSprite(),
       chipGold: this.createOffscreenChipSprite('#ffd700'),
+      chipGreen: this.createOffscreenChipSprite('#53fc18'),
       chipCyan: this.createOffscreenChipSprite('#00e5ff'),
-      chipMagenta: this.createOffscreenChipSprite('#ff2a5f')
+      starGold: this.createOffscreenStarSprite('#ffd700')
     };
   }
 
@@ -89,8 +102,8 @@ class CelebrationOverlayApp {
     const cy = 32;
 
     const gradOuter = ctx.createLinearGradient(0, 0, 64, 64);
-    gradOuter.addColorStop(0, '#fff4b8');
-    gradOuter.addColorStop(0.5, '#ffd700');
+    gradOuter.addColorStop(0, '#fff7c2');
+    gradOuter.addColorStop(0.45, '#ffd700');
     gradOuter.addColorStop(1, '#b8860b');
 
     ctx.fillStyle = gradOuter;
@@ -105,10 +118,10 @@ class CelebrationOverlayApp {
     ctx.stroke();
 
     ctx.fillStyle = '#855b04';
-    ctx.font = 'bold 22px sans-serif';
+    ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('★', cx, cy + 1);
+    ctx.fillText('$', cx, cy + 1);
 
     return c;
   }
@@ -118,7 +131,7 @@ class CelebrationOverlayApp {
     c.width = 64;
     c.height = 64;
     const ctx = c.getContext('2d');
-    const r = 28;
+    const r = 27;
     const cx = 32;
     const cy = 32;
 
@@ -137,31 +150,49 @@ class CelebrationOverlayApp {
     }
 
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.65, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.fillStyle = '#07090e';
     ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r * 0.44, 0, Math.PI * 2);
     ctx.fill();
 
     return c;
   }
 
+  createOffscreenStarSprite(color) {
+    const c = document.createElement('canvas');
+    c.width = 48;
+    c.height = 48;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(24, 4);
+    ctx.lineTo(29, 19);
+    ctx.lineTo(44, 24);
+    ctx.lineTo(29, 29);
+    ctx.lineTo(24, 44);
+    ctx.lineTo(19, 29);
+    ctx.lineTo(4, 24);
+    ctx.lineTo(19, 19);
+    ctx.closePath();
+    ctx.fill();
+    return c;
+  }
+
   /* =========================================================================
-   * 3. PROCEDURAL WEB AUDIO — CRISP HIGH-PITCHED METALLIC COIN SOUND
+   * 3. PROCEDURAL WEB AUDIO — TRUMPET FANFARE FIRST, THEN METALLIC COINS
    * ========================================================================= */
   initAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (AudioContextClass) {
-      this.audioCtx = new AudioContextClass();
-    }
-
-    if (this.audioCtx && this.audioCtx.state === 'running') {
-      this.audioUnlocked = true;
-      if (this.audioGateEl) this.audioGateEl.classList.add('hidden');
+      try {
+        this.audioCtx = new AudioContextClass();
+        this.audioCtx.resume().catch(() => {});
+      } catch (_) {}
     }
 
     const unlockHandler = () => {
@@ -169,53 +200,43 @@ class CelebrationOverlayApp {
         this.audioCtx.resume().then(() => {
           this.audioUnlocked = true;
           if (this.audioGateEl) this.audioGateEl.classList.add('hidden');
-        });
+        }).catch(() => {});
       }
     };
 
-    window.addEventListener('click', unlockHandler, { once: true });
-    window.addEventListener('keydown', unlockHandler, { once: true });
+    window.addEventListener('click', unlockHandler);
+    window.addEventListener('keydown', unlockHandler);
   }
 
-  resumeAudioIfNeeded() {
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume().then(() => {
-        this.audioUnlocked = true;
-        if (this.audioGateEl) this.audioGateEl.classList.add('hidden');
-      });
-    }
-  }
-
-  playSubBassBoom() {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+  playSubBassBoom(volume = 0.42) {
+    if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(85, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
+      osc.frequency.setValueAtTime(90, now);
+      osc.frequency.exponentialRampToValueAtTime(28, now + 0.5);
 
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
 
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.6);
-    } catch (e) {}
+      osc.stop(now + 0.62);
+    } catch (_) {}
   }
 
   playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    if (!this.audioCtx) return;
     try {
       const t = startTime;
       const masterGain = this.audioCtx.createGain();
       masterGain.gain.setValueAtTime(volume, t);
 
-      // Resonant lowpass formant filter
       const filter = this.audioCtx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.Q.setValueAtTime(3.6, t);
@@ -228,7 +249,6 @@ class CelebrationOverlayApp {
       filter.frequency.exponentialRampToValueAtTime(peakCutoff, t + 0.042);
       filter.frequency.exponentialRampToValueAtTime(sustainCutoff, t + (isStaccato ? 0.09 : 0.22));
 
-      // Dual detuned sawtooth oscillators
       const osc1 = this.audioCtx.createOscillator();
       const osc2 = this.audioCtx.createOscillator();
       osc1.type = 'sawtooth';
@@ -238,7 +258,6 @@ class CelebrationOverlayApp {
       osc1.detune.setValueAtTime(-7, t);
       osc2.detune.setValueAtTime(7, t);
 
-      // Warm sub-body
       const subOsc = this.audioCtx.createOscillator();
       subOsc.type = 'triangle';
       subOsc.frequency.setValueAtTime(freq * 0.5, t);
@@ -247,27 +266,9 @@ class CelebrationOverlayApp {
       subOsc.connect(subGain);
       subGain.connect(filter);
 
-      // Vibrato LFO for long notes
-      if (!isStaccato && duration > 0.25) {
-        try {
-          const lfo = this.audioCtx.createOscillator();
-          const lfoGain = this.audioCtx.createGain();
-          lfo.type = 'sine';
-          lfo.frequency.setValueAtTime(5.3, t);
-          lfoGain.gain.setValueAtTime(0, t);
-          lfoGain.gain.setValueAtTime(0, t + 0.16);
-          lfoGain.gain.linearRampToValueAtTime(freq * 0.022, t + 0.38);
-          lfo.connect(osc1.frequency);
-          lfo.connect(osc2.frequency);
-          lfo.start(t + 0.16);
-          lfo.stop(t + duration + 0.1);
-        } catch (_) {}
-      }
-
-      // Envelope
       const noteGain = this.audioCtx.createGain();
-      const attackTime = isStaccato ? 0.018 : 0.035;
-      const releaseTime = isStaccato ? 0.06 : 0.25;
+      const attackTime = isStaccato ? 0.016 : 0.032;
+      const releaseTime = isStaccato ? 0.055 : 0.22;
 
       noteGain.gain.setValueAtTime(0.001, t);
       noteGain.gain.exponentialRampToValueAtTime(1.0, t + attackTime);
@@ -275,8 +276,8 @@ class CelebrationOverlayApp {
       if (isStaccato) {
         noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
       } else {
-        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.05);
-        noteGain.gain.setValueAtTime(0.85, t + duration - releaseTime);
+        noteGain.gain.setValueAtTime(0.85, t + attackTime + 0.04);
+        noteGain.gain.setValueAtTime(0.85, t + Math.max(attackTime + 0.05, duration - releaseTime));
         noteGain.gain.exponentialRampToValueAtTime(0.001, t + duration + releaseTime);
       }
 
@@ -296,131 +297,160 @@ class CelebrationOverlayApp {
     } catch (_) {}
   }
 
-  playVictoriousTrumpetFanfare() {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+  /**
+   * Short Trumpet Fanfare for Partial Wins (~0.85s brisk brass call)
+   */
+  playShortTrumpetFanfare() {
+    if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
-
-      // Royal Entrance Motif in D Major
       const motif = [
-        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
-        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 }, // A4 (ta)
-        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 }, // A4 (ta)
-        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 }, // D5 (TAAA)
-        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 }, // A4 (ta)
-        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 }, // D5 (taa)
-        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 }, // F#5 (TAA!)
+        { freq: 440.00, time: 0.00, dur: 0.09, staccato: true,  vol: 0.36 }, // A4
+        { freq: 587.33, time: 0.11, dur: 0.09, staccato: true,  vol: 0.38 }, // D5
+        { freq: 739.99, time: 0.22, dur: 0.11, staccato: true,  vol: 0.42 }, // F#5
+        { freq: 880.00, time: 0.35, dur: 0.48, staccato: false, vol: 0.46 }, // A5 (Victory Hold)
+        { freq: 587.33, time: 0.35, dur: 0.48, staccato: false, vol: 0.34 }  // D5 Harmony
       ];
+      motif.forEach(n => {
+        this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
+      });
+    } catch (_) {}
+  }
 
+  /**
+   * Grand Royal Trumpet Fanfare for !cashout, $20 Max Prize, and 8-Bracket Champion (~2.5s)
+   */
+  playGrandTrumpetFanfare() {
+    if (!this.audioCtx) return;
+    try {
+      const now = this.audioCtx.currentTime;
+      const motif = [
+        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 }, // A4
+        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 }, // A4
+        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 }, // A4
+        { freq: 587.33, time: 0.39, dur: 0.34, staccato: false, vol: 0.48 }, // D5
+        { freq: 440.00, time: 0.78, dur: 0.12, staccato: true,  vol: 0.38 }, // A4
+        { freq: 587.33, time: 0.92, dur: 0.17, staccato: false, vol: 0.44 }, // D5
+        { freq: 739.99, time: 1.12, dur: 0.22, staccato: false, vol: 0.50 }, // F#5
+      ];
       motif.forEach(n => {
         this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
       });
 
-      // Grand Climax 5-Horn Chord at T + 1.42s
-      const climaxTime = now + 1.42;
+      const climaxTime = now + 1.38;
       const chord = [
-        { freq: 293.66, dur: 1.25, vol: 0.34 }, // D4 (Trombone)
-        { freq: 440.00, dur: 1.30, vol: 0.36 }, // A4 (French Horn)
-        { freq: 587.33, dur: 1.35, vol: 0.40 }, // D5 (Trumpet 2)
-        { freq: 739.99, dur: 1.40, vol: 0.44 }, // F#5 (Trumpet 1)
-        { freq: 880.00, dur: 1.45, vol: 0.48 }, // A5 (Lead Trumpet)
+        { freq: 293.66, dur: 1.30, vol: 0.34 }, // D4
+        { freq: 440.00, dur: 1.35, vol: 0.36 }, // A4
+        { freq: 587.33, dur: 1.40, vol: 0.40 }, // D5
+        { freq: 739.99, dur: 1.45, vol: 0.44 }, // F#5
+        { freq: 880.00, dur: 1.50, vol: 0.48 }  // A5
       ];
-
       chord.forEach(c => {
         this.playBrassNote(c.freq, climaxTime, c.dur, c.vol, false);
       });
     } catch (_) {}
   }
 
-  playFanfare() {
-    this.playVictoriousTrumpetFanfare();
-  }
-
-  // Sharp, high-pitched metallic clinking coins
-  playCoinClatter(count = 28) {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+  /**
+   * Metallic Gold Coins Shower Sound (Triggered after trumpet fanfare starts)
+   */
+  playCoinClatter(count = 24, delaySeconds = 0.48) {
+    if (!this.audioCtx) return;
     try {
-      const now = this.audioCtx.currentTime;
+      const now = this.audioCtx.currentTime + delaySeconds;
       for (let i = 0; i < count; i++) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         const filter = this.audioCtx.createBiquadFilter();
-        const t = now + 0.15 + (i * 0.05) + (Math.random() * 0.03);
+        const t = now + (i * 0.045) + (Math.random() * 0.028);
 
-        // High metallic frequency range (3,200 Hz - 5,500 Hz)
-        const baseFreq = 3400 + Math.random() * 2000;
+        const baseFreq = 3300 + Math.random() * 2200;
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(baseFreq, t);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.65, t + 0.035);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.66, t + 0.038);
 
-        // Resonant metallic bandpass filter
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(baseFreq, t);
-        filter.Q.setValueAtTime(14, t);
+        filter.Q.setValueAtTime(13, t);
 
-        gain.gain.setValueAtTime(0.3, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        gain.gain.setValueAtTime(0.28, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.042);
 
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(this.audioCtx.destination);
 
         osc.start(t);
-        osc.stop(t + 0.045);
+        osc.stop(t + 0.048);
       }
-    } catch (e) {}
+    } catch (_) {}
   }
 
-  playFullCelebrationAudio() {
+  /**
+   * Plays Trumpet Fanfare first, followed by Falling Coins audio
+   */
+  playCelebrationSequenceAudio(isGrand = false) {
     if (!this.audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (AudioContextClass) {
-        this.audioCtx = new AudioContextClass();
+        try { this.audioCtx = new AudioContextClass(); } catch (_) {}
       }
     }
     if (!this.audioCtx) return;
 
-    const fireAudio = () => {
-      this.playSubBassBoom();
-      this.playFanfare();
-      this.playCoinClatter(36);
+    const executeSequence = () => {
+      if (isGrand) {
+        this.playSubBassBoom(0.45);
+        this.playGrandTrumpetFanfare();
+        // Coins sound starts right after the trumpet call begins and cascades in 2 waves
+        this.playCoinClatter(36, 0.62);
+        this.playCoinClatter(30, 1.85);
+      } else {
+        this.playSubBassBoom(0.28);
+        this.playShortTrumpetFanfare();
+        // Shorter, brisk coin shower right after the short trumpet fanfare
+        this.playCoinClatter(20, 0.45);
+      }
     };
 
     if (this.audioCtx.state === 'suspended') {
       this.audioCtx.resume().then(() => {
         this.audioUnlocked = true;
         if (this.audioGateEl) this.audioGateEl.classList.add('hidden');
-        fireAudio();
-      }).catch(() => {});
+        executeSequence();
+      }).catch(() => {
+        executeSequence();
+      });
     } else {
-      fireAudio();
+      executeSequence();
     }
   }
 
   /* =========================================================================
-   * 4. HARDWARE ACCELERATED 60 FPS PARTICLE ENGINE (Optimized Pool)
+   * 4. HARDWARE ACCELERATED 60 FPS SKY COIN RAIN ENGINE (Background Layer)
    * ========================================================================= */
-  spawnCoinRain(amount = 110) {
+  spawnCoinRain(amount = 90, isGrand = false) {
     for (let i = 0; i < amount; i++) {
-      let p;
-      if (this.particlePool.length > 0) {
-        p = this.particlePool.pop();
-      } else {
-        p = {};
-      }
+      let p = this.particlePool.length > 0 ? this.particlePool.pop() : {};
 
       const roll = Math.random();
-      p.type = roll < 0.72 ? 'coin' : (roll < 0.86 ? 'chipGold' : (roll < 0.93 ? 'chipCyan' : 'chipMagenta'));
+      if (isGrand) {
+        p.type = roll < 0.68 ? 'coin' : (roll < 0.80 ? 'chipGold' : (roll < 0.90 ? 'chipGreen' : 'starGold'));
+      } else {
+        p.type = roll < 0.85 ? 'coin' : (roll < 0.94 ? 'chipGold' : 'chipCyan');
+      }
+
+      // Coins fall from the sky across the full width of the screen
       p.x = Math.random() * this.width;
-      p.y = -40 - Math.random() * (this.height * 0.65);
-      p.vx = (Math.random() - 0.5) * 3;
-      p.vy = 5 + Math.random() * 7;
-      p.gravity = 0.16 + Math.random() * 0.08;
-      p.size = 24 + Math.random() * 12;
+      p.y = -45 - Math.random() * (this.height * (isGrand ? 0.85 : 0.45));
+      p.vx = (Math.random() - 0.5) * (isGrand ? 3.4 : 2.4);
+      p.vy = (isGrand ? 5.5 : 7.0) + Math.random() * 6.5;
+      p.gravity = (isGrand ? 0.15 : 0.22) + Math.random() * 0.08;
+      p.size = (p.type === 'starGold' ? 16 : 23) + Math.random() * (isGrand ? 14 : 10);
       p.rotY = Math.random() * Math.PI * 2;
       p.rotZ = Math.random() * Math.PI * 2;
-      p.vRotY = 0.1 + Math.random() * 0.15;
-      p.vRotZ = (Math.random() - 0.5) * 0.06;
+      p.vRotY = 0.11 + Math.random() * 0.16;
+      p.vRotZ = (Math.random() - 0.5) * 0.07;
 
       this.particles.push(p);
     }
@@ -471,8 +501,8 @@ class CelebrationOverlayApp {
     this.ctx.translate(p.x, p.y);
     this.ctx.rotate(p.rotZ);
 
-    const scaleY = Math.cos(p.rotY);
-    this.ctx.scale(1, Math.abs(scaleY) < 0.06 ? 0.06 : scaleY);
+    const scaleY = p.type === 'starGold' ? 1 : Math.cos(p.rotY);
+    this.ctx.scale(1, Math.abs(scaleY) < 0.08 ? 0.08 : scaleY);
 
     const half = p.size;
     this.ctx.drawImage(sprite, -half, -half, half * 2, half * 2);
@@ -480,25 +510,119 @@ class CelebrationOverlayApp {
   }
 
   /* =========================================================================
-   * 5. WINNER BILLBOARD TRIGGER
+   * 5. SPECTATOR AVATAR RESOLUTION (Kick Profile Pic + Deterministic Vector Fallback)
+   * ========================================================================= */
+  resolveSpectatorAvatar(username, explicitAvatarUrl) {
+    const cleanUser = String(username || 'Winner').trim().replace(/^@/, '') || 'Winner';
+    const fallbackUri = (typeof window.getDeterministicAvatarDataUri === 'function')
+      ? window.getDeterministicAvatarDataUri(cleanUser, 136)
+      : '';
+
+    if (explicitAvatarUrl && String(explicitAvatarUrl).startsWith('http')) {
+      this.avatarCache.set(cleanUser.toLowerCase(), explicitAvatarUrl);
+      if (this.avatarImgEl) {
+        this.avatarImgEl.onerror = () => {
+          this.avatarImgEl.onerror = null;
+          if (fallbackUri) this.avatarImgEl.src = fallbackUri;
+        };
+        this.avatarImgEl.src = explicitAvatarUrl;
+      }
+      return;
+    }
+
+    const cached = this.avatarCache.get(cleanUser.toLowerCase());
+    if (cached && this.avatarImgEl) {
+      this.avatarImgEl.onerror = () => {
+        this.avatarImgEl.onerror = null;
+        if (fallbackUri) this.avatarImgEl.src = fallbackUri;
+      };
+      this.avatarImgEl.src = cached;
+      return;
+    }
+
+    // Set deterministic vector avatar immediately (0ms latency)
+    if (this.avatarImgEl && fallbackUri) {
+      this.avatarImgEl.src = fallbackUri;
+    }
+
+    // Asynchronously check Kick profile picture via Worker proxy
+    fetch(`/api/kick/user/${encodeURIComponent(cleanUser)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(info => {
+        if (info && info.avatarUrl && String(info.avatarUrl).startsWith('http')) {
+          this.avatarCache.set(cleanUser.toLowerCase(), info.avatarUrl);
+          if (this.avatarImgEl && this.usernameEl && this.usernameEl.textContent.toLowerCase().replace(/^@/, '') === cleanUser.toLowerCase()) {
+            this.avatarImgEl.onerror = () => {
+              this.avatarImgEl.onerror = null;
+              if (fallbackUri) this.avatarImgEl.src = fallbackUri;
+            };
+            this.avatarImgEl.src = info.avatarUrl;
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  /* =========================================================================
+   * 6. DUAL-TIER WINNER CELEBRATION TRIGGER ('partial' vs 'grand')
    * ========================================================================= */
   triggerCelebration(data) {
     if (!data) return;
-    if (data.timestamp && data.timestamp === this.lastEventTimestamp) {
+    const evTs = Number(data.timestamp || data.ts || 0);
+    if (evTs && evTs <= this.lastEventTimestamp) {
       return;
     }
-    if (data.timestamp) {
-      this.lastEventTimestamp = data.timestamp;
+    if (evTs) {
+      this.lastEventTimestamp = evTs;
+    } else {
+      this.lastEventTimestamp = Date.now();
     }
 
     clearTimeout(this.billboardTimer);
+    this.waveTimers.forEach(t => clearTimeout(t));
+    this.waveTimers = [];
 
-    const isTourney = data.type === 'tourney' || (data.category && String(data.category).toLowerCase().includes('tourney')) || (data.category && String(data.category).toLowerCase().includes('tournament'));
-    const icon = data.icon || (isTourney ? '🏆' : '⚔️');
-    const category = data.category || (isTourney ? 'TOURNAMENT CHAMPION' : '1V1 BATTLE WINNER');
+    const rawType = String(data.type || '').toUpperCase();
+    const rawCat = String(data.category || '').toUpperCase();
+    const rawPrize = String(data.prize || data.prizeText || '').toUpperCase();
+
+    // Determine whether this is a Special Grand Celebration ('grand') or a Partial Victory ('partial'):
+    // Grand triggers on:
+    // 1. 1v1 Battle !cashout (KOTH_CASHOUT)
+    // 2. 1v1 Battle $20 USD Max Streak (KOTH_CHAMPION / 4/4)
+    // 3. 8-Bracket Tournament Champion (TOURNEY_CHAMPION)
+    const isGrand =
+      data.tier === 'grand' ||
+      rawType === 'KOTH_CHAMPION' ||
+      rawType === 'KOTH_CASHOUT' ||
+      rawType === 'TOURNEY_CHAMPION' ||
+      rawType === 'GRAND_WIN' ||
+      rawCat.includes('CHAMPION') ||
+      rawCat.includes('CASHOUT') ||
+      rawPrize.includes('CASHOUT') ||
+      rawPrize.includes('$20');
+
+    const isTourney = rawType.includes('TOURNEY') || rawCat.includes('TOURNEY') || rawCat.includes('TOURNAMENT') || rawCat.includes('BRACKET');
+    const isCashout = rawType.includes('CASHOUT') || rawCat.includes('CASHOUT');
+
+    const icon = data.icon || (isGrand ? (isCashout ? '💰' : '👑') : (isTourney ? '🏆' : '⚔️'));
+    const category = data.category || (
+      isGrand
+        ? (isCashout ? '1V1 KING OF THE HILL · !CASHOUT WINNER' : (isTourney ? '8-BRACKET TOURNAMENT CHAMPION' : '1V1 KING OF THE HILL · $20 MAX CHAMPION'))
+        : (isTourney ? '8-BRACKET ROUND WINNER' : '1V1 BATTLE ROUND WINNER')
+    );
+
+    const ribbonText = data.ribbon || (
+      isGrand
+        ? (isCashout ? '💰 CASHOUT LOCKED IN' : (isTourney ? '🏆 GRAND CHAMPION' : '👑 4/4 MAX PRIZE CHAMPION'))
+        : (isTourney ? '⚡ ADVANCES TO NEXT ROUND' : '⚔️ ROUND VICTORY')
+    );
+
     const rawUser = data.username || (data.winner && (data.winner.displayName || data.winner.username)) || '@Winner';
-    const rawSlot = data.slotName || (data.winner && data.winner.slotName) || 'Wanted Dead or a Wild';
+    const cleanUser = String(rawUser).replace(/^@/, '').trim() || 'Winner';
+    const formattedUser = `@${cleanUser}`;
 
+    const rawSlot = data.slotName || (data.winner && data.winner.slotName) || 'Wanted Dead or a Wild';
     let resolvedSlot = null;
     if (window.SlotResolver) {
       resolvedSlot = window.SlotResolver.resolve(rawSlot, '../');
@@ -510,14 +634,18 @@ class CelebrationOverlayApp {
     }
 
     const statValue = data.statValue || (data.multiplier ? (String(data.multiplier).endsWith('x') || data.multiplier === 'WIN' ? String(data.multiplier) : `${data.multiplier}x`) : 'WIN 🏆');
-    const prize = data.prize || data.prizeText || (isTourney ? 'TOURNAMENT WINNER 🏆' : '1V1 BATTLE VICTORY 👑');
+    const prize = data.prize || data.prizeText || (isGrand ? 'GRAND CHAMPION PRIZE 🏆' : 'ROUND WINNER');
 
-    const cleanUser = String(rawUser).replace(/^@/, '').trim() || 'Winner';
-    const formattedUser = `@${cleanUser}`;
+    // Populate Foreground Center Elements
     if (this.iconEl) this.iconEl.textContent = icon;
     if (this.categoryEl) this.categoryEl.textContent = String(category).toUpperCase();
+    if (this.tierRibbonEl) this.tierRibbonEl.textContent = ribbonText;
+
+    // Resolve and display Spectator Avatar in the center
+    this.resolveSpectatorAvatar(cleanUser, data.avatarUrl || (data.winner && data.winner.avatarUrl));
+
     if (this.usernameEl) {
-      this.scrambleText(this.usernameEl, formattedUser, 650);
+      this.scrambleText(this.usernameEl, formattedUser, isGrand ? 680 : 380);
     }
     if (this.slotNameEl) this.slotNameEl.textContent = slotName;
     if (this.slotImgEl) {
@@ -525,23 +653,41 @@ class CelebrationOverlayApp {
       this.slotImgEl.style.display = 'block';
     }
     if (this.statValueEl) this.statValueEl.textContent = statValue;
-    if (this.prizeTagEl) this.prizeTagEl.textContent = prize;
-
-    if (this.billboard) {
-      this.billboard.classList.remove('active');
-      void this.billboard.offsetWidth; // trigger reflow
-      this.billboard.classList.add('active');
+    if (this.prizeTextEl) {
+      this.prizeTextEl.textContent = prize;
+    } else if (this.prizeTagEl) {
+      this.prizeTagEl.textContent = prize;
     }
 
-    this.spawnCoinRain(110);
-    this.playFullCelebrationAudio();
+    // Apply tier classes ('tier-partial' vs 'tier-grand') and show centered card
+    if (this.billboard) {
+      this.billboard.classList.remove('active', 'tier-partial', 'tier-grand');
+      void this.billboard.offsetWidth; // trigger reflow
+      this.billboard.classList.add(isGrand ? 'tier-grand' : 'tier-partial', 'active');
+    }
 
+    // 1. First: Play Trumpet Fanfare (followed by Coins audio)
+    this.playCelebrationSequenceAudio(isGrand);
+
+    // 2. Then: Rain Coins from the sky in the background right as the trumpet call rings out
+    if (isGrand) {
+      this.waveTimers.push(setTimeout(() => this.spawnCoinRain(135, true), 420));
+      this.waveTimers.push(setTimeout(() => this.spawnCoinRain(95, true), 1450));
+      this.waveTimers.push(setTimeout(() => this.spawnCoinRain(80, true), 2600));
+    } else {
+      this.waveTimers.push(setTimeout(() => this.spawnCoinRain(85, false), 320));
+    }
+
+    // 3. Auto-hide back to 100% transparent (Short ~4.2s for partial wins, Long ~8.5s for grand wins)
+    const displayDurationMs = isGrand ? 8500 : 4200;
     this.billboardTimer = setTimeout(() => {
-      if (this.billboard) this.billboard.classList.remove('active');
-    }, 8000);
+      if (this.billboard) {
+        this.billboard.classList.remove('active');
+      }
+    }, displayDurationMs);
   }
 
-  scrambleText(el, targetText, duration = 650) {
+  scrambleText(el, targetText, duration = 500) {
     if (!el) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       el.textContent = targetText;
@@ -578,18 +724,34 @@ class CelebrationOverlayApp {
     requestAnimationFrame(frame);
   }
 
-  triggerLiveDemo() {
-    this.triggerCelebration({
-      type: 'tourney',
-      icon: '🏆',
-      category: 'TOURNAMENT CHAMPION',
-      username: '@LuckyStriker',
-      slotName: 'Wanted Dead or a Wild',
-      slotImg: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format',
-      multiplier: '150.00',
-      prize: 'PRIZE: $100.00 USD',
-      timestamp: Date.now(),
-    });
+  triggerLiveDemo(tier = 'grand') {
+    if (tier === 'partial') {
+      this.triggerCelebration({
+        tier: 'partial',
+        type: 'BATTLE_WIN',
+        icon: '⚔️',
+        category: '1V1 BATTLE · ROUND WINNER',
+        ribbon: '⚔️ ROUND VICTORY (1/4)',
+        username: '@diggitybets',
+        slotName: 'Wanted Dead or a Wild',
+        statValue: '142.50x',
+        prize: 'STREAK 1/4 ($5.00 USD BANKED) · !CONTINUE OR !CASHOUT',
+        timestamp: Date.now()
+      });
+    } else {
+      this.triggerCelebration({
+        tier: 'grand',
+        type: 'KOTH_CHAMPION',
+        icon: '👑',
+        category: 'KING OF THE HILL · GRAND CHAMPION',
+        ribbon: '👑 $20.00 USD MAX PRIZE CHAMPION',
+        username: '@diggitybets',
+        slotName: 'Gates of Olympus 1000',
+        statValue: '4/4 STREAK',
+        prize: '🏆 GRAND PRIZE LOCKED: $20.00 USD!',
+        timestamp: Date.now()
+      });
+    }
   }
 
   initModeDetection() {
@@ -609,53 +771,55 @@ class CelebrationOverlayApp {
   }
 
   initEventListeners() {
+    const btnPartial = document.getElementById('btn-test-partial');
+    const btnGrandCashout = document.getElementById('btn-test-grand-cashout');
     const btnTourney = document.getElementById('btn-test-tourney');
-    const btnBattle = document.getElementById('btn-test-battle');
     const btnCoins = document.getElementById('btn-test-coins');
-    const btnAudio = document.getElementById('btn-test-audio');
     const btnToggleBg = document.getElementById('btn-toggle-bg');
     const btnUnlock = document.getElementById('btn-unlock-audio');
 
-    if (btnTourney) {
-      btnTourney.addEventListener('click', () => {
+    if (btnPartial) {
+      btnPartial.addEventListener('click', () => this.triggerLiveDemo('partial'));
+    }
+
+    if (btnGrandCashout) {
+      btnGrandCashout.addEventListener('click', () => {
         this.triggerCelebration({
-          type: 'tourney',
-          icon: '🏆',
-          category: 'TOURNAMENT CHAMPION',
-          username: '@SlotKing21',
-          slotName: 'Gates of Olympus 1000',
-          statValue: '250.00x',
-          prize: 'PRIZE: 1ST: $150 USD',
-          timestamp: Date.now(),
+          tier: 'grand',
+          type: 'KOTH_CASHOUT',
+          icon: '💰',
+          category: '1V1 KING OF THE HILL · !CASHOUT WINNER',
+          ribbon: '💰 CASHOUT LOCKED IN',
+          username: '@diggitybets',
+          slotName: 'Wanted Dead or a Wild',
+          statValue: '3/4 WINS',
+          prize: '💰 CASHOUT PRIZE: $15.00 USD!',
+          timestamp: Date.now()
         });
       });
     }
 
-    if (btnBattle) {
-      btnBattle.addEventListener('click', () => {
+    if (btnTourney) {
+      btnTourney.addEventListener('click', () => {
         this.triggerCelebration({
-          type: 'battle',
-          icon: '⚔️',
-          category: '1V1 BATTLE WINNER',
-          username: '@AgusKick',
-          slotName: 'San Quentin xWays',
-          statValue: '84.20x',
-          prize: 'KING OF THE HILL · +$5.00 USD',
-          timestamp: Date.now(),
+          tier: 'grand',
+          type: 'TOURNEY_CHAMPION',
+          icon: '🏆',
+          category: '8-BRACKET TOURNAMENT CHAMPION',
+          ribbon: '🏆 GRAND TOURNAMENT CHAMPION',
+          username: '@diggitybets',
+          slotName: 'Gates of Olympus 1000',
+          statValue: 'CHAMPION 🏆',
+          prize: '👑 1ST PLACE TOURNAMENT WINNER!',
+          timestamp: Date.now()
         });
       });
     }
 
     if (btnCoins) {
       btnCoins.addEventListener('click', () => {
-        this.spawnCoinRain(95);
-        this.playCoinClatter(28);
-      });
-    }
-
-    if (btnAudio) {
-      btnAudio.addEventListener('click', () => {
-        this.playFullCelebrationAudio();
+        this.spawnCoinRain(95, false);
+        this.playCoinClatter(24, 0.05);
       });
     }
 
@@ -668,13 +832,17 @@ class CelebrationOverlayApp {
 
     if (btnUnlock) {
       btnUnlock.addEventListener('click', () => {
-        this.resumeAudioIfNeeded();
-        this.triggerLiveDemo();
+        if (this.audioCtx) this.audioCtx.resume().catch(() => {});
+        this.triggerLiveDemo('grand');
       });
     }
   }
 
-  initBroadcastChannel() {
+  /* =========================================================================
+   * 7. MULTI-CHANNEL REAL-TIME SYNC (BroadcastChannel + LocalStorage + Edge Poll + WS)
+   * ========================================================================= */
+  initSyncChannels() {
+    // 1. Same-browser BroadcastChannel
     try {
       this.channel = new BroadcastChannel('hunthub_celebration');
       this.channel.onmessage = (event) => {
@@ -682,41 +850,81 @@ class CelebrationOverlayApp {
           this.triggerCelebration(event.data);
         }
       };
-    } catch (e) {}
+    } catch (_) {}
 
+    // 2. Same-browser Storage event
     window.addEventListener('storage', (e) => {
       if ((e.key === 'hunthub_celebration_trigger' || e.key === 'hunthub_celebration_event') && e.newValue) {
         try {
           const data = JSON.parse(e.newValue);
           this.triggerCelebration(data);
-        } catch (err) {}
+        } catch (_) {}
       }
     });
 
-    // Lightweight localStorage timestamp check so cross-tab events are never missed
+    // Seed baseline timestamp from existing localStorage so old events don't replay on reload
     try {
       const existing = localStorage.getItem('hunthub_celebration_event');
       if (existing) {
         const parsed = JSON.parse(existing);
-        if (parsed && parsed.timestamp) {
-          this.lastEventTimestamp = parsed.timestamp;
+        const ts = Number(parsed?.timestamp || parsed?.ts || 0);
+        if (ts > this.lastEventTimestamp) {
+          this.lastEventTimestamp = ts;
         }
       }
     } catch (_) {}
 
+    // LocalStorage fast poll
     setInterval(() => {
       try {
         const raw = localStorage.getItem('hunthub_celebration_event');
         if (!raw) return;
         const data = JSON.parse(raw);
-        if (data && data.timestamp && data.timestamp > this.lastEventTimestamp && (Date.now() - data.timestamp) < 12000) {
+        const ts = Number(data?.timestamp || data?.ts || 0);
+        if (ts > this.lastEventTimestamp && (Date.now() - ts) < 12000) {
           this.triggerCelebration(data);
         }
       } catch (_) {}
-    }, 600);
+    }, 550);
 
-    // Cross-Process OBS Browser Source WebSocket + /api/sync/state Sync (<50ms)
+    // 3. Cross-Process Edge Sync (Opera/Chrome Control Panel <-> OBS Studio Browser Source)
+    this.initEdgeCelebrationPoll();
+
+    // 4. Optional Localhost WebSocket Sync
     this.initWebSocketSync();
+  }
+
+  initEdgeCelebrationPoll() {
+    let initializedBaseline = false;
+    const pollEdge = async () => {
+      try {
+        const res = await fetch('/api/overlay/celebration', { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const ev = payload?.celebrationEvent;
+        if (!ev) {
+          initializedBaseline = true;
+          return;
+        }
+        const evTs = Number(ev.timestamp || ev.ts || 0);
+        if (!initializedBaseline) {
+          initializedBaseline = true;
+          // Only trigger on first load if the event was fired within the last 3.5 seconds
+          if (evTs > this.lastEventTimestamp && (Date.now() - evTs) < 3500) {
+            this.triggerCelebration(ev);
+          } else if (evTs > this.lastEventTimestamp) {
+            this.lastEventTimestamp = evTs;
+          }
+          return;
+        }
+        if (evTs > this.lastEventTimestamp && (Date.now() - evTs) < 15000) {
+          this.triggerCelebration(ev);
+        }
+      } catch (_) {}
+    };
+
+    pollEdge();
+    setInterval(pollEdge, 900);
   }
 
   initWebSocketSync() {
@@ -742,12 +950,12 @@ class CelebrationOverlayApp {
               this.triggerCelebration(payload.event.data || payload.event);
             }
           }
-        } catch {}
+        } catch (_) {}
       };
       this.ws.onclose = () => {
         setTimeout(() => this.initWebSocketSync(), 4000);
       };
-    } catch {}
+    } catch (_) {}
   }
 }
 

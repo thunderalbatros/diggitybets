@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -24,14 +25,12 @@ Compendio definitivo de patrones de diseño de interacción. Detalla la divulgac
 - **Responsive Layouts**
 - **Progressive Disclosure**
 
-## 🚀 Aplicación Directa al ADN Yendo (Mobile, Backend & GTM)
+## 🚀 Aplicación en Arquitectura Web & HuntHub
 Estructuración de la pantalla Club y fichas de venues con láminas inferiores expansibles (Bottom Sheets a 120 FPS) que revelan información secundaria sin sacar al usuario de su contexto geográfico principal.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_LIBRARY]]
-- [[YENDO_DNA]]
 - [[CANON_UI_UX_BIBLIOTECA_CENTRAL]]
 - [[CANON_ESTUDIO_PSICOLOGIA_ETICA]]
 - [[CANON_DYNAMIC_COMPONENTS_PERFORMANCE_2026]]

@@ -1,6 +1,6 @@
 ---
 name: number-parsing
-description: Robust multi-locale currency and guess parser supporting Argentine and US numerical conventions.
+description: Robust multi-locale currency and guess parser supporting European, US, and international numerical conventions.
 ---
 
 # Robust Number & Guess Parser

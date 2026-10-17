@@ -130,6 +130,18 @@ export default {
       if (assetRes.status !== 404) {
         return assetRes;
       }
+      const isOverlayOrWheelPath = /^\/(overlay-[a-z0-9-]+|wheel-[a-z0-9-]+|casino-suite)(\/.*)?$/i.test(url.pathname);
+      if (isOverlayOrWheelPath) {
+        const cleanPath = url.pathname.replace(/\/+$/, '');
+        if (!cleanPath.endsWith('.html') && !cleanPath.includes('.')) {
+          const indexUrl = new URL(`${cleanPath}/index.html${url.search}`, url.origin);
+          const subIndexRes = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+          if (subIndexRes.status !== 404) {
+            return subIndexRes;
+          }
+        }
+        return assetRes;
+      }
       return env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
     }
 
@@ -840,26 +852,120 @@ export default {
       return new Response(JSON.stringify({ alerts }), { headers: corsHeaders });
     }
 
-    // 20. Cloudflare D1 Sync Endpoint (Sync local node and edge)
-    if (url.pathname === '/api/sync/state') {
+    // 20. Cloudflare Edge & D1 Sync Endpoint (Sync Control Panel browser <-> OBS Browser Sources)
+    if (!globalThis.__HUNTHUB_OVERLAY_SYNC__) {
+      globalThis.__HUNTHUB_OVERLAY_SYNC__ = {
+        celebrationEvent: null,
+        overlayEvents: {},
+        updatedAt: 0
+      };
+    }
+
+    const edgeCacheKey = new Request('https://diggitybets.vip/__internal_overlay_sync_v1__');
+
+    const readOverlaySyncState = async () => {
+      let mem = globalThis.__HUNTHUB_OVERLAY_SYNC__;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          const cachedRes = await caches.default.match(edgeCacheKey);
+          if (cachedRes) {
+            const cachedData = await cachedRes.json();
+            if (cachedData && (cachedData.updatedAt || 0) >= (mem.updatedAt || 0)) {
+              globalThis.__HUNTHUB_OVERLAY_SYNC__ = cachedData;
+              mem = cachedData;
+            }
+          }
+        }
+      } catch (_) {}
+      return mem;
+    };
+
+    const writeOverlaySyncState = async (nextState) => {
+      nextState.updatedAt = Date.now();
+      globalThis.__HUNTHUB_OVERLAY_SYNC__ = nextState;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          const cacheRes = new Response(JSON.stringify(nextState), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'public, max-age=180'
+            }
+          });
+          await caches.default.put(edgeCacheKey, cacheRes);
+        }
+      } catch (_) {}
+    };
+
+    if (url.pathname === '/api/overlay/celebration') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
-        let state = { users: [], stake_verification_requests: [], store_redemptions: [], raffle_tickets: [], alt_clusters: [] };
+        const syncState = await readOverlaySyncState();
+        return new Response(JSON.stringify({
+          success: true,
+          celebrationEvent: syncState.celebrationEvent || null,
+          overlayEvents: syncState.overlayEvents || {},
+          updatedAt: syncState.updatedAt || 0
+        }), { headers: noCacheHeaders });
+      }
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const current = await readOverlaySyncState();
+          const eventPayload = body.celebration || body.data || body;
+          current.celebrationEvent = { ...eventPayload, timestamp: eventPayload.timestamp || eventPayload.ts || Date.now() };
+          current.overlayEvents = current.overlayEvents || {};
+          current.overlayEvents['overlay-celebration'] = current.celebrationEvent;
+          await writeOverlaySyncState(current);
+          return new Response(JSON.stringify({ success: true, celebrationEvent: current.celebrationEvent }), { headers: noCacheHeaders });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: noCacheHeaders });
+        }
+      }
+    }
+
+    if (url.pathname === '/api/sync/state') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (request.method === 'GET') {
+        const syncState = await readOverlaySyncState();
+        let state = {
+          users: [],
+          stake_verification_requests: [],
+          store_redemptions: [],
+          raffle_tickets: [],
+          alt_clusters: [],
+          celebrationEvent: syncState.celebrationEvent || null,
+          overlayEvents: syncState.overlayEvents || {}
+        };
         if (env.DB) {
           try {
             const users = await env.DB.prepare('SELECT * FROM users').all();
             const stake = await env.DB.prepare('SELECT * FROM stake_verification_requests').all();
             const redemptions = await env.DB.prepare('SELECT * FROM store_redemptions').all();
-            state = {
-              users: users.results || [],
-              stake_verification_requests: stake.results || [],
-              store_redemptions: redemptions.results || []
-            };
+            state.users = users.results || [];
+            state.stake_verification_requests = stake.results || [];
+            state.store_redemptions = redemptions.results || [];
           } catch (_) {}
         }
-        return new Response(JSON.stringify(state), { headers: corsHeaders });
+        return new Response(JSON.stringify(state), { headers: noCacheHeaders });
       }
       if (request.method === 'POST') {
         const body = await request.json();
+        if (body.overlayEvent || body.celebrationEvent) {
+          const current = await readOverlaySyncState();
+          current.overlayEvents = current.overlayEvents || {};
+          if (body.overlayEvent) {
+            const targetKey = body.overlayEvent.target || body.overlayEvent.type || 'default';
+            current.overlayEvents[targetKey] = body.overlayEvent;
+            if (body.overlayEvent.target === 'overlay-celebration' || body.overlayEvent.type === 'CELEBRATION') {
+              const evData = body.overlayEvent.data || body.overlayEvent;
+              current.celebrationEvent = { ...evData, timestamp: evData.timestamp || evData.ts || Date.now() };
+            }
+          }
+          if (body.celebrationEvent) {
+            current.celebrationEvent = { ...body.celebrationEvent, timestamp: body.celebrationEvent.timestamp || body.celebrationEvent.ts || Date.now() };
+          }
+          await writeOverlaySyncState(current);
+        }
         if (env.DB && Array.isArray(body.users)) {
           for (const u of body.users) {
             try {
@@ -871,7 +977,7 @@ export default {
             } catch (_) {}
           }
         }
-        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true }), { headers: noCacheHeaders });
       }
     }
 

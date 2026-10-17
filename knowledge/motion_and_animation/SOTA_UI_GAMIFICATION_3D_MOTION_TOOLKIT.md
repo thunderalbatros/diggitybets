@@ -1,72 +1,65 @@
 ---
-version: 1.0.0
+version: 1.1.0
 tipo: research
 tags:
-  - yendo-mobile
-  - architecture
-  - en-progreso
+  - web-application
+  - gamification
+  - motion
+  - web-audio
+  - obs-overlays
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
-ultima_revision: 2026-08-27
+ultima_revision: 2026-10-17
 ---
 
-# 🎮 SOTA UI Toolkit: Gamificación, Motion 3D, Mapa OLED y Diseño Háptico
+# 🎮 SOTA UI Toolkit: Gamificación, Motion Web, Partículas y Síntesis de Audio Procedural
 
-Este documento consolida la arquitectura y los patrones de implementación canónicos para interfaces móviles de alta fidelidad (120 FPS) en **Yendo Mobile**, optimizado para React Native 0.86, Expo 57 Fabric Bridgeless y arquitectura de hilos de trabajo (Reanimated 4 Worklets).
-
----
-
-## 1. Gamificación y Sistema de Puntos (Tokens & Streaks)
-
-### Principio Psicológico y Neurobiológico
-Inspirado en los principios de condicionamiento operante y recompensa variable de [[YENDO_LIBRARY.md]], cada interacción social o confirmación de quórum Dunbar (4-6 personas) debe proporcionar una confirmación multisensorial:
-1. **Feedback Visual:** Contador numérico rodante (`PointsCounter`) con física de resorte áureo (`mass: 1`, `stiffness: 100`, `damping: 10`).
-2. **Feedback Táctil:** Secuencia de micro-impactos hápticos (`HapticsManager.triggerRewardSuccess()`).
-3. **Celebración:** Lluvia de partículas vectoriales (`ConfettiReward`) en paleta de oro `#FFD700` y acento Yendo `#FF5500`.
+Este documento consolida la arquitectura y los patrones de implementación canónicos para interfaces web interactivas y overlays de OBS Studio (60-120 FPS) en **HuntHub Web / DiggityBets**.
 
 ---
 
-## 2. Animaciones 3D y Mascotas Interactivas (Estilo Duolingo)
+## 1. Gamificación y Feedback Sensorial en Tiempo Real
 
-### El Motor de State Machines: Rive
-A diferencia de escenas 3D pesadas en Three.js que saturan la GPU del dispositivo móvil y consumen batería, la arquitectura Yendo adopta el estándar de **Rive React Native** (`@rive-app/rive-react-native` con Nitro Modules):
-* **Peso de Assets:** Archivos `.riv` de menos de 40 KB.
-* **Tasa de Refresco:** 120 FPS sostenidos en C++ nativo sin tocar el hilo de JavaScript.
-* **Control por State Machine:**
-  * `State: Idle` -> La mascota Capibara respira suavemente en la pantalla principal.
-  * `Trigger: OnReward` -> La mascota celebra y salta al completar el quórum.
-  * `State: Sleep` -> Modo reposo en horarios nocturnos sin actividad social.
+### Principio Neurobiológico de Recompensa y Claridad
+Cada interacción clave (giro de ruleta, ingreso a un torneo 1v1, victoria en King of the Hill, registro en bonushunts) proporciona feedback multisensorial coordinado:
+1. **Feedback Visual:** Contador numérico rodante (`PointsCounter` / multiplicadores) animado mediante `requestAnimationFrame` o WAAPI con interpolación elástica.
+2. **Audio Procedural (Web Audio API):** Síntesis instantánea sin latencia de red (`SoundFx.playTick()`, `SoundFx.playWinnerFanfare()`, `SoundFx.playCoin()`).
+3. **Micro-Celebración:** Lluvia de partículas en Canvas 2D (`ConfettiReward`) en paleta de oro `#ffd700` y verde neón `#53fc18`.
 
 ---
 
-## 3. Mapa Interactivo Dark OLED (Minimalismo Cyberpunk CABA)
+## 2. Animaciones de Ruleta y Torneos con WAAPI
+
+A diferencia de librerías sobredimensionadas, las animaciones críticas de streaming utilizan **Web Animations API (WAAPI)** y CSS Transforms:
+- **Curva de Giro de Ruleta:** `cubic-bezier(0.22, 1, 0.36, 1)` con duración de 6.5s y jitter estocástico para anticipación dramática.
+- **Transiciones de Bracket y King of the Hill:** Desplazamiento elástico de tarjetas competidoras con estados de victoria y reinicio suave.
+- **Cero Impacto en CPU de OBS:** Uso estricto de propiedades compuestas (`transform: translate3d(...)`, `opacity`), manteniendo el uso de CPU $\le 5\%$.
+
+---
+
+## 3. Componentes Visuales Dark Casino OLED
 
 ### Estilo Visual Canónico
-Para eliminar la contaminación lumínica en horarios nocturnos y respetar el estándar OLED Dark (`#121212`), se aplica el descriptor `DARK_OLED_MAP_STYLE`:
-* Suprime puntos de interés irrelevantes de Google Maps.
-* Calles secundarias en gris profundo (`#1E1E1E`), avenidas en grafito (`#2A2A2E`) y cursos de agua en azul abisal (`#090C10`).
-* **Radar Pulse Markers:** Pines animados que emiten ondas concéntricas de pulso (`PulseMarker`), indicando en tiempo real la "temperatura" de un venue o el acercamiento de quórum.
+- **Color de Fondo:** `#0b0e14` / `#121620` (Negro OLED con alto contraste).
+- **Acentos:** `#53fc18` (Verde Kick de alta visibilidad) y `#ffd700` (Oro de recompensas).
+- **Superficies:** Glassmorphism sutil con bordes de 1px `rgba(255, 255, 255, 0.08)` y sombras perimetrales contenidas.
+- **Indicadores de Estado:** Pines y chips con micro-pulsos CSS (`@keyframes pulse-subtle`) para estados en vivo (LIVE, BETS OPEN, IN PROGRESS).
 
 ---
 
 ## 4. Cuándo y Cómo Usar Cada Componente
 
-| Componente | Caso de Uso Canónico | Squad Responsable |
+| Componente | Caso de Uso Canónico | Tecnología |
 | :--- | :--- | :--- |
-| `PointsCounter` | Bóveda de tokens, acumulación de puntos Dunbar, badges. | `CORE_ENGINEERING_SQUAD` |
-| `ConfettiReward` | Desbloqueo de pases VIP, check-in validado, canje de vouchers. | `VISUAL_EXPERIENCE_SQUAD` |
-| `PulseMarker` | Marcadores en el mapa interactivo de CABA con quórum approaching. | `VISUAL_EXPERIENCE_SQUAD` |
-| `HapticsManager` | Toda interacción con botones primarios, swipers y modals. | `HUMAN_EXPERIENCE_SQUAD` |
-| `DARK_OLED_MAP_STYLE` | Prop `customMapStyle` de `MapView` en la pantalla del mapa. | `VISUAL_EXPERIENCE_SQUAD` |
+| `PointsCounter` | Multiplicadores de slots, balances y botes acumulados. | JavaScript + WAAPI |
+| `ConfettiReward` | Ganadores de 1v1 KOH, jackpots y cierre de bonushunts. | HTML5 Canvas 2D |
+| `CSGOSpinStrip` | Tira de tarjetas horizontales para sorteos de ruleta. | CSS Transitions + Web Audio |
+| `SoundFx` | Efectos de sonido táctiles (ticks, campanadas, victorias). | Web Audio API nativa |
+| `BracketViewer` | Cuadros de eliminación directa en torneos de 8 jugadores. | CSS Grid / Flexbox |
 
 ---
 
 ## Relaciones de Contexto
-- [[.knowledge/YENDO_DNA.md]]
-- [[.knowledge/YENDO_LIBRARY.md]]
-- [[.knowledge/Biblia_Maestra_Visual_3D_Motion_Yendo.md]]
-- [[.knowledge/OSS_WHITELIST_REGISTRY.md]]
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
-- [[Número de Dunbar]]
-- [[Reanimated]]
-- [[Rive]]
+- [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]]
+- [[CANON_GAME_FEEL_VIRTUAL_SENSATION_SWINK]]
+- [[CANON_DESIGN_SYSTEMS_ALLA_KHOLMATOVA]]
+- [[fair-draws]]

@@ -59,4 +59,4 @@ Clonamos y adaptamos todas las skills requeridas dentro de `.agents/skills/`:
 
 - **Sandbox Local Matt Pocock (`tools/sandbox.mjs`):** Permite crear ramas git de trabajo temporal aisladas (`worktrees`), probar código experimental y fusionar a HEAD solo si pasa los tests.
 - **Cloud Sandbox E2B (`tools/e2b_sandbox.mjs`):** Conectado con tu API key de E2B (`e2b_f9dcab86...`) para correr simulaciones de código de forma 100% segura en la nube.
-- **RAG Pipeline (`tools/intelligence/rag_pipeline.mjs`):** Conexión activa a tus 8.384 documentos en Qdrant Vector Cloud (`centinela_knowledge` y `yendo_obsidian_vault`).
+- **RAG Pipeline (`tools/intelligence/rag_pipeline.mjs`):** Conexión activa a documentos técnicos en Qdrant Vector Cloud (`centinela_knowledge`) y tratados locales de arquitectura web.

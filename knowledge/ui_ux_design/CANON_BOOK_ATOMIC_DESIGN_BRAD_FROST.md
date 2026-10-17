@@ -2,7 +2,8 @@
 version: 1.0.0
 tipo: research
 tags:
-  - yendo-mobile
+  - web-application
+  - ui-ux
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -24,14 +25,12 @@ Metodología fundacional para crear sistemas de diseño de interfaces escalables
 - **Plantillas (Layouts)**
 - **Páginas (Vistas Finales)**
 
-## 🚀 Aplicación Directa al ADN Yendo (Mobile, Backend & GTM)
-Estructuración modular de Yendo UI: tokens en src/constants/theme.ts (átomos), cards de eventos y badges de quórum (moléculas), tab de Club y Radar (organismos), ensamblados bajo la regla estricta de modularidad <150 líneas.
+## 🚀 Aplicación en Arquitectura Web & HuntHub
+Estructuración modular de HuntHub Web UI: tokens en src/constants/theme.ts (átomos), cards de eventos y badges de quórum (moléculas), tab de Club y Radar (organismos), ensamblados bajo la regla estricta de modularidad <150 líneas.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_LIBRARY]]
-- [[YENDO_DNA]]
 - [[CANON_UI_UX_BIBLIOTECA_CENTRAL]]
 - [[CANON_ESTUDIO_PSICOLOGIA_ETICA]]
 - [[CANON_DYNAMIC_COMPONENTS_PERFORMANCE_2026]]

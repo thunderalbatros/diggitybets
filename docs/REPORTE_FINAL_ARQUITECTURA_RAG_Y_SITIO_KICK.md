@@ -62,10 +62,9 @@ Para asegurar que **todos los participantes y ganadores provengan exclusivamente
 
 ## 4. Biblioteca RAG y Absorción de Conocimiento de Centinela
 
-Se conectó y verificó la base de datos vectorial Qdrant con los dos clusters existentes:
-- **`centinela_knowledge`:** 3.608 nodos vectoriales de papers agénticos, frameworks de orquestación, inferencia sintáctica de comandos de stream y memorias de arquitectura.
-- **`yendo_obsidian_vault`:** 4.776 nodos vectoriales de diseño de interfaz, notas de ingeniería y documentación.
-- **Total:** 8.384 documentos ingeridos y accesibles.
+Se conectó y verificó la base de datos vectorial Qdrant con la colección técnica:
+- **`centinela_knowledge`:** 3.608 nodos vectoriales de papers agénticos, frameworks de orquestación, inferencia sintáctica de comandos de stream, APIs y memorias de arquitectura web.
+- **`knowledge/` local:** 21 tratados canónicos de ingeniería visual, Web Animations API, Three.js WebGPU, diseño de interfaces, accesibilidad WCAG y ciberseguridad web.
 
 Se creó `tools/intelligence/rag_pipeline.mjs` para permitir consultas semánticas y por palabras clave tanto locales (carpeta `knowledge/`, `docs/`, `research/`) como en la nube de Qdrant.
 

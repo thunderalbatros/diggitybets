@@ -1,44 +1,42 @@
 ---
-version: 1.0.0
+version: 1.1.0
 tipo: research
 tags:
-  - yendo-mobile
-  - architecture
-  - en-progreso
+  - web-application
+  - webgl
+  - webgpu
+  - shaders
+  - obs-overlays
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
-ultima_revision: 2026-08-27
+ultima_revision: 2026-10-17
 ---
 
-# ⚡ Tratado Canónico: Gráficos de Bajo Nivel, Metal y Shaders Skia
-### Basado en: *Metal by Example* (Warren Moore) & *Metal Programming Guide* (Apple)
-**Autores:** Warren Moore / Apple Inc.
-**Archivos Fuente:** `unsorted/mbe-1.0.0.pdf` (154 páginas) y `unsorted/preview-9780134668987_A31858261.pdf` (36 páginas)
+# ⚡ Tratado Canónico: Gráficos de Bajo Nivel, Aceleración por GPU y Shaders WebGL / WebGPU
 
----
+## 1. El Pipeline Gráfico Web y la Aceleración por GPU
+En aplicaciones web interactivas y overlays de transmisión en vivo (OBS Studio), depender de la CPU para el renderizado o aplicar filtros intensivos en el hilo principal produce caídas de frames (**jank**) y eleva la utilización de CPU del streamer.
 
-## 1. El Pipeline Gráfico de Bajo Nivel y la Aceleración por GPU
-
-En aplicaciones móviles de alta fidelidad visual (que utilizan desenfoques dinámicos, gradientes complejos, mapas con cientos de marcadores y animaciones de partículas), depender de la CPU para el renderizado produce caídas catastróficas de frames (**Jank / Stutter**) y recalentamiento térmico del dispositivo.
-
-Metal (en iOS) y Vulkan (en Android) proveen acceso directo de baja sobrecarga a los núcleos de la GPU (Unified Memory Architecture - UMA). En React Native, este poder se aprovecha a través del motor **Shopify React Native Skia** y **SkSL (Skia Shading Language)**, que compila directamente a pipelines de Metal/Vulkan.
+Los navegadores modernos y el motor Chromium de OBS Studio proporcionan acceso directo a la aceleración por hardware a través de **WebGL 2.0**, **WebGPU** y el hilo del compositor de CSS. Aprovechar este pipeline permite ejecutar efectos visuales de alta gama (fondos reactivos, halos neón, simulación de partículas de confeti) con un consumo mínimo de recursos.
 
 ---
 
-## 2. Principios de Shaders Eficientes en Skia / React Native
+## 2. Principios de Shaders Eficientes en la Web y OBS
 
-1. **Off-Thread Graphics Pipeline:**
-   - La GPU procesa millones de píxeles en paralelo. Al dibujar efectos de Glassmorphism o halos luminosos, el cómputo se delega íntegramente al fragment shader en GPU, liberando el hilo de JavaScript y el hilo principal de UI.
-2. **Eliminación del Overdraw:**
-   - El peor enemigo del rendimiento en pantallas OLED es el "Overdraw": pintar múltiples capas transparentes superpuestas sobre el mismo píxel.
-   - En Skia, los filtros de desenfoque deben acotarse estrictamente al bounding box del componente mediante `clipRect`, evitando blurrear zonas invisibles de la pantalla.
-3. **Saturación y Mapeo Tonal en Pantallas Modernas:**
-   - Aprovechar el espacio de color extendido **Display P3** en iPhones y pantallas AMOLED Samsung de alta gama para los acentos naranja `#FF5500` y púrpuras profundos de Yendo, logrando una luminosidad visual imposible en sRGB estándar.
+1. **Animación en el Hilo del Compositor:**
+   - La GPU procesa transformaciones matriciales y opacidades de forma nativa sin disparar recálculos de layout o repintados del DOM.
+   - Restringir animaciones continuas a `transform: translate3d(...)` y `opacity`.
+2. **Eliminación del Overdraw y Optimización de Canvas:**
+   - El sobrepintado (Overdraw) al superponer múltiples capas con `backdrop-filter: blur(...)` degrada la tasa de refresco.
+   - En Canvas 2D y WebGL, limpiar únicamente áreas modificadas o utilizar técnicas de double-buffering y pooling de partículas.
+3. **Shaders de Fragmento Ligeros (GLSL):**
+   - Evitar bucles complejos o cálculos trigonométricos por píxel dentro del `fragment shader`.
+   - Pre-calcular uniformes en JavaScript y transferir estados como texturas o buffers compactos.
+4. **Espacios de Color y Alto Rango Dinámico:**
+   - Aprovechar `color-gamut: p3` en CSS y sRGB lineal en WebGL para que los tonos verdes neón `#53fc18` y dorados `#ffd700` resalten con máxima nitidez sin saturación distorsionada.
 
 ---
 
 ## Relaciones de Contexto
-- [[YENDO_DNA]]
-- [[YENDO_LIBRARY]]
-- [[React Native Skia]]
-- [[Reanimated]]
-- [[Biblia_Maestra_Visual_3D_Motion_Yendo]]
+- [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]]
+- [[CANON_GAME_FEEL_VIRTUAL_SENSATION_SWINK]]
+- [[SOTA_UI_GAMIFICATION_3D_MOTION_TOOLKIT]]

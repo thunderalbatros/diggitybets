@@ -1,7 +1,6 @@
 /**
  * HuntHub / DiggityBets — Agent Context Compactor
- * =============================================================================
- * Adapted from Yendo & Centinela context optimization pipelines.
+ * Context optimization pipeline for web development agents.
  * Compresses chat logs, agent reasoning traces, and diffs by 60%–75%
  * while strictly preserving:
  *   - Modified file paths
