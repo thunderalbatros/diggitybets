@@ -126,7 +126,11 @@ export default {
 
     // 2. Static Assets binding (Cloudflare Workers Static Assets)
     if (env.ASSETS && !url.pathname.startsWith('/api/')) {
-      return env.ASSETS.fetch(request);
+      const assetRes = await env.ASSETS.fetch(request);
+      if (assetRes.status !== 404) {
+        return assetRes;
+      }
+      return env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
     }
 
     // 3. Healthcheck
@@ -207,17 +211,21 @@ export default {
         // Determine matching redirect_uri
         const effectiveRedirectUri = redirect_uri || (url.origin.includes('diggitybets.vip') ? 'https://diggitybets.vip/api/auth/callback' : `${url.origin}/api/auth/callback`);
 
+        const tokenParams = {
+          grant_type: 'authorization_code',
+          client_id: clientId,
+          redirect_uri: effectiveRedirectUri,
+          code_verifier: code_verifier,
+          code: code
+        };
+        if (clientSecret) {
+          tokenParams.client_secret = clientSecret;
+        }
+
         const tokenRes = await fetch('https://id.kick.com/oauth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            grant_type: 'authorization_code',
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: effectiveRedirectUri,
-            code_verifier: code_verifier,
-            code: code
-          })
+          body: new URLSearchParams(tokenParams)
         });
 
         let userData = { username: 'KickViewer', isSub: false, id: 0, avatarUrl: '' };

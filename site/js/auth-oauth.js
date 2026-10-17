@@ -279,8 +279,12 @@ class OAuthEngine {
 
     if (!code) return;
 
-    // Clean URL query parameters immediately
-    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    // Clean URL query parameters immediately and ensure root navigation
+    if (window.location.pathname.includes('/api/auth')) {
+      window.history.replaceState({}, document.title, '/#profile');
+    } else {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
 
     if (savedState && state && state !== savedState) {
       if (window.sonner) {
@@ -322,7 +326,7 @@ class OAuthEngine {
 
       const effectiveRedirect = redirectUri || this.config.kick.redirectUri;
 
-      const response = await fetch('/api/auth/kick/callback', {
+      let response = await fetch('/api/auth/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,11 +337,27 @@ class OAuthEngine {
       });
 
       if (!response.ok) {
+        // Fallback to /api/auth/kick/callback
+        response = await fetch('/api/auth/kick/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            code_verifier: codeVerifier,
+            redirect_uri: effectiveRedirect
+          })
+        });
+      }
+
+      if (!response.ok) {
         throw new Error(`Edge exchange error: ${response.status}`);
       }
 
       const userData = await response.json();
       this.applyKickUserData(userData);
+      if (window.location.pathname.includes('/api/auth')) {
+        window.location.replace('/#profile');
+      }
 
     } catch (err) {
       console.warn('[OAuthEngine] Edge token exchange fallback to local session:', err);
@@ -347,6 +367,9 @@ class OAuthEngine {
         isSub: true,
         verified: true
       });
+      if (window.location.pathname.includes('/api/auth')) {
+        window.location.replace('/#profile');
+      }
     }
   }
 
