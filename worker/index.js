@@ -140,7 +140,7 @@ export default {
     }
 
     // 4. Kick OAuth 2.1 GET Redirect Handler
-    if (url.pathname === '/api/auth/kick/callback' && request.method === 'GET') {
+    if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && request.method === 'GET') {
       const code = url.searchParams.get('code') || '';
       const state = url.searchParams.get('state') || '';
       return Response.redirect(`${url.origin}/?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=kick#profile`, 302);
@@ -154,7 +154,7 @@ export default {
     }
 
     // 6. Kick OAuth 2.1 PKCE Token Exchange Endpoint
-    if (url.pathname === '/api/auth/kick/callback' && request.method === 'POST') {
+    if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && request.method === 'POST') {
       try {
         const { code, code_verifier, redirect_uri } = await request.json();
 
@@ -165,7 +165,7 @@ export default {
           });
         }
 
-        const clientId = env.KICK_CLIENT_ID || 'kick_pub_client_diggitybets';
+        const clientId = env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
         const clientSecret = env.KICK_CLIENT_SECRET || '';
 
         // Determine matching redirect_uri
@@ -198,9 +198,9 @@ export default {
             const kickApiData = await userRes.json();
             if (kickApiData.data && kickApiData.data[0]) {
               const user = kickApiData.data[0];
-              userData.username = user.username;
-              userData.avatarUrl = user.profile_picture;
-              userData.id = user.id;
+              userData.username = user.name || user.username || 'KickUser';
+              userData.avatarUrl = user.profile_picture || '';
+              userData.id = user.user_id || user.id || 0;
             }
           }
         } else {

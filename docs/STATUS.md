@@ -394,11 +394,27 @@
   - **Animación de Flotación Limpia en `$100 Bonus Buy Split` (`#store`):** Eliminada la deformación 3D (`rotateX`/`rotateY`) sobre `.store-voucher-card`, aplicando flotación vertical pura (`translateY(-6px)`).
   - **Barra Superior (`.site-topbar`) al 100% de Tamaño + `$DIG` Simétrico en el Centro + `Profile` a la Derecha del Nombre:**
     - Altura duplicada (`156px` en desktop), píldora `.user-balance-pill` (`🪙 0 $DIG`) centrada simétricamente (`left: 50%; transform: translate(-50%, -50%)`), y botón `#topbar-profile-link` (`👤 Profile`) ubicado a la derecha del nombre de cuenta y del badge `✓ VERIFIED`.
+- [x] **Stage 15 (Ingeniería Inversa ReachAces & Autenticación Oficial Automatizada Kick OAuth 2.1 PKCE):** COMPLETED & TESTED.
+  - **Ingeniería Inversa con Metodología `rea` (ReachAces.com):**
+    - Se descargó e inspeccionó la arquitectura completa de `reachaces.com` (`/giveaways`, `/js/auth.js`, `/js/main.js`, `/js/giveaways.js`).
+    - Se identificó el flujo oficial de Kick OAuth 2.1 PKCE con detección automática de sesión de navegador activa: `https://id.kick.com/oauth/authorize?response_type=code&client_id=...&redirect_uri=...&scope=user%3Aread&state=...&code_challenge=...&code_challenge_method=S256`.
+  - **Corrección de Client ID Real & Scope Mínimo (`01M4QTKTY268TVY3DZCMC2EBHQ`):**
+    - Se corrigió el placeholder `kick_pub_client_diggitybets` en `site/js/auth-oauth.js` reemplazándolo por el Client ID oficial de Kick Developer Portal `01M4QTKTY268TVY3DZCMC2EBHQ`.
+    - Se ajustó el scope a `user:read` (acceso de solo lectura al perfil público del usuario logueado en Kick, idéntico a ReachAces).
+  - **Flujo PKCE Automatizado en 1 Clic (Sin Modales de Texto Manuales):**
+    - Al hacer clic en `[ Link Kick ]` en la barra superior o en `#profile`, se generan de inmediato el `code_verifier` (64 caracteres CSPRNG), el `code_challenge` (S256 base64url) y el `state` criptográfico.
+    - Se guardan en `sessionStorage` y `localStorage` con clave `hh_kick_redirect_uri` para garantizar la persistencia a través de redirecciones y subdominios.
+    - El navegador navega directamente a Kick oficial (`id.kick.com/oauth/authorize`), donde Kick reconoce la sesión activa del usuario ("Sesión iniciada como ...") y muestra el botón verde "Permitir acceso".
+  - **Corrección de Esquema Kick API v1 (`user.name` & `user.user_id`):**
+    - Se verificó contra el endpoint oficial en vivo `GET https://api.kick.com/public/v1/users` que Kick devuelve `{ data: [{ user_id: 88254585, name: "Diggitybets", profile_picture: "..." }] }`.
+    - Se corrigieron los extractores en `worker/index.js` y `core/src/hub/overlay-server.ts` que buscaban erróneamente `user.username` y `user.id`.
+  - **Tarjeta de Kick en `#profile` & Sincronización:**
+    - Se incorporó la tarjeta interactiva de Kick en la pestaña Perfil (`#kick-card-box`), con estado desconectado (`[ Link Kick Account (Auto-Detect) ⚡ ]`) y estado conectado (`🟢 @Username (Kick ID)` + `[ Disconnect ]`), sincronizada en tiempo real con la barra superior y los permisos de Streamer.
 
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases & Refinements (Stages 1 to 14): 100% COMPLETED & VERIFIED.**
+- **All Phases & Refinements (Stages 1 to 15): 100% COMPLETED & VERIFIED.**
 - Ready for live production streaming on `https://kick.com/diggitybets` and deployment to `https://diggitybets.vip` via `PUBLICAR_EN_CLOUDFLARE.bat`.
 
 ---

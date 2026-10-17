@@ -276,7 +276,7 @@ export class OverlayServer {
       }
 
       // Kick OAuth 2.1 GET Redirect Handler
-      if (url.pathname === '/api/auth/kick/callback' && req.method === 'GET') {
+      if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && req.method === 'GET') {
         const code = url.searchParams.get('code') || '';
         const state = url.searchParams.get('state') || '';
         const host = req.headers.host || '';
@@ -298,7 +298,7 @@ export class OverlayServer {
       }
 
       // Kick OAuth 2.1 PKCE Token Exchange Endpoint
-      if (url.pathname === '/api/auth/kick/callback' && req.method === 'POST') {
+      if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && req.method === 'POST') {
 
         let body = '';
         req.on('data', (c) => (body += c));
@@ -307,7 +307,7 @@ export class OverlayServer {
             const { code, code_verifier, redirect_uri } = JSON.parse(body);
             let userData: any = { username: 'KickUser_' + (code ? code.substring(0, 5) : 'Guest'), id: 0 };
 
-            const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || 'kick_pub_client_diggitybets';
+            const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
             const clientSecret = config.kickClientSecret || process.env.KICK_CLIENT_SECRET || '';
 
             if (clientId && clientSecret && code && code_verifier) {
@@ -336,10 +336,11 @@ export class OverlayServer {
                   if (userRes.ok) {
                     const kickApiData: any = await userRes.json();
                     if (kickApiData.data && kickApiData.data[0]) {
+                      const user = kickApiData.data[0];
                       userData = {
-                        username: kickApiData.data[0].username,
-                        avatarUrl: kickApiData.data[0].profile_picture,
-                        id: kickApiData.data[0].id
+                        username: user.name || user.username || 'KickUser',
+                        avatarUrl: user.profile_picture || '',
+                        id: user.user_id || user.id || 0
                       };
                     }
                   }

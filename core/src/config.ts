@@ -45,7 +45,7 @@ export const config: AppConfig = {
   channelSlug: process.env.KICK_CHANNEL_SLUG || 'diggitybets',
   broadcasterUserId: Number(process.env.KICK_BROADCASTER_ID) || 88254585,
   chatroomId: Number(process.env.KICK_CHATROOM_ID) || 86765775,
-  kickClientId: process.env.KICK_CLIENT_ID || devVars['KICK_CLIENT_ID'] || '',
+  kickClientId: process.env.KICK_CLIENT_ID || devVars['KICK_CLIENT_ID'] || '01M4QTKTY268TVY3DZCMC2EBHQ',
   kickClientSecret: process.env.KICK_CLIENT_SECRET || devVars['KICK_CLIENT_SECRET'] || '',
   serverPort: Number(process.env.PORT) || 3001,
   pusherKey: '34bf7a0ff419a2a775b9',

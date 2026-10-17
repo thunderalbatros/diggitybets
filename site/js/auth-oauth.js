@@ -15,9 +15,9 @@ class OAuthEngine {
 
     this.config = {
       kick: {
-        clientId: window.HUNT_CONFIG?.KICK_CLIENT_ID || 'kick_pub_client_diggitybets',
+        clientId: window.HUNT_CONFIG?.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ',
         authUrl: 'https://id.kick.com/oauth/authorize',
-        scope: 'user:read channel:read channel:rewards:read',
+        scope: 'user:read',
         redirectUri: `${redirectBase}/api/auth/kick/callback`
       },
       discord: {
@@ -74,9 +74,56 @@ class OAuthEngine {
       .replace(/=+$/, '');
   }
 
-  // --- INSTANT ZERO-FREEZE KICK ACCOUNT LINK MODAL ---
+  // --- AUTOMATED KICK.COM OAUTH 2.1 PKCE REDIRECT (REACHACES STYLE) ---
 
   async loginKick() {
+    try {
+      const codeVerifier = this.generateRandomString(64);
+      const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+      const state = this.generateRandomString(32);
+
+      // Persist PKCE verifier, state, and exact redirect URI across both sessionStorage AND localStorage
+      sessionStorage.setItem('hh_oauth_provider', 'kick');
+      sessionStorage.setItem('hh_oauth_state', state);
+      sessionStorage.setItem('hh_code_verifier', codeVerifier);
+      sessionStorage.setItem('hh_kick_redirect_uri', this.config.kick.redirectUri);
+
+      localStorage.setItem('hh_oauth_provider', 'kick');
+      localStorage.setItem('hh_oauth_state', state);
+      localStorage.setItem('hh_code_verifier', codeVerifier);
+      localStorage.setItem('hh_kick_redirect_uri', this.config.kick.redirectUri);
+
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: this.config.kick.clientId,
+        redirect_uri: this.config.kick.redirectUri,
+        scope: this.config.kick.scope,
+        state: state,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256'
+      });
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Connecting to Kick.com... 🟩',
+          message: 'Detecting active Kick browser session and redirecting to authorization...',
+          type: 'green'
+        });
+      }
+
+      const authorizeUrl = `${this.config.kick.authUrl}?${params.toString()}`;
+      setTimeout(() => {
+        window.location.href = authorizeUrl;
+      }, 250);
+
+    } catch (err) {
+      console.warn('[OAuthEngine] Automated Kick OAuth failed, falling back to modal:', err);
+      this.showManualKickLinkModal();
+    }
+  }
+
+  // Fallback modal for offline dev or environments where subtle crypto is unavailable
+  showManualKickLinkModal() {
     let modal = document.getElementById('kick-instant-link-modal');
     if (modal) modal.remove();
 
@@ -159,9 +206,7 @@ class OAuthEngine {
           avatarUrl = data?.user?.profile_pic || '';
           kickId = Number(data?.user?.id || data?.id || 0);
         }
-      } catch (_) {
-        // Fallback smoothly if Kick public endpoint is blocked by browser CORS
-      }
+      } catch (_) {}
 
       const isAdmin = this.isAuthorizedStreamer(raw) || kickId === 88254585;
       this.applyKickUserData({
@@ -227,9 +272,10 @@ class OAuthEngine {
     const code = urlParams.get('code');
     const state = urlParams.get('state');
     const providerParam = urlParams.get('provider');
-    const provider = providerParam || sessionStorage.getItem('hh_oauth_provider') || 'kick';
-    const savedState = sessionStorage.getItem('hh_oauth_state');
-    const codeVerifier = sessionStorage.getItem('hh_code_verifier') || '';
+    const provider = providerParam || sessionStorage.getItem('hh_oauth_provider') || localStorage.getItem('hh_oauth_provider') || 'kick';
+    const savedState = sessionStorage.getItem('hh_oauth_state') || localStorage.getItem('hh_oauth_state');
+    const codeVerifier = sessionStorage.getItem('hh_code_verifier') || localStorage.getItem('hh_code_verifier') || '';
+    const savedRedirectUri = sessionStorage.getItem('hh_kick_redirect_uri') || localStorage.getItem('hh_kick_redirect_uri') || this.config.kick.redirectUri;
 
     if (!code) return;
 
@@ -250,16 +296,21 @@ class OAuthEngine {
     sessionStorage.removeItem('hh_oauth_state');
     sessionStorage.removeItem('hh_oauth_provider');
     sessionStorage.removeItem('hh_code_verifier');
+    sessionStorage.removeItem('hh_kick_redirect_uri');
 
+    localStorage.removeItem('hh_oauth_state');
+    localStorage.removeItem('hh_oauth_provider');
+    localStorage.removeItem('hh_code_verifier');
+    localStorage.removeItem('hh_kick_redirect_uri');
 
     if (provider === 'kick') {
-      await this.exchangeKickCode(code, codeVerifier);
+      await this.exchangeKickCode(code, codeVerifier, savedRedirectUri);
     } else if (provider === 'discord') {
       await this.exchangeDiscordCode(code);
     }
   }
 
-  async exchangeKickCode(code, codeVerifier) {
+  async exchangeKickCode(code, codeVerifier, redirectUri) {
     try {
       if (window.sonner) {
         window.sonner.toast({
@@ -269,13 +320,15 @@ class OAuthEngine {
         });
       }
 
+      const effectiveRedirect = redirectUri || this.config.kick.redirectUri;
+
       const response = await fetch('/api/auth/kick/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code,
           code_verifier: codeVerifier,
-          redirect_uri: this.config.kick.redirectUri
+          redirect_uri: effectiveRedirect
         })
       });
 
