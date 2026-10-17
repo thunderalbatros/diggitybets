@@ -26,11 +26,17 @@ class BattleOverlayApp {
         if (!e.data) return;
         if (e.data.action === 'assign_player') {
           this.handleAssignPlayer(e.data.playerSlot, e.data.player);
+        } else if (e.data.action === 'set_mode') {
+          if (this.currentState) {
+            this.currentState.gameMode = e.data.mode || 'BONUS_BUY';
+            try { localStorage.setItem('hunthub_battle_state', JSON.stringify(this.currentState)); } catch {}
+            this.handleStateUpdate(this.currentState);
+          }
         } else if (e.data.action === 'battle_update' || e.data.type === 'battle_update') {
           this.handleStateUpdate(e.data.state);
         } else if (e.data.action === 'resolve_battle') {
           this.handleResolve(e.data);
-        } else if (e.data.action === 'koth_cashout' || e.data.type === 'koth_cashout') {
+        } else if (e.data.action === 'koth_cashout' || e.data.action === 'koth_retire' || e.data.type === 'koth_cashout') {
           this.handleKothCashout(e.data);
         } else if (e.data.action === 'koth_continue' || e.data.type === 'koth_continue') {
           this.handleKothContinue(e.data);
@@ -49,6 +55,11 @@ class BattleOverlayApp {
           const data = JSON.parse(e.newValue);
           this.handleAssignPlayer(data.playerSlot, data.player);
         } catch {}
+      } else if (e.key === 'hunthub_battle_mode' && e.newValue) {
+        if (this.currentState) {
+          this.currentState.gameMode = e.newValue;
+          this.handleStateUpdate(this.currentState);
+        }
       } else if (e.key === 'hunthub_battle_state' && e.newValue) {
         try {
           this.handleStateUpdate(JSON.parse(e.newValue));
@@ -56,7 +67,7 @@ class BattleOverlayApp {
       } else if (e.key === 'hunthub_koth_event' && e.newValue) {
         try {
           const ev = JSON.parse(e.newValue);
-          if (ev.action === 'koth_cashout') this.handleKothCashout(ev);
+          if (ev.action === 'koth_cashout' || ev.action === 'koth_retire') this.handleKothCashout(ev);
           else if (ev.action === 'koth_continue') this.handleKothContinue(ev);
         } catch {}
       }

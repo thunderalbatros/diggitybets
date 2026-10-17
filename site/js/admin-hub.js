@@ -1904,12 +1904,22 @@ class AdminHubController {
       };
     }
 
-    // SPINS 1-click winner buttons
+    // SPINS 1-click WIN / LOSE buttons (50 Spins Profit/Loss)
+    const btnLoserA = document.getElementById('btn-admin-loser-a');
+    const btnLoserB = document.getElementById('btn-admin-loser-b');
+
     if (btnWinnerA) {
       btnWinnerA.onclick = () => {
         const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
         const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
-        this.applyBattleResolution('A', nameA, nameB, '1-Click Spins Victory');
+        this.applyBattleResolution('A', nameA, nameB, '50 Spins: Blue WIN / Red LOSE');
+      };
+    }
+    if (btnLoserA) {
+      btnLoserA.onclick = () => {
+        const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
+        const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
+        this.applyBattleResolution('B', nameB, nameA, '50 Spins: Blue LOSE / Red WIN');
       };
     }
 
@@ -1917,7 +1927,14 @@ class AdminHubController {
       btnWinnerB.onclick = () => {
         const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
         const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
-        this.applyBattleResolution('B', nameB, nameA, '1-Click Spins Victory');
+        this.applyBattleResolution('B', nameB, nameA, '50 Spins: Red WIN / Blue LOSE');
+      };
+    }
+    if (btnLoserB) {
+      btnLoserB.onclick = () => {
+        const nameA = document.getElementById('admin-battle-player-a-name')?.textContent || '@PlayerA';
+        const nameB = document.getElementById('admin-battle-player-b-name')?.textContent || '@PlayerB';
+        this.applyBattleResolution('A', nameA, nameB, '50 Spins: Red LOSE / Blue WIN');
       };
     }
 
@@ -1937,8 +1954,55 @@ class AdminHubController {
     this.renderKothDeck();
   }
 
+  renderKothDeck() {
+    const streak = Math.max(0, Number(this.kothState?.streak || 0));
+    const maxStreak = Number(this.kothState?.maxStreak || 4);
+    const king = this.kothState?.king || null;
+    const kingSlot = this.kothState?.kingSlot || '';
+    const prizeUsd = Math.min(20, streak * 5);
+
+    const streakBadge = document.getElementById('admin-koth-streak-badge');
+    if (streakBadge) {
+      streakBadge.textContent = `STREAK: ${streak}/${maxStreak} ($${prizeUsd})`;
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      const pill = document.getElementById(`koth-pill-${i}`);
+      if (!pill) continue;
+      if (streak >= i) {
+        pill.style.background = i === 4 ? 'rgba(83, 252, 24, 0.25)' : 'rgba(255, 215, 0, 0.25)';
+        pill.style.color = i === 4 ? '#53fc18' : 'var(--gold)';
+        pill.style.borderColor = i === 4 ? '#53fc18' : 'var(--gold)';
+      } else {
+        pill.style.background = 'rgba(255,255,255,0.05)';
+        pill.style.color = 'var(--text-dim)';
+      }
+    }
+
+    const kingNameEl = document.getElementById('admin-koth-king-name');
+    if (kingNameEl) {
+      kingNameEl.textContent = king
+        ? `@${String(king).replace(/^@/, '')}${kingSlot ? ` (${kingSlot})` : ''}`
+        : 'None (Throne Open)';
+    }
+
+    const decisionBox = document.getElementById('admin-koth-decision-box');
+    if (decisionBox) {
+      decisionBox.style.display = (king && streak > 0 && streak < maxStreak && this.kothState?.awaitingDecision) ? 'flex' : 'none';
+    }
+
+    const champBox = document.getElementById('admin-koth-champion-box');
+    if (champBox) {
+      champBox.style.display = (king && streak >= maxStreak) ? 'block' : 'none';
+    }
+  }
+
   setBattleMode(mode) {
     this.battleMode = mode;
+    try {
+      localStorage.setItem('hunthub_battle_mode', mode);
+    } catch (_) {}
+
     const btnBuy = document.getElementById('btn-admin-battle-mode-buy');
     const btnSpins = document.getElementById('btn-admin-battle-mode-spins');
     if (btnBuy && btnSpins) {
@@ -1971,6 +2035,40 @@ class AdminHubController {
       if (spinsB) spinsB.style.display = 'block';
     }
 
+    // Also sync #control-panel mode buttons and boxes
+    const cpBtnMult = document.getElementById('cp-mode-mult-btn');
+    const cpBtnSpin = document.getElementById('cp-mode-spin-btn');
+    const cpMultBox = document.getElementById('cp-mult-box');
+    const cpSpinBox = document.getElementById('cp-spin-box');
+
+    if (mode === 'BONUS_BUY') {
+      if (cpMultBox) cpMultBox.style.display = 'grid';
+      if (cpSpinBox) cpSpinBox.style.display = 'none';
+      if (cpBtnMult) {
+        cpBtnMult.style.borderColor = 'var(--gold)';
+        cpBtnMult.style.color = 'var(--gold)';
+        cpBtnMult.style.background = 'rgba(255,215,0,0.12)';
+      }
+      if (cpBtnSpin) {
+        cpBtnSpin.style.borderColor = 'rgba(255,255,255,0.15)';
+        cpBtnSpin.style.color = '#cbd5e1';
+        cpBtnSpin.style.background = 'transparent';
+      }
+    } else {
+      if (cpMultBox) cpMultBox.style.display = 'none';
+      if (cpSpinBox) cpSpinBox.style.display = 'grid';
+      if (cpBtnSpin) {
+        cpBtnSpin.style.borderColor = 'var(--gold)';
+        cpBtnSpin.style.color = 'var(--gold)';
+        cpBtnSpin.style.background = 'rgba(255,215,0,0.12)';
+      }
+      if (cpBtnMult) {
+        cpBtnMult.style.borderColor = 'rgba(255,255,255,0.15)';
+        cpBtnMult.style.color = '#cbd5e1';
+        cpBtnMult.style.background = 'transparent';
+      }
+    }
+
     try {
       fetch('/api/battle/mode', {
         method: 'POST',
@@ -1985,8 +2083,8 @@ class AdminHubController {
 
     if (window.sonner) {
       window.sonner.toast({
-        title: `1v1 Battle Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : 'Spins 🎰'}`,
-        message: mode === 'BONUS_BUY' ? 'Multiplier numeric fields visible.' : '1-click direct winner buttons active.',
+        title: `1v1 Battle Mode: ${mode === 'BONUS_BUY' ? 'Bonus Buy 🎁' : '50 Spins (Win / Lose) 🎰'}`,
+        message: mode === 'BONUS_BUY' ? 'Multiplier numeric fields active.' : '50 Spins Profit/Loss WIN / LOSE buttons active.',
         type: 'cyan'
       });
     }
@@ -3083,15 +3181,26 @@ class AdminHubController {
       };
     }
 
-    // 1-Click Spins Winners
+    // 1-Click Spins WIN / LOSE (50 Spins Profit/Loss)
     const btnWinA = document.getElementById('cp-btn-win-a');
+    const btnLoseA = document.getElementById('cp-btn-lose-a');
     const btnWinB = document.getElementById('cp-btn-win-b');
+    const btnLoseB = document.getElementById('cp-btn-lose-b');
+
     if (btnWinA) {
       btnWinA.onclick = () => {
         this.pushCornersToOverlay();
         const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
         const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
-        this.applyBattleResolution('A', userA, userB, 'Spins Mode Victory');
+        this.applyBattleResolution('A', userA, userB, '50 Spins: Blue WIN / Red LOSE');
+      };
+    }
+    if (btnLoseA) {
+      btnLoseA.onclick = () => {
+        this.pushCornersToOverlay();
+        const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
+        const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
+        this.applyBattleResolution('B', userB, userA, '50 Spins: Blue LOSE / Red WIN');
       };
     }
     if (btnWinB) {
@@ -3099,7 +3208,15 @@ class AdminHubController {
         this.pushCornersToOverlay();
         const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
         const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
-        this.applyBattleResolution('B', userB, userA, 'Spins Mode Victory');
+        this.applyBattleResolution('B', userB, userA, '50 Spins: Red WIN / Blue LOSE');
+      };
+    }
+    if (btnLoseB) {
+      btnLoseB.onclick = () => {
+        this.pushCornersToOverlay();
+        const userA = document.getElementById('cp-battle-user-a')?.value || '@PlayerA';
+        const userB = document.getElementById('cp-battle-user-b')?.value || '@PlayerB';
+        this.applyBattleResolution('A', userA, userB, '50 Spins: Red LOSE / Blue WIN');
       };
     }
 
@@ -3203,13 +3320,18 @@ class AdminHubController {
     }
 
     // 4. Copy OBS Overlay URLs from #control-panel
-    const copyObsHelper = (path, label) => {
+    const copyObsHelper = (path, label, btnEl) => {
       const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:'))
         ? window.location.origin
         : 'https://diggitybets.vip';
       const url = `${origin}${path}?obs=1`;
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         navigator.clipboard.writeText(url).catch(() => {});
+      }
+      if (btnEl) {
+        const prev = btnEl.textContent;
+        btnEl.textContent = '✓ Copied!';
+        setTimeout(() => { btnEl.textContent = prev; }, 2000);
       }
       if (window.sonner) {
         window.sonner.toast({
@@ -3227,12 +3349,12 @@ class AdminHubController {
     const obsTourney = document.getElementById('cp-btn-obs-tourney');
     const obsBh = document.getElementById('cp-btn-obs-bh');
 
-    if (obsBattle) obsBattle.onclick = () => copyObsHelper('/overlay-battle/index.html', '1v1 Battle');
-    if (obsDuo) obsDuo.onclick = () => copyObsHelper('/wheel-duo/index.html', 'Dual Wheel');
-    if (obsCsgo) obsCsgo.onclick = () => copyObsHelper('/wheel-csgo/index.html', 'CS:GO Wheel');
-    if (obsSlots) obsSlots.onclick = () => copyObsHelper('/wheel-slots/overlay/index.html', 'Slot Wheel');
-    if (obsTourney) obsTourney.onclick = () => copyObsHelper('/bracket-8/index.html', '8-Bracket Tourney');
-    if (obsBh) obsBh.onclick = () => copyObsHelper('/overlay-bonushunt/index.html', 'Bonus Hunt');
+    if (obsBattle) obsBattle.onclick = () => copyObsHelper('/overlay-battle/index.html', '1v1 Battle', obsBattle);
+    if (obsDuo) obsDuo.onclick = () => copyObsHelper('/wheel-duo/index.html', 'Dual Wheel', obsDuo);
+    if (obsCsgo) obsCsgo.onclick = () => copyObsHelper('/wheel-csgo/overlay/index.html', 'CS:GO Wheel', obsCsgo);
+    if (obsSlots) obsSlots.onclick = () => copyObsHelper('/wheel-slots/overlay/index.html', 'Slot Wheel', obsSlots);
+    if (obsTourney) obsTourney.onclick = () => copyObsHelper('/overlay-tourney/index.html', '8-Bracket Tourney', obsTourney);
+    if (obsBh) obsBh.onclick = () => copyObsHelper('/overlay-bonushunt/index.html', 'Bonus Hunt', obsBh);
 
     // 5. Manual Command Dispatch Bar in #control-panel
     const btnSendCmd = document.getElementById('cp-btn-send-cmd');
