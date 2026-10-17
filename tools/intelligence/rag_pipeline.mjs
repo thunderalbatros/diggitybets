@@ -73,25 +73,29 @@ let lastIndexTime = 0;
 /**
  * Scan workspace documentation avoiding heavy code/build directories
  */
-function scanKnowledgeFiles(dir, maxDepth = 4, depth = 0) {
+function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
   let files = [];
   if (depth > maxDepth || !fs.existsSync(dir)) return files;
 
-  const skipDirs = new Set([
-    'node_modules', '.git', 'dist', 'build', '.next', 'coverage',
-    'vendor', 'src', 'ui', 'client', 'packages', 'assets'
-  ]);
+  const baseSkip = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage']);
+  const codeSkip = new Set(['vendor', 'src', 'ui', 'client', 'packages', 'assets']);
+  const isDedicatedKnowledge = dir.includes('sota-2026') || dir.includes('skills') || dir.includes('knowledge') || dir.includes('docs');
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
       const fp = path.join(dir, ent.name);
       if (ent.isDirectory()) {
-        if (!ent.name.startsWith('.') && !skipDirs.has(ent.name)) {
+        if (!ent.name.startsWith('.')) {
+          if (baseSkip.has(ent.name)) continue;
+          if (!isDedicatedKnowledge && codeSkip.has(ent.name)) continue;
           files = files.concat(scanKnowledgeFiles(fp, maxDepth, depth + 1));
         }
-      } else if (ent.isFile() && ent.name.endsWith('.md')) {
-        files.push(fp);
+      } else if (ent.isFile()) {
+        const lower = ent.name.toLowerCase();
+        if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
+          files.push(fp);
+        }
       }
     }
   } catch (_) {}
@@ -203,15 +207,23 @@ export function getOrBuildMiniSearchIndex(force = false) {
   }
 
   const searchDirs = [
-    path.join(ROOT, 'knowledge'),
-    path.join(ROOT, 'docs'),
-    path.join(ROOT, 'references')
+    { dir: path.join(ROOT, 'knowledge'), depth: 4 },
+    { dir: path.join(ROOT, 'docs'), depth: 4 },
+    { dir: path.join(ROOT, 'references', 'sota-2026'), depth: 6 },
+    { dir: path.join(ROOT, 'references', 'clones', 'emil-skills', 'skills'), depth: 5 },
+    { dir: path.join(ROOT, '.agents', 'skills'), depth: 4 },
+    { dir: path.join(ROOT, '.agents', 'memory'), depth: 4 },
+    { dir: path.join(ROOT, 'references'), depth: 4 }
   ];
 
   const allChunks = [];
-  for (const dir of searchDirs) {
-    const files = scanKnowledgeFiles(dir, 4, 0);
+  const visitedFiles = new Set();
+
+  for (const { dir, depth } of searchDirs) {
+    const files = scanKnowledgeFiles(dir, depth, 0);
     for (const f of files) {
+      if (visitedFiles.has(f)) continue;
+      visitedFiles.add(f);
       try {
         const chunks = createDocumentChunks(f);
         allChunks.push(...chunks);

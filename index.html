@@ -1563,117 +1563,6 @@
           </div>
         </div>
       </div>
-
-      <!-- SOTA 2026: Viewer Slot Requests & Interactive Roulette Wheel -->
-      <div class="bh-wheel-section" id="bh-sr-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-              <span>🎡</span> COMMUNITY <span class="accent">SLOT REQUESTS & ROULETTE</span>
-            </h3>
-            <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
-              Viewers submit favorite slots via chat (!sr) or web. Spin the wheel live on stream to pick the next game!
-            </p>
-          </div>
-          <button type="button" class="btn-game-action primary" id="bh-btn-spin-wheel" style="padding: 10px 22px; font-size: 13px; font-weight: 900; background: linear-gradient(135deg, #00e5ff 0%, #9272ff 100%); border: none; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 16px rgba(0, 229, 255, 0.35);">
-            🎡 Spin Requests Wheel!
-          </button>
-        </div>
-
-        <div class="bh-wheel-layout">
-          <!-- Wheel Canvas -->
-          <div class="bh-wheel-canvas-box">
-            <div class="bh-wheel-pointer"></div>
-            <canvas id="bh-wheel-canvas" width="300" height="300" style="border-radius: 50%; box-shadow: 0 0 24px rgba(0,0,0,0.8); background: #070913;"></canvas>
-          </div>
-
-          <!-- Requests Queue & Submission -->
-          <div style="min-width: 0; flex: 1;">
-            <form id="bh-sr-form" style="display: flex; gap: 8px; margin-bottom: 14px;" onsubmit="return false;">
-              <input type="text" id="bh-sr-input" class="slots-search-input" placeholder="Request a slot (e.g. San Quentin, Gates 1000...)" style="flex: 1;">
-              <button type="submit" class="btn-stake-primary" id="bh-sr-submit-btn" style="padding: 0 16px; font-size: 12px; white-space: nowrap;">
-                + Add Request
-              </button>
-            </form>
-
-            <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); margin-bottom: 8px;">
-              ACTIVE QUEUE (<span id="bh-sr-count">0</span> REQUESTS)
-            </div>
-            <div id="bh-sr-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SOTA 2026: Stake Originals Provably Fair Verifiers (Keno & Mines) -->
-      <div class="verifier-card" id="bh-verifiers-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-              <span>🛡️</span> STAKE ORIGINALS <span class="accent">PROVABLY FAIR VERIFIER</span>
-            </h3>
-            <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
-              Official HMAC-SHA256 mathematical verifier for Stake Keno and Mines. 100% transparent and client-side verifiable.
-            </p>
-          </div>
-          <!-- Verifier Mode Tabs -->
-          <div style="display: flex; gap: 6px; background: rgba(0, 0, 0, 0.4); padding: 4px; border-radius: 8px; border: 1px solid var(--border-subtle);">
-            <button type="button" class="btn-chat-toggle active" id="btn-verifier-tab-keno" style="padding: 6px 14px; font-size: 11px; border: none; border-radius: 6px;">
-              Keno Verifier
-            </button>
-            <button type="button" class="btn-chat-toggle" id="btn-verifier-tab-mines" style="padding: 6px 14px; font-size: 11px; border: none; border-radius: 6px;">
-              Mines Verifier
-            </button>
-          </div>
-        </div>
-
-        <!-- Input Parameters Form -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
-          <div>
-            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SERVER SEED</label>
-            <input type="text" id="vf-server-seed" class="slots-search-input" placeholder="e.g. 7f8a9b..." value="demo_server_seed_diggitybets_2026">
-          </div>
-          <div>
-            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CLIENT SEED</label>
-            <input type="text" id="vf-client-seed" class="slots-search-input" placeholder="e.g. custom_seed" value="kick_community_session">
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">NONCE</label>
-              <input type="number" id="vf-nonce" class="slots-search-input" value="1" min="1" step="1">
-            </div>
-            <div id="vf-mines-count-box" style="width: 80px; display: none;">
-              <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">MINES</label>
-              <input type="number" id="vf-mine-count" class="slots-search-input" value="3" min="1" max="24" step="1">
-            </div>
-          </div>
-        </div>
-
-        <button type="button" class="btn-stake-primary" id="btn-run-verifier" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 800;">
-          🔍 Run Cryptographic Verification
-        </button>
-
-        <!-- Keno Board Container -->
-        <div id="vf-keno-view" style="margin-top: 18px;">
-          <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #00e676; margin-bottom: 6px;">
-            DRAWN NUMBERS (10 / 40): <span id="vf-keno-drawn-list" style="color: #ffffff; font-weight: 600;">—</span>
-          </div>
-          <div class="keno-grid-board" id="vf-keno-board">
-            <!-- 40 tiles rendered dynamically -->
-          </div>
-        </div>
-
-        <!-- Mines Board Container -->
-        <div id="vf-mines-view" style="display: none; margin-top: 18px;">
-          <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #ef4444; text-align: center; margin-bottom: 6px;">
-            5×5 GRID SIMULATION (MINES: <span id="vf-mines-total-display">3</span>):
-          </div>
-          <div class="mines-grid-board" id="vf-mines-board">
-            <!-- 25 tiles rendered dynamically -->
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- ========================================================
@@ -3075,6 +2964,7 @@
   <script src="site/js/vendor/confetti.browser.js?v=22.0"></script>
   <script src="site/js/vendor/countUp.umd.js?v=22.0"></script>
   <script src="site/js/audio.js?v=22.0"></script>
+  <script src="site/js/pro-fx-audio.js?v=22.0"></script>
   <script src="site/js/provably-fair.js?v=22.0"></script>
   <script src="site/js/security-anti-fraud.js?v=22.0"></script>
   <script src="site/js/avatar-generator.js?v=22.0"></script>

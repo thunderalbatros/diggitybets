@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-10-17T22:47:58.460Z",
+  "rules": [
+    {
+      "id": "stack-vanilla-web-obs",
+      "type": "architectural_decision",
+      "title": "Pure Web Platform (Vanilla JS + HTML5 + CSS3 + Web Audio + Cloudflare)",
+      "valid_from": "2026-10-15T00:00:00.000Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "stack": [
+        "HTML5",
+        "Vanilla JS",
+        "Vanilla CSS",
+        "Web Audio API",
+        "Node.js (strip-types)",
+        "Cloudflare Workers D1",
+        "Three.js WebGPU"
+      ],
+      "rationale": "Zero-card $0 permanent hosting, sub-5% CPU OBS Browser Source efficiency, instantaneous loading without hydration overhead.",
+      "evidence": "core/src/index.ts, site/js/chat.js, dist/ build cleanly"
+    },
+    {
+      "id": "kick-compliance-zero-custody",
+      "type": "compliance_rule",
+      "title": "Zero Custody & 100% Free Spectator Participation",
+      "valid_from": "2026-10-15T00:00:00.000Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "Strict compliance with Kick ToS and gambling regulations. No buy-ins, no custody of viewer crypto/fiat. Prizes awarded out-of-band.",
+      "evidence": "AGENTS.md Section 2.2, test/phase1-stake-auth.test.ts"
+    },
+    {
+      "id": "obs-cpu-budget-le-5pct",
+      "type": "performance_invariable",
+      "title": "OBS Browser Source CPU Impact <= 5%",
+      "valid_from": "2026-10-15T00:00:00.000Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "HP 250 G8 notebook constraint. All animations must use composite-only properties (transform, opacity) via WAAPI and procedural audio.",
+      "evidence": "AGENTS.md Section 1, knowledge/motion_and_animation/CANON_BOOK_DESIGNING_FOR_PERFORMANCE_LARA_HOGAN.md"
+    },
+    {
+      "id": "multi-locale-currency-parsing",
+      "type": "bug_fix",
+      "title": "Tolerant Multi-Locale Number and Currency Parsing",
+      "valid_from": "2026-10-17T18:00:00.000Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "Parse both European and US number formats (1.500,50 vs 1,500.50) and multiplier suffixes (k, m, b) correctly.",
+      "evidence": "core/src/number-parser.ts, test/stage4-tiers.test.ts"
+    },
+    {
+      "id": "durable-objects-hibernation",
+      "type": "architectural_decision",
+      "title": "Cloudflare Durable Objects WebSocket Hibernation API",
+      "valid_from": "2026-10-15T00:00:00.000Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "Zero-cost real-time message broadcasting without billing active worker CPU during idle websocket connections.",
+      "evidence": "worker/index.js, .agents/memory/instincts/durable-objects-hibernation.md"
+    },
+    {
+      "id": "rainbet-external-sponsor-integration",
+      "type": "deprecated_rule",
+      "title": "Rainbet Casino Scraper & Referral Engine",
+      "valid_from": "2026-08-01T00:00:00.000Z",
+      "valid_until": "2026-10-15T00:00:00.000Z",
+      "status": "INVALIDATED",
+      "superseded_by": "stake-vip-and-diggitybets-internal-store",
+      "rationale": "Rainbet is no longer the active sponsor. The project operates exclusively with Stake VIP referral linking and DiggityBets virtual $DIG economy.",
+      "evidence": "test/phase1-stake-auth.test.ts, site/index.html"
+    },
+    {
+      "id": "mobile-react-native-expo-framework",
+      "type": "cross_project_contamination",
+      "title": "Expo SDK & React Native Mobile Frameworks",
+      "valid_from": "2026-08-01T00:00:00.000Z",
+      "valid_until": "2026-10-17T19:00:00.000Z",
+      "status": "INVALIDATED",
+      "superseded_by": "stack-vanilla-web-obs",
+      "rationale": "Belongs exclusively to Yendo Mobile. HuntHub / DiggityBets is strictly a Web Application and OBS Streaming Suite.",
+      "evidence": "Purge commit 1ba5dc1"
+    }
+  ]
+}

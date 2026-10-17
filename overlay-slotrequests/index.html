@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiggityBets — Slot Requests (!sr) OBS Overlay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="sr-overlay-stage" class="sr-overlay-stage">
+    <!-- Left / Center: Interactive Slot Requests Roulette Wheel -->
+    <div class="sr-wheel-card" id="sr-wheel-card">
+      <div class="sr-header-bar">
+        <div class="sr-badge-live">
+          <span class="sr-live-dot"></span>
+          <span>!SR SLOT ROULETTE</span>
+        </div>
+        <div class="sr-queue-pill" id="sr-overlay-count-pill">0 REQUESTS</div>
+      </div>
+
+      <div class="sr-wheel-wrap">
+        <div class="sr-wheel-pointer" aria-hidden="true">▼</div>
+        <canvas id="sr-overlay-canvas" width="520" height="520"></canvas>
+        <div class="sr-wheel-hub" id="sr-wheel-hub">
+          <span class="sr-hub-icon">🎰</span>
+          <span class="sr-hub-label">!SR</span>
+        </div>
+      </div>
+
+      <div class="sr-footer-hint">
+        Type <strong class="sr-cmd-highlight">!sr &lt;slot name&gt;</strong> in Kick chat to enter the wheel!
+      </div>
+    </div>
+
+    <!-- Winner Reveal Modal / Showcase Card (Appears when a winner is picked) -->
+    <div class="sr-winner-showcase" id="sr-winner-showcase" aria-live="polite">
+      <div class="sr-winner-glow"></div>
+      <div class="sr-winner-inner">
+        <div class="sr-winner-top-tag" id="sr-winner-top-tag">
+          🎉 SLOT REQUEST WINNER SELECTED!
+        </div>
+
+        <!-- Viewer Avatar + @Username Row -->
+        <div class="sr-winner-user-row">
+          <div class="sr-winner-avatar-ring">
+            <img id="sr-winner-avatar" class="sr-winner-avatar" src="" alt="Winner Avatar" />
+            <span class="sr-winner-crown">👑</span>
+          </div>
+          <div class="sr-winner-user-meta">
+            <span class="sr-requested-by-label">REQUESTED BY VIEWER</span>
+            <div class="sr-winner-username" id="sr-winner-username">@Viewer</div>
+          </div>
+        </div>
+
+        <!-- Official Slot Card (180x236) + Slot Title & Provider -->
+        <div class="sr-winner-slot-box">
+          <div class="sr-winner-slot-art-wrap">
+            <img id="sr-winner-slot-img" class="sr-winner-slot-img" src="" alt="Selected Slot Card" />
+          </div>
+          <div class="sr-winner-slot-info">
+            <span class="sr-winner-provider" id="sr-winner-provider">OFFICIAL SLOT</span>
+            <h2 class="sr-winner-slot-title" id="sr-winner-slot-title">Gates of Olympus 1000</h2>
+            <div class="sr-winner-cmd-pill">
+              <span>⚡ Next Slot Up on Stream</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Official 4,889 Curated Slot Catalog & Resolver -->
+  <script src="../data/curated_slots.js"></script>
+  <script src="../site/js/slot-resolver.js"></script>
+  <script src="./main.js"></script>
+</body>
+</html>
