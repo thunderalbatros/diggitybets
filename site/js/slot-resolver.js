@@ -44,13 +44,15 @@
 
   function isLegacyBrokenUrl(url) {
     if (!url || typeof url !== 'string') return true;
+    if (url.indexOf('pragmaticplay.com/wp-content/uploads/') !== -1) return true;
+    if (url.indexOf('trans_eba4744bd0.png') !== -1) return true;
     for (var i = 0; i < LEGACY_BROKEN_HASHES.length; i++) {
       if (url.indexOf(LEGACY_BROKEN_HASHES[i]) !== -1) return true;
     }
     return false;
   }
 
-  // Flagship Curated Slots (Always ready in memory, 100% Verified HTTP 200 OK Covers)
+  // Flagship Curated Slots (Always ready in memory, 100% Verified Covers)
   var CURATED_SLOTS = [
     {
       id: 'wanted-dead-or-a-wild',
@@ -70,7 +72,7 @@
       name: 'Gates of Olympus 1000',
       slug: 'gates-of-olympus-1000',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2023/12/Gates-of-Olympus_1000_339x180.png',
+      image: '/site/images/slots/gates-of-olympus.svg',
       maxWin: '15,000x',
       rtp: '96.50%',
       tier: '1',
@@ -83,7 +85,7 @@
       name: 'Gates of Olympus',
       slug: 'gates-of-olympus',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2021/02/GOOL_EN_339x180.png',
+      image: '/site/images/slots/gates-of-olympus.svg',
       maxWin: '5,000x',
       rtp: '96.50%',
       tier: '1',
@@ -96,7 +98,7 @@
       name: 'Sweet Bonanza 1000',
       slug: 'sweet-bonanza-1000',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2024/05/Sweet-Bonanza-1000_339x180.png',
+      image: '/site/images/slots/sweet-bonanza.svg',
       maxWin: '25,000x',
       rtp: '96.53%',
       tier: '1',
@@ -122,7 +124,7 @@
       name: 'Sugar Rush 1000',
       slug: 'sugar-rush-1000',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2024/03/Sugar-Rush-1000_339x180.png',
+      image: '/site/images/slots/sugar-rush.svg',
       maxWin: '25,000x',
       rtp: '96.53%',
       tier: '1',
@@ -135,7 +137,7 @@
       name: 'Sugar Rush',
       slug: 'sugar-rush',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2022/06/Sugar_Rush_EN_339x180.png',
+      image: '/site/images/slots/sugar-rush.svg',
       maxWin: '5,000x',
       rtp: '96.50%',
       tier: '1',
@@ -187,7 +189,7 @@
       name: 'San Quentin xWays',
       slug: 'san-quentin-xways',
       provider: 'Nolimit City',
-      image: 'https://fan-cdn.nolimitcity.com/trans_eba4744bd0.png',
+      image: '/site/images/slots/san-quentin-xways.svg',
       maxWin: '150,000x',
       rtp: '96.03%',
       tier: '1',
@@ -239,7 +241,7 @@
       name: 'Big Bass Splash',
       slug: 'big-bass-splash',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2022/06/BBSPLASH_EN_339x180_04-1.png',
+      image: '/site/images/slots/big-bass-splash.svg',
       maxWin: '5,000x',
       rtp: '96.71%',
       tier: '1',
@@ -278,7 +280,7 @@
       name: 'Starlight Princess 1000',
       slug: 'starlight-princess-1000',
       provider: 'Pragmatic Play',
-      image: 'https://www.pragmaticplay.com/wp-content/uploads/2023/07/Starlight-Princess-1000_339x180.png',
+      image: '/site/images/slots/gates-of-olympus.svg',
       maxWin: '15,000x',
       rtp: '96.50%',
       tier: '1',
