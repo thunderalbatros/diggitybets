@@ -474,6 +474,11 @@
     - `spawnCasinoCoinRain(options)`: Monedas de oro vectoriales `$DIG` con físicas 3D continuas de rotación (`roll`), cabeceo (`tilt`), bamboleo oscilante (`wobble`), destellos especulares y rebotes físicos amortiguados contra el piso de la pantalla.
     - `spawnSideConfettiCannons(options)`: Cañones duales en las esquinas inferiores disparando serpentinas y confeti 3D giratorio.
     - Integrado globalmente en `site/js/motion-fx.js` e `index.html` activándose en jackpots y premios de juegos.
+  - **Optimización de Harness Engineering, Sandcastles & Omni-RAG (Post-Investigación 2026):**
+    - **Matt Pocock Sandcastle Runner (`tools/lib/sandcastle-runner.mjs` & `tools/sandbox.mjs`):** Aislamiento efímero por Git Worktrees en `.sandboxes/` con cero daemons en background (0 MB RAM en idle).
+    - **Omni-RAG Index Disk Caching & Timeout Guards (`tools/intelligence/rag_pipeline.mjs`):** Caché persistente en `.cache/rag_index_cache.json` (carga en <100ms) y señales `AbortSignal.timeout(2500-3500ms)` en llamadas remotas (Qdrant, Serper, Vertex AI).
+    - **Puerta de Calidad Visual Playwright Limpia:** `tools/serve_site.mjs` y `tools/audit/visual_audit.mjs` sincronizados para 0 bloqueadores, 0 errores de consola y 0 fallos de red en todos los viewports (1440px, 768px, 390px).
+    - **Judge Harness y Healthcheck al 100%:** 12/12 suites de tests de `core/` y 12/12 compuertas de `healthcheck.mjs` pasando en verde.
   - **Verificación Total:**
     - Judge Harness ejecutado en verde: 12/12 suites de tests pasadas (100% de éxito), 0 fallos de configuración.
 

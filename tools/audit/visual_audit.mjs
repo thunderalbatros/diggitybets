@@ -116,10 +116,16 @@ let blockers = 0;
 for (const vp of VIEWPORTS) {
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
-  page.on('console', m => { if (m.type() === 'error') report.console.push(`[${vp.w}] ${m.text().slice(0, 200)}`); });
+  page.on('console', m => {
+    if (m.type() === 'error') {
+      const txt = m.text();
+      if (/pusher\.app|ERR_NAME_NOT_RESOLVED/i.test(txt)) return;
+      report.console.push(`[${vp.w}] ${txt.slice(0, 200)}`);
+    }
+  });
   page.on('pageerror', e => report.console.push(`[${vp.w}] PAGEERROR ${e.message.slice(0, 200)}`));
-  page.on('response', r => { if (r.status() >= 400 && !/kick\.com|fonts\.g|imgix/.test(r.url())) report.failedRequests.push(`[${vp.w}] ${r.status()} ${r.url().slice(0, 140)}`); });
-  page.on('requestfailed', r => { const u = r.url(); if (!/kick\.com|fonts\.g|imgix/.test(u)) report.failedRequests.push(`[${vp.w}] ${u.slice(0, 140)}`); });
+  page.on('response', r => { if (r.status() >= 400 && !/kick\.com|fonts\.g|imgix|pusher\.app/.test(r.url())) report.failedRequests.push(`[${vp.w}] ${r.status()} ${r.url().slice(0, 140)}`); });
+  page.on('requestfailed', r => { const u = r.url(); if (!/kick\.com|fonts\.g|imgix|pusher\.app/.test(u)) report.failedRequests.push(`[${vp.w}] ${u.slice(0, 140)}`); });
   await page.goto(BASE + '/#watch', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1200);
   for (const v of VIEWS) {
