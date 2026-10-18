@@ -156,17 +156,23 @@ body {
   position: relative;
 }
 
-/* Fixed Top-Left Corner Diggity Bets Logo (Centered over 284px sidebar, White Backlight Glow) */
+/* Fixed Top-Left Corner Brand / Balance Pill (Centered over 284px sidebar, above PORTAL) */
 .fixed-corner-brand {
   position: fixed;
-  top: 10px;
+  top: 0;
   left: 0;
   width: 284px;
+  height: 164px;
   z-index: 1200;
   display: flex;
   justify-content: center;
   align-items: center;
   pointer-events: auto;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body:has(.site-sidebar.collapsed) .fixed-corner-brand {
+  width: 200px;
 }
 
 /* Left Vertical Fixed Sidebar (Separated >250% below the fixed top-left Diggity Bets Logo) */
@@ -487,7 +493,7 @@ body {
   width: calc(100% - 200px);
 }
 
-/* Topbar Panel (Symmetric HUD with Exact Screen-Centered 2x $DIG Pill & Right Unified Profile) */
+/* Topbar Panel (Symmetric HUD with Exact Screen-Centered Diggity Bets Logo & Right Unified Profile) */
 .site-topbar {
   position: relative;
   top: auto;
@@ -497,10 +503,10 @@ body {
   border-bottom: none;
   box-shadow: none;
   padding: 0 28px;
-  height: 92px;
-  min-height: 92px;
+  height: 164px;
+  min-height: 164px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   width: 100%;
@@ -511,7 +517,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 100%;
+  margin-top: 24px;
   position: relative;
   z-index: 20;
 }
@@ -519,8 +525,8 @@ body {
 .topbar-center {
   position: absolute !important;
   left: calc(50% - 142px) !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  top: 20px !important;
+  transform: translateX(-50%) !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -534,8 +540,8 @@ body {
 .site-sidebar.collapsed ~ .main-viewport-container .topbar-center {
   position: absolute !important;
   left: calc(50% - 100px) !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  top: 20px !important;
+  transform: translateX(-50%) !important;
 }
 
 .sidebar-mobile-toggle {
@@ -630,6 +636,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   margin-left: auto;
+  margin-top: 24px;
   gap: 8px;
   flex-shrink: 0;
   white-space: nowrap;
@@ -1186,8 +1193,8 @@ body {
 @media (max-width: 1080px) {
   .site-topbar {
     padding: 0 20px;
-    height: 92px;
-    min-height: 92px;
+    height: 164px;
+    min-height: 164px;
   }
   .site-header-logo {
     height: 120px;
@@ -1223,6 +1230,10 @@ body {
     top: 14px;
     left: 16px;
     width: auto;
+    height: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     justify-content: flex-start;
   }
   .sidebar-mobile-toggle {
@@ -1261,6 +1272,11 @@ body {
     padding: 0 16px;
     height: 88px;
     min-height: 88px;
+    align-items: center;
+  }
+  .topbar-left,
+  .topbar-right {
+    margin-top: 0;
   }
   .topbar-left {
     min-width: 175px;
@@ -1316,6 +1332,8 @@ body {
     top: 22px;
     left: 12px;
     gap: 6px;
+    width: auto;
+    height: auto;
   }
   .sidebar-mobile-toggle {
     width: 34px;

@@ -63,9 +63,39 @@
     <button type="button" class="sidebar-mobile-toggle" id="btn-toggle-sidebar" aria-label="Toggle Navigation">
       <span></span><span></span><span></span>
     </button>
-    <a href="#watch" data-target="#watch" class="topbar-logo-link" title="Diggity Bets — Home">
-      <img src="site/images/diggitybets-logo.png" alt="DIGGITY BETS" class="site-header-logo">
-    </a>
+    <div class="user-balance-pill" id="topbar-dig-balance-pill" title="$DIG Points Balance (Earned only when kick.com/diggitybets is LIVE + active in Kick chat)">
+      <span class="coin-icon" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;">
+        <svg viewBox="0 0 32 32" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="digGoldRimTop" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFF7AD"/>
+              <stop offset="35%" stop-color="#FFD700"/>
+              <stop offset="70%" stop-color="#D97706"/>
+              <stop offset="100%" stop-color="#FEF08A"/>
+            </linearGradient>
+            <linearGradient id="digInnerBevelTop" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#B45309"/>
+              <stop offset="100%" stop-color="#FDE047"/>
+            </linearGradient>
+            <radialGradient id="digCoreTop" cx="50%" cy="38%" r="60%">
+              <stop offset="0%" stop-color="#1E293B"/>
+              <stop offset="100%" stop-color="#090D16"/>
+            </radialGradient>
+            <linearGradient id="digGlyphTop" x1="10" y1="8" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFFBEB"/>
+              <stop offset="45%" stop-color="#FFD700"/>
+              <stop offset="100%" stop-color="#D97706"/>
+            </linearGradient>
+          </defs>
+          <circle cx="16" cy="16" r="14.5" fill="url(#digGoldRimTop)" stroke="#FEF08A" stroke-width="0.9"/>
+          <circle cx="16" cy="16" r="12" fill="url(#digCoreTop)" stroke="url(#digInnerBevelTop)" stroke-width="1.4"/>
+          <circle cx="16" cy="16" r="10.2" stroke="#FFD700" stroke-opacity="0.32" stroke-width="0.7"/>
+          <path d="M13.6 8.3V23.7M11.4 10.2H16.5C19.5 10.2 21.4 12.2 21.4 16C21.4 19.8 19.5 21.8 16.5 21.8H11.4V10.2Z" stroke="url(#digGlyphTop)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="user-balance-val">0</span>
+      <span class="currency-label">$DIG</span>
+    </div>
   </div>
 
   <!-- App Layout Container -->
@@ -157,40 +187,9 @@
         </div>
 
         <div class="topbar-center">
-          <!-- User $DIG Points Balance Pill (Rotating Green Laser Beam) -->
-          <div class="user-balance-pill" id="topbar-dig-balance-pill" title="$DIG Points Balance (Earned only when kick.com/diggitybets is LIVE + active in Kick chat)">
-            <span class="coin-icon" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;">
-              <svg viewBox="0 0 32 32" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="digGoldRimTop" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stop-color="#FFF7AD"/>
-                    <stop offset="35%" stop-color="#FFD700"/>
-                    <stop offset="70%" stop-color="#D97706"/>
-                    <stop offset="100%" stop-color="#FEF08A"/>
-                  </linearGradient>
-                  <linearGradient id="digInnerBevelTop" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stop-color="#B45309"/>
-                    <stop offset="100%" stop-color="#FDE047"/>
-                  </linearGradient>
-                  <radialGradient id="digCoreTop" cx="50%" cy="38%" r="60%">
-                    <stop offset="0%" stop-color="#1E293B"/>
-                    <stop offset="100%" stop-color="#090D16"/>
-                  </radialGradient>
-                  <linearGradient id="digGlyphTop" x1="10" y1="8" x2="22" y2="24" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stop-color="#FFFBEB"/>
-                    <stop offset="45%" stop-color="#FFD700"/>
-                    <stop offset="100%" stop-color="#D97706"/>
-                  </linearGradient>
-                </defs>
-                <circle cx="16" cy="16" r="14.5" fill="url(#digGoldRimTop)" stroke="#FEF08A" stroke-width="0.9"/>
-                <circle cx="16" cy="16" r="12" fill="url(#digCoreTop)" stroke="url(#digInnerBevelTop)" stroke-width="1.4"/>
-                <circle cx="16" cy="16" r="10.2" stroke="#FFD700" stroke-opacity="0.32" stroke-width="0.7"/>
-                <path d="M13.6 8.3V23.7M11.4 10.2H16.5C19.5 10.2 21.4 12.2 21.4 16C21.4 19.8 19.5 21.8 16.5 21.8H11.4V10.2Z" stroke="url(#digGlyphTop)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <span class="user-balance-val">0</span>
-            <span class="currency-label">$DIG</span>
-          </div>
+          <a href="#watch" data-target="#watch" class="topbar-logo-link" title="Diggity Bets — Home">
+            <img src="site/images/diggitybets-logo.png" alt="DIGGITY BETS" class="site-header-logo">
+          </a>
         </div>
 
         <div class="topbar-right">
