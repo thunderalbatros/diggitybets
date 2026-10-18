@@ -342,6 +342,81 @@ class ProAudioFXEngine {
     osc.start(now);
     osc.stop(now + 0.03);
   }
+
+  /**
+   * SOTA 2026 Tactile Web Audio Haptics (Inspiración Reflect.app)
+   * 1. playTactileClick(): Micro-tap haptic for buttons, tabs, and toggles
+   */
+  playTactileClick(frequency = 190) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(frequency, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.024);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.028);
+  }
+
+  /**
+   * 2. playChipDrop(): Tactile chip click on bet increment/placement
+   */
+  playChipDrop() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    [340, 680].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.008);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.045);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.06, now + idx * 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.048);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now + idx * 0.008);
+      osc.stop(now + 0.05);
+    });
+  }
+
+  /**
+   * 3. playWinArpeggio(): Pentatonic ascending chime for multipliers & wins
+   */
+  playWinArpeggio() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+    notes.forEach((freq, idx) => {
+      const time = now + idx * 0.035;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.09, time);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(time);
+      osc.stop(time + 0.13);
+    });
+  }
 }
 
 // Global Singleton Instance & Universal Attachment

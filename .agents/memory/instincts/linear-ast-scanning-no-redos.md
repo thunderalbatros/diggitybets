@@ -3,7 +3,7 @@ id: "linear-ast-scanning-no-redos"
 type: "performance_invariable"
 confidence: 0.98
 status: "ACTIVE"
-created_at: "2026-10-18T00:48:04.171Z"
+created_at: "2026-10-18T01:30:09.336Z"
 ---
 
 # Instinct: Linear Line-by-Line AST Scanning (Zero ReDoS)
