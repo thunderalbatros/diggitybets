@@ -49,7 +49,7 @@
         <strong style="color:#53fc18;font-size:11px;letter-spacing:0.5px;">⚡ DIGGITY AUTO-HUNT HUD</strong>
         <span style="font-size:10px;color:#94a3b8;">Alt+B</span>
       </div>
-      <div id="diggity-ext-slot" style="font-weight:800;color:#ffd700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${detectActiveSlotName()}</div>
+      <div id="diggity-ext-slot" style="font-weight:800;color:#ffd700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
         <span style="font-size:11px;color:#cbd5e1;">Bet $:</span>
         <input id="diggity-ext-bet" type="number" value="2.00" step="0.20" style="width:65px;background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:11px;">
@@ -60,6 +60,8 @@
       <div id="diggity-ext-status" style="font-size:10px;color:#38bdf8;">Ready — Synced with diggitybets.vip</div>
     `;
     document.body.appendChild(hud);
+    const slotLabelEl = document.getElementById('diggity-ext-slot');
+    if (slotLabelEl) slotLabelEl.textContent = detectActiveSlotName();
 
     document.getElementById('diggity-ext-btn-3s').onclick = () => sendBonusCapture('3S');
     document.getElementById('diggity-ext-btn-5s').onclick = () => sendBonusCapture('5S');

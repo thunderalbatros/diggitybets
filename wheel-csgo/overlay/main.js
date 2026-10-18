@@ -390,9 +390,12 @@
       Sfx.tick(tSec, p);
       if (marcadorEl) {
         setTimeout(() => {
-          marcadorEl.classList.remove('needle-peg-deflect');
-          void marcadorEl.offsetWidth;
-          marcadorEl.classList.add('needle-peg-deflect');
+          if (typeof marcadorEl.animate === 'function') {
+            marcadorEl.animate(
+              [{ transform: 'rotate(-14deg)' }, { transform: 'rotate(0deg)' }],
+              { duration: 110, easing: 'ease-out' }
+            );
+          }
         }, Math.max(0, Math.round(tSec * 1000)));
       }
     }
@@ -745,6 +748,48 @@
     fxAnimationId = requestAnimationFrame(loop);
   }
 
+  let _digCoinSprite = null;
+  function getDigCoinSprite() {
+    if (_digCoinSprite) return _digCoinSprite;
+    const size = 64;
+    const half = size / 2;
+    const r = 28;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const cctx = c.getContext('2d');
+    cctx.translate(half, half);
+
+    const grad = cctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+    grad.addColorStop(0, '#fff4b8');
+    grad.addColorStop(0.3, '#ffd700');
+    grad.addColorStop(0.75, '#d49b14');
+    grad.addColorStop(1, '#8c6008');
+
+    cctx.beginPath();
+    cctx.arc(0, 0, r, 0, Math.PI * 2);
+    cctx.fillStyle = grad;
+    cctx.fill();
+
+    cctx.beginPath();
+    cctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+    cctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    cctx.lineWidth = 1.5;
+    cctx.stroke();
+
+    cctx.fillStyle = '#664303';
+    cctx.font = 'bold 11px "Chakra Petch", sans-serif';
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'middle';
+    cctx.fillText('$DIG', 0, 0.5);
+
+    cctx.fillStyle = '#fff6bd';
+    cctx.fillText('$DIG', 0, -0.5);
+
+    _digCoinSprite = c;
+    return _digCoinSprite;
+  }
+
   function drawVectorCoin(ctx, x, y, r, rollAngle, tiltAngle, rotation, alpha) {
     const scaleX = Math.cos(rollAngle);
     const scaleY = Math.cos(tiltAngle);
@@ -755,36 +800,9 @@
     ctx.scale(scaleX, scaleY);
     ctx.globalAlpha = alpha;
 
-    // Outer rim gold gradient
-    const grad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
-    grad.addColorStop(0, '#fff4b8');
-    grad.addColorStop(0.3, '#ffd700');
-    grad.addColorStop(0.75, '#d49b14');
-    grad.addColorStop(1, '#8c6008');
-
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Inner rim
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Center $DIG inscription
-    if (Math.abs(scaleX) > 0.38) {
-      ctx.fillStyle = '#664303';
-      ctx.font = 'bold 10px "Chakra Petch", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('$DIG', 0, 0.5);
-
-      ctx.fillStyle = '#fff6bd';
-      ctx.fillText('$DIG', 0, -0.5);
-    }
+    const sprite = getDigCoinSprite();
+    const drawRadius = r * (32 / 28);
+    ctx.drawImage(sprite, -drawRadius, -drawRadius, drawRadius * 2, drawRadius * 2);
 
     // Specular shine glint when flipping through edge-on
     if (Math.abs(scaleX) < 0.28) {
@@ -930,10 +948,12 @@
   }
 
   function connect() {
-    // 1. Direct native WebSocket (zero handshake, 0ms latency for CPH.WebsocketBroadcastJson)
-    connectDirectWs();
+    if (typeof window.StreamerbotClient === 'undefined') {
+      connectDirectWs();
+      return;
+    }
 
-    // 2. StreamerbotClient for subscriptions, events, and RPC
+    // StreamerbotClient for subscriptions, events, and RPC
     client = new StreamerbotClient({
       host: CFG.host,
       port: CFG.port,

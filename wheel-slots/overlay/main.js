@@ -587,60 +587,76 @@
   }
 
   function connect() {
-    connectDirectWs();
+    if (typeof window.StreamerbotClient === 'undefined') {
+      connectDirectWs();
+    } else {
+      client = new StreamerbotClient({
+        host: CFG.host,
+        port: CFG.port,
+        endpoint: CFG.endpoint,
+        password: CFG.password || undefined,
+        autoReconnect: true,
+        retries: -1,
+        onData: onMessage,
+        onConnect: () => {
+          connected = true;
+          setStatus('● Connected to Streamer.bot', '#00e676');
+          if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
+          else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
+        },
+        onDisconnect: () => {
+          connected = false;
+          if (!IN_OBS || DEBUG) {
+            estadoEl.style.opacity = '1';
+            setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
+          }
+        },
+        onError: (err) => console.warn('[SlotWheel] WebSocket error:', err)
+      });
 
-    client = new StreamerbotClient({
-      host: CFG.host,
-      port: CFG.port,
-      endpoint: CFG.endpoint,
-      password: CFG.password || undefined,
-      autoReconnect: true,
-      retries: -1,
-      onData: onMessage,
-      onConnect: () => {
-        connected = true;
-        setStatus('● Connected to Streamer.bot', '#00e676');
-        if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
-        else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
-      },
-      onDisconnect: () => {
-        connected = false;
-        if (!IN_OBS || DEBUG) {
-          estadoEl.style.opacity = '1';
-          setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
-        }
-      },
-      onError: (err) => console.warn('[SlotWheel] WebSocket error:', err)
-    });
-
-    client.on('General.Custom', (evt) => onMessage(evt));
-    client.on('Custom.Event', (evt) => onMessage(evt));
-    client.on('Custom.CodeEvent', (evt) => onMessage(evt));
-    client.on('Raw.Action', (evt) => onMessage(evt));
+      client.on('General.Custom', (evt) => onMessage(evt));
+      client.on('Custom.Event', (evt) => onMessage(evt));
+      client.on('Custom.CodeEvent', (evt) => onMessage(evt));
+      client.on('Raw.Action', (evt) => onMessage(evt));
+    }
 
     // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) + /api/sync/state
-    try {
-      const hubPort = window.location.port || '3001';
-      const hubHost = window.location.hostname || '127.0.0.1';
-      hubWs = new WebSocket(`ws://127.0.0.1:${hubPort}`);
-      hubWs.onmessage = (ev) => {
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
+    if (isLocalHost) {
+      let hubReconnectAttempts = 0;
+      const connectHubWs = () => {
         try {
-          const payload = JSON.parse(ev.data);
-          if (payload.type === 'overlay_sync_event' && payload.event) {
-            if (payload.event.target === 'wheel-slots') {
-              if (payload.event.category) currentCategory = payload.event.category;
-              localSpin(currentCategory);
-              return;
-            }
-          }
-          onMessage(payload);
+          const hubPort = window.location.port || '3001';
+          const hubHost = window.location.hostname || '127.0.0.1';
+          hubWs = new WebSocket(`ws://127.0.0.1:${hubPort}`);
+          hubWs.onmessage = (ev) => {
+            try {
+              const payload = JSON.parse(ev.data);
+              if (payload.type === 'overlay_sync_event' && payload.event) {
+                if (payload.event.target === 'wheel-slots') {
+                  if (payload.event.category) currentCategory = payload.event.category;
+                  localSpin(currentCategory);
+                  return;
+                }
+              }
+              onMessage(payload);
+            } catch {}
+          };
+          hubWs.onopen = () => {
+            hubReconnectAttempts = 0;
+            if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
+            fetch(`http://${hubHost}:${hubPort}/api/sync/state`).catch(() => {});
+          };
+          hubWs.onclose = () => {
+            hubReconnectAttempts++;
+            const delay = Math.min(30000, 1500 * Math.pow(1.6, hubReconnectAttempts));
+            setTimeout(connectHubWs, delay);
+          };
+          hubWs.onerror = () => {};
         } catch {}
       };
-      hubWs.onopen = () => {
-        if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
-        fetch(`http://${hubHost}:${hubPort}/api/sync/state`).catch(() => {});
-      };
-    } catch {}
+      connectHubWs();
+    }
   }
 
   /* ---------------- Interactive Controls ---------------- */

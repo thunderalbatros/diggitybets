@@ -5,6 +5,9 @@
 class HuntHubAudio {
   constructor() {
     this.ctx = null;
+    this.masterLimiter = null;
+    this.masterGain = null;
+    this._noiseBufferCache = new Map();
     this.muted = localStorage.getItem('hunthub_muted') === 'true';
     this.volume = parseFloat(localStorage.getItem('hunthub_volume') || '0.7');
   }
@@ -14,11 +17,58 @@ class HuntHubAudio {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        const t = this.ctx.currentTime;
+        this.masterLimiter = this.ctx.createDynamicsCompressor();
+        this.masterLimiter.threshold.setValueAtTime(-4, t);
+        this.masterLimiter.knee.setValueAtTime(6, t);
+        this.masterLimiter.ratio.setValueAtTime(20, t);
+        this.masterLimiter.attack.setValueAtTime(0.001, t);
+        this.masterLimiter.release.setValueAtTime(0.12, t);
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(1.0, t);
+
+        this.masterLimiter.connect(this.masterGain);
+        this.masterGain.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  getOutputBus() {
+    if (!this.ctx) return null;
+    return this.masterLimiter || this.ctx.destination;
+  }
+
+  connectWithPan(source, dest, panValue = 0) {
+    const target = dest || this.getOutputBus();
+    if (!this.ctx || !target) return;
+    if (panValue && typeof this.ctx.createStereoPanner === 'function') {
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.setValueAtTime(Math.max(-1, Math.min(1, panValue)), this.ctx.currentTime);
+      source.connect(panner);
+      panner.connect(target);
+    } else {
+      source.connect(target);
+    }
+  }
+
+  getNoiseBuffer(duration = 0.08) {
+    if (!this.ctx) return null;
+    const key = `${this.ctx.sampleRate}_${duration.toFixed(3)}`;
+    if (this._noiseBufferCache.has(key)) {
+      return this._noiseBufferCache.get(key);
+    }
+    const bufferSize = Math.max(1, Math.floor(this.ctx.sampleRate * duration));
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    this._noiseBufferCache.set(key, buffer);
+    return buffer;
   }
 
   setMuted(muted) {
@@ -55,7 +105,7 @@ class HuntHubAudio {
 
     osc1.connect(gain);
     osc2.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc1.start(t);
     osc2.start(t);
@@ -69,12 +119,8 @@ class HuntHubAudio {
     this.init();
     if (!this.ctx) return;
 
-    const bufferSize = this.ctx.sampleRate * 0.08;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-    }
+    const buffer = this.getNoiseBuffer(0.08);
+    if (!buffer) return;
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
@@ -90,7 +136,7 @@ class HuntHubAudio {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    this.connectWithPan(gain, this.getOutputBus(), 0);
 
     noise.start();
   }
@@ -113,7 +159,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.025);
@@ -140,7 +186,7 @@ class HuntHubAudio {
       gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.35);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getOutputBus());
 
       osc.start(noteTime);
       osc.stop(noteTime + 0.35);
@@ -165,7 +211,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.22);
@@ -192,7 +238,7 @@ class HuntHubAudio {
       gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.06);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      this.connectWithPan(gain, this.getOutputBus(), (i % 2 === 0 ? -0.35 : 0.35));
 
       osc.start(noteTime);
       osc.stop(noteTime + 0.06);
@@ -217,7 +263,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.22);
@@ -242,7 +288,7 @@ class HuntHubAudio {
     gain.gain.setValueAtTime(0.2 * this.volume, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
     osc.start(t);
     osc.stop(t + 0.15);
   }
@@ -265,7 +311,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.4);
@@ -289,7 +335,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.08);
@@ -313,7 +359,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.055);
@@ -339,7 +385,7 @@ class HuntHubAudio {
       gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.14);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getOutputBus());
 
       osc.start(noteTime);
       osc.stop(noteTime + 0.14);
@@ -371,7 +417,7 @@ class HuntHubAudio {
     }
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + (isWin ? 0.22 : 0.12));
@@ -384,13 +430,8 @@ class HuntHubAudio {
     if (!this.ctx) return;
 
     try {
-      const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        // High quality pink/white noise for physical track glide
-        data[i] = (Math.random() * 2 - 1) * 0.14;
-      }
+      const buffer = this.getNoiseBuffer(duration);
+      if (!buffer) return;
 
       const noise = this.ctx.createBufferSource();
       noise.buffer = buffer;
@@ -407,7 +448,7 @@ class HuntHubAudio {
 
       noise.connect(filter);
       filter.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getOutputBus());
 
       noise.start();
     } catch (_) {}
@@ -431,7 +472,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.02);
@@ -454,7 +495,7 @@ class HuntHubAudio {
     gain1.gain.setValueAtTime(0.40 * this.volume, t);
     gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
     osc1.connect(gain1);
-    gain1.connect(this.ctx.destination);
+    gain1.connect(this.getOutputBus());
     osc1.start(t);
     osc1.stop(t + 0.06);
 
@@ -468,7 +509,7 @@ class HuntHubAudio {
     gain2.gain.setValueAtTime(0.26 * this.volume, t2);
     gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.05);
     osc2.connect(gain2);
-    gain2.connect(this.ctx.destination);
+    gain2.connect(this.getOutputBus());
     osc2.start(t2);
     osc2.stop(t2 + 0.05);
 
@@ -482,7 +523,7 @@ class HuntHubAudio {
     gain3.gain.setValueAtTime(0.16 * this.volume, t3);
     gain3.gain.exponentialRampToValueAtTime(0.001, t3 + 0.04);
     osc3.connect(gain3);
-    gain3.connect(this.ctx.destination);
+    gain3.connect(this.getOutputBus());
     osc3.start(t3);
     osc3.stop(t3 + 0.04);
   }
@@ -575,7 +616,7 @@ class HuntHubAudio {
     osc2.connect(filter);
     filter.connect(noteGain);
     noteGain.connect(masterGain);
-    masterGain.connect(this.ctx.destination);
+    masterGain.connect(this.getOutputBus());
 
     // Transport Start & Stop
     const stopTime = t + duration + releaseTime + 0.05;
@@ -639,7 +680,7 @@ class HuntHubAudio {
       subGain.gain.setValueAtTime(0.48 * this.volume, climaxTime);
       subGain.gain.exponentialRampToValueAtTime(0.001, climaxTime + 0.70);
       subOsc.connect(subGain);
-      subGain.connect(this.ctx.destination);
+      subGain.connect(this.getOutputBus());
       subOsc.start(climaxTime);
       subOsc.stop(climaxTime + 0.75);
     } catch (_) {}
@@ -676,7 +717,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.022);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.024);
@@ -703,7 +744,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.055);
@@ -729,7 +770,7 @@ class HuntHubAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.getOutputBus());
 
     osc.start(t);
     osc.stop(t + 0.018);
@@ -781,17 +822,13 @@ class HuntHubAudio {
       osc1.connect(biquad);
       osc2.connect(biquad);
       biquad.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getOutputBus());
 
       osc1.start(noteStart);
       osc2.start(noteStart);
       osc1.stop(noteEnd + 0.06);
       osc2.stop(noteEnd + 0.06);
     });
-  }
-
-  playVictoriousTrumpetFanfare() {
-    return this.playVictoryFanfare();
   }
 }
 

@@ -60,6 +60,7 @@ class ProAudioFXEngine {
         }
       }
       this.reverbNode.buffer = impulse;
+      this.reverbNode.connect(this.masterGain);
 
       // Master chain: Sources -> MasterGain -> Compressor -> Destination
       this.masterGain.connect(this.compressor);
@@ -139,7 +140,16 @@ class ProAudioFXEngine {
         gain.connect(this.masterGain);
         gain.connect(revSend);
         revSend.connect(this.reverbNode);
-        this.reverbNode.connect(this.masterGain);
+
+        osc1.onended = () => {
+          try {
+            osc1.disconnect();
+            osc2.disconnect();
+            filter.disconnect();
+            gain.disconnect();
+            revSend.disconnect();
+          } catch (_) {}
+        };
 
         osc1.start(startTime);
         osc2.start(startTime);
@@ -173,16 +183,18 @@ class ProAudioFXEngine {
     subOsc.start(now);
     subOsc.stop(now + 0.20);
 
-    // Paper flutter in the air: Filtered burst of white noise with fluttering tremolo
-    const bufferSize = Math.floor(ctx.sampleRate * 0.45);
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
+    // Paper flutter in the air: Cached filtered burst of white noise
+    if (!this._confettiNoiseBuffer || this._confettiNoiseBuffer.sampleRate !== ctx.sampleRate) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.45);
+      this._confettiNoiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const output = this._confettiNoiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
     }
 
     const noiseSrc = ctx.createBufferSource();
-    noiseSrc.buffer = noiseBuffer;
+    noiseSrc.buffer = this._confettiNoiseBuffer;
 
     const noiseFilter = ctx.createBiquadFilter();
     noiseFilter.type = 'bandpass';

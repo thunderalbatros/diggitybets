@@ -293,6 +293,8 @@ class BonusHuntOverlayApp {
 
   initWebSocket() {
     const urlParams = new URLSearchParams(window.location.search);
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
+    if (!isLocalHost && !urlParams.has('port')) return;
     const port = urlParams.get('port') || '3001';
     const wsUrl = `ws://127.0.0.1:${port}/`;
 
@@ -323,8 +325,8 @@ class BonusHuntOverlayApp {
       this.ws.onerror = () => {};
 
       this.ws.onclose = () => {
-        this.reconnectAttempts++;
-        const delay = Math.min(5000, 1000 * Math.pow(1.5, this.reconnectAttempts));
+        this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+        const delay = Math.min(30000, 1000 * Math.pow(1.6, this.reconnectAttempts));
         setTimeout(() => this.initWebSocket(), delay);
       };
     } catch {}
@@ -333,6 +335,7 @@ class BonusHuntOverlayApp {
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
       setInterval(async () => {
+        if (document.hidden) return;
         try {
           const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
           if (!res.ok) return;
@@ -645,6 +648,12 @@ class BonusHuntOverlayApp {
     }
   }
 
+  esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   buildBonusRowElement(b, idx) {
     const row = document.createElement('div');
     const isOpening = b.status === 'OPENING';
@@ -670,7 +679,7 @@ class BonusHuntOverlayApp {
     const slotImgSrc = (resolvedSlot && resolvedSlot.image) || (!isStaleSvg && b.slotImage) || fallbackCardUri;
 
     const imgHtml = slotImgSrc
-      ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackCardUri}';" />`
+      ? `<img class="slot-thumb-img" src="${this.esc(slotImgSrc)}" alt="" onerror="this.onerror=null; this.src='${this.esc(fallbackCardUri)}';" />`
       : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
 
     const tierCode = String(b.bonusTier || '3S').toUpperCase();
@@ -694,13 +703,13 @@ class BonusHuntOverlayApp {
         </div>
         <div class="slot-titles">
           <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <span class="slot-main-title">${slotNameDisplay}</span>
+            <span class="slot-main-title">${this.esc(slotNameDisplay)}</span>
             <span class="bh-tier-badge ${tierInfo.cls}">${tierInfo.text}</span>
           </div>
-          <span class="slot-provider-badge">${slotProviderDisplay}</span>
+          <span class="slot-provider-badge">${this.esc(slotProviderDisplay)}</span>
         </div>
       </div>
-      <span class="row-caller">@${b.callerUsername || 'Streamer'}</span>
+      <span class="row-caller">@${this.esc(b.callerUsername || 'Streamer')}</span>
       <span class="row-bet">$${Number(b.betSize || 1).toFixed(2)}</span>
       <span class="row-payout">${isOpened ? `$${Number(b.payout || 0).toFixed(2)}` : '-'}</span>
       <span class="row-mult">${isOpened ? `${Number(b.multiplier || 0).toFixed(2)}x` : '-'}</span>

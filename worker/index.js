@@ -520,21 +520,33 @@ export default {
 
     // 8. Discord Unlink endpoint
     if (url.pathname === '/api/auth/discord/unlink' && request.method === 'POST') {
+      if (!isSameOrTrustedOrigin(request)) {
+        return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: corsHeaders });
+      }
       try {
         const { username } = await request.json();
-        if (env.DB && username) {
+        const cleanUser = String(username || '').trim().replace(/^@/, '').slice(0, 64);
+        if (env.DB && cleanUser) {
           await env.DB.prepare(`
             UPDATE users SET discord_id = NULL, discord_username = NULL, discord_avatar = NULL
             WHERE LOWER(username) = LOWER(?1)
-          `).bind(username).run();
+          `).bind(cleanUser).run();
         }
       } catch (_) {}
       return new Response(JSON.stringify({ success: true, unlinked: true }), { headers: corsHeaders });
     }
 
-    // 9. Stake Limbo Target Multiplier Endpoint (OTP 10000 - 999999, valid 600s)
+    // 9. Stake Limbo Target Multiplier Endpoint (CSPRNG OTP 10000 - 999999, valid 600s)
     if (url.pathname === '/api/stake/target' && request.method === 'GET') {
-      const target = Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000;
+      const range = 999999 - 10000 + 1; // 990000
+      const maxUnbiased = Math.floor(0x100000000 / range) * range;
+      const randBuf = new Uint32Array(1);
+      let r = 0;
+      do {
+        crypto.getRandomValues(randBuf);
+        r = randBuf[0];
+      } while (r >= maxUnbiased);
+      const target = (r % range) + 10000;
       const validForSeconds = 600;
       return new Response(JSON.stringify({
         target,
@@ -663,11 +675,19 @@ export default {
       }
     }
 
-    // 11. Profile Update Endpoint
+    // 11. Profile Update Endpoint (Same-Origin & Sanitized)
     if (url.pathname === '/api/profile/update' && request.method === 'POST') {
+      if (!isSameOrTrustedOrigin(request)) {
+        return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: corsHeaders });
+      }
       try {
         const body = await request.json();
-        if (env.DB && body.username) {
+        const cleanUser = String(body.username || '').trim().replace(/^@/, '').slice(0, 64);
+        const safeStr = (v, max = 128) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+        const safeAvatar = (typeof body.avatar === 'string' && /^https?:\/\//i.test(body.avatar.trim()))
+          ? body.avatar.trim().slice(0, 512)
+          : null;
+        if (env.DB && cleanUser) {
           try {
             await env.DB.prepare(`
               UPDATE users SET
@@ -681,19 +701,19 @@ export default {
                 ig_handle = COALESCE(?8, ig_handle)
               WHERE LOWER(username) = LOWER(?9)
             `).bind(
-              body.avatar || null,
-              body.crypto_ltc || null,
-              body.crypto_btc || null,
-              body.crypto_eth || null,
-              body.crypto_usdc || null,
-              body.crypto_sol || null,
-              body.x_handle || null,
-              body.ig_handle || null,
-              body.username
+              safeAvatar,
+              safeStr(body.crypto_ltc),
+              safeStr(body.crypto_btc),
+              safeStr(body.crypto_eth),
+              safeStr(body.crypto_usdc),
+              safeStr(body.crypto_sol),
+              safeStr(body.x_handle, 64),
+              safeStr(body.ig_handle, 64),
+              cleanUser
             ).run();
           } catch (_) {}
         }
-        return new Response(JSON.stringify({ success: true, user: body }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true, user: { username: cleanUser } }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), {
           status: 400,
@@ -832,11 +852,10 @@ export default {
       }
     }
 
-    // 13. Admin Store Redemptions
+    // 13. Admin Store Redemptions (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/store-redemptions' && request.method === 'GET') {
-      const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let claims = [];
       if (env.DB) {
@@ -853,8 +872,11 @@ export default {
       return new Response(JSON.stringify({ claims }), { headers: corsHeaders });
     }
 
-    // 14. Admin Approve Store Redemption
+    // 14. Admin Approve Store Redemption (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/approve-store-redemption' && request.method === 'POST') {
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       const { redemptionId } = await request.json();
       if (env.DB && redemptionId) {
         await env.DB.prepare("UPDATE store_redemptions SET status = 'FULFILLED' WHERE id = ?1").bind(redemptionId).run();
@@ -862,8 +884,11 @@ export default {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
-    // 15. Admin Reject Store Redemption
+    // 15. Admin Reject Store Redemption (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/reject-store-redemption' && request.method === 'POST') {
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       const { redemptionId } = await request.json();
       if (env.DB && redemptionId) {
         await env.DB.prepare("UPDATE store_redemptions SET status = 'REJECTED' WHERE id = ?1").bind(redemptionId).run();
@@ -871,11 +896,10 @@ export default {
       return new Response(JSON.stringify({ success: true, refunded: true }), { headers: corsHeaders });
     }
 
-    // 16. Admin Stake Verifications Queue
+    // 16. Admin Stake Verifications Queue (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/stake-verifications' && request.method === 'GET') {
-      const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let requests = [];
       if (env.DB) {
@@ -887,8 +911,11 @@ export default {
       return new Response(JSON.stringify({ requests }), { headers: corsHeaders });
     }
 
-    // 17. Admin Approve Stake Verification
+    // 17. Admin Approve Stake Verification (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/approve-stake-verification' && request.method === 'POST') {
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       const { requestId } = await request.json();
       if (env.DB && requestId) {
         try {
@@ -906,8 +933,11 @@ export default {
       return new Response(JSON.stringify({ success: true, credited: true }), { headers: corsHeaders });
     }
 
-    // 18. Admin Reject Stake Verification
+    // 18. Admin Reject Stake Verification (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/reject-stake-verification' && request.method === 'POST') {
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       const { requestId } = await request.json();
       if (env.DB && requestId) {
         await env.DB.prepare("UPDATE stake_verification_requests SET status = 'REJECTED' WHERE id = ?1").bind(requestId).run();
@@ -915,11 +945,10 @@ export default {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
-    // 19. Admin Security Alerts
+    // 19. Admin Security Alerts (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/security-alerts' && request.method === 'GET') {
-      const adminUser = request.headers.get('x-admin-user') || url.searchParams.get('adminUser') || '';
-      if (!['diggitybets', 'diggity_bets', 'tarkansky'].includes(String(adminUser).toLowerCase().replace('@', ''))) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      if (!isAuthorizedAdmin(request, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let alerts = [];
       if (env.DB) {
@@ -987,6 +1016,9 @@ export default {
         }), { headers: noCacheHeaders });
       }
       if (request.method === 'POST') {
+        if (!isAuthorizedAdmin(request, env) && !isSameOrTrustedOrigin(request)) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Unauthorized overlay broadcast' }), { status: 403, headers: noCacheHeaders });
+        }
         try {
           const body = await request.json();
           const current = await readOverlaySyncState();
@@ -1006,6 +1038,7 @@ export default {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
         const syncState = await readOverlaySyncState();
+        const adminAuthed = isAuthorizedAdmin(request, env);
         let state = {
           users: [],
           stake_verification_requests: [],
@@ -1017,19 +1050,29 @@ export default {
         };
         if (env.DB) {
           try {
-            const users = await env.DB.prepare('SELECT * FROM users').all();
-            const stake = await env.DB.prepare('SELECT * FROM stake_verification_requests').all();
-            const redemptions = await env.DB.prepare('SELECT * FROM store_redemptions').all();
+            // Never expose private crypto wallet addresses on public GET /api/sync/state unless authenticated admin
+            const userQuery = adminAuthed
+              ? 'SELECT * FROM users ORDER BY points_balance DESC LIMIT 250'
+              : 'SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified, points_balance, first_seen_at, last_seen_at FROM users ORDER BY points_balance DESC LIMIT 250';
+            const users = await env.DB.prepare(userQuery).all();
             state.users = users.results || [];
-            state.stake_verification_requests = stake.results || [];
-            state.store_redemptions = redemptions.results || [];
+            if (adminAuthed) {
+              const stake = await env.DB.prepare('SELECT * FROM stake_verification_requests').all();
+              const redemptions = await env.DB.prepare('SELECT * FROM store_redemptions').all();
+              state.stake_verification_requests = stake.results || [];
+              state.store_redemptions = redemptions.results || [];
+            }
           } catch (_) {}
         }
         return new Response(JSON.stringify(state), { headers: noCacheHeaders });
       }
       if (request.method === 'POST') {
+        if (!isSameOrTrustedOrigin(request)) {
+          return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+        }
+        const adminAuthed = isAuthorizedAdmin(request, env);
         const body = await request.json();
-        if (body.overlayEvent || body.celebrationEvent) {
+        if ((body.overlayEvent || body.celebrationEvent) && (adminAuthed || isSameOrTrustedOrigin(request))) {
           const current = await readOverlaySyncState();
           current.overlayEvents = current.overlayEvents || {};
           if (body.overlayEvent) {
@@ -1045,7 +1088,7 @@ export default {
           }
           await writeOverlaySyncState(current);
         }
-        if (env.DB && Array.isArray(body.users)) {
+        if (env.DB && Array.isArray(body.users) && adminAuthed) {
           for (const u of body.users) {
             try {
               await env.DB.prepare(`

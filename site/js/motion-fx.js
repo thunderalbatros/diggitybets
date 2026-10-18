@@ -204,20 +204,26 @@
       });
     }
 
-    // Measure new positions and run composite-only inverse transforms
+    // Measure new positions and run composite-only inverse transforms (Two-Pass FLIP: Read all first, then Write all)
     function play() {
       const children = Array.from(container.children);
+      if (children.length === 0) return;
 
-      children.forEach((child) => {
+      // Pass 1: Read all bounding boxes in a single layout pass
+      const measurements = children.map((child) => {
         const first = flipCoords.get(child);
         const last = child.getBoundingClientRect();
+        flipCoords.set(child, last);
+        return { child, first, last };
+      });
 
+      // Pass 2: Trigger composite WAAPI animations without reading layout
+      measurements.forEach(({ child, first, last }) => {
         if (first) {
           const dx = first.left - last.left;
           const dy = first.top - last.top;
 
           if (dx !== 0 || dy !== 0) {
-            // Element moved: Invert and Play
             child.animate(
               [
                 { transform: `translate3d(${dx}px, ${dy}px, 0)` },
@@ -231,7 +237,6 @@
             );
           }
         } else {
-          // New element entered: Scale & Fade in
           child.animate(
             [
               { opacity: 0, transform: 'translate3d(0, 10px, 0) scale(0.96)' },
@@ -244,9 +249,6 @@
             }
           );
         }
-
-        // Update coordinate record
-        flipCoords.set(child, last);
       });
     }
 
@@ -310,27 +312,43 @@
         card.appendChild(glare);
       }
 
+      let cachedRect = null;
+      let tiltRafId = null;
+      let pendingX = 0;
+      let pendingY = 0;
+
       card.addEventListener('pointerenter', () => {
+        cachedRect = card.getBoundingClientRect();
         card.style.transition = 'transform 0.12s ease-out, box-shadow 0.2s ease-out';
         glare.style.opacity = '1';
       });
 
       card.addEventListener('pointermove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const rotateX = ((y - centerY) / centerY) * -6; // max 6 deg tilt
-        const rotateY = ((x - centerX) / centerX) * 6;
+        if (!cachedRect) cachedRect = card.getBoundingClientRect();
+        pendingX = e.clientX - cachedRect.left;
+        pendingY = e.clientY - cachedRect.top;
+        if (tiltRafId) return;
+        tiltRafId = requestAnimationFrame(() => {
+          tiltRafId = null;
+          if (!cachedRect || !cachedRect.width || !cachedRect.height) return;
+          const centerX = cachedRect.width / 2;
+          const centerY = cachedRect.height / 2;
+          const rotateX = ((pendingY - centerY) / centerY) * -6; // max 6 deg tilt
+          const rotateY = ((pendingX - centerX) / centerX) * 6;
 
-        card.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateZ(4px)`;
-        const glareX = (x / rect.width) * 100;
-        const glareY = (y / rect.height) * 100;
-        glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, transparent 65%)`;
+          card.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateZ(4px)`;
+          const glareX = (pendingX / cachedRect.width) * 100;
+          const glareY = (pendingY / cachedRect.height) * 100;
+          glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, transparent 65%)`;
+        });
       });
 
       card.addEventListener('pointerleave', () => {
+        if (tiltRafId) {
+          cancelAnimationFrame(tiltRafId);
+          tiltRafId = null;
+        }
+        cachedRect = null;
         card.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease';
         card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)';
         glare.style.opacity = '0';
@@ -345,11 +363,29 @@
   let fxCanvas = null;
   let fxCtx = null;
   let fxAnimationId = null;
+  let fxResizeBound = false;
+  let _digCoinSprite = null;
   const activeCoins = [];
   const activeConfetti = [];
 
+  function syncFxCanvasSize() {
+    if (!fxCanvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const targetW = Math.round(window.innerWidth * dpr);
+    const targetH = Math.round(window.innerHeight * dpr);
+    if (fxCanvas.width !== targetW || fxCanvas.height !== targetH) {
+      fxCanvas.width = targetW;
+      fxCanvas.height = targetH;
+      fxCtx = fxCanvas.getContext('2d');
+      fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
   function getOrCreateFxCanvas() {
-    if (fxCanvas && fxCanvas.isConnected) return { canvas: fxCanvas, ctx: fxCtx };
+    if (fxCanvas && fxCanvas.isConnected) {
+      syncFxCanvasSize();
+      return { canvas: fxCanvas, ctx: fxCtx };
+    }
     fxCanvas = document.getElementById('hunthub-fx-canvas') || document.getElementById('fxCanvas');
     if (!fxCanvas) {
       fxCanvas = document.createElement('canvas');
@@ -357,21 +393,59 @@
       fxCanvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:999999;';
       document.body.appendChild(fxCanvas);
     }
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    fxCanvas.width = window.innerWidth * dpr;
-    fxCanvas.height = window.innerHeight * dpr;
     fxCtx = fxCanvas.getContext('2d');
-    fxCtx.scale(dpr, dpr);
+    syncFxCanvasSize();
 
-    window.addEventListener('resize', () => {
-      if (!fxCanvas) return;
-      const dprResize = Math.min(window.devicePixelRatio || 1, 2);
-      fxCanvas.width = window.innerWidth * dprResize;
-      fxCanvas.height = window.innerHeight * dprResize;
-      if (fxCtx) fxCtx.scale(dprResize, dprResize);
-    }, { passive: true });
+    if (!fxResizeBound) {
+      fxResizeBound = true;
+      window.addEventListener('resize', () => {
+        if (!fxCanvas || !fxAnimationId) return;
+        syncFxCanvasSize();
+      }, { passive: true });
+    }
 
     return { canvas: fxCanvas, ctx: fxCtx };
+  }
+
+  function getDigCoinSprite() {
+    if (_digCoinSprite) return _digCoinSprite;
+    const size = 64;
+    const half = size / 2;
+    const r = 28;
+    const off = document.createElement('canvas');
+    off.width = size;
+    off.height = size;
+    const c = off.getContext('2d');
+    c.translate(half, half);
+
+    const grad = c.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+    grad.addColorStop(0, '#fff4b8');
+    grad.addColorStop(0.3, '#ffd700');
+    grad.addColorStop(0.75, '#d49b14');
+    grad.addColorStop(1, '#8c6008');
+
+    c.beginPath();
+    c.arc(0, 0, r, 0, Math.PI * 2);
+    c.fillStyle = grad;
+    c.fill();
+
+    c.beginPath();
+    c.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+    c.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    c.lineWidth = 1.8;
+    c.stroke();
+
+    c.fillStyle = '#664303';
+    c.font = 'bold 13px "Chakra Petch", sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('$DIG', 0, 0.8);
+
+    c.fillStyle = '#fff6bd';
+    c.fillText('$DIG', 0, -0.8);
+
+    _digCoinSprite = off;
+    return _digCoinSprite;
   }
 
   window.spawnCasinoCoinRain = function (options = {}) {
@@ -561,6 +635,10 @@
       } else {
         ctx.clearRect(0, 0, w, h);
         fxAnimationId = null;
+        if (fxCanvas) {
+          fxCanvas.width = 1;
+          fxCanvas.height = 1;
+        }
       }
     }
 
@@ -570,6 +648,7 @@
   function drawVectorCoinGlobal(ctx, x, y, r, rollAngle, tiltAngle, rotation, alpha) {
     const scaleX = Math.cos(rollAngle);
     const scaleY = Math.cos(tiltAngle);
+    const sprite = getDigCoinSprite();
 
     ctx.save();
     ctx.translate(x, y);
@@ -577,36 +656,7 @@
     ctx.scale(scaleX, scaleY);
     ctx.globalAlpha = alpha;
 
-    // Outer rim gold gradient
-    const grad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
-    grad.addColorStop(0, '#fff4b8');
-    grad.addColorStop(0.3, '#ffd700');
-    grad.addColorStop(0.75, '#d49b14');
-    grad.addColorStop(1, '#8c6008');
-
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Inner rim
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Center $DIG inscription
-    if (Math.abs(scaleX) > 0.38) {
-      ctx.fillStyle = '#664303';
-      ctx.font = 'bold 10px "Chakra Petch", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('$DIG', 0, 0.5);
-
-      ctx.fillStyle = '#fff6bd';
-      ctx.fillText('$DIG', 0, -0.5);
-    }
+    ctx.drawImage(sprite, -r, -r, r * 2, r * 2);
 
     // Specular shine glint when flipping through edge-on
     if (Math.abs(scaleX) < 0.28) {

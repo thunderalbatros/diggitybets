@@ -473,6 +473,13 @@ class TournamentPredictionController {
 
     const leader = list[0];
 
+    const esc = (str) => String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
     panel.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 20px;">
         
@@ -482,11 +489,11 @@ class TournamentPredictionController {
           <div style="font-size: 11px; font-family: var(--font-display); color: var(--gold); font-weight: 800; letter-spacing: 1px;">
             CURRENT PREDICTION LEADER (RANK #1)
           </div>
-          <div class="podium-winner-name">${leader.username}</div>
+          <div class="podium-winner-name">${esc(leader.username)}</div>
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
             <span class="podium-score-pill">${leader.score} / 7 Correct Picks (${leader.accuracy}%)</span>
             <span style="font-size: 12px; color: var(--text-muted);">
-              Predicted Champion: <strong>${this.getSlotName(leader.championPick)}</strong>
+              Predicted Champion: <strong>${esc(this.getSlotName(leader.championPick))}</strong>
             </span>
           </div>
           <p style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">
@@ -520,15 +527,15 @@ class TournamentPredictionController {
                     </td>
                     <td>
                       <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-family: var(--font-display); font-weight: 700; color: #ffffff;">${u.username}</span>
+                        <span style="font-family: var(--font-display); font-weight: 700; color: #ffffff;">${esc(u.username)}</span>
                         ${u.isSub ? '<span class="reward-badge-pill" style="font-size: 9px; padding: 1px 6px;">SUB</span>' : ''}
                         ${isUser ? '<span style="font-size: 10px; color: var(--cyan);">(YOU)</span>' : ''}
                       </div>
                     </td>
                     <td>
                       <div style="display: flex; align-items: center; gap: 8px;">
-                        <img src="${this.getSlotImage(u.championPick)}" style="width: 24px; height: 24px; border-radius: 4px;" alt="">
-                        <span style="font-size: 12px; color: #cbd5e1;">${this.getSlotName(u.championPick)}</span>
+                        <img src="${esc(this.getSlotImage(u.championPick))}" style="width: 24px; height: 24px; border-radius: 4px;" alt="">
+                        <span style="font-size: 12px; color: #cbd5e1;">${esc(this.getSlotName(u.championPick))}</span>
                       </div>
                     </td>
                     <td style="font-family: var(--font-display); font-weight: 800; color: #00e676;">
@@ -539,7 +546,7 @@ class TournamentPredictionController {
                     </td>
                     <td>
                       <span style="font-size: 12px; font-weight: 700; color: ${rankNum === 1 ? 'var(--gold)' : 'var(--text-muted)'};">
-                        ${u.status}
+                        ${esc(u.status)}
                       </span>
                     </td>
                   </tr>
@@ -558,6 +565,15 @@ class TournamentPredictionController {
     const label = corner === 'B' ? 'EMPTY B' : 'EMPTY A';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 236"><rect width="180" height="236" rx="14" fill="#070a12" stroke="${color}" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="6 4"/><text x="90" y="112" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="900" font-size="44" fill="${color}" fill-opacity="0.45">?</text><text x="90" y="152" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="800" font-size="14" fill="#64748b" letter-spacing="1.5">${label}</text></svg>`;
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  escapeHTML(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   showAnnouncement(htmlContent, tone = 'gold', durationMs = 4500) {
@@ -595,7 +611,8 @@ class TournamentPredictionController {
   }
 
   triggerGrandChampionCelebration(winnerName, prize = 20) {
-    const bannerHtml = `👑🏆 <strong>GRAND CHAMPION!</strong> <span style="color:var(--gold);">@${winnerName}</span> conquered 4 duels and captured the <strong style="color:#53fc18;">$${prize}.00 CASH PRIZE</strong>! 🎉`;
+    const safeWinner = this.escapeHTML(winnerName);
+    const bannerHtml = `👑🏆 <strong>GRAND CHAMPION!</strong> <span style="color:var(--gold);">@${safeWinner}</span> conquered 4 duels and captured the <strong style="color:#53fc18;">$${Number(prize) || 20}.00 CASH PRIZE</strong>! 🎉`;
     this.showAnnouncement(bannerHtml, 'gold', 5500);
 
     if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
@@ -618,7 +635,8 @@ class TournamentPredictionController {
   }
 
   triggerCashoutCelebration(retiredKing, prize, streak) {
-    const bannerHtml = `💰 <strong>WINNER CASHOUT!</strong> <span style="color:var(--gold);">@${retiredKing}</span> cashed out <strong style="color:#53fc18;">$${prize}.00 CASH</strong> (${streak}/4 wins)! The throne is now vacant!`;
+    const safeKing = this.escapeHTML(retiredKing);
+    const bannerHtml = `💰 <strong>WINNER CASHOUT!</strong> <span style="color:var(--gold);">@${safeKing}</span> cashed out <strong style="color:#53fc18;">$${Number(prize) || 5}.00 CASH</strong> (${Number(streak) || 1}/4 wins)! The throne is now vacant!`;
     this.showAnnouncement(bannerHtml, 'gold', 4500);
 
     if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
@@ -641,7 +659,8 @@ class TournamentPredictionController {
   }
 
   triggerContinueAnnouncement(kingName, streak) {
-    const bannerHtml = `⚔️ <strong>THRONE DEFENDED!</strong> <span style="color:#00e5ff;">@${kingName}</span> chose <code>!continue</code> (Streak ${streak}/4)! Awaiting challenger in Red Corner...`;
+    const safeKing = this.escapeHTML(kingName);
+    const bannerHtml = `⚔️ <strong>THRONE DEFENDED!</strong> <span style="color:#00e5ff;">@${safeKing}</span> chose <code>!continue</code> (Streak ${Number(streak) || 1}/4)! Awaiting challenger in Red Corner...`;
     this.showAnnouncement(bannerHtml, 'cyan', 4000);
 
     if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
@@ -1209,7 +1228,7 @@ class TournamentPredictionController {
         const winner = (data.winningName || 'Player').replace(/^@/, '');
         const streak = data.kothStreak || data.streak || 1;
         if (streak < 4) {
-          this.showAnnouncement(`👑 <strong>ROUND WON!</strong> <span style="color:#00e5ff;">@${winner}</span> takes the throne (Streak ${streak}/4)! Decision: <code>!continue</code> or <code>!cashout</code>`, 'cyan', 4000);
+          this.showAnnouncement(`👑 <strong>ROUND WON!</strong> <span style="color:#00e5ff;">@${this.escapeHTML(winner)}</span> takes the throne (Streak ${streak}/4)! Decision: <code>!continue</code> or <code>!cashout</code>`, 'cyan', 4000);
           if (window.soundEngine && typeof window.soundEngine.playWin === 'function') {
             window.soundEngine.playWin();
           }

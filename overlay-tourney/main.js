@@ -597,33 +597,40 @@ class TourneyOverlayApp {
     }
   }
 
+  esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   updateConnectorLines() {
     const svg1 = document.getElementById('svg-conn-1');
     const svg2 = document.getElementById('svg-conn-2');
     if (!svg1 || !svg2) return;
 
-    const getRelCenterY = (cardId, svgEl) => {
+    const svg1Rect = svg1.getBoundingClientRect();
+    const svg2Rect = svg2.getBoundingClientRect();
+
+    const getRelCenterY = (cardId, svgRect) => {
       const card = document.getElementById(cardId);
-      if (!card) return 500;
-      const svgRect = svgEl.getBoundingClientRect();
+      if (!card || !svgRect || !svgRect.height) return 500;
       const cardRect = card.getBoundingClientRect();
-      if (!svgRect.height) return 500;
       return Math.round(((cardRect.top + cardRect.height / 2 - svgRect.top) / svgRect.height) * 1000);
     };
 
     svg1.setAttribute('viewBox', '0 0 100 1000');
     svg2.setAttribute('viewBox', '0 0 100 1000');
 
-    const y1 = getRelCenterY('card-m1', svg1);
-    const y2 = getRelCenterY('card-m2', svg1);
-    const y3 = getRelCenterY('card-m3', svg1);
-    const y4 = getRelCenterY('card-m4', svg1);
-    const y5_1 = getRelCenterY('card-m5', svg1);
-    const y6_1 = getRelCenterY('card-m6', svg1);
+    const y1 = getRelCenterY('card-m1', svg1Rect);
+    const y2 = getRelCenterY('card-m2', svg1Rect);
+    const y3 = getRelCenterY('card-m3', svg1Rect);
+    const y4 = getRelCenterY('card-m4', svg1Rect);
+    const y5_1 = getRelCenterY('card-m5', svg1Rect);
+    const y6_1 = getRelCenterY('card-m6', svg1Rect);
 
-    const y5_2 = getRelCenterY('card-m5', svg2);
-    const y6_2 = getRelCenterY('card-m6', svg2);
-    const y7_2 = getRelCenterY('card-m7', svg2);
+    const y5_2 = getRelCenterY('card-m5', svg2Rect);
+    const y6_2 = getRelCenterY('card-m6', svg2Rect);
+    const y7_2 = getRelCenterY('card-m7', svg2Rect);
 
     const setPath = (id, d, isActive) => {
       const el = document.getElementById(id);
@@ -690,7 +697,7 @@ class TourneyOverlayApp {
         return `<div class="player-slot"><span style="color: #64748b;">TBD</span><span class="player-score">-</span></div>`;
       }
       const cleanName = String(p.displayName || p.username || 'Player').replace(/^@/, '');
-      const initial = (cleanName.charAt(0) || 'P').toUpperCase();
+      const initial = this.esc((cleanName.charAt(0) || 'P').toUpperCase());
       const winClass = isWinner ? 'winner' : (isLoser ? 'loser' : '');
       const crown = isWinner ? ' 👑' : '';
 
@@ -703,15 +710,15 @@ class TourneyOverlayApp {
       const slotCover = (resolvedSlot && resolvedSlot.image) || p.slotImage;
 
       const imgHtml = slotCover
-        ? `<img src="${slotCover}" class="mini-slot-img" alt="${slotNameDisplay}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">`
+        ? `<img src="${this.esc(slotCover)}" class="mini-slot-img" alt="${this.esc(slotNameDisplay)}" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">`
         : `<div class="player-avatar">${initial}</div>`;
 
       return `
         <div class="player-slot ${winClass}">
           <div class="player-info">
             ${imgHtml}
-            <div class="player-name-text">@${cleanName}${crown}</div>
-            <span class="player-slot-name">${slotNameDisplay ? `(${slotNameDisplay})` : ''}</span>
+            <div class="player-name-text">@${this.esc(cleanName)}${crown}</div>
+            <span class="player-slot-name">${slotNameDisplay ? `(${this.esc(slotNameDisplay)})` : ''}</span>
           </div>
           <span class="player-score">${formatScore(score, isWinner, isLoser)}</span>
         </div>

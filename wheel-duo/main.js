@@ -595,10 +595,11 @@ class DuoWheelApp {
         const card = document.createElement('div');
         card.className = 'duo-card';
         card.dataset.index = idx;
-        const initial = item.chatter.slice(0, 2).toUpperCase();
+        const safeChatter = this.esc(item.chatter);
+        const initial = this.esc(String(item.chatter || '').slice(0, 2).toUpperCase());
         const avatarGrad = this.getDeterministicAvatarGradient(item.chatter);
         const avatarHtml = item.avatar
-          ? `<div class="user-avatar-circle" style="background:${avatarGrad}"><img src="${item.avatar}" alt="${item.chatter}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='${initial}';" /></div>`
+          ? `<div class="user-avatar-circle" style="background:${avatarGrad}"><img src="${this.esc(item.avatar)}" alt="${safeChatter}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='${initial}';" /></div>`
           : `<div class="user-avatar-circle" style="background:${avatarGrad}">${initial}</div>`;
 
         const slotDetails = this.resolveSlotDetails(item.slot);
@@ -608,23 +609,24 @@ class DuoWheelApp {
           ? window.SlotResolver.generateDataUriCard(resolvedName, resolvedProv)
           : '';
         const coverSrc = slotDetails.image || fallbackUri;
+        const safeIcon = this.esc(item.icon || '🎰');
         const slotImgHtml = coverSrc
-          ? `<img src="${coverSrc}" class="slot-cover-thumb" alt="" data-fallback="${fallbackUri}" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;}else{this.style.display='none';this.nextElementSibling.style.display='flex';}" /><div class="slot-icon-box" style="display:none;">${item.icon || '🎰'}</div>`
-          : `<div class="slot-icon-box">${item.icon || '🎰'}</div>`;
+          ? `<img src="${this.esc(coverSrc)}" class="slot-cover-thumb" alt="" data-fallback="${this.esc(fallbackUri)}" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;}else{this.style.display='none';this.nextElementSibling.style.display='flex';}" /><div class="slot-icon-box" style="display:none;">${safeIcon}</div>`
+          : `<div class="slot-icon-box">${safeIcon}</div>`;
 
         card.innerHTML = `
           <div class="card-user">
             ${avatarHtml}
             <div class="user-meta">
-              <span class="user-name">@${item.chatter}</span>
+              <span class="user-name">@${safeChatter}</span>
               <span class="user-tag">${this.mode === 'tourney' ? '!TOURNEY CALL' : '!BATTLE CALL'}</span>
             </div>
           </div>
           <div class="card-divider">⚡</div>
           <div class="card-slot">
             <div class="slot-meta">
-              <span class="slot-name">${resolvedName}</span>
-              <span class="slot-prov">${resolvedProv}</span>
+              <span class="slot-name">${this.esc(resolvedName)}</span>
+              <span class="slot-prov">${this.esc(resolvedProv)}</span>
             </div>
             ${slotImgHtml}
           </div>
@@ -632,6 +634,12 @@ class DuoWheelApp {
         this.trackEl.appendChild(card);
       });
     }
+  }
+
+  esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
   }
 
   resolveSlotDetails(slotName) {
