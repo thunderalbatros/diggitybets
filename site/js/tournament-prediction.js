@@ -684,7 +684,13 @@ class TournamentPredictionController {
           }
         }
 
-        if (window.soundEngine) {
+        if (window.ProAudioFX) {
+          if (target === 'champion' && typeof window.ProAudioFX.playBoosterRarityReveal === 'function') {
+            window.ProAudioFX.playBoosterRarityReveal('radiant-prism');
+          } else if (typeof window.ProAudioFX.playWinArpeggio === 'function') {
+            window.ProAudioFX.playWinArpeggio();
+          }
+        } else if (window.soundEngine) {
           if (target === 'champion' && typeof window.soundEngine.playWin === 'function') {
             window.soundEngine.playWin();
           } else if (typeof window.soundEngine.playChip === 'function') {
@@ -692,7 +698,7 @@ class TournamentPredictionController {
           }
         }
         if (target === 'champion' && typeof window.fireCasinoConfetti === 'function') {
-          window.fireCasinoConfetti({ particleCount: 35 });
+          window.fireCasinoConfetti({ particleCount: 45 });
         }
 
         this.savePrediction();
