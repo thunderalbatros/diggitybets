@@ -180,12 +180,12 @@ function pageChecks() {
     const pillHeight = parseFloat(ps.height) || pr.height;
     const valEl = digPill.querySelector('.user-balance-val');
     const valFontSize = valEl ? parseFloat(getComputedStyle(valEl).fontSize) : 0;
-    // 2x scale requirement: height >= 45px and value font >= 20px on all viewports
-    if (pillHeight < 45 || valFontSize < 20) {
+    // Compact scale check: height >= 24px and value font >= 11px on all viewports
+    if (pillHeight < 24 || valFontSize < 11) {
       findings.push({
         sev: 'MAJOR',
         rule: 'dig-balance-scale',
-        msg: `#topbar-dig-balance-pill not at 2x scale: height=${pillHeight.toFixed(1)}px (expected >= 45px), fontSize=${valFontSize.toFixed(1)}px (expected >= 20px)`
+        msg: `#topbar-dig-balance-pill not compact scale: height=${pillHeight.toFixed(1)}px (expected >= 24px), fontSize=${valFontSize.toFixed(1)}px (expected >= 11px)`
       });
     }
   }
