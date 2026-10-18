@@ -143,13 +143,13 @@ body {
   position: relative;
 }
 
-/* Left Vertical Sticky Sidebar (Compact, Collapsible, 100% Free of Horizontal Cutoffs) */
+/* Left Vertical Sticky Sidebar (Directly below the top-left Diggity Bets Logo) */
 .site-sidebar {
   width: 210px;
   min-width: 210px;
-  height: 100vh;
+  height: calc(100vh - 156px);
   position: sticky;
-  top: 0;
+  top: 156px;
   z-index: 1050;
   background: rgba(8, 11, 18, 0.98);
   border-right: 2px solid rgba(255, 215, 0, 0.24);
@@ -162,12 +162,12 @@ body {
   transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Sidebar Top Bar (Hamburger button at top-left) */
+/* Sidebar Top Bar (PORTAL label + Hamburger button directly below logo) */
 .sidebar-top-bar {
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.35);
 }
@@ -375,20 +375,21 @@ body {
   position: relative;
 }
 
-/* Topbar Header (100% Enlarged Height + Symmetrically Centered $DIG Balance + Account + Profile Right) */
+/* Topbar Header (Logo fixed in top-left corner + Grid-locked $DIG Balance + Account + Profile Right, zero collision at any zoom) */
 .site-topbar {
   position: sticky;
   top: 0;
-  z-index: 1000;
-  background: rgba(6, 8, 13, 0.96);
+  left: 0;
+  z-index: 1100;
+  background: rgba(6, 8, 13, 0.98);
   border-bottom: 2px solid rgba(255, 215, 0, 0.26);
-  padding: 0 36px;
+  padding: 0 24px 0 18px;
   height: 156px;
   min-height: 156px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -396,20 +397,24 @@ body {
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 18px;
+  justify-self: start;
+  gap: 14px;
   height: 100%;
   position: relative;
   z-index: 20;
+  padding-left: 4px;
 }
 
 .topbar-center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  justify-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   z-index: 25;
   pointer-events: auto;
 }
@@ -442,7 +447,7 @@ body {
   display: none !important;
 }
 
-/* Diggity Bets Logo scaled with 100% enlarged topbar */
+/* Diggity Bets Logo fixed in top-left corner with slight left margin & preserved top margin */
 .topbar-logo-link {
   display: inline-flex;
   align-items: center;
@@ -454,7 +459,7 @@ body {
 .site-header-logo {
   height: 122px;
   max-height: 126px;
-  max-width: 340px;
+  max-width: 320px;
   width: auto;
   object-fit: contain;
   margin-top: 0;
@@ -474,8 +479,10 @@ body {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-self: end;
+  gap: 10px;
   flex-shrink: 0;
+  white-space: nowrap;
   position: relative;
   z-index: 20;
 }
@@ -495,14 +502,15 @@ body {
   color: var(--gold);
   box-shadow: 0 0 18px rgba(255, 215, 0, 0.22);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .topbar-center .user-balance-pill {
-  padding: 12px 28px;
-  font-size: 20px;
+  padding: 10px 22px;
+  font-size: clamp(16px, 1.35vw, 20px);
   border-width: 2px;
   border-radius: 40px;
-  gap: 10px;
+  gap: 9px;
   box-shadow: 0 0 24px rgba(255, 215, 0, 0.28), inset 0 0 12px rgba(255, 215, 0, 0.08);
 }
 
@@ -826,6 +834,36 @@ body {
   margin-bottom: 14px;
 }
 
+@media (max-width: 1366px) {
+  .site-topbar {
+    padding: 0 18px 0 14px;
+    gap: 12px;
+  }
+  .topbar-center .user-balance-pill {
+    padding: 8px 16px;
+    font-size: 15.5px;
+    gap: 7px;
+  }
+  .user-session-card {
+    padding: 5px 14px 5px 6px;
+    gap: 8px;
+  }
+  .user-avatar-display {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 18px;
+  }
+  #auth-username-label {
+    font-size: 14px;
+  }
+  .btn-top-profile {
+    padding: 9px 15px;
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 1080px) {
   .sidebar-mobile-toggle {
     display: flex;
@@ -833,7 +871,8 @@ body {
   .site-sidebar {
     position: fixed;
     left: 0;
-    top: 0;
+    top: 118px;
+    height: calc(100vh - 118px);
     bottom: 0;
     transform: translateX(-100%);
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.85);
@@ -842,18 +881,18 @@ body {
     transform: translateX(0);
   }
   .site-topbar {
-    padding: 0 20px;
+    padding: 0 16px;
     height: 118px;
     min-height: 118px;
   }
   .site-header-logo {
     height: 86px;
     max-height: 88px;
-    max-width: 220px;
+    max-width: 210px;
   }
   .topbar-center .user-balance-pill {
-    padding: 9px 18px;
-    font-size: 16px;
+    padding: 8px 14px;
+    font-size: 14.5px;
   }
   .modules-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -868,23 +907,27 @@ body {
     height: 98px;
     min-height: 98px;
   }
+  .site-sidebar {
+    top: 98px;
+    height: calc(100vh - 98px);
+  }
   .site-header-logo {
     height: 68px;
     max-height: 70px;
-    max-width: 180px;
+    max-width: 170px;
     margin-top: 0;
   }
   .topbar-center .user-balance-pill {
-    padding: 8px 14px;
-    font-size: 14.5px;
+    padding: 7px 12px;
+    font-size: 13.5px;
   }
   .btn-top-profile {
-    padding: 9px 14px;
-    font-size: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
   .btn-header-cta {
-    padding: 9px 14px;
-    font-size: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
   .modules-grid {
     grid-template-columns: 1fr;
@@ -898,8 +941,8 @@ body {
   }
   .topbar-center .user-balance-pill,
   .user-balance-pill {
-    padding: 7px 12px;
-    font-size: 13.5px;
+    padding: 6px 10px;
+    font-size: 12.5px;
   }
   .topbar-center .user-balance-pill .coin-icon {
     font-size: 16px;
