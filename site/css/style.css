@@ -4389,12 +4389,15 @@ footer.site-footer {
 
 .cmd-pill-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(15, 23, 42, 0.7);
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 7px 11px;
+  min-height: 36px;
   transition: all 0.2s ease;
   cursor: pointer;
 }
@@ -7462,8 +7465,10 @@ footer.site-footer {
     min-height: 36px;
   }
   .btn-stake-primary,
+  .btn-chat-toggle,
+  #inp-verify-raffle-user,
   #btn-upload-avatar-file {
-    min-height: 36px;
+    min-height: 36px !important;
   }
 }
 
