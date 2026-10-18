@@ -150,7 +150,7 @@ body {
 .fixed-corner-brand {
   position: fixed;
   top: 22px;
-  left: 44px;
+  left: 48px;
   z-index: 1200;
   display: flex;
   align-items: center;
@@ -158,14 +158,14 @@ body {
   pointer-events: auto;
 }
 
-/* Left Vertical Sticky Sidebar (Separated >250% below the fixed top-left Diggity Bets Logo) */
+/* Left Vertical Fixed Sidebar (Separated >250% below the fixed top-left Diggity Bets Logo) */
 .site-sidebar {
   width: 248px;
   min-width: 248px;
-  margin-top: 146px;
-  height: calc(100vh - 146px);
-  position: sticky;
-  top: 146px;
+  position: fixed;
+  left: 0;
+  top: 164px;
+  height: calc(100vh - 164px);
   z-index: 1050;
   background: rgba(8, 11, 18, 0.98);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -177,7 +177,7 @@ body {
   justify-content: space-between;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), margin 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), left 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Sidebar Top Bar (PORTAL label + Hamburger button directly below logo) */
@@ -349,12 +349,11 @@ body {
   letter-spacing: 0.6px;
 }
 
-/* Collapsed Sidebar State (72px Rail aligned under Logo with 248px Left Column Clearance) */
+/* Collapsed Sidebar State (72px Rail aligned under Logo with 200px Left Column Clearance) */
 .site-sidebar.collapsed {
+  left: 48px;
   width: 72px;
   min-width: 72px;
-  margin-left: 44px;
-  margin-right: 132px;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
@@ -452,11 +451,19 @@ body {
 .main-viewport-container {
   flex: 1;
   min-width: 0;
+  margin-left: 248px;
+  width: calc(100% - 248px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.site-sidebar.collapsed ~ .main-viewport-container {
+  margin-left: 200px;
+  width: calc(100% - 200px);
 }
 
 /* Topbar Panel (Symmetric HUD with Exact Screen-Centered 2x $DIG Pill & Right Unified Profile) */
@@ -489,21 +496,25 @@ body {
 }
 
 .topbar-center {
-  position: absolute;
-  left: calc(50% - 124px);
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: absolute !important;
+  left: calc(50% - 124px) !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  z-index: 25;
+  z-index: 25 !important;
   pointer-events: auto;
-  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 0 !important;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s var(--ease-fluid);
 }
 
 .site-sidebar.collapsed ~ .main-viewport-container .topbar-center {
-  left: calc(50% - 124px);
+  position: absolute !important;
+  left: calc(50% - 100px) !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
 }
 
 .sidebar-mobile-toggle {
@@ -1123,7 +1134,11 @@ body {
   }
   .topbar-center,
   .site-sidebar.collapsed ~ .main-viewport-container .topbar-center {
-    left: 50%;
+    position: fixed !important;
+    left: 50% !important;
+    top: 16px !important;
+    transform: translateX(-50%) !important;
+    z-index: 1300 !important;
   }
   .site-header-logo {
     height: 60px;
@@ -1177,12 +1192,12 @@ body {
     min-width: 136px;
   }
   .topbar-center {
-    position: fixed;
-    left: 50%;
-    top: 14px;
-    transform: translateX(-50%);
+    position: fixed !important;
+    left: 50% !important;
+    top: 14px !important;
+    transform: translateX(-50%) !important;
     justify-self: center;
-    z-index: 1250;
+    z-index: 1300 !important;
   }
   .topbar-center .user-balance-pill,
   #topbar-dig-balance-pill,
