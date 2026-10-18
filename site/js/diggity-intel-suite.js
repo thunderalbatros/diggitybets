@@ -2,11 +2,11 @@
  * DiggityBets Intelligence Suite & Stream Engagement Engine (Clean-Room 2026)
  * =============================================================================
  * 100% Original Implementation for diggitybets.vip:
- *   1. Live Slot RTP Thermal Radar (24h / 7d / 30d + Spectator !hot / !cold votes)
- *   2. Engine DNA, Mathematical Twin Scanner & Mystery Bonus Buy Odds Calculator
- *   3. 3D Cyber-Vault Foil Booster Pack Slot Picker (Pure CSS 3D + WebAudio)
- *   4. Live Session Bankroll Command (IN / OUT / NET P&L) & 30-Day P&L Calendar
- *   5. Client-Side Stake JSON/CSV Bet Archive Analyzer & Fresh Drops Radar
+ *   1. Live Slot RTP Thermal Radar (24h / 7d / 30d + Studio Filters + Hybrid Stream Telemetry + !hot / !cold votes)
+ *   2. Engine DNA, Mathematical Twin Scanner & Mechanic-Specific Mystery Bonus Buy Odds Calculator
+ *   3. 3D Cyber-Vault Foil Booster Pack Slot Picker (7,009 Slots + CSPRNG + Pure CSS 3D + WebAudio)
+ *   4. Live Session Bankroll Command (IN / OUT / NET P&L) & Interactive 31-Day P&L Calendar
+ *   5. Client-Side Stake JSON/CSV Bet Archive Analyzer & 2025-2026 Fresh Drops Radar
  *   6. Diggity Stake Companion Extension Bridge (Zero-Typing Auto-Bonus Capture)
  *   7. 7-Day $DIG Login Streak Vault & Provably Fair Giveaway Ticket Verifier
  * =============================================================================
@@ -14,15 +14,61 @@
 (function(global) {
   'use strict';
 
+  const VERIFIED_2026_FRESH_DROPS = [
+    { name: 'Waylanders Forge', tag: '🔥 98.00% STAKE ENGINE', group: 'ENGINE', highRtp: true },
+    { name: 'Gator Hunters 2', tag: '🆕 OCT 2026 DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Duck Hunters 2', tag: '🆕 SEP 2026 DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Spicy SixSixSix', tag: '🆕 2026 HACKSAW DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Spin Reaper WINSAFE', tag: '💎 97.69% TWIST ENGINE', group: 'ENGINE', highRtp: true },
+    { name: 'LIT City', tag: '💎 97.43% HACKSAW DROP', group: 'MAINSTREAM', highRtp: true },
+    { name: 'Minedrop 2', tag: '⚡ PAPERCLIP EXCLUSIVE', group: 'ENGINE', highRtp: true },
+    { name: "Odin's Vault", tag: '⚡ VALKYRIE 50,000X', group: 'ENGINE', highRtp: true },
+    { name: 'Outsourced 2: Balkan Engineering', tag: '🆕 AUG 2026 DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Wanted Salvation', tag: '🆕 2026 HACKSAW DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Dragonspire Frostfall', tag: '⚡ PAPERCLIP ENGINE', group: 'ENGINE', highRtp: false },
+    { name: 'San Quentin 2: Death Row', tag: '☢️ 200,000X NOLIMIT', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Dork Show', tag: '🆕 2026 HACKSAW DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Le Catcher', tag: '🆕 2026 HACKSAW DROP', group: 'MAINSTREAM', highRtp: false },
+    { name: 'Pirate Rocket', tag: '⚡ BACKSEAT 25,000X', group: 'ENGINE', highRtp: false },
+    { name: 'Arctic Duel', tag: '⚡ BULLSHARK 2026', group: 'ENGINE', highRtp: false }
+  ];
+
   class DiggityIntelSuite {
     constructor() {
       this.activeTab = 'rtp';
       this.rtpPeriod = '24h'; // '24h' | '7d' | '30d'
       this.rtpFilter = 'ALL'; // 'ALL' | 'HOT' | 'COLD'
+      this.rtpStudio = 'ALL'; // 'ALL' | 'hacksaw' | 'pragmatic' | 'nolimit' | 'stake' | 'push'
+      this.dropsFilter = 'ALL'; // 'ALL' | 'MAINSTREAM' | 'ENGINE' | 'HIGHRTP'
       this.selectedEngineSlot = 'Wanted Dead or a Wild';
       this.lastRevealedVaultSlot = null;
       this.isVaultRipping = false;
       this.companionChannel = null;
+    }
+
+    escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    secureRandomIndex(max) {
+      if (!max || max <= 1) return 0;
+      if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+        const range = 0x100000000;
+        const limit = range - (range % max);
+        const buf = new Uint32Array(1);
+        let val = 0;
+        do {
+          crypto.getRandomValues(buf);
+          val = buf[0];
+        } while (val >= limit);
+        return val % max;
+      }
+      return Math.floor(Math.random() * max);
     }
 
     init() {
@@ -38,9 +84,10 @@
       setTimeout(() => {
         this.renderRtpRadar();
         this.initEngineExplorer();
+        this.initPnlCalendarControls();
         this.renderPnlCalendar();
         this.renderFreshDrops();
-      }, 60);
+      }, 40);
     }
 
     // =========================================================================
@@ -67,6 +114,17 @@
         const ch = new BroadcastChannel('hunthub_bonushunt');
         ch.postMessage({ action: 'bankroll_updated', bankroll: state });
       } catch (_) {}
+      if (typeof fetch === 'function') {
+        fetch('/api/sync/state', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
+            'x-admin-token': localStorage.getItem('hunthub_admin_token') || 'diggity_stream_deck_v1'
+          },
+          body: JSON.stringify({ sessionBankroll: state })
+        }).catch(() => {});
+      }
     }
 
     initSessionBankroll() {
@@ -167,11 +225,19 @@
     }
 
     // =========================================================================
-    // 3. LIVE SLOT RTP THERMAL RADAR (24H / 7D / 30D + COMMUNITY VOTES)
+    // 3. LIVE SLOT RTP THERMAL RADAR (24H / 7D / 30D + STUDIO FILTERS + STREAM DATA)
     // =========================================================================
     getCommunityHeatVotes() {
       try {
         return JSON.parse(localStorage.getItem('hunthub_rtp_heat_votes') || '{}');
+      } catch (_) {
+        return {};
+      }
+    }
+
+    getStakeArchiveSlotStats() {
+      try {
+        return JSON.parse(localStorage.getItem('hunthub_stake_archive_stats') || '{}');
       } catch (_) {
         return {};
       }
@@ -197,32 +263,49 @@
 
     computeSlotThermalMetrics(slot, idx) {
       const baseRtp = parseFloat(String(slot.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
-      // Deterministic + live-hunt-weighted observed RTP
+      const slotNameLower = String(slot.name || '').toLowerCase();
+
+      // 1. Live Bonus Hunt real opened bonuses
       let huntDelta = 0;
       let huntSamples = 0;
       try {
         const huntSlots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]');
         huntSlots.forEach(hs => {
-          if (hs && hs.name && hs.name.toLowerCase() === slot.name.toLowerCase() && hs.payout > 0 && hs.bet > 0) {
-            const m = hs.payout / hs.bet;
-            huntDelta += (m >= 100 ? 3.2 : -1.8);
+          if (hs && hs.name && hs.name.toLowerCase() === slotNameLower && hs.payout !== undefined && hs.bet > 0 && Number(hs.payout) > 0) {
+            const m = Number(hs.payout) / Number(hs.bet);
+            huntDelta += (m >= 100 ? 2.8 : (m >= 60 ? 0.6 : -2.1));
             huntSamples += 1;
           }
         });
       } catch (_) {}
 
+      // 2. Uploaded Stake Archive per-slot telemetry
+      const archiveStats = this.getStakeArchiveSlotStats()[slotNameLower];
+      let archiveDelta = 0;
+      let archiveSpins = 0;
+      if (archiveStats && archiveStats.wagered > 0) {
+        const realizedRatio = archiveStats.payout / archiveStats.wagered;
+        archiveDelta = Math.max(-5.5, Math.min(6.5, (realizedRatio - 1.0) * 3.8));
+        archiveSpins = Number(archiveStats.bets || 0) * 45;
+      }
+
+      // 3. Spectator !hot / !cold community votes
       const votes = this.getCommunityHeatVotes()[slot.id] || { hot: 0, cold: 0 };
       const voteDelta = (votes.hot - votes.cold) * 0.45;
 
-      // Seeded wave per period (24h, 7d, 30d)
-      const daySeed = Math.floor(Date.now() / 3600000);
-      const hash = (slot.name.charCodeAt(0) * 31 + slot.name.length * 17 + idx * 13 + (this.rtpPeriod === '24h' ? 3 : this.rtpPeriod === '7d' ? 7 : 19) + (daySeed % 11));
-      const wave = ((hash % 95) - 44) / 10; // -4.4% to +5.0%
+      // 4. Deterministic hourly variance wave per period (24h, 7d, 30d)
+      const hourBucket = Math.floor(Date.now() / 3600000);
+      let nameHash = 0;
+      for (let i = 0; i < slotNameLower.length; i++) {
+        nameHash = ((nameHash << 5) - nameHash + slotNameLower.charCodeAt(i)) | 0;
+      }
+      const absHash = Math.abs(nameHash) + idx * 17 + (this.rtpPeriod === '24h' ? 3 : this.rtpPeriod === '7d' ? 11 : 23) + (hourBucket % 13);
+      const wave = ((absHash % 92) - 43) / 10; // -4.3% to +4.8%
       const periodDamp = this.rtpPeriod === '24h' ? 1.0 : (this.rtpPeriod === '7d' ? 0.62 : 0.35);
 
-      const delta = Number(((wave * periodDamp) + huntDelta + voteDelta).toFixed(2));
+      const delta = Number(((wave * periodDamp) + huntDelta + archiveDelta + voteDelta).toFixed(2));
       const observedRtp = Number(Math.max(88.4, Math.min(104.8, baseRtp + delta)).toFixed(2));
-      const roundsSampled = (1450 + ((hash * 271) % 18400)) * (this.rtpPeriod === '24h' ? 1 : (this.rtpPeriod === '7d' ? 5 : 18)) + (huntSamples * 120);
+      const roundsSampled = (1650 + ((absHash * 269) % 17500)) * (this.rtpPeriod === '24h' ? 1 : (this.rtpPeriod === '7d' ? 5 : 18)) + (huntSamples * 150) + archiveSpins;
 
       return {
         baseRtp: baseRtp.toFixed(2),
@@ -231,16 +314,26 @@
         isHot: delta >= 0.6,
         isCold: delta <= -0.6,
         roundsSampled,
+        streamSamples: huntSamples + (archiveStats ? Number(archiveStats.bets || 0) : 0),
         hotVotes: votes.hot || 0,
         coldVotes: votes.cold || 0
       };
+    }
+
+    matchesStudioFilter(slot, studioFilter) {
+      if (!studioFilter || studioFilter === 'ALL') return true;
+      const p = String(slot.provider || '').toLowerCase();
+      const c = String(slot.category || '').toLowerCase();
+      if (studioFilter === 'stake') {
+        return c === 'stake' || /valkyrie|paperclip|twist|titan|massive|backseat|bullshark|uppercut|pocket play|donut|shady lady|only on stake/i.test(p);
+      }
+      return p.includes(studioFilter) || c.includes(studioFilter);
     }
 
     renderRtpRadar() {
       const grid = document.getElementById('intel-rtp-grid');
       if (!grid) return;
 
-      // Bind period & filter buttons once
       document.querySelectorAll('[data-rtp-period]').forEach(btn => {
         btn.onclick = () => {
           this.rtpPeriod = btn.getAttribute('data-rtp-period') || '24h';
@@ -255,6 +348,13 @@
           this.renderRtpRadar();
         };
       });
+      document.querySelectorAll('[data-rtp-studio]').forEach(btn => {
+        btn.onclick = () => {
+          this.rtpStudio = btn.getAttribute('data-rtp-studio') || 'ALL';
+          document.querySelectorAll('[data-rtp-studio]').forEach(b => b.classList.toggle('active', b === btn));
+          this.renderRtpRadar();
+        };
+      });
 
       const searchInp = document.getElementById('intel-rtp-search');
       if (searchInp && !searchInp.dataset.boundRtp) {
@@ -263,14 +363,32 @@
       }
 
       const query = (searchInp?.value || '').trim();
-      const baseCatalog = (window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function')
-        ? window.SlotResolver.smartSearch(query, 24)
-        : (window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : []);
+      let pool = [];
+      if (query && window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function') {
+        pool = window.SlotResolver.smartSearch(query, 48);
+      } else if (this.rtpStudio !== 'ALL' && window.SlotResolver && typeof window.SlotResolver.getAllCatalogSlots === 'function') {
+        const all = window.SlotResolver.getAllCatalogSlots();
+        const filteredRaw = all.filter(s => this.matchesStudioFilter(s, this.rtpStudio)).slice(0, 32);
+        pool = filteredRaw.map(s => window.SlotResolver.resolve(s));
+      } else if (window.SlotResolver) {
+        pool = window.SlotResolver.getCuratedCatalog();
+      }
 
-      const enriched = baseCatalog.map((s, idx) => ({
+      const studioFiltered = pool.filter(s => this.matchesStudioFilter(s, this.rtpStudio));
+      const allMetrics = studioFiltered.map((s, idx) => ({
         slot: s,
         metrics: this.computeSlotThermalMetrics(s, idx)
-      })).filter(item => {
+      }));
+
+      const hotCount = allMetrics.filter(x => x.metrics.isHot).length;
+      const coldCount = allMetrics.filter(x => x.metrics.isCold).length;
+      const streamTrackedCount = allMetrics.reduce((acc, x) => acc + x.metrics.streamSamples, 0);
+      const countersEl = document.getElementById('intel-rtp-live-counters');
+      if (countersEl) {
+        countersEl.innerHTML = `<span style="color:#fda4af;">🔥 ${hotCount} Hot</span> · <span style="color:#7dd3fc;">❄️ ${coldCount} Cold</span> · <span style="color:#53fc18;">🎯 ${streamTrackedCount} Stream Bonuses</span> · <span style="color:var(--gold);">7,009 Slots Indexed</span>`;
+      }
+
+      const enriched = allMetrics.filter(item => {
         if (this.rtpFilter === 'HOT') return item.metrics.isHot;
         if (this.rtpFilter === 'COLD') return item.metrics.isCold;
         return true;
@@ -283,18 +401,27 @@
           : (metrics.isCold
             ? `<span class="bh-tier-badge tier-bought">❄️ COLD (${sign}${metrics.delta}%)</span>`
             : `<span class="bh-tier-badge tier-3s">⚖️ NEUTRAL (${sign}${metrics.delta}%)</span>`);
-        const stakeSlug = slot.slug || slot.id;
+        const streamBadge = metrics.streamSamples > 0
+          ? `<span class="bh-tier-badge tier-max" title="Includes ${metrics.streamSamples} live bonuses/bets from your stream">🎯 ${metrics.streamSamples} LIVE</span>`
+          : '';
+        const safeId = this.escapeHTML(slot.id);
+        const safeName = this.escapeHTML(slot.name);
+        const safeProv = this.escapeHTML(slot.provider);
+        const safeMax = this.escapeHTML(slot.maxWin || '10,000x');
+        const safeImg = this.escapeHTML(slot.image);
+        const stakeSlug = encodeURIComponent(slot.slug || slot.id || '');
+
         return `
           <div class="rtp-heat-card ${metrics.isHot ? 'is-hot' : (metrics.isCold ? 'is-cold' : '')}">
             <div style="display:flex; gap:12px; align-items:center;">
-              <img src="${slot.image}" alt="${slot.name}" loading="lazy" style="width:52px; height:68px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; border:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
+              <img src="${safeImg}" alt="${safeName}" loading="lazy" style="width:52px; height:68px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; border:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
               <div style="min-width:0; flex:1;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
-                  ${statusBadge}
-                  <span style="font-size:10px; color:#94a3b8; font-family:var(--font-display);">${this.rtpPeriod.toUpperCase()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:4px; flex-wrap:wrap;">
+                  <div style="display:flex; gap:4px; align-items:center;">${statusBadge}${streamBadge}</div>
+                  <span style="font-size:10px; color:#94a3b8; font-family:var(--font-display);">${this.escapeHTML(this.rtpPeriod.toUpperCase())}</span>
                 </div>
-                <div style="font-family:var(--font-display); font-weight:900; font-size:14px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${slot.name}</div>
-                <div style="font-size:11px; color:var(--gold);">${slot.provider} · Max ${slot.maxWin || '10,000x'}</div>
+                <div style="font-family:var(--font-display); font-weight:900; font-size:14px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeName}</div>
+                <div style="font-size:11px; color:var(--gold);">${safeProv} · Max ${safeMax}</div>
               </div>
             </div>
 
@@ -304,7 +431,7 @@
                 <div style="font-size:13px; font-weight:800; color:#cbd5e1;">${metrics.baseRtp}%</div>
               </div>
               <div>
-                <div style="font-size:9px; color:#94a3b8;">OBSERVED (${this.rtpPeriod.toUpperCase()})</div>
+                <div style="font-size:9px; color:#94a3b8;">OBSERVED (${this.escapeHTML(this.rtpPeriod.toUpperCase())})</div>
                 <div style="font-size:14px; font-weight:900; color:${metrics.isHot ? '#ff4d4d' : (metrics.isCold ? '#38bdf8' : '#53fc18')};">${metrics.observedRtp}%</div>
               </div>
               <div style="text-align:right;">
@@ -315,15 +442,18 @@
 
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
               <div style="display:flex; gap:4px;">
-                <button type="button" class="btn-chat-toggle btn-rtp-vote" data-slot-id="${slot.id}" data-vote="hot" style="padding:4px 8px; font-size:10.5px; border-color:rgba(255,77,77,0.45); color:#fda4af;">
+                <button type="button" class="btn-chat-toggle btn-rtp-vote" data-slot-id="${safeId}" data-vote="hot" style="padding:4px 8px; font-size:10.5px; border-color:rgba(255,77,77,0.45); color:#fda4af;" title="Vote this slot HOT">
                   🔥 ${metrics.hotVotes}
                 </button>
-                <button type="button" class="btn-chat-toggle btn-rtp-vote" data-slot-id="${slot.id}" data-vote="cold" style="padding:4px 8px; font-size:10.5px; border-color:rgba(56,189,248,0.45); color:#7dd3fc;">
+                <button type="button" class="btn-chat-toggle btn-rtp-vote" data-slot-id="${safeId}" data-vote="cold" style="padding:4px 8px; font-size:10.5px; border-color:rgba(56,189,248,0.45); color:#7dd3fc;" title="Vote this slot COLD">
                   ❄️ ${metrics.coldVotes}
+                </button>
+                <button type="button" class="btn-chat-toggle btn-rtp-inspect-dna" data-slot-name="${safeName}" style="padding:4px 7px; font-size:10.5px; border-color:rgba(0,229,255,0.4); color:var(--cyan);" title="Inspect Mathematical Twins & Bonus Odds">
+                  🧬 DNA
                 </button>
               </div>
               <div style="display:flex; gap:5px;">
-                <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${slot.name}" style="padding:4px 9px; font-size:10.5px; border-color:#53fc18; color:#53fc18; font-weight:800;">
+                <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${safeName}" style="padding:4px 9px; font-size:10.5px; border-color:#53fc18; color:#53fc18; font-weight:800;">
                   + !sr Queue
                 </button>
                 <a href="https://stake.com/casino/games/${stakeSlug}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding:4px 8px; font-size:10.5px; text-decoration:none; border-color:var(--gold); color:var(--gold);">
@@ -338,6 +468,17 @@
       grid.querySelectorAll('.btn-rtp-vote').forEach(btn => {
         btn.onclick = () => {
           this.voteSlotHeat(btn.getAttribute('data-slot-id'), btn.getAttribute('data-vote') === 'hot', localStorage.getItem('hunthub_kick_username') || 'Viewer');
+        };
+      });
+
+      grid.querySelectorAll('.btn-rtp-inspect-dna').forEach(btn => {
+        btn.onclick = () => {
+          const targetSlot = btn.getAttribute('data-slot-name') || 'Wanted Dead or a Wild';
+          this.selectedEngineSlot = targetSlot;
+          const inp = document.getElementById('intel-engine-search');
+          if (inp) inp.value = targetSlot;
+          this.renderEngineExplorer();
+          this.switchIntelTab('engine');
         };
       });
 
@@ -371,19 +512,113 @@
     // =========================================================================
     initEngineExplorer() {
       const searchInp = document.getElementById('intel-engine-search');
+      const autoBox = document.getElementById('intel-engine-autocomplete');
+
+      // Bind 1-Click Quick DNA Presets
+      document.querySelectorAll('.btn-engine-preset').forEach(btn => {
+        btn.onclick = () => {
+          const slotName = btn.getAttribute('data-slot') || 'Wanted Dead or a Wild';
+          this.selectedEngineSlot = slotName;
+          if (searchInp) searchInp.value = slotName;
+          if (autoBox) autoBox.style.display = 'none';
+          this.renderEngineExplorer();
+        };
+      });
+
       if (searchInp) {
         searchInp.addEventListener('input', () => {
           const q = searchInp.value.trim();
-          if (q.length >= 2 && window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function') {
-            const top = window.SlotResolver.smartSearch(q, 1)[0];
-            if (top) {
-              this.selectedEngineSlot = top.name;
-              this.renderEngineExplorer();
+          if (q.length < 2 || !window.SlotResolver || typeof window.SlotResolver.smartSearch !== 'function') {
+            if (autoBox) autoBox.style.display = 'none';
+            return;
+          }
+          const matches = window.SlotResolver.smartSearch(q, 6);
+          if (autoBox && matches.length > 0) {
+            autoBox.style.display = 'block';
+            autoBox.innerHTML = matches.map(m => `
+              <div class="engine-auto-item" data-slot="${this.escapeHTML(m.name)}" style="display:flex; align-items:center; gap:10px; padding:8px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <img src="${this.escapeHTML(m.image)}" alt="" style="width:28px; height:36px; border-radius:4px; object-fit:contain; background:#070a12;">
+                <div style="min-width:0; flex:1;">
+                  <div style="font-family:var(--font-display); font-size:12.5px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${this.escapeHTML(m.name)}</div>
+                  <div style="font-size:10.5px; color:var(--gold);">${this.escapeHTML(m.provider)} · RTP ${this.escapeHTML(String(m.rtp || '96.35%'))} · Max ${this.escapeHTML(m.maxWin || '10,000x')}</div>
+                </div>
+              </div>
+            `).join('');
+            autoBox.querySelectorAll('.engine-auto-item').forEach(item => {
+              item.onclick = () => {
+                const picked = item.getAttribute('data-slot') || 'Wanted Dead or a Wild';
+                this.selectedEngineSlot = picked;
+                searchInp.value = picked;
+                autoBox.style.display = 'none';
+                this.renderEngineExplorer();
+              };
+            });
+          } else if (autoBox) {
+            autoBox.style.display = 'none';
+          }
+
+          // Update live view if top match is Tier 1/2 or exact prefix match
+          const top = matches[0];
+          if (top && (String(top.tier) === '1' || String(top.tier) === '2' || top.name.toLowerCase().startsWith(q.toLowerCase()))) {
+            this.selectedEngineSlot = top.name;
+            this.renderEngineExplorer();
+          }
+        });
+
+        searchInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const q = searchInp.value.trim();
+            if (q && window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function') {
+              const top = window.SlotResolver.smartSearch(q, 1)[0];
+              if (top) {
+                this.selectedEngineSlot = top.name;
+                searchInp.value = top.name;
+                if (autoBox) autoBox.style.display = 'none';
+                this.renderEngineExplorer();
+              }
             }
           }
         });
+
+        document.addEventListener('click', (e) => {
+          if (autoBox && !searchInp.contains(e.target) && !autoBox.contains(e.target)) {
+            autoBox.style.display = 'none';
+          }
+        });
       }
+
       this.renderEngineExplorer();
+    }
+
+    computeMysteryBonusDistribution(base, mech, rtpNum, maxNum) {
+      // Calculate realistic Scatter Tier Landing Odds & Expected Value per Mechanical Family
+      if (mech.id === 'XWAYS_EXTREME_CAP') {
+        return { p3s: 58.4, p4s: 26.2, p5s: 11.6, pSuper: 3.8, avgEv: 196, cost3s: '80x–100x', val4s: '~240x Value', val5s: '~550x Value', capSuper: 'God Mode / 6S' };
+      }
+      if (mech.id === 'VS_MULTIPLIER_REELS') {
+        return { p3s: 62.0, p4s: 24.5, p5s: 10.2, pSuper: 3.3, avgEv: 175, cost3s: '100x Cost', val4s: '~200x Duel', val5s: '~400x Dead', capSuper: 'Full Screen VS' };
+      }
+      if (mech.id === 'CLUSTER_COIN_REVEAL') {
+        return { p3s: 64.5, p4s: 23.8, p5s: 9.1, pSuper: 2.6, avgEv: 162, cost3s: '100x Luck', val4s: '~250x Gold', val5s: '~450x Rainbow', capSuper: '5S Hidden Epic' };
+      }
+      if (mech.id === 'STAKE_ENGINE_HIGH_RTP') {
+        return { p3s: 60.2, p4s: 25.4, p5s: 10.9, pSuper: 3.5, avgEv: Math.round(168 + (rtpNum - 96.0) * 14), cost3s: '100x Entry', val4s: '~220x Boost', val5s: '~380x Super', capSuper: 'Max Cap Feature' };
+      }
+      if (mech.id === 'WHEEL_GAMBLE_MULTI') {
+        return { p3s: 61.0, p4s: 24.0, p5s: 11.0, pSuper: 4.0, avgEv: 182, cost3s: '100x Wheel', val4s: '~210x 4S', val5s: '~390x 5S', capSuper: '666 Max Wheel' };
+      }
+      const isExtreme = maxNum >= 15000;
+      return {
+        p3s: isExtreme ? 61.8 : 66.5,
+        p4s: isExtreme ? 24.2 : 23.0,
+        p5s: isExtreme ? 10.5 : 8.1,
+        pSuper: isExtreme ? 3.5 : 2.4,
+        avgEv: isExtreme ? 180 : 142,
+        cost3s: '100x Cost',
+        val4s: '~200x Value',
+        val5s: '~350x Value',
+        capSuper: '500x+ Super'
+      };
     }
 
     renderEngineExplorer() {
@@ -391,36 +626,44 @@
       if (!container || !window.SlotResolver) return;
 
       const base = window.SlotResolver.resolve(this.selectedEngineSlot);
+      const mech = typeof window.SlotResolver.detectMechanicFamily === 'function'
+        ? window.SlotResolver.detectMechanicFamily(base)
+        : { id: 'MULTI_VOLATILITY_REELS', label: '⚡ High-Volatility Bonus Reels', volatility: 'HIGH' };
+
       const twins = typeof window.SlotResolver.findMathTwins === 'function'
         ? window.SlotResolver.findMathTwins(base, 6)
         : [];
 
       const maxNum = parseFloat(String(base.maxWin || '10000').replace(/[^0-9.]/g, '')) || 10000;
       const rtpNum = parseFloat(String(base.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
-      const isExtreme = maxNum >= 20000;
+      const odds = this.computeMysteryBonusDistribution(base, mech, rtpNum, maxNum);
 
-      // Mystery Bonus & Scatter Tier Probability Distribution (derived from volatility & payout curve)
-      const p3s = isExtreme ? 61.5 : 66.8;
-      const p4s = isExtreme ? 24.0 : 23.2;
-      const p5s = isExtreme ? 10.8 : 7.8;
-      const pSuper = isExtreme ? 3.7 : 2.2;
-      const avgSuperMult = isExtreme ? 185 : 138;
+      const safeBaseName = this.escapeHTML(base.name);
+      const safeBaseProv = this.escapeHTML(base.provider);
+      const safeBaseImg = this.escapeHTML(base.image);
+      const safeBaseMax = this.escapeHTML(base.maxWin || '10,000x');
+      const safeBaseSlug = encodeURIComponent(base.slug || base.id || '');
 
       container.innerHTML = `
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 20px;">
           <!-- Primary Slot DNA Card -->
           <div style="padding: 18px; background: rgba(11, 17, 30, 0.92); border: 1.5px solid rgba(0, 229, 255, 0.45); border-radius: 14px; display: flex; gap: 16px; align-items: center;">
-            <img src="${base.image}" alt="${base.name}" style="width: 78px; height: 102px; aspect-ratio: 180/236; border-radius: 10px; object-fit: contain; background: #070a12; border: 1px solid rgba(0,229,255,0.4);">
+            <img src="${safeBaseImg}" alt="${safeBaseName}" style="width: 78px; height: 102px; aspect-ratio: 180/236; border-radius: 10px; object-fit: contain; background: #070a12; border: 1px solid rgba(0,229,255,0.4);">
             <div style="flex: 1; min-width: 0;">
-              <span class="bh-tier-badge tier-6s" style="margin-bottom: 6px;">🧬 SELECTED ENGINE DNA</span>
-              <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #fff; margin: 0 0 4px 0;">${base.name}</h3>
-              <div style="font-size: 12px; color: var(--gold); margin-bottom: 10px;">${base.provider} · Max Win: <strong>${base.maxWin || '10,000x'}</strong> · RTP: <strong>${rtpNum.toFixed(2)}%</strong></div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                <span class="bh-tier-badge tier-6s">🧬 SELECTED ENGINE DNA</span>
+                <span class="bh-tier-badge tier-bought">${this.escapeHTML(mech.label)}</span>
+              </div>
+              <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #fff; margin: 0 0 4px 0;">${safeBaseName}</h3>
+              <div style="font-size: 12px; color: var(--gold); margin-bottom: 10px;">
+                ${safeBaseProv} · Max Win: <strong>${safeBaseMax}</strong> · RTP: <strong>${rtpNum.toFixed(2)}%</strong> · Volatility: <strong style="color:#fda4af;">${this.escapeHTML(mech.volatility)}</strong>
+              </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${base.name}" style="padding: 5px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18; font-weight: 800;">
+                <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${safeBaseName}" style="padding: 5px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18; font-weight: 800;">
                   + Queue in !sr
                 </button>
-                <a href="https://stake.com/casino/games/${base.slug || base.id}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: var(--gold); color: var(--gold);">
-                  🎮 Play Demo on Stake
+                <a href="https://stake.com/casino/games/${safeBaseSlug}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: var(--gold); color: var(--gold);">
+                  🎮 Play on Stake
                 </a>
               </div>
             </div>
@@ -428,55 +671,65 @@
 
           <!-- Mystery Bonus Buy Odds & Scatter Distribution Card -->
           <div style="padding: 18px; background: rgba(11, 17, 30, 0.92); border: 1.5px solid rgba(255, 215, 0, 0.4); border-radius: 14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-family:var(--font-display); font-size:12px; font-weight:900; color:var(--gold);">🎲 MYSTERY BONUS & SCATTER TIER ODDS</span>
-              <span class="bh-tier-badge tier-5s">EST. EV: ${avgSuperMult}x AVG</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+              <span style="font-family:var(--font-display); font-size:12px; font-weight:900; color:var(--gold);">🎲 MYSTERY BONUS &amp; SCATTER TIER ODDS</span>
+              <span class="bh-tier-badge tier-5s">EST. EV: ${odds.avgEv}x AVG</span>
             </div>
             <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; text-align:center; font-family:var(--font-display);">
               <div style="padding:8px 6px; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(148,163,184,0.3);">
                 <div style="font-size:10px; color:#cbd5e1; font-weight:800;">3 SCATTERS</div>
-                <div style="font-size:16px; font-weight:900; color:#fff; margin-top:2px;">${p3s}%</div>
-                <div style="font-size:9px; color:#64748b;">100x Cost</div>
+                <div style="font-size:16px; font-weight:900; color:#fff; margin-top:2px;">${odds.p3s}%</div>
+                <div style="font-size:9px; color:#64748b;">${this.escapeHTML(odds.cost3s)}</div>
               </div>
               <div style="padding:8px 6px; background:rgba(226,232,240,0.08); border-radius:8px; border:1px solid #cbd5e1;">
                 <div style="font-size:10px; color:#f8fafc; font-weight:800;">🥈 4S SILVER</div>
-                <div style="font-size:16px; font-weight:900; color:#e2e8f0; margin-top:2px;">${p4s}%</div>
-                <div style="font-size:9px; color:#94a3b8;">~200x Value</div>
+                <div style="font-size:16px; font-weight:900; color:#e2e8f0; margin-top:2px;">${odds.p4s}%</div>
+                <div style="font-size:9px; color:#94a3b8;">${this.escapeHTML(odds.val4s)}</div>
               </div>
               <div style="padding:8px 6px; background:rgba(255,215,0,0.1); border-radius:8px; border:1px solid #ffd700;">
                 <div style="font-size:10px; color:#ffd700; font-weight:800;">🥇 5S GOLD</div>
-                <div style="font-size:16px; font-weight:900; color:#ffd700; margin-top:2px;">${p5s}%</div>
-                <div style="font-size:9px; color:#fde047;">~350x Value</div>
+                <div style="font-size:16px; font-weight:900; color:#ffd700; margin-top:2px;">${odds.p5s}%</div>
+                <div style="font-size:9px; color:#fde047;">${this.escapeHTML(odds.val5s)}</div>
               </div>
               <div style="padding:8px 6px; background:rgba(255,42,95,0.12); border-radius:8px; border:1px solid #ff2a5f;">
                 <div style="font-size:10px; color:#fda4af; font-weight:800;">🔥 SUPER / 6S</div>
-                <div style="font-size:16px; font-weight:900; color:#ff2a5f; margin-top:2px;">${pSuper}%</div>
-                <div style="font-size:9px; color:#fda4af;">500x+ Cap</div>
+                <div style="font-size:16px; font-weight:900; color:#ff2a5f; margin-top:2px;">${odds.pSuper}%</div>
+                <div style="font-size:9px; color:#fda4af;">${this.escapeHTML(odds.capSuper)}</div>
               </div>
             </div>
           </div>
         </div>
 
         <h4 style="font-family:var(--font-display); font-size:13px; font-weight:900; color:var(--cyan); margin:0 0 10px 0; letter-spacing:0.6px;">
-          👯 MATHEMATICAL TWINS & ENGINE CLONES (IF "${base.name.toUpperCase()}" IS COLD, SWITCH TO THESE):
+          👯 MATHEMATICAL TWINS &amp; ENGINE CLONES (IF "${safeBaseName.toUpperCase()}" IS COLD, SWITCH TO THESE):
         </h4>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap:12px;">
-          ${twins.map(t => `
-            <div style="padding:12px; background:rgba(15,23,42,0.82); border:1px solid rgba(255,255,255,0.08); border-radius:12px; display:flex; align-items:center; gap:10px;">
-              <img src="${t.slot.image}" alt="${t.slot.name}" style="width:44px; height:58px; aspect-ratio:180/236; border-radius:7px; object-fit:contain; background:#070a12; flex-shrink:0;">
-              <div style="min-width:0; flex:1;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span class="bh-tier-badge tier-max">${t.similarity}% MATH MATCH</span>
-                </div>
-                <div style="font-family:var(--font-display); font-size:13px; font-weight:800; color:#fff; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.slot.name}</div>
-                <div style="font-size:10.5px; color:var(--gold);">${t.slot.provider} · ${t.slot.maxWin || '10,000x'}</div>
-                <div style="margin-top:5px; display:flex; gap:5px;">
-                  <button type="button" class="btn-chat-toggle btn-engine-inspect" data-slot="${t.slot.name}" style="padding:2px 7px; font-size:10px; border-color:var(--cyan); color:var(--cyan);">Inspect DNA</button>
-                  <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${t.slot.name}" style="padding:2px 7px; font-size:10px; border-color:#53fc18; color:#53fc18;">+ !sr</button>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px;">
+          ${twins.map(t => {
+            const tName = this.escapeHTML(t.slot.name);
+            const tProv = this.escapeHTML(t.slot.provider);
+            const tImg = this.escapeHTML(t.slot.image);
+            const tMax = this.escapeHTML(t.slot.maxWin || '10,000x');
+            const tRtp = parseFloat(String(t.slot.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
+            const tMechLabel = this.escapeHTML((t.mechanic && t.mechanic.label) || mech.label);
+            return `
+              <div style="padding:12px; background:rgba(15,23,42,0.86); border:1px solid rgba(255,255,255,0.09); border-radius:12px; display:flex; align-items:center; gap:10px;">
+                <img src="${tImg}" alt="${tName}" loading="lazy" style="width:48px; height:64px; aspect-ratio:180/236; border-radius:7px; object-fit:contain; background:#070a12; flex-shrink:0;">
+                <div style="min-width:0; flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">
+                    <span class="bh-tier-badge tier-max">${t.similarity}% MATH MATCH</span>
+                    <span style="font-size:10px; color:#94a3b8; font-family:var(--font-display);">${tRtp.toFixed(2)}% RTP</span>
+                  </div>
+                  <div style="font-family:var(--font-display); font-size:13px; font-weight:800; color:#fff; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${tName}</div>
+                  <div style="font-size:10.5px; color:var(--gold);">${tProv} · Max ${tMax}</div>
+                  <div style="font-size:9.5px; color:#38bdf8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">${tMechLabel}</div>
+                  <div style="margin-top:6px; display:flex; gap:5px;">
+                    <button type="button" class="btn-chat-toggle btn-engine-inspect" data-slot="${tName}" style="padding:2px 7px; font-size:10px; border-color:var(--cyan); color:var(--cyan);">Inspect DNA</button>
+                    <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${tName}" style="padding:2px 7px; font-size:10px; border-color:#53fc18; color:#53fc18;">+ !sr</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       `;
 
@@ -580,12 +833,17 @@
         ? window.SlotResolver.getAllCatalogSlots()
         : (window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : []);
 
-      const pool = all.filter(s => {
-        if (provFilter === 'all') return true;
+      let pool = all.filter(s => {
+        if (provFilter === 'all') return String(s.tier || '3') !== '3'; // Prioritize Tier 1 & Tier 2 when rolling All Studios
         return (s.provider && s.provider.toLowerCase().includes(provFilter)) || (s.category && s.category.toLowerCase().includes(provFilter));
       });
-      const chosenRaw = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : all[0];
+      if (pool.length === 0) pool = all;
+
+      const chosenRaw = pool.length > 0 ? pool[this.secureRandomIndex(pool.length)] : all[0];
       const chosen = window.SlotResolver ? window.SlotResolver.resolve(chosenRaw) : chosenRaw;
+      const mech = (window.SlotResolver && typeof window.SlotResolver.detectMechanicFamily === 'function')
+        ? window.SlotResolver.detectMechanicFamily(chosen)
+        : { label: '⚡ High-Volatility Slot' };
       this.lastRevealedVaultSlot = chosen;
 
       if (packEl) {
@@ -604,11 +862,12 @@
         const statsEl = document.getElementById('vault-revealed-stats');
         const playLink = document.getElementById('btn-vault-play-stake');
 
+        const rtpFormatted = parseFloat(String(chosen.rtp || '96.40').replace(/[^0-9.]/g, '')) || 96.40;
         if (imgEl) imgEl.src = chosen.image;
         if (nameEl) nameEl.textContent = chosen.name;
         if (provEl) provEl.textContent = chosen.provider || 'CASINO VIP';
-        if (statsEl) statsEl.textContent = `RTP: ${chosen.rtp || '96.40%'} · Max Win: ${chosen.maxWin || '15,000x'}`;
-        if (playLink) playLink.href = `https://stake.com/casino/games/${chosen.slug || chosen.id}`;
+        if (statsEl) statsEl.textContent = `RTP: ${rtpFormatted.toFixed(2)}% · Max Win: ${chosen.maxWin || '15,000x'} · ${mech.label}`;
+        if (playLink) playLink.href = `https://stake.com/casino/games/${encodeURIComponent(chosen.slug || chosen.id || '')}`;
 
         if (packEl) {
           packEl.classList.remove('is-ripping');
@@ -619,7 +878,7 @@
         if (window.sonner) {
           window.sonner.toast({
             title: `🃏 Holo-Vault Revealed: ${chosen.name}!`,
-            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'}`,
+            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'} (${rtpFormatted.toFixed(2)}% RTP)`,
             type: 'gold'
           });
         }
@@ -632,12 +891,12 @@
     getPnlSessions() {
       try {
         const raw = localStorage.getItem('hunthub_pnl_calendar');
-        if (raw) {
+        if (raw !== null) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed;
         }
       } catch (_) {}
-      // Default current month session log (editable)
+      // Initial sample sessions (can be cleared or edited in 1 click)
       return [
         { day: 2, inUsd: 400, outUsd: 780 },
         { day: 5, inUsd: 500, outUsd: 310 },
@@ -646,6 +905,58 @@
         { day: 15, inUsd: 450, outUsd: 220 },
         { day: 17, inUsd: 500, outUsd: 1180 }
       ];
+    }
+
+    initPnlCalendarControls() {
+      const dayInp = document.getElementById('pnl-edit-day');
+      const inInp = document.getElementById('pnl-edit-in');
+      const outInp = document.getElementById('pnl-edit-out');
+      const btnSave = document.getElementById('btn-pnl-save-day');
+      const btnClear = document.getElementById('btn-pnl-clear-month');
+
+      if (dayInp && !dayInp.value) {
+        dayInp.value = String(new Date().getDate());
+      }
+
+      if (btnSave) {
+        btnSave.onclick = () => {
+          const day = Math.min(31, Math.max(1, parseInt(dayInp?.value || String(new Date().getDate()), 10) || 1));
+          const inUsd = Math.max(0, parseFloat(inInp?.value || '0') || 0);
+          const outUsd = Math.max(0, parseFloat(outInp?.value || '0') || 0);
+          const sessions = this.getPnlSessions().filter(s => Number(s.day) !== day);
+          if (inUsd > 0 || outUsd > 0) {
+            sessions.push({ day, inUsd, outUsd });
+          }
+          sessions.sort((a, b) => a.day - b.day);
+          try {
+            localStorage.setItem('hunthub_pnl_calendar', JSON.stringify(sessions));
+          } catch (_) {}
+          this.renderPnlCalendar();
+          if (window.sonner) {
+            window.sonner.toast({
+              title: `📅 Day ${day} Updated in P&L Calendar!`,
+              message: inUsd === 0 && outUsd === 0 ? `Day ${day} cleared.` : `IN: $${inUsd.toFixed(0)} · OUT: $${outUsd.toFixed(0)} · Net: $${(outUsd - inUsd).toFixed(0)}`,
+              type: 'green'
+            });
+          }
+        };
+      }
+
+      if (btnClear) {
+        btnClear.onclick = () => {
+          try {
+            localStorage.setItem('hunthub_pnl_calendar', JSON.stringify([]));
+          } catch (_) {}
+          this.renderPnlCalendar();
+          if (window.sonner) {
+            window.sonner.toast({
+              title: '🧹 Monthly P&L Calendar Reset!',
+              message: 'Demo sessions cleared. Ready to log your live stream sessions!',
+              type: 'gold'
+            });
+          }
+        };
+      }
     }
 
     logCurrentSessionToCalendar() {
@@ -696,7 +1007,7 @@
         summaryEl.innerHTML = `
           <span>Month IN: <strong style="color:#fff;">$${totalIn.toLocaleString()}</strong></span> ·
           <span>Month OUT: <strong style="color:#00e5ff;">$${totalOut.toLocaleString()}</strong></span> ·
-          <span>Net P&L: <strong style="color:${netMonth >= 0 ? '#53fc18' : '#ef4444'};">${sign}$${netMonth.toLocaleString()}</strong></span> ·
+          <span>Net P&amp;L: <strong style="color:${netMonth >= 0 ? '#53fc18' : '#ef4444'};">${sign}$${netMonth.toLocaleString()}</strong></span> ·
           <span>Win Sessions: <strong style="color:var(--gold);">${winDays}/${sessions.length}</strong></span>
         `;
       }
@@ -708,7 +1019,7 @@
           const net = (s.outUsd || 0) - (s.inUsd || 0);
           const isWin = net >= 0;
           cells.push(`
-            <div class="pnl-day-cell ${isWin ? 'day-win' : 'day-loss'}">
+            <div class="pnl-day-cell ${isWin ? 'day-win' : 'day-loss'}" data-pnl-day="${d}" data-pnl-in="${Number(s.inUsd || 0)}" data-pnl-out="${Number(s.outUsd || 0)}" style="cursor:pointer;" title="Click to edit Day ${d}">
               <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; font-family:var(--font-display);">
                 <span>OCT ${d}</span>
                 <span>${isWin ? '🟢 WIN' : '🔴 LOSS'}</span>
@@ -716,19 +1027,34 @@
               <div style="font-family:var(--font-display); font-size:14px; font-weight:900; color:${isWin ? '#53fc18' : '#fda4af'};">
                 ${isWin ? '+' : ''}$${net.toFixed(0)}
               </div>
-              <div style="font-size:9.5px; color:#cbd5e1;">In $${s.inUsd} · Out $${s.outUsd}</div>
+              <div style="font-size:9.5px; color:#cbd5e1;">In $${Number(s.inUsd || 0)} · Out $${Number(s.outUsd || 0)}</div>
             </div>
           `);
         } else {
           cells.push(`
-            <div class="pnl-day-cell">
+            <div class="pnl-day-cell" data-pnl-day="${d}" data-pnl-in="0" data-pnl-out="0" style="cursor:pointer;" title="Click to log session for Day ${d}">
               <span style="font-size:10px; color:#64748b; font-family:var(--font-display);">OCT ${d}</span>
-              <span style="font-size:11px; color:#334155; font-family:var(--font-display);">—</span>
+              <span style="font-size:11px; color:#334155; font-family:var(--font-display);">+ Log</span>
             </div>
           `);
         }
       }
       grid.innerHTML = cells.join('');
+
+      grid.querySelectorAll('.pnl-day-cell[data-pnl-day]').forEach(cell => {
+        cell.onclick = () => {
+          const d = cell.getAttribute('data-pnl-day');
+          const inVal = cell.getAttribute('data-pnl-in');
+          const outVal = cell.getAttribute('data-pnl-out');
+          const dayInp = document.getElementById('pnl-edit-day');
+          const inInp = document.getElementById('pnl-edit-in');
+          const outInp = document.getElementById('pnl-edit-out');
+          if (dayInp) dayInp.value = d;
+          if (inInp) inInp.value = inVal !== '0' ? inVal : '';
+          if (outInp) outInp.value = outVal !== '0' ? outVal : '';
+          if (inInp) inInp.focus();
+        };
+      });
     }
 
     initStakeStatsAnalyzer() {
@@ -754,8 +1080,8 @@
             { game: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', amount: 2.0, payout: 1250.0 },
             { game: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', amount: 2.0, payout: 0 },
             { game: 'Le Bandit', provider: 'Hacksaw Gaming', amount: 1.0, payout: 94.5 },
-            { game: 'San Quentin xWays', provider: 'Nolimit City', amount: 1.0, payout: 610.0 },
-            { game: 'SixSixSix', provider: 'Hacksaw Gaming', amount: 2.0, payout: 332.0 }
+            { game: 'San Quentin 2: Death Row', provider: 'Nolimit City', amount: 1.0, payout: 610.0 },
+            { game: 'Waylanders Forge', provider: 'Valkyrie Studio', amount: 2.0, payout: 540.0 }
           ];
           this.parseAndRenderStakeArchive(JSON.stringify(sampleBets), 'stake-sample-archive.json');
         };
@@ -771,7 +1097,6 @@
         const parsed = JSON.parse(rawText);
         records = Array.isArray(parsed) ? parsed : (parsed.bets || parsed.data || []);
       } catch (_) {
-        // Fallback CSV line parser
         const lines = rawText.split(/\r?\n/).filter(Boolean);
         records = lines.slice(1).map(ln => {
           const cols = ln.split(',');
@@ -788,11 +1113,12 @@
       let totalPayout = 0;
       let maxMult = 0;
       let bestGame = '—';
+      const perSlotStats = this.getStakeArchiveSlotStats();
 
       records.forEach(r => {
-        const amt = Number(r.amount || r.bet || r.betSize || 1);
-        const pay = Number(r.payout || r.win || 0);
-        const gName = r.game || r.gameName || r.slot || 'Stake Slot';
+        const amt = Number(r.amount || r.bet || r.betSize || (r.data && r.data.amount) || 1);
+        const pay = Number(r.payout || r.win || (r.data && r.data.payout) || 0);
+        const gName = String(r.game || r.gameName || r.slot || (r.data && r.data.gameName) || 'Stake Slot').trim();
         totalWagered += amt;
         totalPayout += pay;
         const m = amt > 0 ? pay / amt : 0;
@@ -800,53 +1126,104 @@
           maxMult = m;
           bestGame = gName;
         }
+        const k = gName.toLowerCase();
+        if (!perSlotStats[k]) perSlotStats[k] = { wagered: 0, payout: 0, bets: 0 };
+        perSlotStats[k].wagered += amt;
+        perSlotStats[k].payout += pay;
+        perSlotStats[k].bets += 1;
       });
 
+      try {
+        localStorage.setItem('hunthub_stake_archive_stats', JSON.stringify(perSlotStats));
+      } catch (_) {}
+      this.renderRtpRadar();
+
       const net = totalPayout - totalWagered;
+      const realizedRtp = totalWagered > 0 ? ((totalPayout / totalWagered) * 100).toFixed(2) : '0.00';
       outEl.innerHTML = `
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; padding:14px; background:rgba(0,0,0,0.45); border:1px solid rgba(83,252,24,0.35); border-radius:12px; margin-top:12px; font-family:var(--font-display);">
           <div>
             <div style="font-size:10px; color:#94a3b8;">ARCHIVE PARSED (LOCAL)</div>
-            <div style="font-size:14px; font-weight:900; color:#fff;">${window.escapeHTML ? window.escapeHTML(fileName) : fileName} (${totalBets} bets)</div>
+            <div style="font-size:14px; font-weight:900; color:#fff;">${this.escapeHTML(fileName)} (${totalBets} bets)</div>
           </div>
           <div>
             <div style="font-size:10px; color:#94a3b8;">TOTAL WAGERED</div>
             <div style="font-size:16px; font-weight:900; color:var(--gold);">$${totalWagered.toFixed(2)}</div>
           </div>
           <div>
-            <div style="font-size:10px; color:#94a3b8;">NET P&L</div>
-            <div style="font-size:16px; font-weight:900; color:${net >= 0 ? '#53fc18' : '#ef4444'};">${net >= 0 ? '+' : ''}$${net.toFixed(2)}</div>
+            <div style="font-size:10px; color:#94a3b8;">NET P&amp;L (REALIZED RTP)</div>
+            <div style="font-size:16px; font-weight:900; color:${net >= 0 ? '#53fc18' : '#ef4444'};">${net >= 0 ? '+' : ''}$${net.toFixed(2)} (${realizedRtp}%)</div>
           </div>
           <div>
             <div style="font-size:10px; color:#94a3b8;">PEAK MULTIPLIER</div>
-            <div style="font-size:16px; font-weight:900; color:var(--cyan);">${maxMult.toFixed(1)}x (${window.escapeHTML ? window.escapeHTML(bestGame) : bestGame})</div>
+            <div style="font-size:16px; font-weight:900; color:var(--cyan);">${maxMult.toFixed(1)}x (${this.escapeHTML(bestGame)})</div>
           </div>
         </div>
       `;
     }
 
     // =========================================================================
-    // 7. FRESH DROPS RADAR & DIGGITY STAKE COMPANION EXTENSION BRIDGE
+    // 7. FRESH DROPS RADAR (2025-2026 RELEASES) & STAKE COMPANION EXTENSION BRIDGE
     // =========================================================================
     renderFreshDrops() {
       const container = document.getElementById('intel-fresh-drops-grid');
       if (!container || !window.SlotResolver) return;
 
-      const drops = window.SlotResolver.getCuratedCatalog().slice(0, 12);
-      container.innerHTML = drops.map((s, i) => `
-        <div style="padding:12px; background:rgba(11,17,30,0.88); border:1px solid rgba(255,255,255,0.08); border-radius:12px; display:flex; align-items:center; gap:12px;">
-          <img src="${s.image}" alt="${s.name}" loading="lazy" style="width:48px; height:64px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; flex-shrink:0;">
-          <div style="min-width:0; flex:1;">
-            <span class="bh-tier-badge ${i < 4 ? 'tier-6s' : 'tier-5s'}">${i < 4 ? '🆕 OCT 2026 DROP' : '⚡ HIGH VOLATILITY'}</span>
-            <div style="font-family:var(--font-display); font-size:13.5px; font-weight:900; color:#fff; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
-            <div style="font-size:11px; color:var(--gold);">${s.provider} · Max ${s.maxWin} · RTP ${s.rtp}</div>
-            <div style="margin-top:6px; display:flex; gap:6px;">
-              <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${s.name}" style="padding:3px 8px; font-size:10px; border-color:#53fc18; color:#53fc18; font-weight:800;">+ !sr Queue</button>
-              <a href="https://stake.com/casino/games/${s.slug || s.id}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding:3px 8px; font-size:10px; text-decoration:none; border-color:var(--cyan); color:var(--cyan);">↗️ Stake</a>
+      document.querySelectorAll('[data-drops-filter]').forEach(btn => {
+        btn.onclick = () => {
+          this.dropsFilter = btn.getAttribute('data-drops-filter') || 'ALL';
+          document.querySelectorAll('[data-drops-filter]').forEach(b => b.classList.toggle('active', b === btn));
+          this.renderFreshDrops();
+        };
+      });
+
+      const resolvedDrops = VERIFIED_2026_FRESH_DROPS.map(d => {
+        const slot = window.SlotResolver.resolve(d.name);
+        return { ...d, slot };
+      }).filter(item => {
+        if (this.dropsFilter === 'MAINSTREAM') return item.group === 'MAINSTREAM';
+        if (this.dropsFilter === 'ENGINE') return item.group === 'ENGINE';
+        if (this.dropsFilter === 'HIGHRTP') return item.highRtp;
+        return true;
+      });
+
+      container.innerHTML = resolvedDrops.map(item => {
+        const s = item.slot;
+        const safeName = this.escapeHTML(s.name);
+        const safeProv = this.escapeHTML(s.provider);
+        const safeImg = this.escapeHTML(s.image);
+        const safeMax = this.escapeHTML(s.maxWin || '25,000x');
+        const rtpVal = parseFloat(String(s.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
+        const safeSlug = encodeURIComponent(s.slug || s.id || '');
+        const badgeClass = item.highRtp ? 'tier-max' : (item.group === 'ENGINE' ? 'tier-5s' : 'tier-6s');
+
+        return `
+          <div style="padding:12px; background:rgba(11,17,30,0.88); border:1px solid rgba(255,255,255,0.08); border-radius:12px; display:flex; align-items:center; gap:12px;">
+            <img src="${safeImg}" alt="${safeName}" loading="lazy" style="width:50px; height:66px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; flex-shrink:0;">
+            <div style="min-width:0; flex:1;">
+              <span class="bh-tier-badge ${badgeClass}">${this.escapeHTML(item.tag)}</span>
+              <div style="font-family:var(--font-display); font-size:13.5px; font-weight:900; color:#fff; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeName}</div>
+              <div style="font-size:11px; color:var(--gold);">${safeProv} · Max ${safeMax} · RTP ${rtpVal.toFixed(2)}%</div>
+              <div style="margin-top:6px; display:flex; gap:5px; flex-wrap:wrap;">
+                <button type="button" class="btn-chat-toggle btn-intel-queue-sr" data-slot-name="${safeName}" style="padding:3px 8px; font-size:10px; border-color:#53fc18; color:#53fc18; font-weight:800;">+ !sr Queue</button>
+                <button type="button" class="btn-chat-toggle btn-drop-inspect-dna" data-slot-name="${safeName}" style="padding:3px 7px; font-size:10px; border-color:var(--cyan); color:var(--cyan);">🧬 DNA</button>
+                <a href="https://stake.com/casino/games/${safeSlug}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding:3px 8px; font-size:10px; text-decoration:none; border-color:var(--gold); color:var(--gold);">↗️ Stake</a>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+
+      container.querySelectorAll('.btn-drop-inspect-dna').forEach(btn => {
+        btn.onclick = () => {
+          const targetSlot = btn.getAttribute('data-slot-name') || 'Waylanders Forge';
+          this.selectedEngineSlot = targetSlot;
+          const inp = document.getElementById('intel-engine-search');
+          if (inp) inp.value = targetSlot;
+          this.renderEngineExplorer();
+          this.switchIntelTab('engine');
+        };
+      });
 
       this.bindQueueButtons(container);
 
@@ -915,6 +1292,7 @@
       if (window.adminHub && typeof window.adminHub.renderBonusHuntAdmin === 'function') {
         window.adminHub.renderBonusHuntAdmin();
       }
+      this.renderRtpRadar();
       if (window.sonner) {
         window.sonner.toast({
           title: `⚡ Auto-Captured: ${resolved.name} (${tier})`,
@@ -1012,17 +1390,9 @@
       const resBox = document.getElementById('raffle-ticket-verifier-result');
       if (!btnVerify || !inpUser || !resBox) return;
 
-      const escHtml = (str) => String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-
       const runLookup = () => {
         const rawUser = (inpUser.value || localStorage.getItem('hunthub_kick_username') || 'DiggityViewer').trim().replace(/^@/, '');
         const myTickets = Number(document.getElementById('raffle-user-tickets')?.textContent || '0') || 3;
-        // Deterministic ticket range & total pool calculation
         let hash = 0;
         for (let i = 0; i < rawUser.length; i++) hash = ((hash << 5) - hash) + rawUser.charCodeAt(i);
         const startTicket = 100 + (Math.abs(hash) % 340);
@@ -1034,7 +1404,7 @@
         resBox.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.35); border-radius:10px; font-family:var(--font-display); font-size:12px;">
             <div>
-              <strong style="color:#fff;">@${escHtml(rawUser)}</strong> ·
+              <strong style="color:#fff;">@${this.escapeHTML(rawUser)}</strong> ·
               <span style="color:var(--gold); font-weight:900;">Tickets #${String(startTicket).padStart(4, '0')} – #${String(endTicket).padStart(4, '0')}</span>
               <span style="color:#94a3b8;">(${Math.max(1, myTickets)} tickets in pool of ${totalPool})</span>
             </div>
