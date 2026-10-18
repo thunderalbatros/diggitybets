@@ -344,51 +344,92 @@ class ProAudioFXEngine {
   }
 
   /**
-   * SOTA 2026 Tactile Web Audio Haptics (Inspiración Reflect.app)
+   * SOTA 2026 Tactile Web Audio Haptics (Apple Taptic / Reflect.app inspired)
    * 1. playTactileClick(): Micro-tap haptic for buttons, tabs, and toggles
    */
-  playTactileClick(frequency = 190) {
+  playTactileClick(frequency = 1650) {
+    if (window.soundEngine && typeof window.soundEngine.playTactileClick === 'function') {
+      window.soundEngine.playTactileClick(frequency);
+      return;
+    }
     const ctx = this.ensureContext();
     if (!ctx) return;
     const now = ctx.currentTime;
+    if (this._lastClickAt && (now - this._lastClickAt) < 0.025) return;
+    this._lastClickAt = now;
 
-    const osc = ctx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(frequency, now);
-    osc.frequency.exponentialRampToValueAtTime(55, now + 0.024);
+    // Transient snap
+    const bufferSize = Math.floor(ctx.sampleRate * 0.015);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(frequency + (Math.random() * 60 - 30), now);
+    bp.Q.setValueAtTime(3.4, now);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+    gain.gain.setValueAtTime(0.10 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
 
-    osc.connect(gain);
+    src.connect(bp);
+    bp.connect(gain);
     gain.connect(this.masterGain);
+    src.start(now);
+    src.stop(now + 0.014);
+
+    // Micro-body sine
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(270, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.009);
+    oscGain.gain.setValueAtTime(0.04 * this.volume, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.010);
+    osc.connect(oscGain);
+    oscGain.connect(this.masterGain);
     osc.start(now);
-    osc.stop(now + 0.028);
+    osc.stop(now + 0.012);
+  }
+
+  /**
+   * SOTA 2026 Silk Glass & Air Transition (Navigation & Section Switching)
+   */
+  playNavTab() {
+    if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+      window.soundEngine.playNavTab();
+      return;
+    }
   }
 
   /**
    * 2. playChipDrop(): Tactile chip click on bet increment/placement
    */
   playChipDrop() {
+    if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+      window.soundEngine.playChip();
+      return;
+    }
     const ctx = this.ensureContext();
     if (!ctx) return;
     const now = ctx.currentTime;
 
-    [340, 680].forEach((freq, idx) => {
+    const pitchVar = 1 + (Math.random() * 0.05 - 0.025);
+    [1350 * pitchVar, 2480 * pitchVar].forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.008);
-      osc.frequency.exponentialRampToValueAtTime(120, now + 0.045);
-
+      osc.frequency.setValueAtTime(freq, now);
+      const decay = idx === 0 ? 0.035 : 0.022;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.06, now + idx * 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.048);
-
+      gain.gain.setValueAtTime((idx === 0 ? 0.08 : 0.04) * this.volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
       osc.connect(gain);
       gain.connect(this.masterGain);
-      osc.start(now + idx * 0.008);
-      osc.stop(now + 0.05);
+      osc.start(now);
+      osc.stop(now + decay + 0.005);
     });
   }
 

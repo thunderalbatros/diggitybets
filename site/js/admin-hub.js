@@ -402,7 +402,9 @@ class AdminHubController {
           }
         });
 
-        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+        if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+          window.soundEngine.playNavTab();
+        } else if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
           window.soundEngine.playChip();
         }
 

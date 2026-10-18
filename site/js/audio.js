@@ -7,9 +7,15 @@ class HuntHubAudio {
     this.ctx = null;
     this.masterLimiter = null;
     this.masterGain = null;
+    this.reverbNode = null;
+    this.reverbGain = null;
     this._noiseBufferCache = new Map();
     this.muted = localStorage.getItem('hunthub_muted') === 'true';
     this.volume = parseFloat(localStorage.getItem('hunthub_volume') || '0.7');
+    this._pegNotes = [587.33, 659.25, 783.99, 880.00, 987.77, 1046.50];
+    this._pegIdx = 0;
+    this._lastClickAt = 0;
+    this._lastNavAt = 0;
   }
 
   init() {
@@ -19,27 +25,52 @@ class HuntHubAudio {
         this.ctx = new AudioCtx();
         const t = this.ctx.currentTime;
         this.masterLimiter = this.ctx.createDynamicsCompressor();
-        this.masterLimiter.threshold.setValueAtTime(-4, t);
-        this.masterLimiter.knee.setValueAtTime(6, t);
-        this.masterLimiter.ratio.setValueAtTime(20, t);
-        this.masterLimiter.attack.setValueAtTime(0.001, t);
-        this.masterLimiter.release.setValueAtTime(0.12, t);
+        this.masterLimiter.threshold.setValueAtTime(-14, t);
+        this.masterLimiter.knee.setValueAtTime(18, t);
+        this.masterLimiter.ratio.setValueAtTime(8, t);
+        this.masterLimiter.attack.setValueAtTime(0.002, t);
+        this.masterLimiter.release.setValueAtTime(0.15, t);
 
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.setValueAtTime(1.0, t);
+        this.masterGain.gain.setValueAtTime(this.volume, t);
+
+        // Algorithmic Luxury Hall Reverb Node (Smooth impulse response)
+        try {
+          this.reverbNode = this.ctx.createConvolver();
+          const sampleRate = this.ctx.sampleRate;
+          const length = Math.floor(sampleRate * 1.5);
+          const impulse = this.ctx.createBuffer(2, length, sampleRate);
+          for (let ch = 0; ch < 2; ch++) {
+            const data = impulse.getChannelData(ch);
+            for (let i = 0; i < length; i++) {
+              const decay = Math.pow(1 - i / length, 2.8);
+              data[i] = (Math.random() * 2 - 1) * decay;
+            }
+          }
+          this.reverbNode.buffer = impulse;
+          this.reverbGain = this.ctx.createGain();
+          this.reverbGain.gain.setValueAtTime(0.28, t);
+          this.reverbNode.connect(this.reverbGain);
+          this.reverbGain.connect(this.masterLimiter);
+        } catch (_) {}
 
         this.masterLimiter.connect(this.masterGain);
         this.masterGain.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
   }
 
   getOutputBus() {
     if (!this.ctx) return null;
     return this.masterLimiter || this.ctx.destination;
+  }
+
+  getReverbBus() {
+    if (!this.ctx) return null;
+    return this.reverbNode || this.getOutputBus();
   }
 
   connectWithPan(source, dest, panValue = 0) {
@@ -81,45 +112,242 @@ class HuntHubAudio {
     return this.muted;
   }
 
-  // Soft poker chip sound (dual high frequencies with micro-decay)
+  /**
+   * SOTA 2026 Tactile UI Micro-Click (Apple Taptic / Reflect.app inspired)
+   * Ultra-crisp, dampened transient snap + subtle micro-body.
+   * Completely eliminates low muddy thuds and high piercing squeaks.
+   */
+  playTactileClick(frequency = 1650) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    if (this._lastClickAt && (now - this._lastClickAt) < 0.025) return;
+    this._lastClickAt = now;
+
+    const out = this.getOutputBus();
+    const vol = this.volume;
+
+    // 1. Transient snap (Bandpass filtered noise)
+    const noiseBuf = this.getNoiseBuffer(0.015);
+    if (noiseBuf) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      const jitter = (Math.random() * 80 - 40);
+      bp.frequency.setValueAtTime(Math.max(800, frequency + jitter), now);
+      bp.Q.setValueAtTime(3.4, now);
+
+      const nGain = this.ctx.createGain();
+      nGain.gain.setValueAtTime(0.12 * vol, now);
+      nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(out);
+
+      noise.start(now);
+      noise.stop(now + 0.014);
+    }
+
+    // 2. Micro-body impact (Fast sine drop without muddy sub-bass)
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280 + Math.random() * 30, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.009);
+
+    oscGain.gain.setValueAtTime(0.045 * vol, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.010);
+
+    osc.connect(oscGain);
+    oscGain.connect(out);
+
+    osc.start(now);
+    osc.stop(now + 0.012);
+  }
+
+  playUIClick() {
+    this.playTactileClick();
+  }
+
+  /**
+   * SOTA 2026 Silk Glass & Air Transition (Sidebar & Section Switcher)
+   * Airy breeze + celestial twin glass chimes with spatial hall reverb.
+   * Gives users a premium, non-intrusive feedback when navigating sections.
+   */
+  playNavTab() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    if (this._lastNavAt && (now - this._lastNavAt) < 0.04) return;
+    this._lastNavAt = now;
+
+    const out = this.getOutputBus();
+    const rev = this.getReverbBus();
+    const vol = this.volume;
+
+    // 1. Soft air sweep transient
+    const noiseBuf = this.getNoiseBuffer(0.035);
+    if (noiseBuf) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2200, now);
+      bp.frequency.exponentialRampToValueAtTime(950, now + 0.035);
+      bp.Q.setValueAtTime(2.2, now);
+
+      const nGain = this.ctx.createGain();
+      nGain.gain.setValueAtTime(0.035 * vol, now);
+      nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(out);
+
+      noise.start(now);
+      noise.stop(now + 0.038);
+    }
+
+    // 2. Harmonic twin glass chimes (F#5: 739.99 Hz & C#6: 1108.73 Hz)
+    const tones = [
+      { freq: 739.99, gain: 0.055, dur: 0.050 },
+      { freq: 1108.73, gain: 0.038, dur: 0.065 }
+    ];
+
+    tones.forEach(t => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(t.freq, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(t.gain * vol, now + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + t.dur);
+
+      osc.connect(gain);
+      gain.connect(out);
+
+      // Send subtle shimmer to reverb
+      if (rev && rev !== out) {
+        const revSend = this.ctx.createGain();
+        revSend.gain.setValueAtTime(0.20, now);
+        gain.connect(revSend);
+        revSend.connect(rev);
+      }
+
+      osc.start(now);
+      osc.stop(now + t.dur + 0.01);
+    });
+  }
+
+  /**
+   * SOTA 2026 Ceramic Casino Chip Clack (High-End 14g Clay / Ceramic Composite)
+   * Simulates physical contact transient + dual inharmonic ceramic ringing + felt cushion.
+   * Completely replaces the piercing 2400Hz triangle beep.
+   */
   playChip() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
 
-    osc1.type = 'triangle';
-    osc1.frequency.setValueAtTime(2400, t);
-    osc1.frequency.exponentialRampToValueAtTime(1200, t + 0.04);
+    // Organic micro-pitch variation (+-2.5%) for stacking feel
+    const pitchVar = 1 + (Math.random() * 0.05 - 0.025);
 
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1600, t);
-    osc2.frequency.exponentialRampToValueAtTime(600, t + 0.03);
+    // 1. Sharp Ceramic Impact Transient (Filtered noise click)
+    const noiseBuf = this.getNoiseBuffer(0.02);
+    if (noiseBuf) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuf;
 
-    gain.gain.setValueAtTime(0.25 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(3200 * pitchVar, now);
+      bp.Q.setValueAtTime(2.2, now);
 
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(this.getOutputBus());
+      const nGain = this.ctx.createGain();
+      nGain.gain.setValueAtTime(0.12 * vol, now);
+      nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
 
-    osc1.start(t);
-    osc2.start(t);
-    osc1.stop(t + 0.05);
-    osc2.stop(t + 0.05);
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(out);
+
+      noise.start(now);
+      noise.stop(now + 0.018);
+    }
+
+    // 2. Dual Modal Inharmonic Ceramic Ringing (1350Hz & 2480Hz)
+    const ceramicModes = [
+      { freq: 1350 * pitchVar, gain: 0.090, decay: 0.036 },
+      { freq: 2480 * pitchVar, gain: 0.045, decay: 0.022 }
+    ];
+
+    ceramicModes.forEach(m => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(m.freq, now);
+
+      gain.gain.setValueAtTime(m.gain * vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + m.decay);
+
+      osc.connect(gain);
+      gain.connect(out);
+
+      osc.start(now);
+      osc.stop(now + m.decay + 0.005);
+    });
+
+    // 3. Felt Table Acoustic Cushion Body (Warmth at 420Hz)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(420 * pitchVar, now);
+    subOsc.frequency.exponentialRampToValueAtTime(180, now + 0.015);
+
+    subGain.gain.setValueAtTime(0.048 * vol, now);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+
+    subOsc.connect(subGain);
+    subGain.connect(out);
+
+    subOsc.start(now);
+    subOsc.stop(now + 0.018);
   }
 
-  // Card slide / deal sound (filtered white noise burst)
+  playChipDrop() {
+    this.playChip();
+  }
+
+  /**
+   * SOTA 2026 Crisp Card Slide / Deal on Felt
+   */
   playCard() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const buffer = this.getNoiseBuffer(0.08);
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
+
+    const buffer = this.getNoiseBuffer(0.06);
     if (!buffer) return;
 
     const noise = this.ctx.createBufferSource();
@@ -127,94 +355,180 @@ class HuntHubAudio {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1800, this.ctx.currentTime);
-    filter.Q.setValueAtTime(3.0, this.ctx.currentTime);
+    filter.frequency.setValueAtTime(1600, now);
+    filter.frequency.exponentialRampToValueAtTime(750, now + 0.055);
+    filter.Q.setValueAtTime(2.4, now);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.3 * this.volume, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.14 * vol, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
 
     noise.connect(filter);
     filter.connect(gain);
-    this.connectWithPan(gain, this.getOutputBus(), 0);
+    gain.connect(out);
 
-    noise.start();
+    noise.start(now);
+    noise.stop(now + 0.06);
   }
 
-  // Tick sound (pegs in plinko or roulette pointer)
+  /**
+   * SOTA 2026 Acoustic Wood & Acrylic Marimba Pegs (Plinko & Pointer Ticks)
+   * Cycles through warm pentatonic harmonies with physical wooden tap transients.
+   * Completely eliminates repetitive, irritating 950Hz sine beeps.
+   */
   playTick() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
+
+    if (!this._pegNotes) {
+      this._pegNotes = [587.33, 659.25, 783.99, 880.00, 987.77, 1046.50]; // D5, E5, G5, A5, B5, C6
+      this._pegIdx = 0;
+    }
+
+    const freq = this._pegNotes[(this._pegIdx++) % this._pegNotes.length] * (1 + (Math.random() * 0.03 - 0.015));
+
+    // 1. Resonant Wooden Tone (Sine with micro attack)
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(950, t);
-    osc.frequency.exponentialRampToValueAtTime(300, t + 0.025);
+    osc.frequency.setValueAtTime(freq, now);
 
-    gain.gain.setValueAtTime(0.18 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.085 * vol, now + 0.0015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
 
     osc.connect(gain);
-    gain.connect(this.getOutputBus());
+    gain.connect(out);
 
-    osc.start(t);
-    osc.stop(t + 0.025);
+    osc.start(now);
+    osc.stop(now + 0.022);
+
+    // 2. High-Frequency Wood Tap Transient
+    const noiseBuf = this.getNoiseBuffer(0.01);
+    if (noiseBuf) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2100, now);
+      bp.Q.setValueAtTime(3.8, now);
+
+      const nGain = this.ctx.createGain();
+      nGain.gain.setValueAtTime(0.05 * vol, now);
+      nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.009);
+
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(out);
+
+      noise.start(now);
+      noise.stop(now + 0.01);
+    }
   }
 
-  // Win celebratory chime (Major arpeggio: C5, E5, G5, C6)
+  playPeg() {
+    this.playTick();
+  }
+
+  /**
+   * SOTA 2026 Sparkling Major Pentatonic Arpeggio (Win Celebration)
+   * Harmonic crystal chime cascade through the luxury hall reverb.
+   */
   playWin() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const notes = [523.25, 659.25, 783.99, 1046.50];
-    const t = this.ctx.currentTime;
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const rev = this.getReverbBus();
+    const vol = this.volume;
+
+    const notes = [523.25, 659.25, 783.99, 987.77, 1046.50]; // C5, E5, G5, B5, C6
 
     notes.forEach((freq, idx) => {
+      const noteTime = now + idx * 0.035;
+
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      const noteTime = t + idx * 0.07;
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, noteTime);
 
-      gain.gain.setValueAtTime(0.22 * this.volume, noteTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.35);
+      gain.gain.setValueAtTime(0.0001, noteTime);
+      gain.gain.linearRampToValueAtTime(0.12 * vol, noteTime + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + 0.22);
 
       osc.connect(gain);
-      gain.connect(this.getOutputBus());
+      gain.connect(out);
+
+      if (rev && rev !== out) {
+        const revSend = this.ctx.createGain();
+        revSend.gain.setValueAtTime(0.35, noteTime);
+        gain.connect(revSend);
+        revSend.connect(rev);
+      }
 
       osc.start(noteTime);
-      osc.stop(noteTime + 0.35);
+      osc.stop(noteTime + 0.24);
     });
   }
 
-  // Bust / Loss tone (descending short dual frequency)
+  playWinArpeggio() {
+    this.playWin();
+  }
+
+  /**
+   * SOTA 2026 Velvet Muted Minor Descent (Unlucky Round / Bust)
+   * Warm lowpass-filtered minor second dissonance with smooth damping.
+   * Completely replaces harsh, offensive sawtooth buzzers.
+   */
   playBust() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(190, t);
-    osc.frequency.exponentialRampToValueAtTime(90, t + 0.22);
+    // Lowpass filter removes any harsh bite, leaving a warm velvet tone
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(420, now);
+    filter.Q.setValueAtTime(1.8, now);
 
-    gain.gain.setValueAtTime(0.15 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    // Minor second dissonance: A3 (220Hz) and G#3 (207.65Hz)
+    const tones = [
+      { startFreq: 220.00, endFreq: 175.00 },
+      { startFreq: 207.65, endFreq: 164.00 }
+    ];
 
-    osc.connect(gain);
-    gain.connect(this.getOutputBus());
+    const masterBustGain = this.ctx.createGain();
+    masterBustGain.gain.setValueAtTime(0.095 * vol, now);
+    masterBustGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 
-    osc.start(t);
-    osc.stop(t + 0.22);
+    filter.connect(masterBustGain);
+    masterBustGain.connect(out);
+
+    tones.forEach(t => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(t.startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(t.endFreq, now + 0.18);
+
+      osc.connect(filter);
+      osc.start(now);
+      osc.stop(now + 0.19);
+    });
   }
 
   // Cascading coins sound (rapid sequence of metallic high pings)
@@ -234,7 +548,7 @@ class HuntHubAudio {
       osc.frequency.setValueAtTime(freq, noteTime);
       osc.frequency.exponentialRampToValueAtTime(freq * 0.7, noteTime + 0.06);
 
-      gain.gain.setValueAtTime(0.12 * this.volume, noteTime);
+      gain.gain.setValueAtTime(0.10 * this.volume, noteTime);
       gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.06);
 
       osc.connect(gain);
@@ -245,28 +559,47 @@ class HuntHubAudio {
     }
   }
 
-  // Stake Gem reveal: High crystal chime (F6, A6, C7)
+  /**
+   * SOTA 2026 Celestial Crystal Shimmer (Mines Gem Reveal)
+   * High pure crystal bells with spatial reverb tail.
+   */
   playGem() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const rev = this.getReverbBus();
+    const vol = this.volume;
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1396.91, t); // F6
-    osc.frequency.exponentialRampToValueAtTime(2093.00, t + 0.08); // C7
+    const freqs = [1479.98, 2217.46, 2959.96]; // F#6, C#7, F#7
 
-    gain.gain.setValueAtTime(0.28 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    freqs.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
 
-    osc.connect(gain);
-    gain.connect(this.getOutputBus());
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.015);
 
-    osc.start(t);
-    osc.stop(t + 0.22);
+      const noteTime = now + idx * 0.015;
+      gain.gain.setValueAtTime(0.0001, noteTime);
+      gain.gain.linearRampToValueAtTime((0.10 / (idx + 1)) * vol, noteTime + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + 0.18);
+
+      osc.connect(gain);
+      gain.connect(out);
+
+      if (rev && rev !== out) {
+        const revSend = this.ctx.createGain();
+        revSend.gain.setValueAtTime(0.40, noteTime);
+        gain.connect(revSend);
+        revSend.connect(rev);
+      }
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.20);
+    });
   }
 
   // Alias for diamond sound
@@ -274,71 +607,129 @@ class HuntHubAudio {
     this.playGem();
   }
 
-  // Limbo Rocket count sound
+  /**
+   * SOTA 2026 Limbo Rocket Riser
+   */
   playLimbo() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
-    const t = this.ctx.currentTime;
+
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
+
     const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, t);
-    osc.frequency.exponentialRampToValueAtTime(1200, t + 0.15);
-    gain.gain.setValueAtTime(0.2 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-    osc.connect(gain);
-    gain.connect(this.getOutputBus());
-    osc.start(t);
-    osc.stop(t + 0.15);
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(680, now + 0.12);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(450, now);
+    filter.frequency.exponentialRampToValueAtTime(1800, now + 0.12);
+
+    gain.gain.setValueAtTime(0.09 * vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(out);
+
+    osc.start(now);
+    osc.stop(now + 0.13);
   }
 
-  // Stake Bomb reveal: Deep explosive sub-boom with noise
+  /**
+   * SOTA 2026 Stake Bomb Reveal: Cinematic Sub-Bass Impact
+   */
   playBomb() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
+
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(120, t);
-    osc.frequency.exponentialRampToValueAtTime(25, t + 0.35);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(28, now + 0.32);
 
-    gain.gain.setValueAtTime(0.4 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    gain.gain.setValueAtTime(0.35 * vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
 
     osc.connect(gain);
-    gain.connect(this.getOutputBus());
+    gain.connect(out);
 
-    osc.start(t);
-    osc.stop(t + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.36);
   }
 
-  // Stake Dice roll: Quick energetic sweep
+  /**
+   * SOTA 2026 Wooden Casino Dice Tumble on Felt (3 Micro-Bounces)
+   */
   playDiceRoll() {
     if (this.muted) return;
     this.init();
     if (!this.ctx) return;
 
-    const t = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    const out = this.getOutputBus();
+    const vol = this.volume;
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(300, t);
-    osc.frequency.exponentialRampToValueAtTime(900, t + 0.06);
+    const impacts = [
+      { time: 0.000, freq: 1100, pan: -0.25, gain: 0.11 },
+      { time: 0.032, freq: 1450, pan:  0.25, gain: 0.08 },
+      { time: 0.060, freq:  920, pan: -0.10, gain: 0.06 }
+    ];
 
-    gain.gain.setValueAtTime(0.2 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    impacts.forEach(imp => {
+      const t = now + imp.time;
 
-    osc.connect(gain);
-    gain.connect(this.getOutputBus());
+      const noiseBuf = this.getNoiseBuffer(0.018);
+      if (noiseBuf) {
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuf;
 
-    osc.start(t);
-    osc.stop(t + 0.08);
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(imp.freq, t);
+        bp.Q.setValueAtTime(2.8, t);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(imp.gain * vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.016);
+
+        noise.connect(bp);
+        bp.connect(gain);
+        this.connectWithPan(gain, out, imp.pan);
+
+        noise.start(t);
+        noise.stop(t + 0.018);
+      }
+
+      // Felt sub thump
+      const sub = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(140, t);
+      sub.frequency.exponentialRampToValueAtTime(60, t + 0.015);
+
+      subGain.gain.setValueAtTime(0.05 * vol, t);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.015);
+
+      sub.connect(subGain);
+      subGain.connect(out);
+
+      sub.start(t);
+      sub.stop(t + 0.016);
+    });
   }
 
   // Plinko Common / Low Multiplier bucket landing (< 2x): soft acoustic acrylic/wood "plop"
@@ -754,26 +1145,7 @@ class HuntHubAudio {
    * Subtle Haptic Click for Buttons & Predictions
    */
   playVoteClick() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const t = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1800, t);
-    osc.frequency.exponentialRampToValueAtTime(500, t + 0.012);
-
-    gain.gain.setValueAtTime(0.14 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
-
-    osc.connect(gain);
-    gain.connect(this.getOutputBus());
-
-    osc.start(t);
-    osc.stop(t + 0.018);
+    this.playTactileClick(1750);
   }
 
   /**
