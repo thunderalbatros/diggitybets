@@ -68,6 +68,13 @@ window.switchView = function(targetId) {
     window.tournamentPrediction.renderKoth();
   }
 
+  // Flush any deferred Admin Hub / Control Panel render immediately when entering those views
+  if ((targetId === '#admin-hub' || targetId === '#control-panel') && window.adminHub && window.adminHub._adminDecksDirty) {
+    window.adminHub._adminDecksDirty = false;
+    window.adminHub.renderAllDecks();
+    window.adminHub.syncCondensedControlPanelUI();
+  }
+
   // Update navigation tabs
   const navLinks = document.querySelectorAll('.nav-link-btn');
   navLinks.forEach(link => {
@@ -114,7 +121,7 @@ window.switchView = function(targetId) {
     history.replaceState(null, '', targetId);
   }
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo(0, 0);
 };
 
 document.addEventListener('DOMContentLoaded', () => {

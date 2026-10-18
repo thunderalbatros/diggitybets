@@ -272,9 +272,33 @@ class AdminHubController {
     }
 
     if (isAdmin) {
-      this.renderAllDecks();
-      this.bindAdminControls();
-      this.syncCondensedControlPanelUI();
+      if (!this._adminControlsBound) {
+        this._adminControlsBound = true;
+        this.bindAdminControls();
+      }
+      const isAdminViewVisible = Boolean(
+        (adminSection && adminSection.classList.contains('active-view')) ||
+        (controlSection && controlSection.classList.contains('active-view'))
+      );
+      if (isAdminViewVisible) {
+        this._adminDecksDirty = false;
+        this.renderAllDecks();
+        this.syncCondensedControlPanelUI();
+      } else if (!this._adminDecksScheduled) {
+        this._adminDecksScheduled = true;
+        this._adminDecksDirty = true;
+        const runIdle = typeof window.requestIdleCallback === 'function'
+          ? (cb) => window.requestIdleCallback(cb, { timeout: 600 })
+          : (cb) => setTimeout(cb, 80);
+        runIdle(() => {
+          this._adminDecksScheduled = false;
+          if (this._adminDecksDirty) {
+            this._adminDecksDirty = false;
+            this.renderAllDecks();
+            this.syncCondensedControlPanelUI();
+          }
+        });
+      }
     } else {
       if (adminSection) adminSection.style.display = 'none';
       if (controlSection) controlSection.style.display = 'none';
