@@ -27,6 +27,14 @@
   <link rel="stylesheet" href="site/css/luxury-primitives.css?v=32.0">
   <link rel="stylesheet" href="site/css/style.css?v=32.0">
   <link rel="stylesheet" href="site/css/diggity-intel.css?v=32.0">
+  <link rel="stylesheet" href="site/css/bounties.css?v=32.0">
+  <script type="speculationrules">
+  {
+    "prerender": [
+      { "where": { "href_matches": "/*" }, "eagerness": "moderate" }
+    ]
+  }
+  </script>
   <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM & Agentic Context Index">
   <script type="application/ld+json">
   {
@@ -109,6 +117,10 @@
           <span class="nav-item-icon">⚡</span>
           <span class="nav-item-text">Stake Leaderboard</span>
         </a>
+        <a href="#bounties" class="nav-link-btn has-badge" data-target="#bounties" title="Only on Stake Bountys ($3–$20 USD Instant Cash — Code: diggity)">
+          <span class="nav-item-icon">🎯</span>
+          <span class="nav-item-text">Bountys</span>
+        </a>
         <a href="#leaderboard" class="nav-link-btn has-badge" data-target="#leaderboard" title="Kick Leaderboard ($DIG)">
           <span class="nav-item-icon">🏆</span>
           <span class="nav-item-text"><img src="site/images/kick-wordmark.svg" alt="Kick" class="nav-kick-logo"> Leaderboard</span>
@@ -145,10 +157,10 @@
         </div>
 
         <div class="topbar-center">
-          <!-- User $DIG Points Balance Pill (Symmetrically centered in topbar at 2x visual scale) -->
+          <!-- User $DIG Points Balance Pill (Compact with Rotating Green Laser Beam) -->
           <div class="user-balance-pill" id="topbar-dig-balance-pill" title="$DIG Points Balance (Earned only when kick.com/diggitybets is LIVE + active in Kick chat)">
-            <span class="coin-icon" style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex-shrink:0;">
-              <svg viewBox="0 0 32 32" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <span class="coin-icon" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;">
+              <svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="digGoldRimTop" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
                     <stop offset="0%" stop-color="#FFF7AD"/>
@@ -2273,6 +2285,223 @@
     </section>
 
     <!-- ========================================================
+         SECTION 6A-2: ONLY ON STAKE BOUNTYS ($3 - $20 USD CHALLENGES)
+         ======================================================== -->
+    <section class="section-container view-section" id="bounties">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title">
+            <span>🎯</span> ONLY ON STAKE <span class="accent">BOUNTYS ($3 – $20 USD)</span>
+          </h2>
+          <p class="section-subtitle">
+            Hit the target multiplier on featured <strong>Only on Stake</strong> partner studio slots under referral code <strong style="color: var(--kick-green);">diggity</strong> and claim instant USD cash bounties!
+          </p>
+        </div>
+        <div class="roadmap-badge-pill" style="background: rgba(83, 252, 24, 0.14); border-color: var(--kick-green); color: var(--kick-green);">
+          ⚡ CODE: DIGGITY · 21 EXCLUSIVE BOUNTIES
+        </div>
+      </div>
+
+      <!-- Hero Banner & Live Bounty Pool Metrics -->
+      <div class="bounties-hero-banner">
+        <div class="bounties-hero-left">
+          <div class="bounties-hero-kicker-row">
+            <span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.16); border-color: var(--cyan); color: var(--cyan);">
+              🔥 100% ONLY ON STAKE EXCLUSIVES
+            </span>
+            <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.16); border-color: var(--kick-green); color: var(--kick-green);">
+              AFFILIATE CODE: DIGGITY
+            </span>
+            <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.16); border-color: var(--gold); color: var(--gold);">
+              🤝 STUDIO SPONSORSHIP SHOWCASE
+            </span>
+          </div>
+          <h3 class="bounties-hero-title">
+            HUNT MULTIPLIERS ON <span style="color: var(--kick-green);">ONLY ON STAKE</span> SLOTS &amp; WIN INSTANT <span style="color: var(--gold);">$3 TO $20 USD</span>
+          </h3>
+          <p class="bounties-hero-desc">
+            Play any of the 21 active <strong>Only on Stake</strong> challenges below under code <strong style="color: var(--kick-green);">diggity</strong>. Once you hit or beat the required multiplier with the minimum USD base bet, paste your <strong>Stake Bet ID</strong> for instant automated pre-verification and Streamer cash payout!
+          </p>
+        </div>
+
+        <div class="bounties-hero-stats-grid">
+          <div class="bounties-stat-tile">
+            <span class="bounties-stat-label">ACTIVE BOUNTY POOL</span>
+            <span class="bounties-stat-value" id="bounties-stat-active-pool" style="color: var(--gold);">$195 USD</span>
+          </div>
+          <div class="bounties-stat-tile">
+            <span class="bounties-stat-label">OPEN CHALLENGES</span>
+            <span class="bounties-stat-value" id="bounties-stat-active-count" style="color: var(--kick-green);">21 / 21</span>
+          </div>
+          <div class="bounties-stat-tile">
+            <span class="bounties-stat-label">PARTNER STUDIOS</span>
+            <span class="bounties-stat-value" style="color: var(--cyan);">15 STUDIOS</span>
+          </div>
+          <div class="bounties-stat-tile">
+            <span class="bounties-stat-label">BOUNTIES HUNTED</span>
+            <span class="bounties-stat-value" id="bounties-stat-hunted-count" style="color: #ffffff;">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured "Only on Stake" Partner Studios Filter & Sponsorship Bar (15 Studios) -->
+      <div class="bounties-studios-showcase">
+        <div class="bounties-studios-header">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-family: var(--font-display); font-size: 12px; font-weight: 900; color: var(--cyan); letter-spacing: 0.6px;">
+              🏛️ FEATURED "ONLY ON STAKE" PARTNER STUDIOS:
+            </span>
+            <span style="font-size: 11.5px; color: #94a3b8;">
+              Filter challenges by exclusive game studio · Available for featured stream &amp; bounty sponsorships
+            </span>
+          </div>
+          <a href="#watch" data-target="#watch" class="reward-badge-pill nav-link-btn" style="text-decoration: none; background: rgba(255, 215, 0, 0.14); border: 1px solid rgba(255, 215, 0, 0.45); color: var(--gold); font-size: 10.5px; font-weight: 800;">
+            🤝 Promote Your Studio on Bountys ↗
+          </a>
+        </div>
+
+        <div class="bounties-studios-pills" role="tablist" aria-label="Filter Bounties by Partner Studio">
+          <button type="button" class="bounty-studio-pill active" data-studio="ALL">🌐 All 15 Studios (21)</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Valkyrie">⚔️ Valkyrie</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Hacksaw Gaming">🪚 Hacksaw</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Pragmatic Play">⚡ Pragmatic</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Degen Lab">🧪 Degen Lab</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Maverick Studios">🤠 Maverick Studios</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Creative City">🏙️ Creative City</button>
+          <button type="button" class="bounty-studio-pill" data-studio="TrueLab">🧬 TrueLab</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Shady Lady">🕶️ Shady Lady</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Uppercut Gaming">🥊 Uppercut Gaming</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Paperclip Gaming">📎 Paperclip</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Twist Gaming">🌪️ Twist</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Donut Gaming">🍩 Donut Gaming</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Titan Gaming">🏛️ Titan</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Pocket Play">🎰 Pocket Play</button>
+          <button type="button" class="bounty-studio-pill" data-studio="Colorful Play">🌈 Colorful</button>
+        </div>
+      </div>
+
+      <!-- 6-Tier Cash Bounty Filter Bar ($3, $5, $7, $10, $15, $20 USD) -->
+      <div class="bounties-filter-toolbar">
+        <div class="bounties-tier-tabs" role="tablist" aria-label="Filter Bounties by Cash Prize Tier">
+          <button type="button" class="bounty-tier-filter-btn active" data-tier="ALL">ALL TIERS (21)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="1">🟢 TIER 1 · $3 USD (4)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="2">🩵 TIER 2 · $5 USD (4)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="3">🔵 TIER 3 · $7 USD (4)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="4">🟣 TIER 4 · $10 USD (3)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="5">🔴 TIER 5 · $15 USD (3)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="6">🟡 TIER 6 · $20 USD (3)</button>
+          <button type="button" class="bounty-tier-filter-btn" data-tier="HUNTED">🏆 HUNTED</button>
+        </div>
+        <div style="font-size: 11.5px; color: #cbd5e1; font-family: var(--font-display); font-weight: 700;">
+          💬 Kick Chat: <code style="color: var(--kick-green);">!bounties</code> or <code style="color: var(--gold);">!bounty &lt;bet_id&gt; &lt;multi&gt;</code>
+        </div>
+      </div>
+
+      <!-- 21 Holographic 3D "Only on Stake" Bounty Cards Grid -->
+      <div class="bounties-cards-grid" id="bounties-cards-grid">
+        <!-- Rendered dynamically by site/js/bounty-system.js -->
+      </div>
+
+      <!-- Automated 4-Step Verification Flow Explainer & Recent Verified Hunters Ledger -->
+      <div class="bh-table-card" style="margin-top: 26px;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff; margin: 0;">
+              🏆 VERIFIED BOUNTY HUNTERS &amp; BET-ID AUDIT LEDGER
+            </h3>
+            <p style="font-size: 12px; color: #94a3b8; margin: 3px 0 0 0;">
+              Every claim runs through our 4-Step Automated Pre-Verifier (Unique Bet ID + Target Slot + Min Base Bet USD + Multiplier Math) before Streamer final approval.
+            </p>
+          </div>
+          <span style="font-size: 12px; color: var(--kick-green); font-weight: 800; font-family: var(--font-display);">
+            ⚡ 1 BET ID = 1 CLAIM · ANTI-REPLAY PROTECTED
+          </span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>HUNTER (@KICK)</th>
+                <th>ONLY ON STAKE SLOT</th>
+                <th>BASE BET (USD)</th>
+                <th>HIT MULTIPLIER</th>
+                <th>VERIFIED STAKE BET ID</th>
+                <th>CASH BOUNTY</th>
+              </tr>
+            </thead>
+            <tbody id="bounties-recent-hunters-tbody">
+              <!-- Rendered dynamically by site/js/bounty-system.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Automated 4-Step Bet ID Claim Modal -->
+      <div class="bounty-claim-modal-backdrop" id="bounty-claim-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="bounty-modal-slot-title">
+        <div class="bounty-claim-modal">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px;">
+            <div>
+              <h3 id="bounty-modal-slot-title" style="font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #ffffff; margin: 0;">
+                🎯 Claim Cash Bounty
+              </h3>
+              <p id="bounty-modal-req-summary" style="font-size: 12.5px; color: #cbd5e1; margin: 4px 0 0 0;"></p>
+            </div>
+            <button type="button" id="btn-close-bounty-modal" class="btn-chat-toggle" style="padding: 4px 9px; font-size: 13px;">✕</button>
+          </div>
+
+          <form id="bounty-claim-form" novalidate>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 10.5px; font-family: var(--font-display); font-weight: 800; color: #94a3b8; display: block; margin-bottom: 4px;">KICK USERNAME (@):</label>
+                <input type="text" id="bounty-claim-kick-user" class="form-input-dark" placeholder="@YourKickUser" required style="width: 100%; padding: 8px 10px; font-size: 12.5px;">
+              </div>
+              <div>
+                <label style="font-size: 10.5px; font-family: var(--font-display); font-weight: 800; color: #94a3b8; display: block; margin-bottom: 4px;">STAKE USERNAME (CODE: DIGGITY):</label>
+                <input type="text" id="bounty-claim-stake-user" class="form-input-dark" placeholder="YourStakeUsername" required style="width: 100%; padding: 8px 10px; font-size: 12.5px;">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 10.5px; font-family: var(--font-display); font-weight: 800; color: var(--gold); display: block; margin-bottom: 4px;">
+                ⚡ PASTE STAKE BET ID, SHARE URL (?iid=house:...) OR COPIED BET MODAL TEXT:
+              </label>
+              <input type="text" id="bounty-claim-bet-id" class="form-input-dark" placeholder="e.g. house:31415926535 or https://stake.com/casino/home?iid=house%3A..." required style="width: 100%; padding: 9px 12px; font-size: 12.5px; border-color: rgba(255, 215, 0, 0.45);">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: #94a3b8; display: block; margin-bottom: 4px;">BASE BET ($ USD):</label>
+                <input type="number" id="bounty-claim-bet-usd" class="form-input-dark" step="0.01" min="0.10" placeholder="0.20" required style="width: 100%; padding: 8px 10px; font-size: 12.5px;">
+              </div>
+              <div>
+                <label style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: #94a3b8; display: block; margin-bottom: 4px;">TOTAL PAYOUT ($ USD):</label>
+                <input type="number" id="bounty-claim-payout-usd" class="form-input-dark" step="0.01" min="0" placeholder="Optional auto-calc" style="width: 100%; padding: 8px 10px; font-size: 12.5px;">
+              </div>
+              <div>
+                <label style="font-size: 10px; font-family: var(--font-display); font-weight: 800; color: var(--kick-green); display: block; margin-bottom: 4px;">HIT MULTIPLIER (X):</label>
+                <input type="number" id="bounty-claim-multiplier" class="form-input-dark" step="0.01" min="1" placeholder="e.g. 540.5" required style="width: 100%; padding: 8px 10px; font-size: 12.5px; font-weight: 900; color: #53fc18;">
+              </div>
+            </div>
+
+            <!-- Live 4-Step Automated Pre-Check Box -->
+            <div class="bounty-auto-checks-box">
+              <div class="bounty-check-item" id="bounty-check-betid">○ Paste Valid Stake Bet ID</div>
+              <div class="bounty-check-item is-pass" id="bounty-check-slot">✓ Slot Match Ready</div>
+              <div class="bounty-check-item" id="bounty-check-minbet">○ Min Base Bet Check</div>
+              <div class="bounty-check-item" id="bounty-check-multi">○ Target Multiplier Check</div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+              <button type="submit" id="btn-submit-bounty-claim" class="btn-stake-primary" style="width: 100%; padding: 11px 16px; font-size: 13px; font-weight: 900;" disabled>
+                🚀 Verify Bet ID &amp; Send Claim to Streamer Queue
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
          SECTION 6B: POINTS LEADERBOARD (MOST ACTIVE CHANNEL VIEWERS)
          ======================================================== -->
     <section class="section-container view-section" id="leaderboard">
@@ -3954,6 +4183,148 @@
           </div>
         </div>
       </div>
+
+      <!-- 4. ONLY ON STAKE BOUNTYS & AUTOMATED BET-ID VERIFICATION MANAGER -->
+      <div class="glass-panel" id="cp-module-card-bounties" style="margin-top: 20px; padding: 22px; border-color: rgba(255, 215, 0, 0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: var(--gold); margin: 0;">
+              🎯 ONLY ON STAKE BOUNTYS &amp; BET-ID VERIFICATION MANAGER ($3 – $20 USD)
+            </h3>
+            <p style="font-size: 12px; color: var(--text-dim); margin: 3px 0 0 0;">
+              4-Step Automated Bet-ID Pre-Verifier (<code style="color:#53fc18;">Unique Bet ID + Slot Match + Min Base Bet + Multiplier Math</code>) + Stake Companion Auto-Verify · <strong>Streamer has the Final Approval Click</strong>.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.16); border-color: var(--gold); color: var(--gold);">
+              PENDING CLAIMS: <strong id="cp-bounty-pending-count">0</strong>
+            </span>
+            <button type="button" id="cp-btn-reset-default-bounties" class="btn-chat-toggle" style="font-size: 11px; padding: 5px 10px; border-color: #00e5ff; color: #00e5ff; font-weight: 800;">
+              🔄 Restore 21 Default Only on Stake Bounties
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Create New "Only on Stake" Bounty Bar -->
+        <div style="padding: 12px 14px; background: rgba(0, 0, 0, 0.42); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            <span style="font-family: var(--font-display); font-size: 10.5px; font-weight: 900; color: var(--kick-green);">
+              ⚡ 1-CLICK TIER PRESETS:
+            </span>
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="1" style="padding: 3px 8px; font-size: 10px; border-color: #00e701; color: #53fc18;">Tier 1 ($3 · 175x)</button>
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="2" style="padding: 3px 8px; font-size: 10px; border-color: #00f2fe; color: #38bdf8;">Tier 2 ($5 · 350x)</button>
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="3" style="padding: 3px 8px; font-size: 10px; border-color: #3b82f6; color: #60a5fa;">Tier 3 ($7 · 550x)</button>
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="4" style="padding: 3px 8px; font-size: 10px; border-color: #a855f7; color: #c084fc;">Tier 4 ($10 · 950x)</button>
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="5" style="padding: 3px 8px; font-size: 10px; border-color: #f43f5e; color: #fb7185;">Tier 5 ($15 · 1500x)</button>
+              <button type="button" class="btn-chat-toggle" data-cp-bounty-preset-tier="6" style="padding: 3px 8px; font-size: 10px; border-color: #ffd700; color: #ffd700;">Tier 6 ($20 · 2500x)</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 2; min-width: 180px; position: relative;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">ONLY ON STAKE SLOT SEARCH:</label>
+              <input type="text" id="cp-bounty-slot-search" class="form-input-dark" placeholder="Search slot (e.g. Infernos Forge, Hel's Domain)..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+              <div id="cp-bounty-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.85);"></div>
+            </div>
+            <div style="flex: 1.2; min-width: 135px;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">PARTNER STUDIO:</label>
+              <select id="cp-bounty-studio" class="form-input-dark" style="width: 100%; padding: 7px 8px; font-size: 11.5px; font-weight: 800;">
+                <option value="Valkyrie">Valkyrie</option>
+                <option value="Hacksaw Gaming">Hacksaw Gaming</option>
+                <option value="Pragmatic Play">Pragmatic Play</option>
+                <option value="Degen Lab">Degen Lab</option>
+                <option value="Maverick Studios">Maverick Studios</option>
+                <option value="Creative City">Creative City</option>
+                <option value="TrueLab">TrueLab</option>
+                <option value="Shady Lady">Shady Lady</option>
+                <option value="Uppercut Gaming">Uppercut Gaming</option>
+                <option value="Paperclip Gaming">Paperclip Gaming</option>
+                <option value="Twist Gaming">Twist Gaming</option>
+                <option value="Donut Gaming">Donut Gaming</option>
+                <option value="Titan Gaming">Titan Gaming</option>
+                <option value="Pocket Play">Pocket Play</option>
+                <option value="Colorful Play">Colorful Play</option>
+              </select>
+            </div>
+            <div style="width: 85px;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--gold); display: block; margin-bottom: 4px;">TIER:</label>
+              <select id="cp-bounty-tier" class="form-input-dark" style="width: 100%; padding: 7px 6px; font-size: 11.5px; font-weight: 800;">
+                <option value="1">Tier 1</option>
+                <option value="2">Tier 2</option>
+                <option value="3">Tier 3</option>
+                <option value="4">Tier 4</option>
+                <option value="5">Tier 5</option>
+                <option value="6">Tier 6</option>
+              </select>
+            </div>
+            <div style="width: 85px;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--kick-green); display: block; margin-bottom: 4px;">PRIZE ($):</label>
+              <input type="number" id="cp-bounty-prize" class="form-input-dark" value="10" min="1" step="1" style="width: 100%; padding: 7px 8px; font-size: 12px; font-weight: 900;">
+            </div>
+            <div style="width: 95px;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--cyan); display: block; margin-bottom: 4px;">TARGET X:</label>
+              <input type="number" id="cp-bounty-target-x" class="form-input-dark" value="850" min="10" step="25" style="width: 100%; padding: 7px 8px; font-size: 12px;">
+            </div>
+            <div style="width: 88px;">
+              <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">MIN BET ($):</label>
+              <input type="number" id="cp-bounty-min-bet" class="form-input-dark" value="0.20" min="0.10" step="0.10" style="width: 100%; padding: 7px 8px; font-size: 12px;">
+            </div>
+            <button type="button" id="cp-btn-add-bounty" class="btn-stake-primary" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
+              + Publish Bounty
+            </button>
+          </div>
+        </div>
+
+        <!-- Incoming Bounty Claims Queue (Auto Pre-Checked + Streamer Final Approval) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px;">
+          <div style="border: 1px solid rgba(83, 252, 24, 0.28); border-radius: 10px; overflow: hidden; background: rgba(6, 10, 18, 0.7);">
+            <div style="padding: 9px 12px; background: rgba(83, 252, 24, 0.08); border-bottom: 1px solid rgba(83, 252, 24, 0.2); font-family: var(--font-display); font-size: 11.5px; font-weight: 900; color: #53fc18;">
+              📥 INCOMING BOUNTY CLAIMS (STREAMER FINAL APPROVAL QUEUE)
+            </div>
+            <div style="overflow-x: auto; max-height: 240px; overflow-y: auto;">
+              <table class="bh-table" style="font-size: 11.5px;">
+                <thead>
+                  <tr>
+                    <th>HUNTER</th>
+                    <th>BOUNTY SLOT</th>
+                    <th>BET / MULTI</th>
+                    <th>BET ID</th>
+                    <th>AUTO VERIFY</th>
+                    <th>FINAL DECISION</th>
+                  </tr>
+                </thead>
+                <tbody id="cp-bounty-claims-tbody">
+                  <!-- Rendered dynamically by site/js/bounty-system.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; background: rgba(6, 10, 18, 0.7);">
+            <div style="padding: 9px 12px; background: rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-family: var(--font-display); font-size: 11.5px; font-weight: 900; color: #ffffff;">
+              🎯 ACTIVE ONLY ON STAKE BOUNTY BOARD (21 SLOTS)
+            </div>
+            <div style="overflow-x: auto; max-height: 240px; overflow-y: auto;">
+              <table class="bh-table" style="font-size: 11.5px;">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>PRIZE</th>
+                    <th>SLOT &amp; PARTNER STUDIO</th>
+                    <th>REQ</th>
+                    <th>STATUS</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="cp-bounties-active-tbody">
+                  <!-- Rendered dynamically by site/js/bounty-system.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
 
@@ -3978,6 +4349,7 @@
         <a href="#bonushunt">Bonus Hunt</a>
         <a href="#slot-intel">Slot Radar &amp; Lab</a>
         <a href="#store">Rewards Store</a>
+        <a href="#bounties">Bountys</a>
         <a href="#leaderboard">Kick Leaderboard</a>
         <a href="#profile">Profile</a>
       </div>
@@ -4006,6 +4378,7 @@
   <script src="site/js/tournament-prediction.js?v=30.0"></script>
   <script src="site/js/bonushunt.js?v=30.0"></script>
   <script src="site/js/diggity-intel-suite.js?v=30.0"></script>
+  <script src="site/js/bounty-system.js?v=32.0"></script>
   <script src="site/js/viral-share.js?v=30.0"></script>
   <script src="site/js/motion-fx.js?v=30.0"></script>
   <script src="site/js/luxury-primitives.js?v=30.0"></script>
