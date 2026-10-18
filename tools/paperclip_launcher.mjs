@@ -63,9 +63,14 @@ async function start() {
   console.log('[INFO] Base de datos: Embedded Postgres (local en disco)');
   console.log('[INFO] Presiona Ctrl+C en esta terminal para detener el servicio.\n');
 
-  // Spawn npx paperclipai run or onboard
-  const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const child = spawn(npxCmd, ['--yes', '--registry', 'https://registry.npmjs.org', 'paperclipai', 'run'], {
+  // Spawn npx paperclipai run on Windows / POSIX safely without EINVAL
+  const isWin = process.platform === 'win32';
+  const execCmd = isWin ? (process.env.ComSpec || 'cmd.exe') : 'npx';
+  const execArgs = isWin
+    ? ['/c', 'npx', '--yes', '--registry', 'https://registry.npmjs.org', 'paperclipai', 'run', '--yes']
+    : ['--yes', '--registry', 'https://registry.npmjs.org', 'paperclipai', 'run', '--yes'];
+
+  const child = spawn(execCmd, execArgs, {
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -101,8 +106,13 @@ async function start() {
 }
 
 function openBrowser(url) {
-  const startCmd = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  spawn(startCmd, [url], { shell: true, detached: true, stdio: 'ignore' }).unref();
+  if (process.platform === 'win32') {
+    spawn('cmd.exe', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore' }).unref();
+  } else if (process.platform === 'darwin') {
+    spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+  } else {
+    spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+  }
 }
 
 start();
