@@ -132,20 +132,47 @@ class StakeOriginalsController {
   // ==========================================
   // BALANCE & ECONOMY (FAVORS STREAMER / POINT SINK)
   // ==========================================
-  renderBalance() {
+  renderBalance(prevVal = null) {
     localStorage.setItem('hunthub_balance', this.balance.toString());
     const els = document.querySelectorAll('.user-balance-val');
     els.forEach(el => {
-      el.textContent = this.balance.toLocaleString();
+      if (typeof window.animateNumber === 'function' && prevVal !== null && prevVal !== this.balance) {
+        window.animateNumber(el, this.balance, { startVal: prevVal, decimals: 0, duration: 0.75 });
+      } else {
+        el.textContent = this.balance.toLocaleString();
+      }
     });
   }
 
-  adjustBalance(amount) {
+  adjustBalance(amount, opts = {}) {
+    const prev = this.balance;
     this.balance += amount;
     if (this.balance < 0) this.balance = 0;
-    this.renderBalance();
+    this.renderBalance(prev);
     if (window.userStore) {
       window.userStore.points = this.balance;
+    }
+
+    // High-performance Particle Celebrations & Haptics on Wins
+    if (amount > 0) {
+      const multiplier = opts.multiplier || (opts.bet ? amount / opts.bet : 1);
+      if (typeof window.fireCasinoConfetti === 'function') {
+        if (amount >= 200 || multiplier >= 10) {
+          if (typeof window.fireJackpotCannons === 'function') {
+            window.fireJackpotCannons();
+          } else {
+            window.fireCasinoConfetti({ particleCount: 100, spread: 80 });
+          }
+          if (window.proFxAudio && typeof window.proFxAudio.playWinArpeggio === 'function') {
+            window.proFxAudio.playWinArpeggio();
+          }
+        } else if (amount >= 15 || multiplier >= 2) {
+          window.fireCasinoConfetti({ particleCount: 40, spread: 55 });
+          if (window.proFxAudio && typeof window.proFxAudio.playChipDrop === 'function') {
+            window.proFxAudio.playChipDrop();
+          }
+        }
+      }
     }
   }
 

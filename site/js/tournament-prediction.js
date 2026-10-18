@@ -516,7 +516,7 @@ class TournamentPredictionController {
                 <th>STATUS</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="tourney-standings-tbody">
               ${list.map((u, idx) => {
                 const rankNum = idx + 1;
                 const isUser = u.username === currentUser;
@@ -560,6 +560,10 @@ class TournamentPredictionController {
 
       </div>
     `;
+
+    if (typeof window.autoAnimateList === 'function') {
+      window.autoAnimateList('#tourney-standings-tbody');
+    }
   }
 
   getEmptyCornerPlaceholderSvg(corner) {
@@ -622,8 +626,13 @@ class TournamentPredictionController {
     } else if (window.soundEngine && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
       window.soundEngine.playVictoriousTrumpetFanfare();
     }
+    if (window.proFxAudio && typeof window.proFxAudio.playWinArpeggio === 'function') {
+      window.proFxAudio.playWinArpeggio();
+    }
 
-    if (typeof window.confetti === 'function') {
+    if (typeof window.fireJackpotCannons === 'function') {
+      window.fireJackpotCannons();
+    } else if (typeof window.confetti === 'function') {
       window.confetti({ particleCount: 140, spread: 100, origin: { y: 0.6 } });
     }
 

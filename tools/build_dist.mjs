@@ -50,6 +50,9 @@ if (fs.existsSync(path.join(root, 'data', 'curated_slots.json'))) {
 if (fs.existsSync(path.join(root, 'data', 'slot_tiers.js'))) {
   fs.copyFileSync(path.join(root, 'data', 'slot_tiers.js'), path.join(dist, 'data', 'slot_tiers.js'));
 }
+if (fs.existsSync(path.join(root, 'data', 'live_casino_intel.json'))) {
+  fs.copyFileSync(path.join(root, 'data', 'live_casino_intel.json'), path.join(dist, 'data', 'live_casino_intel.json'));
+}
 
 // 3.5 Copy overlays and casino suite for OBS Browser Sources
 console.log('• Copying overlays & casino suite...');
