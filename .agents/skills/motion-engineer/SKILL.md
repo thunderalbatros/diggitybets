@@ -12,11 +12,13 @@ description: Implements spring physics, 3D multi-plane parallax (Atropos), multi
   - `references/fx-audio-sota/atropos/` (Multi-layer 3D parallax depth offsets & specular highlights)
   - `references/fx-audio-sota/vanilla-tilt/` (Zero-reflow pointer glare geometry)
   - `references/fx-audio-sota/{zzfx,jsfxr,tonejs}/` (Procedural WebAudio synthesis & FM MetalSynth)
+  - `references/fx-audio-sota/{thumbhash,quicklink,auto-animate,canvas-confetti,lenis}/` (Fast `<0.2ms` image placeholders, idle prefetch, 60-FPS WAAPI FLIP grid transitions, and OffscreenCanvas worker confetti)
   - `knowledge/motion_and_animation/CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026.md`
+  - `knowledge/ui_ux_design/CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026.md`
 
 ## Reglas Operativas ("Anti-Slop & 60 FPS Studio Craft")
 1. **Física de Resortes Amortiguados con Auto-Sleep (0% Idle CPU):**
-   - Para elementos 3D interactivos (como el `Holo-Vault Pack` y tarjetas coleccionables), usar un bucle `requestAnimationFrame` con resorte amortiguado (`stiffness: 0.085, damping: 0.26`) que actualice variables CSS (`--rotate-x`, `--rotate-y`, `--pointer-x`, `--pointer-y`, `--background-x`, `--background-y`, `--pointer-from-center`) y **se detenga por completo** (`cancelAnimationFrame`) apenas la velocidad caiga bajo `0.005`.
+   - Para elementos 3D interactivos (como el `Holo-Vault Pack`, tarjetas coleccionables y tarjetas de `Bountys`), usar un bucle `requestAnimationFrame` con resorte amortiguado (`stiffness: 0.085, damping: 0.26`) que actualice variables CSS (`--rotate-x`, `--rotate-y`, `--pointer-x`, `--pointer-y`, `--background-x`, `--background-y`, `--pointer-from-center`) y **se detenga por completo** (`cancelAnimationFrame`) apenas la velocidad caiga bajo `0.005`.
 2. **Sombreadores Holográficos Multi-Capa (`pokemon-cards-css` Pattern):**
    - Prohibido usar un simple `linear-gradient` estático para simular foil.
    - Todo componente holográfico debe combinar:
@@ -32,7 +34,10 @@ description: Implements spring physics, 3D multi-plane parallax (Atropos), multi
      - Corte láser del precinto -> `playBoosterLaserTear()` (paneo estéreo `-0.75 -> +0.75` + modulación dentada `32Hz`)
      - Destello del núcleo -> `playBoosterCoreRiser()` (sub-bass pop + riser armónico)
      - Giro aéreo 3D -> `playBoosterCardWhooshFlip()`
-     - Revelación final -> `playBoosterRarityReveal(rarityTier)` (acorde real + campanas FM + lluvia de monedas según rareza).
-5. **Respeto Mandatorio de `prefers-reduced-motion` y Presupuesto OBS (`<= 5% CPU`):**
+     - Revelación final / Bounty Claim -> `playBoosterRarityReveal(rarityTier)` (acorde real + campanas FM + lluvia de monedas según rareza).
+5. **Pipeline de Imágenes Ultrarrápido y Coreografía FLIP (`ThumbHash` + `AutoAnimate`):**
+   - Todas las miniaturas de slots en grillas (`#bounties`, `#bonus-hunt`, `#tournaments`) deben incluir `decoding="async"`, `loading="lazy"` (o `fetchpriority="high"` si es LCP), pre-decodificación con `img.decode()` cuando aplique, y aislamiento `content-visibility: auto`.
+   - Al filtrar o reordenar grillas de tarjetas, usar el patrón FLIP de `formkit/auto-animate` (Pass 1 Read `getBoundingClientRect` -> Pass 2 Write `element.animate` en WAAPI) junto con `document.startViewTransition` cuando esté disponible.
+6. **Respeto Mandatorio de `prefers-reduced-motion` y Presupuesto OBS (`<= 5% CPU`):**
    - Cachear siempre `getBoundingClientRect()` en `pointerenter`/`pointerdown`, jamás dentro de `pointermove`.
    - Usar exclusivamente `transform` (`translate3d`, `rotateX`, `rotateY`, `scale`), `opacity` y variables de posición de gradiente en GPU.
