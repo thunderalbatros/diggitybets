@@ -38,7 +38,7 @@ window.switchView = function(targetId) {
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
+  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#stake-leaderboard', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -68,6 +68,13 @@ window.switchView = function(targetId) {
     window.tournamentPrediction.renderKoth();
   }
 
+  if (targetId === '#stake-leaderboard' && window.userStore && typeof window.userStore.renderLeaderboard === 'function') {
+    window.userStore.renderLeaderboard();
+  }
+  if (targetId === '#leaderboard' && window.userStore && typeof window.userStore.renderHistoricalLeaderboard === 'function') {
+    window.userStore.renderHistoricalLeaderboard();
+  }
+
   // Flush any deferred Admin Hub / Control Panel render immediately when entering those views
   if ((targetId === '#admin-hub' || targetId === '#control-panel') && window.adminHub && window.adminHub._adminDecksDirty) {
     window.adminHub._adminDecksDirty = false;
@@ -95,7 +102,8 @@ window.switchView = function(targetId) {
     '#bonushunt': '💎 BONUS HUNT TRACKER',
     '#slot-intel': '🔥 SLOT RADAR, ENGINE DNA & VAULT',
     '#store': '🎁 REWARDS STORE & RAFFLES',
-    '#leaderboard': '📊 WAGER LEADERBOARD',
+    '#stake-leaderboard': '⚡ STAKE WAGER LEADERBOARD ($1,500)',
+    '#leaderboard': '🏆 CHANNEL POINTS LEADERBOARD',
     '#profile': '👤 USER PROFILE & VERIFICATION',
     '#admin-hub': '👑 STREAMER ADMIN & MODERATION HUB',
     '#control-panel': '🎛️ STREAMER LIVE CONTROL PANEL'

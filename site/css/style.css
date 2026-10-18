@@ -4798,6 +4798,411 @@ footer.site-footer {
 }
 
 /* ========================================================
+   ILLUMINATED & ANIMATED 3D STAKE PODIUM ($1,500 POOL)
+   ======================================================== */
+@keyframes podiumFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes crownFloat {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.85)); }
+  50% { transform: translateY(-5px) scale(1.08); filter: drop-shadow(0 0 18px rgba(255, 215, 0, 1)); }
+}
+
+@keyframes podiumBeamPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.92; }
+}
+
+.stake-podium-stage {
+  display: grid;
+  grid-template-columns: 1fr 1.16fr 1fr;
+  gap: 20px;
+  align-items: end;
+  margin: 28px 0 22px;
+  padding: 28px 20px 0;
+  position: relative;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 0%, rgba(255, 215, 0, 0.14) 0%, rgba(83, 252, 24, 0.04) 48%, transparent 80%),
+    linear-gradient(180deg, rgba(12, 18, 30, 0.85) 0%, rgba(7, 10, 18, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.stake-podium-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  z-index: 2;
+}
+
+.stake-podium-spotlight {
+  position: absolute;
+  top: -36px;
+  left: 8%;
+  right: 8%;
+  height: 240px;
+  pointer-events: none;
+  z-index: 0;
+  clip-path: polygon(24% 0%, 76% 0%, 100% 100%, 0% 100%);
+  animation: podiumBeamPulse 3.6s ease-in-out infinite;
+}
+
+.stake-podium-spotlight.gold-beam {
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.34) 0%, rgba(255, 215, 0, 0.08) 65%, transparent 100%);
+}
+
+.stake-podium-spotlight.silver-beam {
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.26) 0%, rgba(56, 189, 248, 0.06) 65%, transparent 100%);
+  animation-delay: 0.6s;
+}
+
+.stake-podium-spotlight.bronze-beam {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.24) 0%, rgba(205, 127, 50, 0.06) 65%, transparent 100%);
+  animation-delay: 1.2s;
+}
+
+.stake-podium-card {
+  position: relative;
+  z-index: 2;
+  border-radius: 16px 16px 6px 6px;
+  padding: 22px 16px 18px;
+  overflow: hidden;
+  animation: podiumFloat 4.4s ease-in-out infinite;
+}
+
+.stake-podium-column.second-place .stake-podium-card {
+  animation-delay: 0.4s;
+}
+
+.stake-podium-column.third-place .stake-podium-card {
+  animation-delay: 0.9s;
+}
+
+.stake-podium-card.champion-foil {
+  border: 1.5px solid rgba(255, 215, 0, 0.75);
+  box-shadow:
+    0 0 36px rgba(255, 215, 0, 0.32),
+    inset 0 0 24px rgba(255, 215, 0, 0.12);
+}
+
+.stake-podium-halo {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stake-podium-halo.gold-halo {
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.38) 0%, transparent 70%);
+}
+
+.stake-podium-halo.silver-halo {
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.28) 0%, transparent 70%);
+}
+
+.stake-podium-halo.bronze-halo {
+  background: radial-gradient(circle, rgba(205, 127, 50, 0.3) 0%, transparent 70%);
+}
+
+.stake-floating-crown {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+  animation: crownFloat 2.8s ease-in-out infinite;
+}
+
+.podium-rank-crest {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.podium-rank-crest.gold-crest {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+}
+
+.podium-rank-crest.silver-crest {
+  background: rgba(226, 232, 240, 0.14);
+  border: 1px solid #cbd5e1;
+  color: #f1f5f9;
+}
+
+.podium-rank-crest.bronze-crest {
+  background: rgba(205, 127, 50, 0.2);
+  border: 1px solid #f59e0b;
+  color: #fde68a;
+}
+
+.stake-podium-avatar {
+  position: relative;
+  z-index: 2;
+  margin: 8px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stake-podium-wager-box {
+  margin: 10px auto 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(6, 9, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.stake-podium-wager-box.gold-wager-box {
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
+.stake-podium-wager-box .wager-label {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+}
+
+.stake-podium-wager-box .wager-val {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.stake-podium-prize-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 900;
+  padding: 7px 18px;
+  border-radius: 999px;
+  position: relative;
+  z-index: 2;
+  font-variant-numeric: tabular-nums;
+}
+
+.stake-podium-prize-pill.gold-prize {
+  font-size: 20px;
+  background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+  color: #06080d;
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.55);
+}
+
+.stake-podium-prize-pill.silver-prize {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px solid #cbd5e1;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(226, 232, 240, 0.22);
+}
+
+.stake-podium-prize-pill.bronze-prize {
+  background: rgba(28, 16, 8, 0.92);
+  border: 1.5px solid #f59e0b;
+  color: #fde68a;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.24);
+}
+
+.stake-podium-pedestal {
+  margin-top: -4px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  position: relative;
+  z-index: 3;
+}
+
+.stake-podium-pedestal .pedestal-number {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  line-height: 1;
+}
+
+.stake-podium-pedestal .pedestal-sub {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+.stake-podium-pedestal.gold-pedestal {
+  height: 82px;
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.32) 0%, rgba(20, 15, 4, 0.96) 100%);
+  border-top: 3px solid #ffd700;
+  border-left: 1px solid rgba(255, 215, 0, 0.45);
+  border-right: 1px solid rgba(255, 215, 0, 0.45);
+  color: #ffd700;
+  box-shadow: 0 -6px 24px rgba(255, 215, 0, 0.25);
+}
+
+.stake-podium-pedestal.silver-pedestal {
+  height: 58px;
+  background: linear-gradient(180deg, rgba(226, 232, 240, 0.24) 0%, rgba(15, 23, 42, 0.96) 100%);
+  border-top: 3px solid #cbd5e1;
+  border-left: 1px solid rgba(226, 232, 240, 0.35);
+  border-right: 1px solid rgba(226, 232, 240, 0.35);
+  color: #f1f5f9;
+}
+
+.stake-podium-pedestal.bronze-pedestal {
+  height: 44px;
+  background: linear-gradient(180deg, rgba(205, 127, 50, 0.28) 0%, rgba(28, 14, 7, 0.96) 100%);
+  border-top: 3px solid #f59e0b;
+  border-left: 1px solid rgba(245, 158, 11, 0.35);
+  border-right: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+}
+
+.stake-runnerup-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(83, 252, 24, 0.1) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(83, 252, 24, 0.35);
+}
+
+.stake-table-prize-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.stake-table-prize-pill.gold {
+  background: rgba(255, 215, 0, 0.16);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: var(--gold);
+}
+
+.stake-table-prize-pill.silver {
+  background: rgba(226, 232, 240, 0.12);
+  border: 1px solid rgba(226, 232, 240, 0.4);
+  color: #f8fafc;
+}
+
+.stake-table-prize-pill.bronze {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+}
+
+.stake-table-prize-pill.runnerup {
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.45);
+  color: var(--kick-green);
+}
+
+.points-prize-tiers-row {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 12px 0 8px;
+}
+
+.points-prize-tier-box {
+  background: rgba(8, 12, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-width: 210px;
+}
+
+.points-prize-tier-box.gold {
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.12);
+}
+
+.points-prize-tier-box.silver {
+  border-color: rgba(226, 232, 240, 0.35);
+}
+
+.points-prize-tier-box .tier-rank-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.6px;
+}
+
+.points-prize-tier-box .tier-base-amount {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 2px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.points-prize-tier-box.gold .tier-base-amount {
+  color: var(--gold);
+}
+
+.points-prize-tier-box .tier-boost-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(83, 252, 24, 0.15);
+  border: 1px solid rgba(83, 252, 24, 0.45);
+  color: var(--kick-green);
+}
+
+@media (max-width: 860px) {
+  .stake-podium-stage {
+    grid-template-columns: 1fr;
+    padding: 20px 14px 14px;
+  }
+  .stake-podium-column.first-place {
+    order: -1;
+  }
+}
+
+/* ========================================================
    SECTION: VIEWER PROFILE & STAKE TOTP VERIFICATION
    ======================================================== */
 .profile-layout-grid {

@@ -65,7 +65,7 @@ async function ensureServer() {
 }
 
 const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 768, h: 1024 }, { w: 390, h: 844 }];
-const VIEWS = ['watch', 'bonushunt', 'tournament', 'house-games', 'store', 'leaderboard', 'profile', 'admin'];
+const VIEWS = ['watch', 'bonushunt', 'tournament', 'house-games', 'store', 'stake-leaderboard', 'leaderboard', 'profile', 'admin'];
 const CHROME = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
