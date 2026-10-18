@@ -46,6 +46,18 @@
       this.selectedEngineSlot = 'Wanted Dead or a Wild';
       this.lastRevealedVaultSlot = null;
       this.isVaultRipping = false;
+      this.vaultRoundDeck = [];
+      this._vaultHoldTimer = null;
+      this._vaultHoldInterval = null;
+      try {
+        const storedDeck = localStorage.getItem('hunthub_vault_round_deck');
+        if (storedDeck) {
+          const parsed = JSON.parse(storedDeck);
+          if (Array.isArray(parsed)) this.vaultRoundDeck = parsed;
+        }
+      } catch (_) {
+        this.vaultRoundDeck = [];
+      }
       this.companionChannel = null;
       this.liveIntelData = null;
       this.liveRtpIndex = {};
@@ -1352,6 +1364,9 @@
       const btnAddHunt = document.getElementById('btn-vault-add-hunt');
       const btnQueueSr = document.getElementById('btn-vault-queue-sr');
       const provSelect = document.getElementById('vault-filter-provider');
+      const btnDeckAddHunt = document.getElementById('btn-vault-deck-add-hunt');
+      const btnDeckQueueWheel = document.getElementById('btn-vault-deck-queue-wheel');
+      const btnDeckClear = document.getElementById('btn-vault-deck-clear');
 
       // Initialize Damped Harmonic Spring state (Hooke's Law: stiffness 0.085, damping 0.26)
       this._vaultSpring = {
@@ -1371,6 +1386,17 @@
       // Start pack in sealed mystery state
       this.lastRevealedVaultSlot = null;
       this.sealHoloVaultPack(true);
+      this.renderVaultRoundTray();
+
+      if (btnDeckAddHunt) {
+        btnDeckAddHunt.onclick = () => this.addAllVaultCardsToHunt();
+      }
+      if (btnDeckQueueWheel) {
+        btnDeckQueueWheel.onclick = () => this.addAllVaultCardsToWheel();
+      }
+      if (btnDeckClear) {
+        btnDeckClear.onclick = () => this.clearVaultRoundDeck();
+      }
 
       if (provSelect) {
         provSelect.addEventListener('change', () => {
@@ -1668,6 +1694,15 @@
 
     sealHoloVaultPack(silent = true) {
       if (this.isVaultRipping) return;
+      if (this._vaultHoldInterval) {
+        clearInterval(this._vaultHoldInterval);
+        this._vaultHoldInterval = null;
+      }
+      if (this._vaultHoldTimer) {
+        clearTimeout(this._vaultHoldTimer);
+        this._vaultHoldTimer = null;
+      }
+
       const packEl = document.getElementById('diggity-booster-pack-3d');
       const statsEl = document.getElementById('vault-revealed-stats');
       const actionsRow = document.getElementById('vault-actions-row');
@@ -1757,11 +1792,21 @@
 
     ripHoloVaultPack() {
       if (this.isVaultRipping) return;
+      if (this._vaultHoldInterval) {
+        clearInterval(this._vaultHoldInterval);
+        this._vaultHoldInterval = null;
+      }
+      if (this._vaultHoldTimer) {
+        clearTimeout(this._vaultHoldTimer);
+        this._vaultHoldTimer = null;
+      }
+
       const packEl = document.getElementById('diggity-booster-pack-3d');
 
+      // If the pack was already opened, reseal it first so the user always sees a closed pack before ripping!
       if (packEl && packEl.classList.contains('is-opened')) {
         this.sealHoloVaultPack(true);
-        setTimeout(() => this._executeVaultPackRipSequence(), 160);
+        setTimeout(() => this._executeVaultPackRipSequence(), 200);
         return;
       }
 
@@ -1948,10 +1993,16 @@
         }
         if (btnRip) {
           btnRip.disabled = false;
-          btnRip.textContent = '⚡ RIP ANOTHER PACK';
+          btnRip.textContent = '⚡ RIP NEXT PACK';
         }
 
         this.isVaultRipping = false;
+
+        // Collect revealed card into 10-Card Round Tray (never disappears!)
+        this.addSlotToVaultRoundDeck(chosen, rarityTier, rtpFormatted);
+
+        // Start 6-second showcase countdown before pack auto-reseals for the next rip
+        this.startVaultShowcaseCountdown(chosen, rarityTier, rtpFormatted, mech);
 
         if (window.ProAudioFX && typeof window.ProAudioFX.playBoosterRarityReveal === 'function') {
           window.ProAudioFX.playBoosterRarityReveal(rarityTier);
@@ -1972,12 +2023,405 @@
 
         if (window.sonner) {
           window.sonner.toast({
-            title: `🃏 ${rarityTier === 'mythic-gold' ? 'MYTHIC 24K FOIL' : 'Holo-Vault'} Revealed: ${chosen.name}!`,
-            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'} (${rtpFormatted.toFixed(2)}% RTP)`,
+            title: `🃏 ${rarityTier === 'mythic-gold' ? 'MYTHIC 24K FOIL' : 'Holo-Vault'} Revelada: ${chosen.name}!`,
+            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'} (${rtpFormatted.toFixed(2)}% RTP) · Guardada en la Ronda`,
             type: rarityTier === 'mythic-gold' ? 'gold' : 'green'
           });
         }
       }, 1060);
+    }
+
+    // =========================================================================
+    // 5.1 6-SECOND CARD SHOWCASE COUNTDOWN & AUTO-RESEAL
+    // =========================================================================
+    startVaultShowcaseCountdown(chosen, rarityTier, rtpFormatted, mech) {
+      if (this._vaultHoldInterval) {
+        clearInterval(this._vaultHoldInterval);
+        this._vaultHoldInterval = null;
+      }
+      if (this._vaultHoldTimer) {
+        clearTimeout(this._vaultHoldTimer);
+        this._vaultHoldTimer = null;
+      }
+
+      const statsEl = document.getElementById('vault-revealed-stats');
+      const btnRip = document.getElementById('btn-rip-vault-pack');
+      let secondsLeft = 6;
+
+      const updateStatsView = () => {
+        if (!statsEl) return;
+        const rarityBadge = rarityTier === 'mythic-gold' ? '👑 MYTHIC' : (rarityTier === 'radiant-prism' ? '🌈 RADIANT' : '🌌 COSMOS');
+        const deckIndex = Array.isArray(this.vaultRoundDeck) ? this.vaultRoundDeck.length : 0;
+        statsEl.style.color = rarityTier === 'mythic-gold' ? '#ffd700' : '#53fc18';
+        statsEl.style.borderColor = rarityTier === 'mythic-gold' ? 'rgba(255, 215, 0, 0.65)' : 'rgba(83, 252, 24, 0.45)';
+        statsEl.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              ✨ REVEALED [${rarityBadge}]: <strong>${chosen.name}</strong> (${chosen.provider}) · RTP: ${rtpFormatted.toFixed(2)}% · Max Win: ${chosen.maxWin || '15,000x'}
+              <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 12px; background: rgba(83, 252, 24, 0.18); border: 1px solid #53fc18; color: #53fc18; font-size: 11px;">
+                🃏 En Ronda (${deckIndex}/10)
+              </span>
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff; padding: 3px 10px; border-radius: 14px; font-size: 11.5px; font-weight: 900;">
+              <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #00e5ff; animation: vaultCountdownPulse 1s infinite;"></span>
+              <span>Exhibiendo carta (${secondsLeft}s) · Auto-cerrando sobre</span>
+            </div>
+          </div>
+        `;
+      };
+
+      updateStatsView();
+      if (btnRip) {
+        btnRip.innerHTML = '⚡ RIP NEXT PACK';
+      }
+
+      this._vaultHoldInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft > 0) {
+          updateStatsView();
+        } else {
+          if (this._vaultHoldInterval) {
+            clearInterval(this._vaultHoldInterval);
+            this._vaultHoldInterval = null;
+          }
+          this.autoResealVaultPack();
+        }
+      }, 1000);
+    }
+
+    autoResealVaultPack() {
+      if (this.isVaultRipping) return;
+      if (this._vaultHoldInterval) {
+        clearInterval(this._vaultHoldInterval);
+        this._vaultHoldInterval = null;
+      }
+      if (this._vaultHoldTimer) {
+        clearTimeout(this._vaultHoldTimer);
+        this._vaultHoldTimer = null;
+      }
+
+      const packEl = document.getElementById('diggity-booster-pack-3d');
+      if (!packEl || !packEl.classList.contains('is-opened')) return;
+
+      this.sealHoloVaultPack(false);
+
+      const statsEl = document.getElementById('vault-revealed-stats');
+      const btnRip = document.getElementById('btn-rip-vault-pack');
+      const count = Array.isArray(this.vaultRoundDeck) ? this.vaultRoundDeck.length : 0;
+      if (statsEl) {
+        statsEl.style.color = 'var(--gold)';
+        statsEl.style.borderColor = 'rgba(255, 215, 0, 0.35)';
+        statsEl.innerHTML = `🔒 <strong>PAQUETE CERRADO</strong> — La carta anterior está guardada en la Ronda (${count}/10 cartas). ¡Haz clic en el sobre o en "⚡ RIP NEXT PACK" para rasgar el nuevo sobre!`;
+      }
+      if (btnRip) {
+        btnRip.innerHTML = '⚡ RIP NEXT PACK';
+      }
+    }
+
+    // =========================================================================
+    // 5.2 10-CARD ROUND VAULT TRAY (Viewer Picks & Community Deck)
+    // =========================================================================
+    addSlotToVaultRoundDeck(slot, rarityTier, rtpFormatted) {
+      if (!slot) return;
+      if (!Array.isArray(this.vaultRoundDeck)) this.vaultRoundDeck = [];
+
+      if (this.vaultRoundDeck.length >= 10) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '🃏 Ronda Completa (10/10 Cartas)',
+            message: 'La bandeja de 10 cartas está llena. Añade las cartas al Bonus Hunt o pulsa "Nueva Ronda" para reiniciar.',
+            type: 'gold'
+          });
+        }
+        return;
+      }
+
+      const cardItem = {
+        id: slot.id || (slot.name ? slot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'slot-' + Date.now()),
+        name: slot.name || 'Slot Mystery',
+        provider: slot.provider || 'Stake VIP',
+        image: slot.image || 'site/images/slots/wanted.svg',
+        slug: slot.slug || slot.id || '',
+        rtp: typeof rtpFormatted === 'number' ? rtpFormatted : (parseFloat(String(slot.rtp || '96.4').replace(/[^0-9.]/g, '')) || 96.40),
+        maxWin: slot.maxWin || '15,000x',
+        rarity: rarityTier || 'radiant-prism',
+        addedAt: Date.now()
+      };
+
+      this.vaultRoundDeck.push(cardItem);
+      try {
+        localStorage.setItem('hunthub_vault_round_deck', JSON.stringify(this.vaultRoundDeck));
+      } catch (_) {}
+
+      this.renderVaultRoundTray();
+
+      if (window.ProAudioFX && typeof window.ProAudioFX.playChipDrop === 'function') {
+        window.ProAudioFX.playChipDrop();
+      }
+    }
+
+    removeVaultRoundCard(index) {
+      if (!Array.isArray(this.vaultRoundDeck)) return;
+      if (index >= 0 && index < this.vaultRoundDeck.length) {
+        const removed = this.vaultRoundDeck.splice(index, 1);
+        try {
+          localStorage.setItem('hunthub_vault_round_deck', JSON.stringify(this.vaultRoundDeck));
+        } catch (_) {}
+        this.renderVaultRoundTray();
+        if (window.sonner && removed[0]) {
+          window.sonner.toast({
+            title: '🗑️ Carta removida de la ronda',
+            message: `${removed[0].name} removida del deck.`,
+            type: 'default'
+          });
+        }
+      }
+    }
+
+    clearVaultRoundDeck() {
+      if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Deck ya está vacío',
+            message: 'Abre sobres en Holo-Vault para acumular hasta 10 cartas por ronda.',
+            type: 'default'
+          });
+        }
+        return;
+      }
+      this.vaultRoundDeck = [];
+      try {
+        localStorage.setItem('hunthub_vault_round_deck', JSON.stringify([]));
+      } catch (_) {}
+      this.renderVaultRoundTray();
+      if (window.sonner) {
+        window.sonner.toast({
+          title: '🧹 Nueva Ronda Iniciada',
+          message: 'Bandeja de 10 cartas reiniciada. Lista para nuevos picks de la comunidad.',
+          type: 'gold'
+        });
+      }
+    }
+
+    addAllVaultCardsToHunt() {
+      if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '⚠️ Deck Vacío',
+            message: 'Abre al menos un sobre en Holo-Vault antes de añadir al Bonus Hunt.',
+            type: 'gold'
+          });
+        }
+        return;
+      }
+
+      const total = this.vaultRoundDeck.length;
+      this.vaultRoundDeck.forEach((card, idx) => {
+        this.autoCaptureBonusToHunt({
+          slotName: card.name,
+          betSize: 2.0,
+          bonusTier: '3S',
+          caller: `@VaultPick#${idx + 1}`
+        });
+      });
+
+      if (window.ProAudioFX && typeof window.ProAudioFX.playVictoryFanfare === 'function') {
+        window.ProAudioFX.playVictoryFanfare();
+      } else if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
+        window.soundEngine.playVictoryFanfare();
+      }
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `💎 ¡${total} Slots Añadidos al Bonus Hunt!`,
+          message: `Todas las cartas de la ronda fueron transferidas al Bonus Hunt activo con bet $2.00.`,
+          type: 'green'
+        });
+      }
+
+      if (typeof window.confetti === 'function') {
+        try {
+          window.confetti({
+            particleCount: 65,
+            spread: 80,
+            origin: { x: 0.5, y: 0.6 },
+            colors: ['#53fc18', '#00e5ff', '#ffd700']
+          });
+        } catch (_) {}
+      }
+    }
+
+    addAllVaultCardsToWheel() {
+      if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '⚠️ Deck Vacío',
+            message: 'Abre al menos un sobre en Holo-Vault antes de enviar a la ruleta.',
+            type: 'gold'
+          });
+        }
+        return;
+      }
+
+      const total = this.vaultRoundDeck.length;
+      this.vaultRoundDeck.forEach((card, idx) => {
+        if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+          window.bonusHunt.addSlotRequest(`@VaultCard#${idx + 1}`, card.name, false);
+        }
+      });
+
+      if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
+        window.adminHub.renderSlotRequestsAdmin();
+      }
+
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `🎡 ¡${total} Slots Enviados a la Ruleta !sr!`,
+          message: `Las cartas de la ronda se cargaron a la lista de Slot Requests para girar la ruleta.`,
+          type: 'gold'
+        });
+      }
+    }
+
+    renderVaultRoundTray() {
+      const gridEl = document.getElementById('vault-tray-grid');
+      const countEl = document.getElementById('vault-deck-count');
+      const huntCountEl = document.getElementById('vault-deck-btn-hunt-count');
+      const wheelCountEl = document.getElementById('vault-deck-btn-wheel-count');
+      const btnAddHunt = document.getElementById('btn-vault-deck-add-hunt');
+      const btnQueueWheel = document.getElementById('btn-vault-deck-queue-wheel');
+      const btnClear = document.getElementById('btn-vault-deck-clear');
+
+      if (!Array.isArray(this.vaultRoundDeck)) this.vaultRoundDeck = [];
+      const count = this.vaultRoundDeck.length;
+
+      if (countEl) countEl.textContent = String(count);
+      if (huntCountEl) huntCountEl.textContent = String(count);
+      if (wheelCountEl) wheelCountEl.textContent = String(count);
+
+      if (btnAddHunt) {
+        btnAddHunt.disabled = count === 0;
+        btnAddHunt.style.opacity = count === 0 ? '0.45' : '1';
+        btnAddHunt.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
+      }
+      if (btnQueueWheel) {
+        btnQueueWheel.disabled = count === 0;
+        btnQueueWheel.style.opacity = count === 0 ? '0.45' : '1';
+        btnQueueWheel.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
+      }
+      if (btnClear) {
+        btnClear.disabled = count === 0;
+        btnClear.style.opacity = count === 0 ? '0.45' : '1';
+        btnClear.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
+      }
+
+      if (!gridEl) return;
+      gridEl.innerHTML = '';
+
+      for (let i = 0; i < 10; i++) {
+        if (i < count) {
+          const card = this.vaultRoundDeck[i];
+          const rarityBadge = card.rarity === 'mythic-gold'
+            ? '👑 MYTHIC'
+            : (card.rarity === 'radiant-prism' ? '🌈 RADIANT' : '🌌 COSMOS');
+          const rarityTierBadge = card.rarity === 'mythic-gold' ? 'tier-5s' : (card.rarity === 'radiant-prism' ? 'tier-6s' : 'tier-max');
+          const stakeUrl = `https://stake.com/casino/games/${encodeURIComponent(card.slug || card.id || '')}`;
+
+          const cardEl = document.createElement('div');
+          cardEl.className = 'vault-tray-card';
+          cardEl.setAttribute('data-rarity', card.rarity || 'radiant-prism');
+          cardEl.innerHTML = `
+            <div>
+              <div class="vault-tray-card-header">
+                <span class="vault-tray-card-slot-idx">#${i + 1}</span>
+                <span class="bh-tier-badge ${rarityTierBadge}" style="font-size: 8px; padding: 2px 6px;">${rarityBadge}</span>
+              </div>
+              <div class="vault-tray-card-thumb-wrap">
+                <img class="vault-tray-card-thumb-img" src="${card.image || 'site/images/slots/wanted.svg'}" alt="${card.name}" loading="lazy" onerror="this.src='site/images/slots/wanted.svg'">
+              </div>
+              <div class="vault-tray-card-info">
+                <div class="vault-tray-card-name" title="${card.name}">${card.name}</div>
+                <div class="vault-tray-card-provider">${card.provider}</div>
+              </div>
+              <div class="vault-tray-card-stats">
+                <span class="vault-tray-card-rtp">${typeof card.rtp === 'number' ? card.rtp.toFixed(2) : card.rtp}% RTP</span>
+                <span class="vault-tray-card-maxwin">MAX ${card.maxWin}</span>
+              </div>
+            </div>
+            <div class="vault-tray-card-btns">
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-green" data-vault-action="hunt" data-idx="${i}" title="+ Añadir slot individual al Bonus Hunt">
+                💎 +Hunt
+              </button>
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-gold" data-vault-action="wheel" data-idx="${i}" title="Enviar a la Ruleta !sr">
+                🎡 Wheel
+              </button>
+              <a href="${stakeUrl}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle vault-tray-mini-btn" style="border-color: var(--cyan); color: var(--cyan);" title="Abrir en Stake">
+                ↗️ Stake
+              </a>
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn btn-remove" data-vault-action="remove" data-idx="${i}" title="Quitar carta de la ronda">
+                ✕
+              </button>
+            </div>
+          `;
+
+          // Bind card buttons
+          cardEl.querySelectorAll('[data-vault-action]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const action = btn.getAttribute('data-vault-action');
+              const idx = parseInt(btn.getAttribute('data-idx'), 10);
+              const targetCard = this.vaultRoundDeck[idx];
+              if (!targetCard) return;
+
+              if (action === 'hunt') {
+                this.autoCaptureBonusToHunt({
+                  slotName: targetCard.name,
+                  betSize: 2.0,
+                  bonusTier: '3S',
+                  caller: `@VaultPick#${idx + 1}`
+                });
+                if (window.sonner) {
+                  window.sonner.toast({
+                    title: `💎 ${targetCard.name} añadido al Bonus Hunt`,
+                    message: `Bet $2.00 registrado con caller @VaultPick#${idx + 1}.`,
+                    type: 'green'
+                  });
+                }
+              } else if (action === 'wheel') {
+                const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
+                if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+                  window.bonusHunt.addSlotRequest(user, targetCard.name, false);
+                }
+                if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
+                  window.adminHub.renderSlotRequestsAdmin();
+                }
+                if (window.sonner) {
+                  window.sonner.toast({
+                    title: `🎡 ${targetCard.name} enviado a la Ruleta !sr`,
+                    message: `Disponible en la lista de Slot Requests.`,
+                    type: 'gold'
+                  });
+                }
+              } else if (action === 'remove') {
+                this.removeVaultRoundCard(idx);
+              }
+            });
+          });
+
+          gridEl.appendChild(cardEl);
+        } else {
+          // Empty slot placeholder
+          const emptyEl = document.createElement('div');
+          emptyEl.className = 'vault-tray-empty-slot';
+          emptyEl.innerHTML = `
+            <span class="vault-empty-slot-number">SLOT #${i + 1}</span>
+            <div class="vault-empty-slot-icon">🃏</div>
+            <div class="vault-empty-slot-text">Ranura Disponible</div>
+            <span style="font-size: 9.5px; opacity: 0.5;">Abre un sobre para llenar</span>
+          `;
+          gridEl.appendChild(emptyEl);
+        }
+      }
     }
 
     // =========================================================================
