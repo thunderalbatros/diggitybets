@@ -821,8 +821,8 @@ export class HuntHubDatabase {
       return {
         key: 'vip_discord',
         title: 'VIP Streamer Discord Role',
-        regularCost: 400,
-        vipCost: 400,
+        regularCost: 500,
+        vipCost: 500,
         weeklyStockLimit: null,
         oneTimePerAccount: true,
         cooldownDays: 0,
@@ -833,8 +833,8 @@ export class HuntHubDatabase {
       return {
         key: 'battle_entry',
         title: 'Guaranteed 1v1 Battle Entry',
-        regularCost: 700,
-        vipCost: 500,
+        regularCost: 1000,
+        vipCost: 800,
         weeklyStockLimit: 6,
         oneTimePerAccount: false,
         cooldownDays: 14,
@@ -845,20 +845,44 @@ export class HuntHubDatabase {
       return {
         key: 'tourney_entry',
         title: 'Guaranteed 8-Bracket Tourney Entry',
-        regularCost: 1000,
-        vipCost: 800,
+        regularCost: 1500,
+        vipCost: 1200,
         weeklyStockLimit: 6,
         oneTimePerAccount: false,
         cooldownDays: 0,
         maxSplitCapUsd: null
       };
     }
+    if (raw === 'og_badge_role' || raw.includes('og') || raw.includes('badge')) {
+      return {
+        key: 'og_badge_role',
+        title: 'OG Badge Kick Role',
+        regularCost: 1500,
+        vipCost: 1200,
+        weeklyStockLimit: null,
+        oneTimePerAccount: true,
+        cooldownDays: 0,
+        maxSplitCapUsd: null
+      };
+    }
+    if (raw === 'bonus_split_40' || (raw.includes('40') && raw.includes('split'))) {
+      return {
+        key: 'bonus_split_40',
+        title: '$40 Bonus Buy Split Profit (50/50)',
+        regularCost: 6000,
+        vipCost: 4800,
+        weeklyStockLimit: 2,
+        oneTimePerAccount: false,
+        cooldownDays: 0,
+        maxSplitCapUsd: 200
+      };
+    }
     if (raw === 'bonus_split_20' || (raw.includes('20') && raw.includes('split')) || raw.includes('bonus buy split')) {
       return {
         key: 'bonus_split_20',
         title: '$20 Bonus Buy Split Profit (50/50)',
-        regularCost: 1500,
-        vipCost: 1200,
+        regularCost: 3000,
+        vipCost: 2400,
         weeklyStockLimit: 3,
         oneTimePerAccount: false,
         cooldownDays: 0,
@@ -891,7 +915,7 @@ export class HuntHubDatabase {
     const isStakeVip = Boolean(user && user.stake_verified === 1);
     const week = weekNumber || this.getWeekNumber(new Date(nowSec * 1000));
 
-    const keys = ['weekly_raffle', 'vip_discord', 'battle_entry', 'tourney_entry', 'bonus_split_20'];
+    const keys = ['weekly_raffle', 'vip_discord', 'battle_entry', 'tourney_entry', 'og_badge_role', 'bonus_split_20', 'bonus_split_40'];
     const allRedemptions = this.db.prepare(
       "SELECT * FROM store_redemptions WHERE status != 'REJECTED'"
     ).all() as Array<StoreRedemptionRow & { item_key?: string; week_number?: number }>;

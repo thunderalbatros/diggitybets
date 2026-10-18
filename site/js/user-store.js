@@ -794,7 +794,9 @@ class UserStoreController {
     const defaultStock = {
       battle_entry: 6,
       tourney_entry: 6,
-      bonus_split_20: 3
+      bonus_split_20: 3,
+      bonus_split_40: 2,
+      og_badge_role: 6
     };
     const currentWeek = this.getIsoWeekKey();
     const savedWeek = localStorage.getItem('hunthub_store_stock_week');
@@ -848,11 +850,12 @@ class UserStoreController {
   updateStoreCatalogUI() {
     if (!this.storeStock) this.initStoreStockState();
 
-    // 1. Automatic Stake VIP Discount on $20 Bonus Buy Split Profit (1,500 -> 1,200 $DIG if stakeVerified)
+    // 1. Dynamic Stake VIP Discounts & Prices
+    // $20 Bonus Buy Split Profit (3,000 -> 2,400 $DIG if stakeVerified)
     const splitCostEl = document.getElementById('bonus-split-cost-display');
     const splitBtn = document.getElementById('btn-redeem-bonus-split');
     const splitVipTag = document.getElementById('bonus-split-vip-tag');
-    const effectiveSplitCost = this.stakeVerified ? 1200 : 1500;
+    const effectiveSplitCost = this.stakeVerified ? 2400 : 3000;
 
     if (splitCostEl) {
       splitCostEl.textContent = `${effectiveSplitCost.toLocaleString()} $DIG`;
@@ -863,15 +866,71 @@ class UserStoreController {
     }
     if (splitVipTag) {
       splitVipTag.textContent = this.stakeVerified
-        ? '✓ STAKE VIP DISCOUNT ACTIVE: 1,200 $DIG (Saved 300 $DIG) · Max Split Cap $100 USD'
-        : '💰 1,500 $DIG Regular · ⚡ 1,200 $DIG Stake VIP · Max Split Cap $100 USD';
+        ? '✓ STAKE VIP DISCOUNT ACTIVE: 2,400 $DIG (Saved 600 $DIG) · Max Split Cap $100 USD'
+        : '💰 3,000 $DIG Regular · ⚡ 2,400 $DIG Stake VIP · Max Split Cap $100 USD';
+    }
+
+    // $40 Bonus Buy Split Profit (6,000 -> 4,800 $DIG if stakeVerified, exactly 2x $20 split)
+    const split40CostEl = document.getElementById('bonus-split-40-cost-display');
+    const split40Btn = document.getElementById('btn-redeem-bonus-split-40');
+    const split40VipTag = document.getElementById('bonus-split-40-vip-tag');
+    const effectiveSplit40Cost = this.stakeVerified ? 4800 : 6000;
+
+    if (split40CostEl) {
+      split40CostEl.textContent = `${effectiveSplit40Cost.toLocaleString()} $DIG`;
+      split40CostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
+    }
+    if (split40Btn) {
+      split40Btn.setAttribute('data-cost', String(effectiveSplit40Cost));
+    }
+    if (split40VipTag) {
+      split40VipTag.textContent = this.stakeVerified
+        ? '✓ STAKE VIP DISCOUNT ACTIVE: 4,800 $DIG (Saved 1,200 $DIG) · Max Split Cap $200 USD'
+        : '💰 6,000 $DIG Regular · ⚡ 4,800 $DIG Stake VIP · Max Split Cap $200 USD';
+    }
+
+    // Guaranteed 8-Bracket Tourney Entry (1,500 -> 1,200 $DIG)
+    const tourneyBtn = document.querySelector('.btn-store-redeem[data-key="tourney_entry"]');
+    const tourneyCostEl = document.querySelector('[data-cost-display="tourney_entry"]');
+    const effectiveTourneyCost = this.stakeVerified ? 1200 : 1500;
+    if (tourneyCostEl) {
+      tourneyCostEl.textContent = `${effectiveTourneyCost.toLocaleString()} $DIG`;
+      tourneyCostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
+    }
+    if (tourneyBtn) {
+      tourneyBtn.setAttribute('data-cost', String(effectiveTourneyCost));
+    }
+
+    // OG Badge Kick Role (1,500 -> 1,200 $DIG, same as 8-bracket)
+    const ogBtn = document.getElementById('btn-redeem-og-badge') || document.querySelector('.btn-store-redeem[data-key="og_badge_role"]');
+    const ogCostEl = document.getElementById('og-badge-cost-display') || document.querySelector('[data-cost-display="og_badge_role"]');
+    const effectiveOgCost = this.stakeVerified ? 1200 : 1500;
+    if (ogCostEl) {
+      ogCostEl.textContent = `${effectiveOgCost.toLocaleString()} $DIG`;
+      ogCostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
+    }
+    if (ogBtn) {
+      ogBtn.setAttribute('data-cost', String(effectiveOgCost));
+    }
+
+    // Guaranteed 1v1 Battle Entry (1,000 -> 800 $DIG)
+    const battleBtn = document.querySelector('.btn-store-redeem[data-key="battle_entry"]');
+    const battleCostEl = document.querySelector('[data-cost-display="battle_entry"]');
+    const effectiveBattleCost = this.stakeVerified ? 800 : 1000;
+    if (battleCostEl) {
+      battleCostEl.textContent = `${effectiveBattleCost.toLocaleString()} $DIG`;
+      battleCostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
+    }
+    if (battleBtn) {
+      battleBtn.setAttribute('data-cost', String(effectiveBattleCost));
     }
 
     // 2. Weekly Stock Pills & Button States (Resets every Monday)
     const stockLimits = {
       battle_entry: 6,
       tourney_entry: 6,
-      bonus_split_20: 3
+      bonus_split_20: 3,
+      bonus_split_40: 2
     };
     Object.keys(stockLimits).forEach(key => {
       const limit = stockLimits[key];
@@ -961,8 +1020,8 @@ class UserStoreController {
             window.houseGames.adjustBalance(data.amount);
             if (window.sonner) {
               window.sonner.toast({
-                title: '+10 $DIG Live Stream Reward! 📺',
-                message: 'Earned +10 $DIG for active participation in kick.com/diggitybets live stream.',
+                title: '+100 $DIG Live Stream Reward! 📺',
+                message: 'Earned +100 $DIG for active participation in kick.com/diggitybets live stream.',
                 type: 'green'
               });
             }
@@ -986,11 +1045,24 @@ class UserStoreController {
         let cost = parseInt(btn.getAttribute('data-cost') || '100', 10);
 
         if (itemKey === 'bonus_split_20') {
+          cost = this.stakeVerified ? 2400 : 3000;
+        } else if (itemKey === 'bonus_split_40') {
+          cost = this.stakeVerified ? 4800 : 6000;
+        } else if (itemKey === 'tourney_entry' || itemKey === 'og_badge_role') {
           cost = this.stakeVerified ? 1200 : 1500;
+        } else if (itemKey === 'battle_entry') {
+          cost = this.stakeVerified ? 800 : 1000;
+        } else if (itemKey === 'vip_discord') {
+          cost = 500;
         }
 
         if (itemKey === 'vip_discord' && this.vipDiscordClaimed) {
           alert('LIMIT REACHED: VIP Streamer Discord Role can only be redeemed 1 time per account.');
+          return;
+        }
+
+        if (itemKey === 'og_badge_role' && this.ogBadgeClaimed) {
+          alert('LIMIT REACHED: OG Badge Kick Role can only be redeemed 1 time per account.');
           return;
         }
 
@@ -1002,7 +1074,8 @@ class UserStoreController {
         const stockLimits = {
           battle_entry: 6,
           tourney_entry: 6,
-          bonus_split_20: 3
+          bonus_split_20: 3,
+          bonus_split_40: 2
         };
         if (stockLimits[itemKey] !== undefined && (this.storeStock[itemKey] ?? stockLimits[itemKey]) <= 0) {
           alert(`SOLD OUT THIS WEEK: Weekly stock limit (${stockLimits[itemKey]}/${stockLimits[itemKey]}) reached for this reward. Resets every Monday.`);
@@ -1049,6 +1122,11 @@ class UserStoreController {
             this.storeStock.tourney_entry = Math.max(0, (this.storeStock.tourney_entry ?? 6) - 1);
           } else if (itemKey === 'bonus_split_20') {
             this.storeStock.bonus_split_20 = Math.max(0, (this.storeStock.bonus_split_20 ?? 3) - 1);
+          } else if (itemKey === 'bonus_split_40') {
+            this.storeStock.bonus_split_40 = Math.max(0, (this.storeStock.bonus_split_40 ?? 2) - 1);
+          } else if (itemKey === 'og_badge_role') {
+            this.ogBadgeClaimed = true;
+            localStorage.setItem('hunthub_og_badge_claimed', 'true');
           }
 
           this.saveStoreStockState();
