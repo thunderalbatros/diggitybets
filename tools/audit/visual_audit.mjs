@@ -269,17 +269,77 @@ function pageChecks() {
     }
   }
 
+  // 15. Anti-3D Deformation Guard (Interactive cards must use pure vertical levitation, never 3D tilt/skew matrix3d)
+  for (const card of document.querySelectorAll('.bounty-card-3d, .kick-podium-card, .store-voucher-card')) {
+    if (!visible(card)) continue;
+    const tf = getComputedStyle(card).transform;
+    if (tf && tf.startsWith('matrix3d(')) {
+      findings.push({
+        sev: 'MAJOR',
+        rule: 'no-card-3d-skew',
+        msg: `${sel(card)} applies 3D matrix3d deformation (${tf.slice(0, 36)}...); must use pure vertical levitation`
+      });
+    }
+  }
+
+  // 16. Grid Row Card Alignment & Height Symmetry (Cards in the same row of #bounties-cards-grid must match height within <= 3px)
+  const bountyCards = [...document.querySelectorAll('#bounties-cards-grid .bounty-card-3d')].filter(visible);
+  for (let i = 0; i < bountyCards.length; i++) {
+    for (let j = i + 1; j < bountyCards.length; j++) {
+      const ra = bountyCards[i].getBoundingClientRect();
+      const rb = bountyCards[j].getBoundingClientRect();
+      if (Math.abs(ra.top - rb.top) < 18 && Math.abs(ra.height - rb.height) > 3) {
+        findings.push({
+          sev: 'MINOR',
+          rule: 'grid-row-symmetry',
+          msg: `Bounty cards in same row have unequal heights (${Math.round(ra.height)}px vs ${Math.round(rb.height)}px)`
+        });
+        break;
+      }
+    }
+  }
+
+  // 17. Runtime Web Animations API (document.getAnimations) 60-FPS GPU Compositor Check
+  if (typeof document.getAnimations === 'function') {
+    for (const anim of document.getAnimations()) {
+      try {
+        if (anim.effect && typeof anim.effect.getKeyframes === 'function') {
+          const targetEl = anim.effect.target;
+          if (!targetEl || !visible(targetEl)) continue;
+          const kfs = anim.effect.getKeyframes();
+          for (const kf of kfs) {
+            if ('top' in kf || 'left' in kf || 'marginTop' in kf || 'marginLeft' in kf) {
+              findings.push({
+                sev: 'MINOR',
+                rule: 'non-composited-animation',
+                msg: `${sel(targetEl)} animates layout property via WAAPI/CSS instead of GPU transform`
+              });
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
   return findings;
 }
 
 await ensureServer();
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-const report = { base: BASE, generated: new Date().toISOString(), runs: [], console: [], failedRequests: [] };
+const report = { base: BASE, generated: new Date().toISOString(), runs: [], cdpTelemetry: {}, console: [], failedRequests: [] };
 let blockers = 0;
 
 for (const vp of VIEWPORTS) {
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
+  let cdp = null;
+  if (vp.w === 1440) {
+    try {
+      cdp = await ctx.newCDPSession(page);
+      await cdp.send('Performance.enable');
+    } catch (_) {}
+  }
   page.on('console', m => {
     if (m.type() === 'error') {
       const txt = m.text();
@@ -311,6 +371,20 @@ for (const vp of VIEWPORTS) {
     }, v);
     await page.waitForTimeout(450);
     const findings = await page.evaluate(pageChecks);
+    if (cdp && vp.w === 1440) {
+      try {
+        const { metrics } = await cdp.send('Performance.getMetrics');
+        const map = {};
+        for (const m of metrics) map[m.name] = m.value;
+        report.cdpTelemetry[v] = {
+          layoutCount: map.LayoutCount || 0,
+          recalcStyleCount: map.RecalcStyleCount || 0,
+          scriptDurationMs: Math.round((map.ScriptDuration || 0) * 1000),
+          taskDurationMs: Math.round((map.TaskDuration || 0) * 1000),
+          jsHeapUsedMB: Number(((map.JSHeapUsedSize || 0) / (1024 * 1024)).toFixed(2))
+        };
+      } catch (_) {}
+    }
     await page.screenshot({ path: path.join(out, `${v}-${vp.w}.png`), fullPage: false });
     blockers += findings.filter(f => f.sev === 'BLOCKER').length;
     report.runs.push({ view: v, width: vp.w, findings });
