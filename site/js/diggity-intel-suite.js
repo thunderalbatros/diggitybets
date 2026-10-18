@@ -1786,34 +1786,71 @@
       const container = document.getElementById('dig-daily-streak-container');
       if (!container) return;
 
-      const rewards = [250, 350, 500, 750, 1000, 1500, 2500];
+      const rewards = [50, 75, 100, 125, 150, 200, 300];
       const todayKey = new Date().toISOString().slice(0, 10);
-      let state = { streak: 1, lastClaimDate: '' };
+      const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+      const currentKickUser = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').trim();
+      const isLoggedIn = Boolean((window.userStore && window.userStore.isLoggedIn) || currentKickUser);
+
+      let saved = null;
       try {
-        const saved = JSON.parse(localStorage.getItem('hunthub_daily_streak_v1') || 'null');
-        if (saved && typeof saved.streak === 'number') state = saved;
+        saved = JSON.parse(localStorage.getItem('hunthub_daily_streak_v1') || 'null');
       } catch (_) {}
 
-      const alreadyClaimedToday = state.lastClaimDate === todayKey;
+      let completedDays = 0;
+      let lastClaimDate = '';
+
+      if (saved) {
+        lastClaimDate = saved.lastClaimDate || '';
+        if (typeof saved.completedDays === 'number') {
+          completedDays = saved.completedDays;
+        } else if (typeof saved.streak === 'number') {
+          // Migration from old schema
+          if (lastClaimDate === todayKey) {
+            completedDays = Math.max(1, saved.streak - 1);
+          } else {
+            completedDays = Math.max(0, saved.streak - 1);
+          }
+        }
+      }
+
+      const alreadyClaimedToday = lastClaimDate === todayKey;
+      let claimableDay = 1;
+
+      if (alreadyClaimedToday) {
+        claimableDay = (completedDays % 7) + 1;
+      } else if (lastClaimDate === yesterdayKey) {
+        claimableDay = (completedDays % 7) + 1;
+      } else {
+        completedDays = 0;
+        claimableDay = 1;
+      }
 
       const render = () => {
+        const buttonText = !isLoggedIn
+          ? '🔒 Link Kick Account to Claim'
+          : (alreadyClaimedToday
+              ? '✓ Claimed Today (Come back tomorrow!)'
+              : `🎁 Claim Day ${claimableDay} (+${rewards[claimableDay - 1]} $DIG)`);
+
         container.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div>
               <span class="bh-tier-badge tier-5s">🔥 7-DAY $DIG LOYALTY STREAK</span>
               <strong style="font-family:var(--font-display); font-size:14px; color:#fff; margin-left:8px;">
-                Day ${state.streak}/7 Active Streak
+                Day ${alreadyClaimedToday ? completedDays : claimableDay}/7 Active Streak
               </strong>
             </div>
             <button type="button" id="btn-claim-daily-streak" class="btn-stake-primary" style="padding:6px 14px; font-size:11.5px; font-weight:900;" ${alreadyClaimedToday ? 'disabled' : ''}>
-              ${alreadyClaimedToday ? '✓ Claimed Today (Come back tomorrow!)' : `🎁 Claim Day ${state.streak} (+${rewards[state.streak - 1]} $DIG)`}
+              ${buttonText}
             </button>
           </div>
           <div class="daily-streak-strip">
             ${rewards.map((amt, idx) => {
               const dNum = idx + 1;
-              const isClaimed = dNum < state.streak || (dNum === state.streak && alreadyClaimedToday);
-              const isToday = dNum === state.streak && !alreadyClaimedToday;
+              const isClaimed = dNum <= completedDays;
+              const isToday = !alreadyClaimedToday && dNum === claimableDay;
               return `
                 <div class="streak-day-pill ${isClaimed ? 'is-claimed' : (isToday ? 'is-today' : '')}">
                   <div style="font-size:9.5px; color:#94a3b8; font-weight:800;">DAY ${dNum}</div>
@@ -1828,11 +1865,30 @@
         const btn = document.getElementById('btn-claim-daily-streak');
         if (btn && !alreadyClaimedToday) {
           btn.onclick = () => {
-            const claimedDay = state.streak;
-            const rewardAmt = rewards[(claimedDay - 1) % 7] || 250;
-            state.lastClaimDate = todayKey;
-            state.streak = (claimedDay % 7) + 1;
-            localStorage.setItem('hunthub_daily_streak_v1', JSON.stringify(state));
+            if (!isLoggedIn) {
+              if (window.sonner) {
+                window.sonner.toast({
+                  title: 'Login Required 🔒',
+                  message: 'You must link your Kick account to claim daily loyalty streak rewards!',
+                  type: 'gold'
+                });
+              }
+              const linkBtn = document.getElementById('btn-link-kick') || document.getElementById('btn-profile-link-kick');
+              if (linkBtn) linkBtn.scrollIntoView({ behavior: 'smooth' });
+              return;
+            }
+
+            const dayToClaim = claimableDay;
+            const rewardAmt = rewards[dayToClaim - 1] || 50;
+            completedDays = dayToClaim;
+            lastClaimDate = todayKey;
+
+            const newState = {
+              completedDays,
+              streak: (completedDays % 7) + 1,
+              lastClaimDate: todayKey
+            };
+            localStorage.setItem('hunthub_daily_streak_v1', JSON.stringify(newState));
 
             if (window.houseGames && typeof window.houseGames.adjustBalance === 'function') {
               window.houseGames.adjustBalance(rewardAmt);
@@ -1848,7 +1904,7 @@
             }
             if (window.sonner) {
               window.sonner.toast({
-                title: `🔥 Day ${claimedDay} Loyalty Vault Claimed!`,
+                title: `🔥 Day ${dayToClaim} Loyalty Vault Claimed!`,
                 message: `+${rewardAmt} $DIG added to your balance!`,
                 type: 'gold'
               });

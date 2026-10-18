@@ -502,13 +502,39 @@ class BonusHuntController {
   }
 
   initGtbSettlement() {
-    const settleBtn = document.getElementById('bh-btn-settle-gtb');
-    if (settleBtn) {
-      settleBtn.addEventListener('click', () => this.settleGuessTheBalance());
+    const bindBtn = (id) => {
+      const btn = document.getElementById(id);
+      if (btn && !btn._gtbBound) {
+        btn._gtbBound = true;
+        btn.addEventListener('click', () => this.settleGuessTheBalance());
+      }
+    };
+    bindBtn('bh-btn-settle-gtb');
+    bindBtn('cp-btn-settle-gtb');
+
+    // Restrict public settlement box visibility strictly to @diggitybets and @tarkansky
+    const container = document.getElementById('bh-streamer-settlement-container');
+    if (container) {
+      const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky'];
+      const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
+      container.style.display = STREAMER_WHITELIST.includes(currentUsername) ? 'flex' : 'none';
     }
   }
 
   settleGuessTheBalance() {
+    const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky'];
+    const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
+    if (!STREAMER_WHITELIST.includes(currentUsername)) {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Access Restricted 🔒',
+          message: 'GTB Settlement is strictly reserved for @diggitybets and @tarkansky in the Control Panel.',
+          type: 'red'
+        });
+      }
+      return;
+    }
+
     if (this.guesses.length === 0) {
       if (window.sonner) {
         window.sonner.toast({

@@ -842,15 +842,17 @@ export default {
     if (url.pathname === '/api/store/stock' && request.method === 'GET') {
       const catalog = [
         { key: 'weekly_raffle', title: 'Weekly Raffle ($100 Bonus Buy Split)', regularCost: 50, vipCost: 50, weeklyStockLimit: null, remainingStock: null, soldOut: false },
-        { key: 'vip_discord', title: 'VIP Streamer Discord Role', regularCost: 400, vipCost: 400, weeklyStockLimit: null, remainingStock: null, soldOut: false, oneTimePerAccount: true },
-        { key: 'battle_entry', title: 'Guaranteed 1v1 Battle Entry', regularCost: 700, vipCost: 500, weeklyStockLimit: 6, remainingStock: 6, soldOut: false, cooldownDays: 14 },
-        { key: 'tourney_entry', title: 'Guaranteed 8-Bracket Tourney Entry', regularCost: 1000, vipCost: 800, weeklyStockLimit: 6, remainingStock: 6, soldOut: false },
-        { key: 'bonus_split_20', title: '$20 Bonus Buy Split Profit (50/50)', regularCost: 1500, vipCost: 1200, weeklyStockLimit: 3, remainingStock: 3, soldOut: false, maxSplitCapUsd: 100 }
+        { key: 'vip_discord', title: 'VIP Streamer Discord Role', regularCost: 500, vipCost: 500, weeklyStockLimit: null, remainingStock: null, soldOut: false, oneTimePerAccount: true },
+        { key: 'battle_entry', title: 'Guaranteed 1v1 Battle Entry', regularCost: 1000, vipCost: 800, weeklyStockLimit: 6, remainingStock: 6, soldOut: false, cooldownDays: 14 },
+        { key: 'tourney_entry', title: 'Guaranteed 8-Bracket Tourney Entry', regularCost: 1500, vipCost: 1200, weeklyStockLimit: 6, remainingStock: 6, soldOut: false },
+        { key: 'og_badge_role', title: 'OG Badge Kick Role', regularCost: 1500, vipCost: 1200, weeklyStockLimit: null, remainingStock: null, soldOut: false, oneTimePerAccount: true },
+        { key: 'bonus_split_20', title: '$20 Bonus Buy Split Profit (50/50)', regularCost: 3000, vipCost: 2400, weeklyStockLimit: 3, remainingStock: 3, soldOut: false, maxSplitCapUsd: 100 },
+        { key: 'bonus_split_40', title: '$40 Bonus Buy Split Profit (50/50)', regularCost: 6000, vipCost: 4800, weeklyStockLimit: 2, remainingStock: 2, soldOut: false, maxSplitCapUsd: 200 }
       ];
       return new Response(JSON.stringify({ catalog }), { headers: corsHeaders });
     }
 
-    // 12B. Phase 6 Watch-to-Earn Heartbeat (+10 $DIG every 15m ONLY when kick.com/diggitybets is LIVE + viewer is actively participating)
+    // 12B. Phase 6 Watch-to-Earn Heartbeat (+100 $DIG every 15m ONLY when kick.com/diggitybets is LIVE + viewer is actively participating)
     if (url.pathname === '/api/watch/heartbeat' && request.method === 'POST') {
       try {
         const body = await request.json().catch(() => ({}));
@@ -894,7 +896,7 @@ export default {
 
         return new Response(JSON.stringify({
           awarded: true,
-          amount: 10,
+          amount: 100,
           isStreamLive: true,
           reason: 'LIVE_ACTIVE_VIEWER_VERIFIED'
         }), { headers: corsHeaders });

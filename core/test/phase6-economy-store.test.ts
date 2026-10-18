@@ -153,98 +153,98 @@ async function runPhase6Tests() {
   assert.strictEqual(raffleRes.totalTickets, 3);
   assert.strictEqual(db.getUserById(regularUser.id)?.points_balance, 24850, '3 Raffle tickets must cost 150 $DIG (50 $DIG each)');
 
-  // 2b. VIP Streamer Discord Role: 400 $DIG (Max 1x per account)
-  const vipRole1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'VIP Streamer Discord Role', 400);
+  // 2b. VIP Streamer Discord Role: 500 $DIG (Max 1x per account)
+  const vipRole1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'VIP Streamer Discord Role', 500);
   assert.strictEqual(vipRole1.success, true);
-  assert.strictEqual(vipRole1.effectiveCost, 400);
-  assert.strictEqual(db.getUserById(regularUser.id)?.points_balance, 24450);
+  assert.strictEqual(vipRole1.effectiveCost, 500);
+  assert.strictEqual(db.getUserById(regularUser.id)?.points_balance, 24350);
 
-  const vipRole2 = db.createStoreRedemption(regularUser.id, regularUser.username, 'VIP Streamer Discord Role', 400);
+  const vipRole2 = db.createStoreRedemption(regularUser.id, regularUser.username, 'VIP Streamer Discord Role', 500);
   assert.strictEqual(vipRole2.success, false);
   assert.ok(vipRole2.error?.includes('LIMIT REACHED'), 'VIP Discord Role must be limited to 1x per account');
 
-  // 2c. Guaranteed 1v1 Battle Entry: 700 $DIG (weekly_stock_limit = 6, 14-day cooldown per user)
-  const battle1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 1v1 Battle Entry', 700);
+  // 2c. Guaranteed 1v1 Battle Entry: 1,000 $DIG (weekly_stock_limit = 6, 14-day cooldown per user)
+  const battle1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 1v1 Battle Entry', 1000);
   assert.strictEqual(battle1.success, true);
-  assert.strictEqual(battle1.effectiveCost, 700);
+  assert.strictEqual(battle1.effectiveCost, 1000);
   assert.strictEqual(battle1.remainingStock, 5);
 
   // Same user trying again within 14 days gets COOLDOWN ACTIVE
-  const battleSameUser = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 1v1 Battle Entry', 700);
+  const battleSameUser = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 1v1 Battle Entry', 1000);
   assert.strictEqual(battleSameUser.success, false);
   assert.ok(battleSameUser.error?.includes('COOLDOWN ACTIVE'), '1v1 Battle Entry must enforce 14-day cooldown per user');
 
-  // Second user buys the 2nd weekly unit of 1v1 Battle Entry (VIP user pays 500 $DIG)
-  const battle2 = db.createStoreRedemption(vipUser.id, vipUser.username, 'Guaranteed 1v1 Battle Entry', 700);
+  // Second user buys the 2nd weekly unit of 1v1 Battle Entry (VIP user pays 800 $DIG)
+  const battle2 = db.createStoreRedemption(vipUser.id, vipUser.username, 'Guaranteed 1v1 Battle Entry', 1000);
   assert.strictEqual(battle2.success, true);
-  assert.strictEqual(battle2.effectiveCost, 500);
+  assert.strictEqual(battle2.effectiveCost, 800);
   assert.strictEqual(battle2.remainingStock, 4);
 
   // 4 additional users buy up the remaining 4 units
   for (let i = 0; i < 4; i++) {
     const u = db.upsertUser(9100 + i, `battle_buyer_${i}`);
     db.creditPoints(u.id, 5000, 'TEST_FUND');
-    const res = db.createStoreRedemption(u.id, u.username, 'Guaranteed 1v1 Battle Entry', 700);
+    const res = db.createStoreRedemption(u.id, u.username, 'Guaranteed 1v1 Battle Entry', 1000);
     assert.strictEqual(res.success, true);
   }
 
   // 7th purchase attempt in same week -> SOLD OUT THIS WEEK!
-  const battle7 = db.createStoreRedemption(thirdUser.id, thirdUser.username, 'Guaranteed 1v1 Battle Entry', 700);
+  const battle7 = db.createStoreRedemption(thirdUser.id, thirdUser.username, 'Guaranteed 1v1 Battle Entry', 1000);
   assert.strictEqual(battle7.success, false);
   assert.ok(battle7.error?.includes('SOLD OUT THIS WEEK'), '1v1 Battle Entry must block 7th purchase in same week');
 
-  // 2d. Guaranteed 8-Bracket Tourney Entry: 1,000 $DIG regular / 800 $DIG VIP (weekly_stock_limit = 6)
-  const tourney1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1000);
+  // 2d. Guaranteed 8-Bracket Tourney Entry: 1,500 $DIG regular / 1,200 $DIG VIP (weekly_stock_limit = 6)
+  const tourney1 = db.createStoreRedemption(regularUser.id, regularUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1500);
   assert.strictEqual(tourney1.success, true);
-  assert.strictEqual(tourney1.effectiveCost, 1000);
+  assert.strictEqual(tourney1.effectiveCost, 1500);
   assert.strictEqual(tourney1.remainingStock, 5);
 
-  // VIP user gets 800 $DIG
-  const tourney2 = db.createStoreRedemption(vipUser.id, vipUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1000);
+  // VIP user gets 1,200 $DIG
+  const tourney2 = db.createStoreRedemption(vipUser.id, vipUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1500);
   assert.strictEqual(tourney2.success, true);
-  assert.strictEqual(tourney2.effectiveCost, 800);
+  assert.strictEqual(tourney2.effectiveCost, 1200);
   assert.strictEqual(tourney2.remainingStock, 4);
 
   // 4 additional users buy up the remaining 4 units
   for (let i = 0; i < 4; i++) {
     const u = db.upsertUser(9200 + i, `tourney_buyer_${i}`);
     db.creditPoints(u.id, 5000, 'TEST_FUND');
-    const res = db.createStoreRedemption(u.id, u.username, 'Guaranteed 8-Bracket Tourney Entry', 1000);
+    const res = db.createStoreRedemption(u.id, u.username, 'Guaranteed 8-Bracket Tourney Entry', 1500);
     assert.strictEqual(res.success, true);
   }
 
   // 7th purchase attempt -> SOLD OUT THIS WEEK!
-  const tourney7 = db.createStoreRedemption(thirdUser.id, thirdUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1000);
+  const tourney7 = db.createStoreRedemption(thirdUser.id, thirdUser.username, 'Guaranteed 8-Bracket Tourney Entry', 1500);
   assert.strictEqual(tourney7.success, false);
   assert.ok(tourney7.error?.includes('SOLD OUT THIS WEEK'), '8-Bracket Tourney Entry must block 7th purchase in same week');
 
-  // 2e. $20 Bonus Buy Split Profit (50/50): 1,500 $DIG regular vs 1,200 $DIG Stake VIP (weekly_stock_limit = 3)
+  // 2e. $20 Bonus Buy Split Profit (50/50): 3,000 $DIG regular vs 2,400 $DIG Stake VIP (weekly_stock_limit = 3)
   const splitRegBefore = db.getUserById(regularUser.id)!.points_balance;
-  const splitRegular = db.createStoreRedemption(regularUser.id, regularUser.username, '$20 Bonus Buy Split Profit (50/50)', 1500);
+  const splitRegular = db.createStoreRedemption(regularUser.id, regularUser.username, '$20 Bonus Buy Split Profit (50/50)', 3000);
   assert.strictEqual(splitRegular.success, true);
-  assert.strictEqual(splitRegular.effectiveCost, 1500);
+  assert.strictEqual(splitRegular.effectiveCost, 3000);
   assert.strictEqual(splitRegular.remainingStock, 2);
-  assert.strictEqual(db.getUserById(regularUser.id)!.points_balance, splitRegBefore - 1500, 'Regular user pays 1,500 $DIG');
+  assert.strictEqual(db.getUserById(regularUser.id)!.points_balance, splitRegBefore - 3000, 'Regular user pays 3,000 $DIG');
 
   const splitVipBefore = db.getUserById(vipUser.id)!.points_balance;
-  const splitVip = db.createStoreRedemption(vipUser.id, vipUser.username, '$20 Bonus Buy Split Profit (50/50)', 1500);
+  const splitVip = db.createStoreRedemption(vipUser.id, vipUser.username, '$20 Bonus Buy Split Profit (50/50)', 3000);
   assert.strictEqual(splitVip.success, true);
-  assert.strictEqual(splitVip.effectiveCost, 1200, 'Stake-verified VIP user automatically pays 1,200 $DIG');
+  assert.strictEqual(splitVip.effectiveCost, 2400, 'Stake-verified VIP user automatically pays 2,400 $DIG');
   assert.strictEqual(splitVip.remainingStock, 1);
-  assert.strictEqual(db.getUserById(vipUser.id)!.points_balance, splitVipBefore - 1200);
+  assert.strictEqual(db.getUserById(vipUser.id)!.points_balance, splitVipBefore - 2400);
 
   // 3rd weekly unit of $20 Bonus Buy Split Profit
-  const split3 = db.createStoreRedemption(thirdUser.id, thirdUser.username, '$20 Bonus Buy Split Profit (50/50)', 1500);
+  const split3 = db.createStoreRedemption(thirdUser.id, thirdUser.username, '$20 Bonus Buy Split Profit (50/50)', 3000);
   assert.strictEqual(split3.success, true);
   assert.strictEqual(split3.remainingStock, 0);
 
   // 4th weekly attempt on $20 Bonus Buy Split Profit is blocked
   const fourthUser = db.upsertUser(9006, 'fourth_buyer');
   db.creditPoints(fourthUser.id, 5000, 'TEST_FUND');
-  const split4 = db.createStoreRedemption(fourthUser.id, fourthUser.username, '$20 Bonus Buy Split Profit (50/50)', 1500);
+  const split4 = db.createStoreRedemption(fourthUser.id, fourthUser.username, '$20 Bonus Buy Split Profit (50/50)', 3000);
   assert.strictEqual(split4.success, false);
   assert.ok(split4.error?.includes('SOLD OUT THIS WEEK'));
-  console.log('  ✓ Store Catalog prices, weekly stock limits (6/6 and 3/3), 14-day cooldown, and 1,200 $DIG Stake VIP discount verified');
+  console.log('  ✓ Store Catalog prices, weekly stock limits (6/6 and 3/3), 14-day cooldown, and Stake VIP discount verified');
 
   // =========================================================================
   // 3. Anti-Exploit Shield in #house-games (95% RTP, Max Bet 50, Max Win 500)
@@ -283,7 +283,7 @@ async function runPhase6Tests() {
     assert.ok(Array.isArray(stockResp.catalog), 'Stock endpoint must return catalog array');
     const splitItem = stockResp.catalog.find((c: any) => c.key === 'bonus_split_20');
     assert.ok(splitItem, 'bonus_split_20 must exist in catalog');
-    assert.strictEqual(splitItem.effectiveCost, 1200, 'VIP user gets 1,200 $DIG effective cost in catalog endpoint');
+    assert.strictEqual(splitItem.effectiveCost, 2400, 'VIP user gets 2,400 $DIG effective cost in catalog endpoint');
     assert.strictEqual(splitItem.remainingStock, 0);
     assert.strictEqual(splitItem.soldOut, true);
 

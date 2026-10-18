@@ -1781,6 +1781,13 @@ class StakeOriginalsController {
 
       if (total > 21) {
         this.resolveBlackjack('bust');
+      } else if (total === 21) {
+        // Player reached 21: lock Hit button immediately, dealer plays
+        const hitBtn = document.getElementById('bj-btn-hit');
+        const standBtn = document.getElementById('bj-btn-stand');
+        if (hitBtn) hitBtn.disabled = true;
+        if (standBtn) standBtn.disabled = true;
+        setTimeout(() => this.standBlackjack(), 500);
       }
       return;
     }
@@ -1804,10 +1811,14 @@ class StakeOriginalsController {
     if (total > 21) {
       currentHand.busted = true;
       currentHand.stood = true;
+      const hitBtn = document.getElementById('bj-btn-hit');
+      if (hitBtn) hitBtn.disabled = true;
       if (window.soundEngine) window.soundEngine.playBust();
       setTimeout(() => this.advanceSplitHand(), 500);
     } else if (total === 21) {
       currentHand.stood = true;
+      const hitBtn = document.getElementById('bj-btn-hit');
+      if (hitBtn) hitBtn.disabled = true;
       setTimeout(() => this.advanceSplitHand(), 500);
     }
   }
@@ -2589,19 +2600,25 @@ class StakeOriginalsController {
 
     // Wheel target angle: align winning pocket under top needle at spin end
     const desiredFinalAngle = 270 - (winIdx + 0.5) * arcDeg;
-    const fullSpins = 360 * 5; // 5 full revolutions
-    const currentAngleMod = this.rouletteWheelRotation % 360;
-    const targetWheelAngle = this.rouletteWheelRotation + (fullSpins + (desiredFinalAngle - currentAngleMod + 360) % 360);
+    const currentAngleMod = ((this.rouletteWheelRotation % 360) + 360) % 360;
+    const desiredAngleMod = ((desiredFinalAngle % 360) + 360) % 360;
+    let deltaAngle = desiredAngleMod - currentAngleMod;
+    if (deltaAngle <= 0) deltaAngle += 360;
+
+    const fullSpins = 360 * 6; // 6 full revolutions
+    const targetWheelAngle = this.rouletteWheelRotation + fullSpins + deltaAngle;
 
     const startWheelAngle = this.rouletteWheelRotation;
     const duration = 3600; // 3.6s fluid physical spin
     const startTime = performance.now();
 
     // Ivory ball animation state (scaled to 380px canvas)
-    // Ball starts on outer rim (168px), counter-rotates and spirals into pocket (150px)
+    // Ball starts on outer rim (168px), counter-rotates and spirals smoothly into winning pocket under needle (150px at 270° / 1.5*PI)
     const startBallRadius = 168;
     const endBallRadius = 150;
-    let ballAngle = Math.random() * Math.PI * 2;
+    const targetFinalBallAngle = 1.5 * Math.PI; // 270° (top needle)
+    const ballRevs = 7;
+    const startBallAngle = targetFinalBallAngle + (ballRevs * 2 * Math.PI);
     let lastTickTime = 0;
 
     const animateSpin = (now) => {
@@ -2609,13 +2626,12 @@ class StakeOriginalsController {
       const progress = Math.min(1, elapsed / duration);
       
       // Quintic ease out for authentic physical friction
-      const ease = 1 - Math.pow(1 - progress, 4.5);
+      const ease = 1 - Math.pow(1 - progress, 4.2);
       const wheelAngle = startWheelAngle + (targetWheelAngle - startWheelAngle) * ease;
       this.rouletteWheelRotation = wheelAngle;
 
-      // Ball counter-rotation and inward spiral
-      const ballSpeed = (1 - ease) * 0.35 + 0.035;
-      ballAngle -= ballSpeed;
+      // Ball counter-rotation and inward spiral converging precisely to targetFinalBallAngle
+      const ballAngle = startBallAngle - (startBallAngle - targetFinalBallAngle) * ease;
       const ballRadius = startBallRadius - (startBallRadius - endBallRadius) * ease;
 
       // Audio ticks when ball jumps over frets (decelerates with physical cadence)
@@ -2630,11 +2646,11 @@ class StakeOriginalsController {
 
       this.rouletteBall = {
         active: true,
-        angle: progress >= 1 ? (270 * Math.PI / 180) : ballAngle,
+        angle: ballAngle,
         radius: ballRadius
       };
 
-      this.drawRouletteWheel(wheelAngle, this.rouletteBall, progress >= 1 ? winIdx : null);
+      this.drawRouletteWheel(wheelAngle, this.rouletteBall, progress >= 0.96 ? winIdx : null);
 
       if (progress < 1) {
         requestAnimationFrame(animateSpin);
@@ -2786,7 +2802,7 @@ class StakeOriginalsController {
     for (let i = 0; i < pockets; i++) {
       const num = this.euroWheelPockets[i];
       const isRed = this.redNumbers.includes(num);
-      const isWinner = highlightIdx !== null && highlightIdx === i;
+      const isWinner = (highlightIdx !== null && highlightIdx === i) || (this.rouletteRestingAfterWin && this.rouletteWinningIdx === i);
 
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -2828,7 +2844,7 @@ class StakeOriginalsController {
     const winNum = this.rouletteWinningPocket;
     const isWinRed = winNum !== null && winNum !== undefined && this.redNumbers.includes(winNum);
     
-    if (highlightIdx !== null && winNum !== null && winNum !== undefined) {
+    if ((highlightIdx !== null || this.rouletteRestingAfterWin) && winNum !== null && winNum !== undefined) {
       ctx.fillStyle = winNum === 0 ? '#00e701' : (isWinRed ? '#ff2a5f' : '#14202b');
     } else {
       ctx.fillStyle = '#0f212e';
@@ -2838,7 +2854,7 @@ class StakeOriginalsController {
     ctx.lineWidth = 3.5;
     ctx.stroke();
 
-    if (highlightIdx !== null && winNum !== null && winNum !== undefined) {
+    if ((highlightIdx !== null || this.rouletteRestingAfterWin) && winNum !== null && winNum !== undefined) {
       // Prominent center callout so player instantly sees the winning number
       ctx.fillStyle = winNum === 0 ? '#011401' : '#ffffff';
       ctx.font = 'bold 20px "Chakra Petch", sans-serif';
