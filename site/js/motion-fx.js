@@ -711,7 +711,34 @@
       }
     });
 
-    console.log('[DiggityBets MotionFX] SOTA 2026 3D Coin Rain, Atropos 3D Tilt & ProAudioFX Active');
+    // 6. SOTA Bento Card Radial Glow Spotlight Tracker (Zero Layout Thrash)
+    document.addEventListener('pointermove', (e) => {
+      const cards = document.querySelectorAll('.bento-card');
+      if (!cards.length) return;
+      cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const isNear = (
+          e.clientX >= rect.left - 180 &&
+          e.clientX <= rect.right + 180 &&
+          e.clientY >= rect.top - 180 &&
+          e.clientY <= rect.bottom + 180
+        );
+        if (isNear) {
+          card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+          card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        }
+      });
+    }, { passive: true });
+
+    // 7. Universal Tactile Click Feedback (Reflect.app inspired)
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, .btn, .nav-tab, .chip-btn');
+      if (target && window.ProAudioFX && typeof window.ProAudioFX.playTactileClick === 'function') {
+        window.ProAudioFX.playTactileClick(220);
+      }
+    }, { passive: true });
+
+    console.log('[DiggityBets MotionFX] SOTA 2026 3D Coin Rain, Bento Radial Glow & ProAudioFX Active');
   });
 
 })(window, document);

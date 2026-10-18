@@ -76,3 +76,33 @@ Every screen and component MUST adhere to strict visual density rules to prevent
   transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 100ms ease;
   ```
 - **Accessibility:** Strict compliance with `prefers-reduced-motion: reduce`. All CSS keyframes and JS confetti engines must immediately suppress motion when active.
+
+---
+
+## 6. Asymmetrical Bento Grid Standards (2026 Layout)
+- **Cell Structure:** Flexible grid using `grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))` with tracks defined by `minmax(0, 1fr)` to prevent image blowout.
+- **Hero & Feature Ratio:** 2:1 or 3:1 column spans on desktop (`@media (min-width: 1024px)`), smoothly collapsing to 1 column below `768px`.
+- **Card Padding & Radius:** `border-radius: 14px; padding: 24px;` with subtle glassmorphism backdrop (`backdrop-filter: blur(12px)`).
+- **Radial Glow Cursor Tracking:** Cards support `--mouse-x` and `--mouse-y` CSS variables for interactive glow spotlight:
+  ```css
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 215, 0, 0.05), transparent 40%), var(--surface-card);
+  ```
+
+---
+
+## 7. Synthetic Web Audio Haptics (Zero Asset Overhead)
+- **Philosophy (Inspiración Reflect.app):** Cero descargas de archivos `.mp3`/`.wav`. Toda la retroalimentación táctil de clics, apuestas y victorias se sintetiza con `AudioContext` en micro-ráfagas:
+  - *Click / Tap Táctil:* Onda triangular `180Hz` decayendo a `60Hz` en 35ms (volumen 0.06).
+  - *Chip Drop / Bet Stake:* Onda sinusoidal dual `320Hz + 640Hz` en 50ms con filtro paso bajo.
+  - *Win Chime:* Arpegio pentatónico sintético (523Hz, 659Hz, 784Hz) en 120ms.
+- **Condición:** Respetar silenciador global del usuario y suspender el `AudioContext` cuando la pestaña está en segundo plano (`document.hidden`).
+
+---
+
+## 8. Hallmark Anti-AI-Slop Pre-Emit Validation
+Before committing any UI or component, the Senior Frontend (`senior-coder`) verifies:
+1. No italic headers or dual-color gradient slop text.
+2. No fabricated proof stats or false metrics.
+3. Strict 8 states implementation for all interactive components.
+4. Mobile verification at 320px, 375px, 414px, and 768px with zero horizontal scroll (`overflow-x: clip`).
+
