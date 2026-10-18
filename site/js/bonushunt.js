@@ -126,6 +126,8 @@ class BonusHuntController {
   }
 
   init() {
+    if (this._initialized) return;
+    this._initialized = true;
     this.renderMetrics();
     this.renderSlotTable();
     this.renderGuesses();
