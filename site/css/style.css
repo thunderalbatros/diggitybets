@@ -673,6 +673,11 @@ body {
   white-space: nowrap;
 }
 
+/* Guest Profile Link hidden (profile only active after linking Kick) */
+#topbar-guest-profile-link {
+  display: none !important;
+}
+
 /* Profile Button at Top Right (33% smaller) */
 .btn-top-profile {
   background: rgba(255, 255, 255, 0.06);
