@@ -70,7 +70,76 @@ const stakeDino = path.join(root, 'site', 'stake-games', 'dino-assets');
 if (fs.existsSync(stakeAssets)) copyRecursive(stakeAssets, path.join(dist, 'assets'));
 if (fs.existsSync(stakeDino)) copyRecursive(stakeDino, path.join(dist, 'dino-assets'));
 
-// 5. Generate Cloudflare _headers (Security, CSP, HSTS, COOP, Brotli, Caching)
+// 4.5 Minify CSS & JS in dist/ via esbuild (with external .map source maps for Lighthouse Best Practices)
+async function minifyDistAssets() {
+  let esbuild = null;
+  try {
+    const esbuildPath = path.join(root, 'tools', 'audit', 'node_modules', 'esbuild', 'lib', 'main.js');
+    if (fs.existsSync(esbuildPath)) {
+      const mod = await import('file:///' + esbuildPath.replace(/\\/g, '/'));
+      esbuild = mod.default || mod;
+    }
+  } catch (_) {}
+
+  if (!esbuild) {
+    console.log('• [Minify] esbuild not found in tools/audit/node_modules, keeping raw assets.');
+    return;
+  }
+
+  console.log('• Minifying CSS & JS in dist/ with esbuild + generating source maps...');
+  let savedBytes = 0;
+
+  const cssDir = path.join(dist, 'site', 'css');
+  if (fs.existsSync(cssDir)) {
+    for (const file of fs.readdirSync(cssDir)) {
+      if (!file.endsWith('.css')) continue;
+      const fullPath = path.join(cssDir, file);
+      const raw = fs.readFileSync(fullPath, 'utf8');
+      try {
+        const res = await esbuild.transform(raw, {
+          loader: 'css',
+          minify: true,
+          sourcemap: 'external',
+          sourcefile: file
+        });
+        const outCode = res.code + `\n/*# sourceMappingURL=${file}.map */\n`;
+        fs.writeFileSync(fullPath, outCode, 'utf8');
+        if (res.map) fs.writeFileSync(fullPath + '.map', res.map, 'utf8');
+        savedBytes += Math.max(0, Buffer.byteLength(raw) - Buffer.byteLength(outCode));
+      } catch (_) {}
+    }
+  }
+
+  const jsDirs = [path.join(dist, 'site', 'js'), path.join(dist, 'data')];
+  for (const dir of jsDirs) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith('.js') || file.endsWith('.min.js')) continue;
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory()) continue;
+      const raw = fs.readFileSync(fullPath, 'utf8');
+      try {
+        const res = await esbuild.transform(raw, {
+          loader: 'js',
+          minifyWhitespace: true,
+          minifySyntax: true,
+          minifyIdentifiers: false,
+          sourcemap: 'external',
+          sourcefile: file
+        });
+        const outCode = res.code + `\n//# sourceMappingURL=${file}.map\n`;
+        fs.writeFileSync(fullPath, outCode, 'utf8');
+        if (res.map) fs.writeFileSync(fullPath + '.map', res.map, 'utf8');
+        savedBytes += Math.max(0, Buffer.byteLength(raw) - Buffer.byteLength(outCode));
+      } catch (_) {}
+    }
+  }
+  console.log(`  ✓ Minified dist/ CSS & JS (saved ${(savedBytes / 1024).toFixed(1)} KiB + generated .map files)`);
+}
+
+await minifyDistAssets();
+
+// 5. Generate Cloudflare _headers (Security, Hardened CSP, HSTS, COOP, Brotli, Caching)
 console.log('• Generating Cloudflare _headers...');
 const headersContent = `/*
   X-Content-Type-Options: nosniff
@@ -79,13 +148,13 @@ const headersContent = `/*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: object-src 'none'; base-uri 'self'; frame-ancestors 'self';
+  Content-Security-Policy: default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss: ws://127.0.0.1:8080 ws://localhost:8080 ws://127.0.0.1:3001 http://127.0.0.1:3001; frame-src 'self' https://player.kick.com https://kick.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
 
 /site/css/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=31536000, immutable
 
 /site/js/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=31536000, immutable
 
 /data/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

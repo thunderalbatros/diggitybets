@@ -32,17 +32,20 @@ if (!CHROME) {
   process.exit(1);
 }
 
-// 1. Start lightweight local HTTP server with proper MIME types and mock /api/* endpoints
+// 1. Start lightweight local HTTP server serving built dist/ (with fallback to rootDir)
 function startLocalServer() {
+  const distDir = path.join(rootDir, 'dist');
   const mimeMap = {
     '.html': 'text/html; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',
     '.mjs': 'application/javascript; charset=utf-8',
     '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.txt': 'text/plain; charset=utf-8'
@@ -56,7 +59,11 @@ function startLocalServer() {
       return;
     }
     const relPath = cleanUrl === '/' ? '/index.html' : cleanUrl;
-    const filePath = path.join(rootDir, relPath);
+    const distCandidate = path.join(distDir, relPath);
+    const rootCandidate = path.join(rootDir, relPath);
+    const filePath = (distCandidate.startsWith(distDir) && fs.existsSync(distCandidate) && !fs.statSync(distCandidate).isDirectory())
+      ? distCandidate
+      : rootCandidate;
     if (!filePath.startsWith(rootDir) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       res.writeHead(404);
       res.end('Not found');
@@ -65,7 +72,7 @@ function startLocalServer() {
     const ext = path.extname(filePath).toLowerCase();
     res.writeHead(200, {
       'Content-Type': mimeMap[ext] || 'application/octet-stream',
-      'Cache-Control': 'public, max-age=3600'
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable'
     });
     fs.createReadStream(filePath).pipe(res);
   });

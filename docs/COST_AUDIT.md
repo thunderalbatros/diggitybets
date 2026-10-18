@@ -1,0 +1,24 @@
+# COST AUDIT & PERMISSIVE LICENSE LEDGER (`docs/COST_AUDIT.md`)
+
+> **Compliance Mandate (`AGENTS.md §2.1`)**: 100% Permanent Free Tier (`USD 0 / ARS 0`), Zero Credit Card Required, and Commercially Permissive Open-Source Licenses (`MIT`, `Apache-2.0`, `BSD`, `ISC`, `CC0`, `OFL`).
+
+| Technology / Package | Repository / Source | License | Monthly / Annual Cost | Credit Card Required? | Role in DiggityBets / HuntHub |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Cloudflare Workers & Static Assets** | Cloudflare Edge Platform | Free Tier | **USD 0.00** | No | Production edge runtime (`100,000 req/day`), SPA static asset delivery, and WebSocket / Cache sync. |
+| **Cloudflare D1 Serverless SQLite** | Cloudflare D1 | Free Tier | **USD 0.00** | No | Serverless SQLite persistence (`users`, `user_devices`, `alt_clusters`, `point_transactions`, `stake_verification_requests`, `store_redemptions`, `raffle_tickets`, `kv_store`) with covering indexes & 90-day retention pruning. |
+| **Cloudflare Turnstile** | Cloudflare Security | Free Tier | **USD 0.00** | No | Privacy-preserving invisible anti-bot verification (`1,000,000 challenges/month` free). |
+| **DOMPurify (`3.x`)** | [`cure53/DOMPurify`](https://github.com/cure53/DOMPurify) | `Apache-2.0` / `MPL-2.0` | **USD 0.00** | No | Zero-dependency DOM XSS sanitizer + W3C `TrustedTypes` default policy in `site/js/vendor/purify.min.js` & `site/js/security-anti-fraud.js`. |
+| **esbuild** | [`evanw/esbuild`](https://github.com/evanw/esbuild) | `MIT` | **USD 0.00** | No | Ultra-fast CSS & JS minifier + `.map` source map generator integrated into `tools/build_dist.mjs` (`<150ms` build time). |
+| **Valibot** | [`fabian-hiller/valibot`](https://github.com/fabian-hiller/valibot) | `MIT` | **USD 0.00** | No | Modular, tree-shakeable schema validation (`~1.2 KB`) for Edge API & audit pipelines. |
+| **ThumbHash** | [`evanw/thumbhash`](https://github.com/evanw/thumbhash) | `MIT` | **USD 0.00** | No | Compact binary placeholder hashes for instant zero-CLS slot cover previews. |
+| **SVGO** | [`svg/svgo`](https://github.com/svg/svgo) | `MIT` | **USD 0.00** | No | SVG path & metadata optimizer for badges, icons, and logos. |
+| **Knip** | [`webpro-nl/knip`](https://github.com/webpro-nl/knip) | `ISC` | **USD 0.00** | No | Unused file, export, and dependency detector in `references/audit-sota/knip`. |
+| **Google Lighthouse (`13.x`)** | [`GoogleChrome/lighthouse`](https://github.com/GoogleChrome/lighthouse) | `Apache-2.0` | **USD 0.00** | No | Automated Performance, Accessibility (`WCAG`), Best Practices, and SEO scoring (`0–100`) in `tools/audit/lighthouse_pa11y_audit.mjs`. |
+| **Pa11y (`9.x`) + HTML_CodeSniffer** | [`pa11y/pa11y`](https://github.com/pa11y/pa11y) / [`squizlabs/HTML_CodeSniffer`](https://github.com/squizlabs/HTML_CodeSniffer) | `LGPL-3.0` / `BSD-3-Clause` | **USD 0.00** | No | Multi-view `WCAG2AA` CLI accessibility auditor in `tools/audit/lighthouse_pa11y_audit.mjs`. |
+| **axe-core** | [`dequelabs/axe-core`](https://github.com/dequelabs/axe-core) | `MPL-2.0` | **USD 0.00** | No | Automated WCAG 2.1/2.2 AA/AAA accessibility engine in `tools/audit/visual_audit.mjs`. |
+| **APCA-W3 (`apca-w3`)** | [`Myndex/apca-w3`](https://github.com/Myndex/apca-w3) | `W3C` / `MIT` | **USD 0.00** | No | WCAG 3.0 Perceptual Contrast ($L_c$) calculator for dark-mode casino typography. |
+| **Pixelmatch** | [`mapbox/pixelmatch`](https://github.com/mapbox/pixelmatch) | `ISC` | **USD 0.00** | No | Pixel-level visual regression comparison in `tools/audit/`. |
+| **Playwright Core** | [`microsoft/playwright`](https://github.com/microsoft/playwright) | `Apache-2.0` | **USD 0.00** | No | Headless 3-viewport layout geometry & Chrome DevTools Protocol (CDP) 60-FPS telemetry auditor. |
+| **canvas-confetti** | [`catdad/canvas-confetti`](https://github.com/catdad/canvas-confetti) | `ISC` | **USD 0.00** | No | Lightweight celebratory particle bursts (`site/js/vendor/confetti.browser.js`). |
+| **CountUp.js** | [`inorganik/countUp.js`](https://github.com/inorganik/countUp.js) | `MIT` | **USD 0.00** | No | Smooth 60-FPS tabular-numeral counter animations (`site/js/vendor/countUp.umd.js`). |
+| **Google Fonts (`Chakra Petch`, `Outfit`)** | Google Fonts | `OFL-1.1` | **USD 0.00** | No | Display and UI typography. |

@@ -24,7 +24,7 @@ function loadEnv() {
   const env = { ...process.env };
   const envCandidates = [
     path.join(ROOT, '.env'),
-    'C:/Users/tomas/.zcode/workspace/default/centinela-studio/.env'
+    path.join(ROOT, '.dev.vars')
   ];
 
   for (const p of envCandidates) {
