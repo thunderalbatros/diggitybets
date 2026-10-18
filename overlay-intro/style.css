@@ -192,24 +192,6 @@ html, body {
   color: var(--gold);
 }
 
-.pill-audio-toggle {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--hairline-border);
-  color: #cbd5e1;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.pill-audio-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border-color: var(--hairline-border-hover);
-}
-
 /* =========================================================================
  * 2. HERO COUNTDOWN CENTERPIECE
  * ========================================================================= */
@@ -330,9 +312,9 @@ html, body {
   text-transform: uppercase;
 }
 
-.tag-koth { color: #ffd700; }
-.tag-leaderboard { color: #00e5ff; }
-.tag-spotlight { color: #53fc18; }
+.tag-splits { color: #c084fc; text-shadow: 0 0 12px rgba(192, 132, 252, 0.45); }
+.tag-leaderboard { color: #00e5ff; text-shadow: 0 0 12px rgba(0, 229, 255, 0.4); }
+.tag-spotlight { color: #53fc18; text-shadow: 0 0 12px rgba(83, 252, 24, 0.4); }
 
 .badge-live-pulse {
   font-size: 10.5px;
@@ -344,55 +326,104 @@ html, body {
   color: #94a3b8;
 }
 
-/* Card 1: King of the Hill */
-.koth-content {
+/* Card 1: Pending Bonus Buy Splits Queue */
+.splits-list {
   display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.koth-avatar-box {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(0, 0, 0, 0.6) 100%);
-  border: 2px solid var(--gold);
-  box-shadow: 0 0 18px var(--gold-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-}
-
-.koth-details h3 {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 900;
-  color: #fff;
-}
-
-.koth-streak-row {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 6px;
 }
 
-.koth-streak-pill {
-  padding: 3px 9px;
-  background: rgba(255, 215, 0, 0.14);
-  border: 1px solid var(--gold);
-  border-radius: 6px;
+.split-queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.split-queue-item:hover {
+  background: rgba(192, 132, 252, 0.08);
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+.split-badge-tag {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.split-badge-40 {
+  background: rgba(168, 85, 247, 0.22);
+  border: 1px solid #c084fc;
+  color: #e9d5ff;
+  box-shadow: 0 0 8px rgba(192, 132, 252, 0.35);
+}
+
+.split-badge-20 {
+  background: rgba(236, 72, 153, 0.22);
+  border: 1px solid #f472b6;
+  color: #fbcfe8;
+  box-shadow: 0 0 8px rgba(244, 114, 182, 0.35);
+}
+
+.split-caller-col {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.split-caller-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-slot-title {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-status-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.split-profit-label {
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 800;
-  color: var(--gold);
+  color: var(--kick-green);
+  letter-spacing: 0.5px;
 }
 
-.koth-prize-tag {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--kick-green);
+.split-status-pill {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: var(--gold);
+  letter-spacing: 0.5px;
 }
 
 /* Card 2: Leaderboard Top 3 */
