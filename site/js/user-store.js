@@ -39,16 +39,23 @@ class UserStoreController {
     this.totpExpiresAt = 0;
     this.totpInterval = null;
 
-    // Leaderboard Participants Data (100% Stake Affiliates under code diggitybets)
+    // Stake Leaderboard Participants Data (Top 15 under code: diggity — $1,500 USD Pool)
     this.leaderboardData = [
-      { rank: 1, casinoUser: 'GS8***', kickUser: '@GamerStake88', wager: 68450.00, prize: 1200, avatar: '👑', verified: true },
+      { rank: 1, casinoUser: 'GS8***', kickUser: '@GamerStake88', wager: 68450.00, prize: 750, avatar: '👑', verified: true },
       { rank: 2, casinoUser: 'StakeNacho', kickUser: '@NachoGamer', wager: 34120.50, prize: 500, avatar: '🦝', verified: true },
-      { rank: 3, casinoUser: 'ZeusMax', kickUser: '@SlotKing21', wager: 22890.00, prize: 300, avatar: '⚡', verified: true },
-      { rank: 4, casinoUser: 'StakeValen', kickUser: '@Valen99', wager: 14750.25, prize: 0, avatar: '🍭', verified: true },
-      { rank: 5, casinoUser: 'HunterPro', kickUser: '@StakeHunter', wager: 9810.00, prize: 0, avatar: '🤠', verified: true },
-      { rank: 6, casinoUser: 'CryptoAce', kickUser: '@CryptoSpin', wager: 6420.00, prize: 0, avatar: '💀', verified: true },
-      { rank: 7, casinoUser: 'StakeAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 0, avatar: '🪙', verified: true },
-      { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 0, avatar: '🤠', verified: true }
+      { rank: 3, casinoUser: 'ZeusMax', kickUser: '@SlotKing21', wager: 22890.00, prize: 200, avatar: '⚡', verified: true },
+      { rank: 4, casinoUser: 'StakeValen', kickUser: '@Valen99', wager: 14750.25, prize: 10, avatar: '🍭', verified: true },
+      { rank: 5, casinoUser: 'HunterPro', kickUser: '@StakeHunter', wager: 9810.00, prize: 10, avatar: '🤠', verified: true },
+      { rank: 6, casinoUser: 'CryptoAce', kickUser: '@CryptoSpin', wager: 6420.00, prize: 10, avatar: '💀', verified: true },
+      { rank: 7, casinoUser: 'StakeAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 10, avatar: '🪙', verified: true },
+      { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 10, avatar: '🤠', verified: true },
+      { rank: 9, casinoUser: 'LuckyMati', kickUser: '@MatiSlots', wager: 2180.00, prize: 0, avatar: '🎰', verified: true },
+      { rank: 10, casinoUser: 'PlinkoKing', kickUser: '@PlinkoMaster', wager: 1840.50, prize: 0, avatar: '🔥', verified: true },
+      { rank: 11, casinoUser: 'SweetBonanza', kickUser: '@BonanzaArg', wager: 1520.00, prize: 0, avatar: '🍬', verified: true },
+      { rank: 12, casinoUser: 'gatesOfX', kickUser: '@Olympus99', wager: 1290.75, prize: 0, avatar: '⚡', verified: true },
+      { rank: 13, casinoUser: 'WantedDead', kickUser: '@DuelSpins', wager: 1050.00, prize: 0, avatar: '🔫', verified: true },
+      { rank: 14, casinoUser: 'SugarRush77', kickUser: '@RushWinner', wager: 880.00, prize: 0, avatar: '🐻', verified: true },
+      { rank: 15, casinoUser: 'KickHighRoll', kickUser: '@HighRollKick', wager: 640.00, prize: 0, avatar: '💎', verified: true }
     ];
     this.lastUserInteractionTs = Date.now();
     this.lastVerifiedKickChatTs = Number(localStorage.getItem('hunthub_last_kick_chat_ts') || '0');
@@ -933,8 +940,16 @@ class UserStoreController {
   }
 
   /**
-   * Render Leaderboard ($2000 USD Monthly Prize Pool, Top 3 Podium)
+   * Render Stake Leaderboard ($1,500 USD Monthly Prize Pool: 1st $750, 2nd $500, 3rd $200, 4th-8th $10, Top 15 Displayed)
    */
+  getStakePrizeForRank(rank) {
+    if (rank === 1) return 750;
+    if (rank === 2) return 500;
+    if (rank === 3) return 200;
+    if (rank >= 4 && rank <= 8) return 10;
+    return 0;
+  }
+
   renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-tbody');
     if (!tbody) return;
@@ -958,11 +973,66 @@ class UserStoreController {
       }
     }
 
+    // Sort by wager descending and assign ranks + prizes for Top 15
+    this.leaderboardData.sort((a, b) => (Number(b.wager) || 0) - (Number(a.wager) || 0));
+    const top15 = this.leaderboardData.slice(0, 15).map((item, idx) => {
+      const rank = idx + 1;
+      return {
+        ...item,
+        rank,
+        prize: this.getStakePrizeForRank(rank)
+      };
+    });
+
     const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
-    tbody.innerHTML = this.leaderboardData.map(item => `
-      <tr class="leaderboard-row ${item.rank <= 3 ? `top-${item.rank}` : ''}">
-        <td style="font-family: var(--font-display); font-weight: 800; font-size: 15px; color: ${item.rank === 1 ? 'var(--gold)' : (item.rank === 2 ? '#e2e8f0' : (item.rank === 3 ? '#cd7f32' : 'var(--text-muted)'))};">
-          ${item.rank === 1 ? '🥇 #1' : (item.rank === 2 ? '🥈 #2' : (item.rank === 3 ? '🥉 #3' : `#${item.rank}`))}
+
+    // Populate Top 3 Illuminated Stake Podium
+    [1, 2, 3].forEach((r) => {
+      const entry = top15[r - 1];
+      if (!entry) return;
+      const userEl = document.getElementById(`stake-podium-${r}-user`);
+      const kickEl = document.getElementById(`stake-podium-${r}-kick`);
+      const wagerEl = document.getElementById(`stake-podium-${r}-wager`);
+      const prizeEl = document.getElementById(`stake-podium-${r}-prize`);
+      const avatarEl = document.getElementById(`stake-podium-${r}-avatar`);
+
+      if (userEl) userEl.textContent = entry.casinoUser || entry.stakeUser || '—';
+      if (kickEl) kickEl.textContent = entry.kickUser || '';
+      if (wagerEl) wagerEl.textContent = `$${Number(entry.wager || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      if (prizeEl) {
+        const icon = r === 1 ? '🏆' : (r === 2 ? '💰' : '🥉');
+        prizeEl.textContent = `${icon} $${entry.prize.toLocaleString()} USD`;
+      }
+      if (avatarEl && typeof window.getDeterministicAvatarSvg === 'function') {
+        avatarEl.innerHTML = window.getDeterministicAvatarSvg(entry.casinoUser || entry.kickUser, r === 1 ? 68 : 56);
+      }
+    });
+
+    tbody.innerHTML = top15.map(item => {
+      const isPodium = item.rank <= 3;
+      const isRunnerUpPrize = item.rank >= 4 && item.rank <= 8;
+      const rankColor = item.rank === 1
+        ? 'var(--gold)'
+        : (item.rank === 2 ? '#e2e8f0' : (item.rank === 3 ? '#cd7f32' : (isRunnerUpPrize ? 'var(--kick-green)' : 'var(--text-muted)')));
+      const rankLabel = item.rank === 1
+        ? '🥇 #1'
+        : (item.rank === 2 ? '🥈 #2' : (item.rank === 3 ? '🥉 #3' : `#${item.rank}`));
+
+      let prizeHtml = '<span style="color: var(--text-dim);">—</span>';
+      if (item.rank === 1) {
+        prizeHtml = '<span class="stake-table-prize-pill gold">🏆 $750 USD</span>';
+      } else if (item.rank === 2) {
+        prizeHtml = '<span class="stake-table-prize-pill silver">🥈 $500 USD</span>';
+      } else if (item.rank === 3) {
+        prizeHtml = '<span class="stake-table-prize-pill bronze">🥉 $200 USD</span>';
+      } else if (isRunnerUpPrize) {
+        prizeHtml = '<span class="stake-table-prize-pill runnerup">🎁 $10 USD</span>';
+      }
+
+      return `
+      <tr class="leaderboard-row ${isPodium ? `top-${item.rank}` : (isRunnerUpPrize ? 'runnerup-prize-row' : '')}">
+        <td style="font-family: var(--font-display); font-weight: 800; font-size: 15px; color: ${rankColor};">
+          ${rankLabel}
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -975,27 +1045,24 @@ class UserStoreController {
         </td>
         <td>
           <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">
-            ✓ VERIFIED STAKE VIP
+            ✓ CODE: DIGGITY VIP
           </span>
         </td>
         <td style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">
-          $${item.wager.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          $${Number(item.wager || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </td>
-        <td style="font-family: var(--font-display); font-weight: 800; color: ${item.prize > 0 ? 'var(--gold)' : 'var(--text-dim)'};">
-          ${item.prize > 0 ? `$${item.prize.toLocaleString()} USD` : '—'}
+        <td style="font-family: var(--font-display); font-weight: 800;">
+          ${prizeHtml}
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   /**
-   * Historical All-Time $DIG Community Leaderboard
+   * Channel Activity Points Leaderboard ($DIG)
    * Persisted in localStorage: hunthub_historical_leaderboard
-   */
-  /**
-   * Historical All-Time $DIG Community Leaderboard
-   * Persisted in localStorage: hunthub_historical_leaderboard
-   * Empty by default — fills with real viewer chat activity!
+   * Rewards: 1st Most Active = $20 USD ($40 USD 2X under code: diggity), 2nd Most Active = $10 USD ($20 USD 2X under code: diggity)
    */
   getHistoricalLeaderboard() {
     let list = [];
@@ -1049,7 +1116,7 @@ class UserStoreController {
     const list = this.getHistoricalLeaderboard();
     const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
 
-    // Update Top 3 Podium
+    // Update Top 3 Points Podium
     const p1 = list[0];
     const p2 = list[1];
     const p3 = list[2];
@@ -1066,9 +1133,9 @@ class UserStoreController {
       pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
       pts1.style.color = p1 ? 'var(--gold)' : '#64748b';
     }
-    if (prize1) prize1.textContent = p1 ? `👑 ${p1.tourneysWon || 0} TOURNAMENTS · ${p1.huntHits || 0} HUNT HITS` : 'ESPERANDO CHAT';
+    if (prize1) prize1.textContent = '🏆 $20 USD ($40 2X CODE: DIGGITY)';
     if (tier1) {
-      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 ${p1.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 ${esc(p1.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
 
     const u2 = document.getElementById('podium-2-user');
@@ -1083,9 +1150,9 @@ class UserStoreController {
       pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
       pts2.style.color = p2 ? '#cbd5e1' : '#64748b';
     }
-    if (prize2) prize2.textContent = p2 ? `🏆 ${p2.tourneysWon || 0} TOURNAMENTS WON` : 'ESPERANDO CHAT';
+    if (prize2) prize2.textContent = '💰 $10 USD ($20 2X CODE: DIGGITY)';
     if (tier2) {
-      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 ${p2.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 ${esc(p2.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
 
     const u3 = document.getElementById('podium-3-user');
@@ -1100,16 +1167,16 @@ class UserStoreController {
       pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
       pts3.style.color = p3 ? '#cbd5e1' : '#64748b';
     }
-    if (prize3) prize3.textContent = p3 ? `🎰 ${p3.huntHits || 0} HUNT HITS` : 'ESPERANDO CHAT';
+    if (prize3) prize3.textContent = p3 ? `🎰 ${p3.huntHits || 0} HUNT HITS` : 'HONORARY VIP PODIUM';
     if (tier3) {
-      tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${p3.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
 
     // Update stats strip cards
     const statLeaderUser = document.getElementById('stat-leader-user');
     const statLeaderDesc = document.getElementById('stat-leader-desc');
     if (statLeaderUser) statLeaderUser.textContent = p1 ? p1.kickUser : '—';
-    if (statLeaderDesc) statLeaderDesc.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG · ${p1.tourneysWon || 0} Trophies` : 'Esperando actividad de chat...';
+    if (statLeaderDesc) statLeaderDesc.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG · Prize: $20 ($40 2X diggity)` : 'Prize: $20 USD ($40 w/ code diggity)';
 
     const statTourneyUser = document.getElementById('stat-tourney-user');
     const statTourneyDesc = document.getElementById('stat-tourney-desc');
@@ -1134,14 +1201,14 @@ class UserStoreController {
           <td colspan="7" style="text-align: center; padding: 40px 16px; color: #64748b;">
             <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
             <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #cbd5e1;">ESPACIO VACÍO · ESPERANDO ACTIVIDAD DE CHAT</div>
-            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores de Kick aparecerán acá automáticamente al comentar en vivo (<strong style="color: var(--kick-green);">kick.com/diggitybets</strong>).</div>
+            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores más activos de Kick ganan <strong style="color: var(--gold);">$20 USD (#1)</strong> y <strong style="color: #e2e8f0;">$10 USD (#2)</strong> — <strong style="color: var(--kick-green);">¡2X el premio ($40 / $20) bajo el código diggity!</strong></div>
           </td>
         </tr>
       `;
       return;
     }
 
-    tbody.innerHTML = list.map((item, idx) => {
+    tbody.innerHTML = list.slice(0, 15).map((item, idx) => {
       const rank = idx + 1;
       const isTop3 = rank <= 3;
       const rankColor = rank === 1 ? 'var(--gold)' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#cd7f32' : 'var(--text-muted)'));
@@ -1157,6 +1224,13 @@ class UserStoreController {
         tierBadge = '<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.18); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ EMERALD VIP</span>';
       } else {
         tierBadge = '<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.08); border-color: var(--border-subtle); color: #cbd5e1; font-size: 10px;">🥈 SILVER</span>';
+      }
+
+      let activityPrizeHtml = `<span style="font-size: 11px; font-weight: 700; color: ${item.status === 'LEGEND' ? 'var(--gold)' : 'var(--text-dim)'};">${esc(item.status || 'ACTIVE')}</span>`;
+      if (rank === 1) {
+        activityPrizeHtml = `<span class="stake-table-prize-pill gold">🏆 $20 USD <span style="color: var(--kick-green); margin-left: 4px;">($40 2X diggity)</span></span>`;
+      } else if (rank === 2) {
+        activityPrizeHtml = `<span class="stake-table-prize-pill silver">🥈 $10 USD <span style="color: var(--kick-green); margin-left: 4px;">($20 2X diggity)</span></span>`;
       }
 
       return `
@@ -1186,9 +1260,7 @@ class UserStoreController {
             ${tierBadge}
           </td>
           <td>
-            <span style="font-size: 11px; font-weight: 700; color: ${item.status === 'LEGEND' ? 'var(--gold)' : 'var(--text-dim)'};">
-              ${esc(item.status || 'ACTIVE')}
-            </span>
+            ${activityPrizeHtml}
           </td>
         </tr>
       `;
@@ -1196,36 +1268,7 @@ class UserStoreController {
   }
 
   bindLeaderboardTabs() {
-    const btnHist = document.getElementById('tab-btn-historical-lb');
-    const btnWager = document.getElementById('tab-btn-wager-lb');
-    const boxHist = document.getElementById('historical-leaderboard-container');
-    const boxWager = document.getElementById('wager-leaderboard-container');
-
-    if (!btnHist || !btnWager || !boxHist || !boxWager) return;
-
-    btnHist.addEventListener('click', () => {
-      btnHist.classList.add('primary');
-      btnHist.style.background = '';
-      btnHist.style.color = '';
-      btnWager.classList.remove('primary');
-      btnWager.style.background = 'rgba(255, 255, 255, 0.05)';
-      btnWager.style.color = 'var(--text-dim)';
-      boxHist.style.display = 'block';
-      boxWager.style.display = 'none';
-      this.renderHistoricalLeaderboard();
-    });
-
-    btnWager.addEventListener('click', () => {
-      btnWager.classList.add('primary');
-      btnWager.style.background = '';
-      btnWager.style.color = '';
-      btnHist.classList.remove('primary');
-      btnHist.style.background = 'rgba(255, 255, 255, 0.05)';
-      btnHist.style.color = 'var(--text-dim)';
-      boxHist.style.display = 'none';
-      boxWager.style.display = 'block';
-      this.renderLeaderboard();
-    });
+    // Sections #stake-leaderboard and #leaderboard are now independent views in PORTAL
   }
 
   getIsoWeekKey(date = new Date()) {
