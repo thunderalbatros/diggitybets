@@ -618,11 +618,25 @@
     - `test_site.mjs`: 73/73 identificadores interactivos verificados.
     - `visual_audit.mjs`: 0 bloqueadores, 0 mayores en 1440px, 768px y 390px.
     - `build_dist.mjs`: Build de producción `dist/` actualizado.
+- **Stage 27 (Holo-Vault: Ventana de Exhibición de 6s, Auto-Sellado del Siguiente Sobre y Bandeja de Ronda de 10 Cartas):** COMPLETED & TESTED.
+  - **1. Flujo de Sobre Siempre Cerrado & Auto-Sellado:**
+    - Se corrigió el ciclo de vida del sobre 3D: tras rasgar el sobre y revelar la carta coleccionable con shaders holográficos (Simey + Atropos), la carta se exhibe en primer plano durante **6 segundos cronometrados** con contador visual en tiempo real en `#vault-revealed-stats`.
+    - Cumplidos los 6 segundos (o si el usuario pulsa "⚡ RIP NEXT PACK"), el sobre se auto-sella suavemente (`autoResealVaultPack()`), volviendo a su envoltura metalizada y precinto de corte intacto (`is-sealed`).
+    - El siguiente sobre siempre se presenta completamente cerrado antes de volver a rasgarlo.
+  - **2. Bandeja de Ronda de hasta 10 Cartas (`#vault-round-tray-container`):**
+    - Ubicada directamente en el espacio disponible debajo del panel de Holo Vault (captura del usuario).
+    - Permite al streamer acumular hasta 10 cartas por ronda para selecciones de viewers, sorteos en vivo o para armar dinámicamente un Bonus Hunt o ruleta sin depender de una wheel externa.
+    - Las 10 ranuras muestran siluetas holográficas numeradas (`SLOT #1` a `#10`) cuando están vacías, y mini tarjetas 3D coleccionables con brillo holográfico según rareza (`👑 MYTHIC`, `🌈 RADIANT`, `🌌 COSMOS`), carátula oficial, RTP, Max Win y botones de acción rápida (`💎 +Hunt`, `🎡 Wheel`, `↗️ Stake`, `✕ Eliminar`).
+    - Acciones globales para el streamer:
+      - `💎 + Añadir Todas al Hunt (X)`: Transfiere en 1 clic todas las cartas de la ronda al Bonus Hunt activo con bet $2.00.
+      - `🎡 Cargar a Ruleta !sr (X)`: Encola todas las cartas en la lista de Slot Requests para la ruleta.
+      - `🧹 Nueva Ronda`: Limpia la bandeja para iniciar una nueva tanda de hasta 10 cartas.
+    - Persistencia en `localStorage` (`hunthub_vault_round_deck`).
 
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium & Admin Cleanup (Stages 1 to 25): 100% COMPLETED, VERIFIED & PRODUCTION READY.**
+- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium, Admin Cleanup & Holo-Vault 10-Card Round Deck (Stages 1 to 27): 100% COMPLETED, VERIFIED & DEPLOYED.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
@@ -632,6 +646,7 @@
 - **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
 - **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, WAAPI/CSS compositor animations, procedural Web Audio (≤3% CPU in OBS).
 - **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.
+
 
 
 
