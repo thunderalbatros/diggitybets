@@ -1,8 +1,9 @@
 @echo off
-title HuntHub Web Studio — Paperclip AI Agency (Port 3100)
+chcp 65001 >nul
+title HuntHub Web Studio - Paperclip AI Agency (Port 3100)
 cd /d "%~dp0"
 echo ========================================================
-echo   HuntHub Web Studio — Paperclip AI Agency
+echo   HuntHub Web Studio - Paperclip AI Agency
 echo   Modo: Local Ligero (Puerto 3100 - Cero Docker)
 echo ========================================================
 echo.
