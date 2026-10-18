@@ -504,8 +504,10 @@
     - `test_site.mjs` (73 IDs passed, 100%).
     - `ast_guard.mjs` (0 symbolic errors, score 90.0/100).
 - [x] **Stage 20 (Despliegue Global Cloudflare Workers + Static Assets Activo):** COMPLETED & VERIFIED ONLINE.
-  - **Sitio Web Público En Vivo (Cloudflare Global Edge):**
-    - URL Activa: [https://diggitybets.positive-handspring.workers.dev](https://diggitybets.positive-handspring.workers.dev)
+  - **Dominio Canónico Oficial de Producción:**
+    - [https://diggitybets.vip/](https://diggitybets.vip/)
+  - **Previsualización de Despliegue Cloudflare Edge:**
+    - URL de Prueba Edge: [https://diggitybets.positive-handspring.workers.dev](https://diggitybets.positive-handspring.workers.dev)
     - URL de Reclamo permanente (Cloudflare Dashboard): [https://dash.cloudflare.com/claim-preview?claimToken=QxUZ_a_2uWdeRuyXddPsY9_-d-D4xCQC-qP77UR-RSU](https://dash.cloudflare.com/claim-preview?claimToken=QxUZ_a_2uWdeRuyXddPsY9_-d-D4xCQC-qP77UR-RSU)
     - Version ID: `e8527f8d-95d4-4ee4-a1e1-8faeb5a201cd`
   - **Verificación de Borde y Telemetría en Vivo:**
@@ -516,7 +518,7 @@
 
 ## 3. Active Squads & Next Stage
 - **All Phases, Refinements & SOTA 2026 Evolution (Stages 1 to 20): 100% COMPLETED, VERIFIED & LIVE ONLINE.**
-- Active Production URL: [https://diggitybets.positive-handspring.workers.dev](https://diggitybets.positive-handspring.workers.dev)
+- Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
 ---
