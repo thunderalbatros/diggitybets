@@ -271,7 +271,9 @@ class StakeOriginalsController {
     const tabBtns = document.querySelectorAll('.hg-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+        if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+          try { window.soundEngine.playNavTab(); } catch (_) {}
+        } else if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
           try { window.soundEngine.playChip(); } catch (_) {}
         }
         const targetGame = btn.getAttribute('data-game');

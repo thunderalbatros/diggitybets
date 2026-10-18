@@ -176,7 +176,9 @@ function initSpaRouter() {
     if (href && href.startsWith('#') && href !== '#') {
       e.preventDefault();
       window.switchView(href);
-      if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+      if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+        try { window.soundEngine.playNavTab(); } catch (_) {}
+      } else if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
         try { window.soundEngine.playChip(); } catch (_) {}
       }
     }
@@ -242,7 +244,11 @@ function initStakeGamesSwitcher() {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         iframe.src = url;
-        if (window.soundEngine) window.soundEngine.playChip();
+        if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+          window.soundEngine.playNavTab();
+        } else if (window.soundEngine) {
+          window.soundEngine.playChip();
+        }
       }
     });
   });
@@ -290,7 +296,11 @@ function initProvablyFairAuditHub() {
     if (!modalBackdrop) return;
     modalBackdrop.style.display = 'flex';
     requestAnimationFrame(() => modalBackdrop.classList.add('open'));
-    if (window.soundEngine) window.soundEngine.playChip();
+    if (window.soundEngine && typeof window.soundEngine.playNavTab === 'function') {
+      window.soundEngine.playNavTab();
+    } else if (window.soundEngine) {
+      window.soundEngine.playChip();
+    }
   };
 
   const closePfModal = () => {

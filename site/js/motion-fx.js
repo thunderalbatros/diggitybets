@@ -730,11 +730,35 @@
       });
     }, { passive: true });
 
-    // 7. Universal Tactile Click Feedback (Reflect.app inspired)
+    // 7. Universal Tactile Click Feedback (Reflect.app inspired — Zero Clash Routing)
     document.addEventListener('click', (e) => {
-      const target = e.target.closest('button, .btn, .nav-tab, .chip-btn');
-      if (target && window.ProAudioFX && typeof window.ProAudioFX.playTactileClick === 'function') {
-        window.ProAudioFX.playTactileClick(220);
+      // 1. Navigation items and sidebar links are handled with playNavTab in SPA router — skip here to avoid clash
+      const navTarget = e.target.closest('a[data-target], a.nav-link-btn, .footer-links-row a, a[href^="#"]');
+      if (navTarget) return;
+
+      // 2. Chip buttons and bet modifiers play authentic ceramic chip clack — skip generic tactile click to avoid dual-trigger
+      const chipTarget = e.target.closest('.chip-btn, [data-chip], .btn-chip, .btn-half-bet, .btn-double-bet');
+      if (chipTarget) {
+        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+          window.soundEngine.playChip();
+        } else if (window.ProAudioFX && typeof window.ProAudioFX.playChipDrop === 'function') {
+          window.ProAudioFX.playChipDrop();
+        }
+        return;
+      }
+
+      // 3. Mini-game tabs in House Games (.hg-tab-btn) are handled by playNavTab
+      const gameTab = e.target.closest('.hg-tab-btn');
+      if (gameTab) return;
+
+      // 4. Standard UI buttons, toggles, controls
+      const target = e.target.closest('button, .btn, .nav-tab, input[type="button"], input[type="submit"], .sidebar-collapse-btn');
+      if (target) {
+        if (window.soundEngine && typeof window.soundEngine.playTactileClick === 'function') {
+          window.soundEngine.playTactileClick();
+        } else if (window.ProAudioFX && typeof window.ProAudioFX.playTactileClick === 'function') {
+          window.ProAudioFX.playTactileClick();
+        }
       }
     }, { passive: true });
 
