@@ -26,7 +26,7 @@ function addFinding(severity, category, file, line, message, fixHint) {
 function collectFiles(dir, exts, result = []) {
   if (!fs.existsSync(dir)) return result;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'references') continue;
+    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'references' || entry.name === 'vendor' || entry.name === 'stake-games') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       collectFiles(full, exts, result);
