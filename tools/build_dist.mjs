@@ -82,10 +82,10 @@ const headersContent = `/*
   Content-Security-Policy: object-src 'none'; base-uri 'self'; frame-ancestors 'self';
 
 /site/css/*
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 
 /site/js/*
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 
 /site/images/*
   Cache-Control: public, max-age=2592000, immutable

@@ -143,16 +143,31 @@ body {
   position: relative;
 }
 
-/* Left Vertical Sticky Sidebar (Directly below the top-left Diggity Bets Logo) */
+/* Fixed Top-Left Corner Diggity Bets Logo (White Backlight Glow) */
+.fixed-corner-brand {
+  position: fixed;
+  top: 10px;
+  left: 16px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+/* Left Vertical Sticky Sidebar (Positioned directly below the fixed top-left Diggity Bets Logo) */
 .site-sidebar {
   width: 210px;
   min-width: 210px;
-  height: calc(100vh - 156px);
+  margin-top: 108px;
+  height: calc(100vh - 108px);
   position: sticky;
-  top: 156px;
+  top: 108px;
   z-index: 1050;
   background: rgba(8, 11, 18, 0.98);
-  border-right: 2px solid rgba(255, 215, 0, 0.24);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-right-radius: 10px;
   box-shadow: 6px 0 32px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
@@ -363,7 +378,7 @@ body {
 }
 
 /* =======================================================
-   MAIN VIEWPORT WRAPPER & TOP UTILITY HEADER
+   MAIN VIEWPORT WRAPPER & INTEGRATED TOP UTILITY PANEL
    ======================================================= */
 .main-viewport-container {
   flex: 1;
@@ -375,19 +390,20 @@ body {
   position: relative;
 }
 
-/* Topbar Header (Logo fixed in top-left corner + Grid-locked $DIG Balance + Account + Profile Right, zero collision at any zoom) */
+/* Topbar Panel (Integrated into page block, no yellow line, 33% smaller, scrolls with page, zero collision at 100% zoom) */
 .site-topbar {
-  position: sticky;
-  top: 0;
-  left: 0;
-  z-index: 1100;
-  background: rgba(6, 8, 13, 0.98);
-  border-bottom: 2px solid rgba(255, 215, 0, 0.26);
-  padding: 0 24px 0 18px;
-  height: 156px;
-  min-height: 156px;
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 30;
+  background: transparent;
+  border-bottom: none;
+  box-shadow: none;
+  padding: 0 28px;
+  height: 96px;
+  min-height: 96px;
   display: grid;
-  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+  grid-template-columns: minmax(110px, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -398,11 +414,10 @@ body {
   display: flex;
   align-items: center;
   justify-self: start;
-  gap: 14px;
+  gap: 12px;
   height: 100%;
   position: relative;
   z-index: 20;
-  padding-left: 4px;
 }
 
 .topbar-center {
@@ -423,12 +438,12 @@ body {
   display: none;
   flex-direction: column;
   justify-content: space-around;
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 9px;
+  padding: 8px;
   cursor: pointer;
 }
 
@@ -447,7 +462,7 @@ body {
   display: none !important;
 }
 
-/* Diggity Bets Logo fixed in top-left corner with slight left margin & preserved top margin */
+/* Diggity Bets Logo fixed in top-left corner with slight left margin, preserved top margin, and WHITE light glow */
 .topbar-logo-link {
   display: inline-flex;
   align-items: center;
@@ -457,19 +472,19 @@ body {
 }
 
 .site-header-logo {
-  height: 122px;
-  max-height: 126px;
-  max-width: 320px;
+  height: 86px;
+  max-height: 88px;
+  max-width: 190px;
   width: auto;
   object-fit: contain;
   margin-top: 0;
-  filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.55)) drop-shadow(0 0 32px rgba(83, 252, 24, 0.38));
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.42));
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease;
 }
 
 .topbar-logo-link:hover .site-header-logo {
   transform: scale(1.03);
-  filter: drop-shadow(0 0 24px rgba(255, 215, 0, 0.75)) drop-shadow(0 0 38px rgba(83, 252, 24, 0.55));
+  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 1)) drop-shadow(0 0 36px rgba(255, 255, 255, 0.65));
 }
 
 .topbar-center-logo {
@@ -480,81 +495,81 @@ body {
   display: flex;
   align-items: center;
   justify-self: end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
   white-space: nowrap;
   position: relative;
   z-index: 20;
 }
 
-/* User Balance Pill */
+/* User Balance Pill (33% more compact) */
 .user-balance-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: rgba(0, 0, 0, 0.78);
   border: 1.5px solid var(--border-gold);
-  border-radius: 32px;
-  padding: 9px 18px;
+  border-radius: 28px;
+  padding: 6px 14px;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 13.5px;
   font-weight: 900;
   color: var(--gold);
-  box-shadow: 0 0 18px rgba(255, 215, 0, 0.22);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.18);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .topbar-center .user-balance-pill {
-  padding: 10px 22px;
-  font-size: clamp(16px, 1.35vw, 20px);
-  border-width: 2px;
-  border-radius: 40px;
-  gap: 9px;
-  box-shadow: 0 0 24px rgba(255, 215, 0, 0.28), inset 0 0 12px rgba(255, 215, 0, 0.08);
+  padding: 7px 16px;
+  font-size: 14px;
+  border-width: 1.5px;
+  border-radius: 30px;
+  gap: 7px;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.22), inset 0 0 8px rgba(255, 215, 0, 0.06);
 }
 
 .user-balance-pill .coin-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .topbar-center .user-balance-pill .coin-icon {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 /* Stake Verified Badge in Topbar */
 .stake-verified-top-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
+  gap: 4px;
+  padding: 5px 10px;
   font-family: var(--font-display);
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.7px;
-  border-radius: 20px;
+  letter-spacing: 0.6px;
+  border-radius: 16px;
   background: rgba(83, 252, 24, 0.2);
   border: 1.5px solid var(--kick-green);
   color: var(--kick-green);
-  box-shadow: 0 0 14px rgba(83, 252, 24, 0.35);
+  box-shadow: 0 0 12px rgba(83, 252, 24, 0.3);
   white-space: nowrap;
 }
 
-/* Profile Button at Top Right (Placed to the right of Account Name) */
+/* Profile Button at Top Right (33% smaller) */
 .btn-top-profile {
   background: rgba(255, 255, 255, 0.06);
   border: 1.5px solid rgba(255, 255, 255, 0.18);
   color: #e2e8f0;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
-  padding: 12px 22px;
-  border-radius: 12px;
+  padding: 8px 15px;
+  border-radius: 10px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
@@ -574,30 +589,30 @@ body {
   color: #ffffff;
 }
 
-/* User Session Card (Kick Username with Avatar directly to the left) */
+/* User Session Card (33% smaller) */
 .user-session-card {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   background: rgba(14, 20, 32, 0.9);
   border: 1.5px solid var(--border-gold);
-  border-radius: 34px;
-  padding: 6px 18px 6px 7px;
-  box-shadow: 0 0 18px rgba(255, 215, 0, 0.2);
+  border-radius: 28px;
+  padding: 4px 13px 4px 5px;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.18);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .user-session-card:hover {
   border-color: var(--gold);
-  box-shadow: 0 0 22px var(--gold-glow);
+  box-shadow: 0 0 20px var(--gold-glow);
 }
 
 .user-avatar-display {
-  font-size: 21px;
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  min-height: 42px;
+  font-size: 15px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -620,15 +635,15 @@ body {
 
 #auth-username-label {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .btn-auth-logout {
-  padding: 9px 13px;
-  font-size: 13.5px;
+  padding: 6px 10px;
+  font-size: 11.5px;
   color: var(--text-dim);
   border-radius: 8px;
   transition: var(--transition-fast);
@@ -645,9 +660,9 @@ body {
   color: #000000;
   border: none;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 900;
-  padding: 12px 24px;
+  padding: 8px 16px;
   border-radius: 12px;
   cursor: pointer;
   text-decoration: none;
@@ -836,31 +851,31 @@ body {
 
 @media (max-width: 1366px) {
   .site-topbar {
-    padding: 0 18px 0 14px;
+    padding: 0 20px;
     gap: 12px;
   }
   .topbar-center .user-balance-pill {
-    padding: 8px 16px;
-    font-size: 15.5px;
-    gap: 7px;
+    padding: 6px 14px;
+    font-size: 13.5px;
+    gap: 6px;
   }
   .user-session-card {
-    padding: 5px 14px 5px 6px;
-    gap: 8px;
+    padding: 4px 12px 4px 5px;
+    gap: 7px;
   }
   .user-avatar-display {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 14px;
   }
   #auth-username-label {
-    font-size: 14px;
+    font-size: 12.5px;
   }
   .btn-top-profile {
-    padding: 9px 15px;
-    font-size: 14px;
+    padding: 7px 13px;
+    font-size: 12.5px;
   }
 }
 
@@ -871,8 +886,9 @@ body {
   .site-sidebar {
     position: fixed;
     left: 0;
-    top: 118px;
-    height: calc(100vh - 118px);
+    margin-top: 0;
+    top: 96px;
+    height: calc(100vh - 96px);
     bottom: 0;
     transform: translateX(-100%);
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.85);
@@ -882,17 +898,17 @@ body {
   }
   .site-topbar {
     padding: 0 16px;
-    height: 118px;
-    min-height: 118px;
+    height: 92px;
+    min-height: 92px;
   }
   .site-header-logo {
-    height: 86px;
-    max-height: 88px;
-    max-width: 210px;
+    height: 74px;
+    max-height: 76px;
+    max-width: 170px;
   }
   .topbar-center .user-balance-pill {
-    padding: 8px 14px;
-    font-size: 14.5px;
+    padding: 6px 13px;
+    font-size: 13px;
   }
   .modules-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -904,30 +920,31 @@ body {
     display: none !important;
   }
   .site-topbar {
-    height: 98px;
-    min-height: 98px;
+    height: 84px;
+    min-height: 84px;
   }
   .site-sidebar {
-    top: 98px;
-    height: calc(100vh - 98px);
+    margin-top: 0;
+    top: 84px;
+    height: calc(100vh - 84px);
   }
   .site-header-logo {
-    height: 68px;
-    max-height: 70px;
-    max-width: 170px;
+    height: 62px;
+    max-height: 64px;
+    max-width: 150px;
     margin-top: 0;
   }
   .topbar-center .user-balance-pill {
-    padding: 7px 12px;
-    font-size: 13.5px;
+    padding: 6px 11px;
+    font-size: 12.5px;
   }
   .btn-top-profile {
-    padding: 8px 12px;
-    font-size: 13px;
+    padding: 7px 11px;
+    font-size: 12px;
   }
   .btn-header-cta {
-    padding: 8px 12px;
-    font-size: 13px;
+    padding: 7px 11px;
+    font-size: 12px;
   }
   .modules-grid {
     grid-template-columns: 1fr;
@@ -5758,6 +5775,12 @@ footer.site-footer {
   --voucher-glow: rgba(255, 42, 95, 0.45);
   border-color: rgba(255, 42, 95, 0.25);
   background-image: radial-gradient(circle at 10% 20%, rgba(255, 42, 95, 0.08) 0%, transparent 60%);
+}
+
+.store-voucher-card.voucher-purple {
+  --voucher-glow: rgba(168, 85, 247, 0.45);
+  border-color: rgba(168, 85, 247, 0.35);
+  background-image: radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 60%);
 }
 
 /* Phase 6 Weekly Stock Pill Badges */
