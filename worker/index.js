@@ -181,10 +181,101 @@ function isAuthorizedAdmin(request, env) {
   const tokenHeader = (request.headers.get('x-admin-token') || request.headers.get('x-admin-secret') || authHeader || '').trim();
 
   if (configuredSecret) {
-    return constantTimeEqual(tokenHeader, configuredSecret);
+    return isStreamerUser && constantTimeEqual(tokenHeader, configuredSecret);
   }
-  // When no custom ADMIN_API_SECRET env var is set, require both trusted origin + authorized streamer identity + deck token or same-origin header
-  return isStreamerUser && (constantTimeEqual(tokenHeader, 'diggity_stream_deck_v1') || Boolean(request.headers.get('x-admin-user')));
+  // When no custom ADMIN_API_SECRET env var is set, strictly require both streamer identity AND stream deck token
+  return isStreamerUser && constantTimeEqual(tokenHeader, 'diggity_stream_deck_v1');
+}
+
+// In-Memory L1 Sliding Window Rate Limiter
+const ipRateLimits = new Map();
+
+function checkEdgeRateLimit(ip, endpointKey, maxRequests, windowMs) {
+  const now = Date.now();
+  const key = `${ip || 'unknown'}:${endpointKey}`;
+  const record = ipRateLimits.get(key) || { count: 0, resetAt: now + windowMs };
+
+  if (now > record.resetAt) {
+    record.count = 1;
+    record.resetAt = now + windowMs;
+  } else {
+    record.count += 1;
+  }
+  ipRateLimits.set(key, record);
+
+  // Periodically clean up expired keys (keep memory bounded under 2000 entries)
+  if (ipRateLimits.size > 2000) {
+    for (const [k, v] of ipRateLimits.entries()) {
+      if (now > v.resetAt) ipRateLimits.delete(k);
+    }
+  }
+
+  return {
+    allowed: record.count <= maxRequests,
+    current: record.count,
+    resetInSec: Math.max(1, Math.ceil((record.resetAt - now) / 1000))
+  };
+}
+
+// Server-Side Device Fingerprint & Multi-Account Correlation
+async function recordServerUserDevice(db, userId, deviceHash, clientIp) {
+  if (!db || !userId || !deviceHash) return;
+  try {
+    const subnet = (clientIp || '').split('.').slice(0, 3).join('.') + '.0/24';
+    const now = Math.floor(Date.now() / 1000);
+    const cleanUser = String(userId).trim().toLowerCase().replace(/^@/, '');
+
+    // 1. Check if another account used this device in the last 30 days
+    const existing = await db.prepare(`
+      SELECT DISTINCT user_id FROM user_devices 
+      WHERE device_hash = ?1 AND LOWER(user_id) != ?2
+    `).bind(deviceHash, cleanUser).all();
+
+    if (existing && Array.isArray(existing.results) && existing.results.length > 0) {
+      for (const alt of existing.results) {
+        const altId = String(alt.user_id).trim().toLowerCase();
+        await db.prepare(`
+          INSERT OR IGNORE INTO alt_clusters (cluster_id, primary_user_id, associated_user_id, reason, detected_at)
+          VALUES (?1, ?2, ?3, 'SHARED_DEVICE_FINGERPRINT', ?4)
+        `).bind(crypto.randomUUID(), cleanUser, altId, now).run();
+
+        // Increment risk score for both associated accounts
+        await db.prepare(`
+          UPDATE users SET risk_score = MIN(100, risk_score + 40)
+          WHERE LOWER(username) IN (?1, ?2)
+        `).bind(cleanUser, altId).run();
+      }
+    }
+
+    // 2. Upsert user device mapping
+    await db.prepare(`
+      INSERT INTO user_devices (id, user_id, device_hash, ip_subnet, first_seen_at, last_seen_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+      ON CONFLICT(user_id, device_hash) DO UPDATE SET last_seen_at = ?5
+    `).bind(crypto.randomUUID(), cleanUser, deviceHash, subnet, now).run();
+  } catch (err) {
+    console.warn('[AntiSybil] Error recording device:', err.message);
+  }
+}
+
+// Cloudflare Turnstile Verification Helper
+async function verifyTurnstileToken(token, secretKey, remoteIp) {
+  if (!token) return false;
+  try {
+    const formData = new FormData();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    if (remoteIp) formData.append('remoteip', remoteIp);
+
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    return Boolean(data.success);
+  } catch (_) {
+    return false;
+  }
 }
 
 export default {
@@ -739,10 +830,22 @@ export default {
       }), { headers: corsHeaders });
     }
 
-    // 10. Stake Verification Request Endpoint (Universal Bet Parser)
+    // 10. Stake Verification Request Endpoint (Universal Bet Parser & Rate Limited)
     if (url.pathname === '/api/stake/verify-request' && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'stake_verify', 5, 300_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ error: `RATE_LIMIT_EXCEEDED: Too many verification attempts. Please wait ${rl.resetInSec}s.` }), {
+          status: 429,
+          headers: corsHeaders
+        });
+      }
       try {
         const { kickUsername, stakeUsername, targetMultiplier, rawBetInput } = await request.json();
+        const deviceHash = request.headers.get('x-device-fingerprint') || '';
+        if (env.DB && deviceHash && kickUsername) {
+          ctx.waitUntil(recordServerUserDevice(env.DB, kickUsername, deviceHash, clientIp));
+        }
         if (!stakeUsername || !rawBetInput) {
           return new Response(JSON.stringify({ error: 'Missing stakeUsername or rawBetInput' }), {
             status: 400,
@@ -809,14 +912,26 @@ export default {
       }
     }
 
-    // 11. Profile Update Endpoint (Same-Origin & Sanitized)
+    // 11. Profile Update Endpoint (Same-Origin, Sanitized & Rate Limited)
     if (url.pathname === '/api/profile/update' && request.method === 'POST') {
       if (!isSameOrTrustedOrigin(request)) {
         return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: corsHeaders });
       }
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'profile_update', 15, 60_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ error: `RATE_LIMIT_EXCEEDED: Too many updates. Please wait ${rl.resetInSec}s.` }), {
+          status: 429,
+          headers: corsHeaders
+        });
+      }
       try {
         const body = await request.json();
         const cleanUser = String(body.username || '').trim().replace(/^@/, '').slice(0, 64);
+        const deviceHash = request.headers.get('x-device-fingerprint') || body.deviceHash || '';
+        if (env.DB && deviceHash && cleanUser) {
+          ctx.waitUntil(recordServerUserDevice(env.DB, cleanUser, deviceHash, clientIp));
+        }
         const safeStr = (v, max = 128) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
         const safeAvatar = (typeof body.avatar === 'string' && /^https?:\/\//i.test(body.avatar.trim()))
           ? body.avatar.trim().slice(0, 512)
@@ -872,6 +987,7 @@ export default {
 
     // 12B. Phase 6 Watch-to-Earn Heartbeat (+100 $DIG every 15m ONLY when kick.com/diggitybets is LIVE + viewer is actively participating)
     if (url.pathname === '/api/watch/heartbeat' && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       try {
         const body = await request.json().catch(() => ({}));
         const username = String(body.username || '').trim().replace(/^@/, '');
@@ -879,6 +995,22 @@ export default {
         const lastChatActivityMs = Number(body.lastChatActivityMs ?? Infinity);
         if (!username) {
           return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
+        }
+
+        // Rate limit: 1 heartbeat award per 10 minutes per IP+username
+        const rl = checkEdgeRateLimit(`${clientIp}:${username.toLowerCase()}`, 'watch_heartbeat', 1, 600_000);
+        if (!rl.allowed) {
+          return new Response(JSON.stringify({
+            awarded: false,
+            amount: 0,
+            isStreamLive: true,
+            reason: 'HEARTBEAT_COOLDOWN'
+          }), { headers: corsHeaders });
+        }
+
+        const deviceHash = request.headers.get('x-device-fingerprint') || body.deviceHash || '';
+        if (env.DB && deviceHash) {
+          ctx.waitUntil(recordServerUserDevice(env.DB, username, deviceHash, clientIp));
         }
 
         // 1. Verify that https://kick.com/diggitybets is currently LIVE
@@ -910,6 +1042,15 @@ export default {
             isStreamLive: true,
             reason: 'INACTIVE_VIEWER_NO_CHAT'
           }), { headers: corsHeaders });
+        }
+
+        if (env.DB) {
+          try {
+            await env.DB.prepare(`
+              UPDATE users SET points_balance = points_balance + 100, last_seen_at = ?2
+              WHERE LOWER(username) = LOWER(?1)
+            `).bind(username, Math.floor(Date.now() / 1000)).run();
+          } catch (_) {}
         }
 
         return new Response(JSON.stringify({
@@ -957,10 +1098,45 @@ export default {
       }
     }
 
-    // 12. Store Redeem Voucher Endpoint
+    // 12. Store Redeem Voucher Endpoint (Anti-Bot, Anti-Sybil & Rate Limited)
     if (url.pathname === '/api/store/redeem' && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'store_redeem', 5, 300_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ error: `RATE_LIMIT_EXCEEDED: Too many redemption requests. Please wait ${rl.resetInSec}s.` }), {
+          status: 429,
+          headers: corsHeaders
+        });
+      }
       try {
-        const { username, voucherTitle, costPoints, stakeVerified } = await request.json();
+        const body = await request.json().catch(() => ({}));
+        // Honeypot check: automated scrapers and bots fill hidden fields
+        if (body.website || body.b_check) {
+          return new Response(JSON.stringify({ success: true, status: 'SILENT_DROP' }), { headers: corsHeaders });
+        }
+
+        const username = String(body.username || '').trim().replace(/^@/, '');
+        const { voucherTitle, costPoints, stakeVerified, turnstileToken } = body;
+        if (!username) {
+          return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: corsHeaders });
+        }
+
+        // Cloudflare Turnstile Verification (if secret configured)
+        if (env?.TURNSTILE_SECRET_KEY) {
+          const humanOk = await verifyTurnstileToken(turnstileToken, env.TURNSTILE_SECRET_KEY, clientIp);
+          if (!humanOk) {
+            return new Response(JSON.stringify({ error: 'BOT_VERIFICATION_FAILED: Cloudflare Turnstile human verification failed.' }), {
+              status: 403,
+              headers: corsHeaders
+            });
+          }
+        }
+
+        const deviceHash = request.headers.get('x-device-fingerprint') || body.deviceHash || '';
+        if (env.DB && deviceHash) {
+          ctx.waitUntil(recordServerUserDevice(env.DB, username, deviceHash, clientIp));
+        }
+
         const id = crypto.randomUUID();
         const now = Math.floor(Date.now() / 1000);
         const titleLower = String(voucherTitle || '').toLowerCase();
@@ -972,16 +1148,41 @@ export default {
         } else if (titleLower.includes('tourney') || titleLower.includes('bracket')) {
           effectiveCost = stakeVerified ? 800 : 1000;
         }
-        if (env.DB && username) {
+
+        let initialStatus = 'PENDING';
+        if (env.DB) {
+          try {
+            const userRow = await env.DB.prepare(`
+              SELECT risk_score, is_shadowbanned, points_balance FROM users
+              WHERE LOWER(username) = LOWER(?1)
+            `).bind(username).first();
+
+            if (userRow) {
+              if (userRow.is_shadowbanned === 1 || (userRow.risk_score && userRow.risk_score >= 75)) {
+                initialStatus = 'FLAGGED_ALT_SUSPECT';
+              }
+              if (userRow.points_balance !== undefined && userRow.points_balance < effectiveCost) {
+                return new Response(JSON.stringify({
+                  error: `INSUFFICIENT_BALANCE: Database shows ${userRow.points_balance} $DIG, required ${effectiveCost} $DIG.`
+                }), { status: 400, headers: corsHeaders });
+              }
+              await env.DB.prepare(`
+                UPDATE users SET points_balance = MAX(0, points_balance - ?1)
+                WHERE LOWER(username) = LOWER(?2)
+              `).bind(effectiveCost, username).run();
+            }
+          } catch (_) {}
+
           await env.DB.prepare(`
             INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
-            VALUES (?1, ?1, ?2, ?3, ?4, 'PENDING', ?5)
-          `).bind(id, username, voucherTitle, effectiveCost, now).run();
+            VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6)
+          `).bind(id, username, voucherTitle, effectiveCost, initialStatus, now).run();
         }
+
         return new Response(JSON.stringify({
           success: true,
           effectiveCost,
-          redemption: { id, kick_username: username, voucher_title: voucherTitle, cost_points: effectiveCost, status: 'PENDING', created_at: now }
+          redemption: { id, kick_username: username, voucher_title: voucherTitle, cost_points: effectiveCost, status: initialStatus, created_at: now }
         }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
