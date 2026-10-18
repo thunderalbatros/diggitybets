@@ -801,7 +801,7 @@
           var hunterStripHtml = isHunted
             ? '<div class="bounty-hunter-strip hunted-winner">' +
                 '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
-                  '<img src="' + escapeHtml(PEPE_FLEX_EZ_URL) + '" alt="EZ" class="bounty-pepe-emote" loading="lazy" decoding="async">' +
+                  '<img src="' + escapeHtml(PEPE_FLEX_EZ_URL) + '" alt="EZ" class="bounty-pepe-emote" width="24" height="24" loading="lazy" decoding="async">' +
                   '<div style="min-width:0;">' +
                     '<div style="font-family:var(--font-display);font-weight:900;font-size:11.5px;color:#ffd700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🏆 HUNTED BY ' + escapeHtml(b.winnerKick || '@Hunter') + '</div>' +
                     '<div style="font-size:10px;color:#cbd5e1;">Hit <strong>' + Number(b.achievedMultiplier || b.targetMultiplier).toLocaleString() + 'x</strong> · Bet ID: <code>' + escapeHtml((b.verifiedBetId || 'verified').slice(0, 18)) + '</code></div>' +
@@ -825,7 +825,7 @@
               '</div>' +
               '<div class="bounty-slot-media-row">' +
                 '<div class="bounty-slot-thumb-wrap">' +
-                  '<img src="' + escapeHtml(resolved.image) + '" alt="' + escapeHtml(b.slotName) + '" class="bounty-slot-thumb-img" loading="lazy" decoding="async">' +
+                  '<img src="' + escapeHtml(resolved.image) + '" alt="' + escapeHtml(b.slotName) + '" class="bounty-slot-thumb-img" width="68" height="90" loading="lazy" decoding="async">' +
                 '</div>' +
                 '<div class="bounty-slot-info-col">' +
                   '<span class="bounty-exclusive-tag">🔥 ONLY ON STAKE</span>' +
@@ -895,13 +895,13 @@
       if (!feedEl) return;
       var approved = this.claims.filter(function(c) { return c.status === 'APPROVED'; });
       if (approved.length === 0) {
-        feedEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:18px;color:#94a3b8;">ESPACIO VACÍO — Waiting for the first verified Code: <strong>diggity</strong> Bounty Hunter!</td></tr>';
+        feedEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:18px;color:#cbd5e1;">ESPACIO VACÍO — Waiting for the first verified Code: <strong>diggity</strong> Bounty Hunter!</td></tr>';
         return;
       }
       feedEl.innerHTML = approved.slice(0, 10).map(function(c) {
         return (
           '<tr>' +
-            '<td><div style="display:flex;align-items:center;gap:8px;"><img src="' + escapeHtml(PEPE_FLEX_EZ_URL) + '" alt="EZ" class="bounty-pepe-emote"><strong>' + escapeHtml(c.viewerKick) + '</strong></div></td>' +
+            '<td><div style="display:flex;align-items:center;gap:8px;"><img src="' + escapeHtml(PEPE_FLEX_EZ_URL) + '" alt="EZ" class="bounty-pepe-emote" width="24" height="24" loading="lazy" decoding="async"><strong>' + escapeHtml(c.viewerKick) + '</strong></div></td>' +
             '<td><strong>' + escapeHtml(c.slotName) + '</strong> <span style="font-size:11px;color:#38bdf8;">(' + escapeHtml(c.provider || 'Only on Stake') + ')</span></td>' +
             '<td style="color:#53fc18;font-weight:800;">$' + Number(c.claimedBetUsd || 0).toFixed(2) + '</td>' +
             '<td style="color:#ffd700;font-weight:900;">' + Number(c.effectiveMultiplier || 0).toLocaleString() + 'x</td>' +

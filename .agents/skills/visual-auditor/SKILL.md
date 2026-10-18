@@ -1,24 +1,30 @@
 ---
 name: visual-auditor
-description: Automated visual and accessibility auditor utilizing Playwright and headless Chromium/Edge across 1440px, 768px, and 390px viewports. Enforces zero text clipping, zero horizontal overflow, and WCAG AA contrast.
+description: Automated 3-Stage Super-Auditor (Clean Code AST + Playwright 3-Viewport Graphic Design & CDP 60-FPS Telemetry + Google Lighthouse 0-100 & Pa11y WCAG2AA). Enforces zero text clipping, zero horizontal overflow, zero 3D card skew deformation, 60-FPS GPU compositing, and WCAG2AA accessibility.
 ---
 
-# Rol: Auditor Visual (VLM Critic + Playwright Auditor)
+# Rol: Super-Auditor de Código Limpio, Diseño Gráfico, Composición, Fluidez 60-FPS y Accesibilidad (Playwright CDP + Google Lighthouse + Pa11y)
 
 ## Responsabilidad Principal
-- Ejecutar la suite de auditoría visual automatizada (`node tools/audit/visual_audit.mjs [baseUrl]`).
-- Verificar que las 7 vistas principales (`#watch`, `#house-games`, `#tournament`, `#bonushunt`, `#store`, `#leaderboard`, `#profile`) rendericen limpias en 3 resoluciones críticas:
-  - **1440px (Desktop Full)**
-  - **768px (Tablet / Netbook)**
-  - **390px (Mobile iPhone / Android)**
-- Capturar pantallazos automáticos en `tools/audit/out/` para inspección visual.
+Ejecutar la suite de auditoría en 3 etapas en `tools/audit/`:
+1. **Auditor de Código Limpio, AST y Arquitectura de Animaciones 60-FPS**:
+   - Comando: `node tools/audit/code_clean_audit.mjs`
+   - Salida: `tools/audit/out/clean-code-report.json` (`100/100` requerido).
+   - Verifica sintaxis JS en 100% de controladores/overlays, ausencia de métodos duplicados, ausencia de supresiones (`@ts-ignore` / `eslint-disable`), protección `rel="noopener noreferrer"`, compatibilidad de glifos/emojis en Windows 10, ausencia de deformación 3D (`rotateX`/`rotateY`) en tarjetas interactivas, y que ningún `@keyframes` anime propiedades de layout (`top`/`left`/`margin`).
+2. **Auditor Visual, de Composición, Simetría y Telemetría CDP 60-FPS (Playwright)**:
+   - Comando: `node tools/audit/visual_audit.mjs [baseUrl]`
+   - Salida: `tools/audit/out/report.json` + 30 capturas PNG en `tools/audit/out/<view>-<width>.png`.
+   - Audita las **10 vistas** (`watch`, `bonushunt`, `tournament`, `house-games`, `store`, `stake-leaderboard`, `bounties`, `leaderboard`, `profile`, `admin`) en **3 resoluciones** (`1440px`, `768px`, `390px`), más telemetría en vivo del **Chrome DevTools Protocol (`Performance.getMetrics`)** y **Web Animations API (`document.getAnimations()`)**.
+3. **Auditor Oficial Google Lighthouse (0–100) + Pa11y (`WCAG2AA`)**:
+   - Comando: `node tools/audit/lighthouse_pa11y_audit.mjs`
+   - Salida: `tools/audit/out/lighthouse-pa11y-report.json` y `tools/audit/out/AUDIT_SUMMARY.md`.
+   - Ejecuta **Google Lighthouse** (`Performance`, `Accessibility`, `Best Practices`, `SEO` + `FCP`, `LCP`, `TBT`, `CLS`) y **Pa11y** (`WCAG2AA` con `axe-core` / `HTML_CodeSniffer`) usando el binario local de Chrome sin descargas redundantes.
 
 ## Restricciones Operativas ("Reglas Anti-Slop")
-1. **Rechazo Inmediato ante Bloqueadores:** Se prohíbe dar por completada cualquier tarea si el reporte de auditoría arroja:
-   - Barras de scroll horizontal accidentales en el documento (`scrollWidth > clientWidth`).
-   - Texto truncado no intencional por desbordamiento (`scrollWidth > clientWidth` con overflow hidden en texto visible).
-   - Errores de consola en rojo (`console.error` o `pageerror`).
-   - Peticiones de recursos fallidas (imágenes rotas 404, scripts no encontrados).
-2. **Auditoría de Contraste (WCAG AA):** Todo texto normal debe tener un ratio $\ge 4.5:1$ contra su superficie de fondo calculada.
-3. **Área Táctil (Mobile Tap Targets):** Todo botón o control interactivo en anchos $\le 480px$ debe contar con un área de toque adecuada ($\ge 32\times 32$ px o $\ge 36$ px de altura mínima recomendada).
-4. **Verificación de Enlaces e Imágenes:** Toda imagen debe contar con atributo `alt` descriptivo y resolverse sin errores 404.
+1. **Rechazo Inmediato ante Bloqueadores (`B:0 M:0 m:0`):** Se prohíbe dar por completada cualquier tarea si el reporte arroja:
+   - Barras de scroll horizontal accidentales (`scrollWidth > clientWidth`).
+   - Texto truncado por desbordamiento (`scrollWidth > clientWidth`).
+   - Deformación 3D (`matrix3d`) sobre tarjetas interactivas (`.bounty-card-3d`, `.kick-podium-card`, `.store-voucher-card`) — solo se permite levitación vertical limpia (`translateY`) y borde láser perimetral.
+   - Errores de consola (`console.error` / `pageerror`) o recursos 404.
+2. **Auditoría de Contraste y Accesibilidad (WCAG2AA + Pa11y + Lighthouse):** Todo texto normal debe tener ratio $\ge 4.5:1$ y pasar el barrido `WCAG2AA` de Pa11y.
+3. **Área Táctil (Mobile Tap Targets):** Todo botón o link interactivo en anchos $\le 480\text{px}$ debe tener al menos $32\times 32\text{px}$ ($\ge 34\text{px}$ recomendado).

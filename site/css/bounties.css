@@ -38,7 +38,8 @@
   gap: 20px;
   padding: 24px 28px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(11, 17, 30, 0.95) 0%, rgba(7, 11, 20, 0.98) 100%);
+  background-color: #070b14;
+  background-image: linear-gradient(135deg, rgba(11, 17, 30, 0.95) 0%, rgba(7, 11, 20, 0.98) 100%);
   border: 1px solid rgba(83, 252, 24, 0.32);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   margin-bottom: 18px;
@@ -101,7 +102,7 @@
 .bounties-stat-tile {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(6, 9, 16, 0.82);
+  background-color: #060910;
   border: 1px solid rgba(255, 255, 255, 0.09);
   display: flex;
   flex-direction: column;
@@ -112,7 +113,7 @@
   font-family: var(--font-display);
   font-size: 10.5px;
   font-weight: 800;
-  color: #94a3b8;
+  color: #cbd5e1;
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
@@ -129,7 +130,7 @@
 .bounties-studios-showcase {
   padding: 14px 18px;
   border-radius: 14px;
-  background: rgba(9, 14, 24, 0.9);
+  background-color: #090e18;
   border: 1px solid rgba(0, 229, 255, 0.24);
   margin-bottom: 16px;
 }
@@ -152,7 +153,7 @@
 
 .bounty-studio-pill {
   appearance: none;
-  background: rgba(15, 23, 42, 0.85);
+  background-color: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
   border-radius: 999px;
@@ -175,7 +176,7 @@
 }
 
 .bounty-studio-pill.active {
-  background: rgba(83, 252, 24, 0.16);
+  background-color: #0b2410;
   border-color: #53fc18;
   color: #53fc18;
   box-shadow: 0 0 14px rgba(83, 252, 24, 0.22);
@@ -190,7 +191,7 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(11, 17, 30, 0.85);
+  background-color: #0b111e;
   border: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: 18px;
 }
@@ -204,7 +205,7 @@
 
 .bounty-tier-filter-btn {
   appearance: none;
-  background: rgba(15, 23, 42, 0.9);
+  background-color: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #e2e8f0;
   border-radius: 8px;
@@ -223,18 +224,18 @@
 }
 
 .bounty-tier-filter-btn.active {
-  background: rgba(83, 252, 24, 0.18);
+  background-color: #0b2410;
   border-color: #53fc18;
   color: #53fc18;
   box-shadow: 0 0 16px rgba(83, 252, 24, 0.22);
 }
 
-.bounty-tier-filter-btn[data-tier="1"].active { border-color: #00e701; color: #53fc18; background: rgba(0, 231, 1, 0.16); }
-.bounty-tier-filter-btn[data-tier="2"].active { border-color: #00f2fe; color: #38bdf8; background: rgba(0, 242, 254, 0.16); }
-.bounty-tier-filter-btn[data-tier="3"].active { border-color: #3b82f6; color: #60a5fa; background: rgba(59, 130, 246, 0.18); }
-.bounty-tier-filter-btn[data-tier="4"].active { border-color: #a855f7; color: #c084fc; background: rgba(168, 85, 247, 0.18); }
-.bounty-tier-filter-btn[data-tier="5"].active { border-color: #f43f5e; color: #fb7185; background: rgba(244, 63, 94, 0.18); }
-.bounty-tier-filter-btn[data-tier="6"].active { border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.18); }
+.bounty-tier-filter-btn[data-tier="1"].active { border-color: #00e701; color: #53fc18; background-color: #08220d; }
+.bounty-tier-filter-btn[data-tier="2"].active { border-color: #00f2fe; color: #38bdf8; background-color: #071e2b; }
+.bounty-tier-filter-btn[data-tier="3"].active { border-color: #3b82f6; color: #60a5fa; background-color: #0c1933; }
+.bounty-tier-filter-btn[data-tier="4"].active { border-color: #a855f7; color: #c084fc; background-color: #1c1030; }
+.bounty-tier-filter-btn[data-tier="5"].active { border-color: #f43f5e; color: #fb7185; background-color: #290e1c; }
+.bounty-tier-filter-btn[data-tier="6"].active { border-color: #ffd700; color: #ffd700; background-color: #262008; }
 
 /* 4. Levitating Bounty Cards Grid (Green & White Laser Beam Perimeter — Zero 3D Deformation) */
 .bounties-cards-grid {
@@ -250,7 +251,7 @@
   position: relative;
   border-radius: 16px;
   background:
-    linear-gradient(165deg, rgba(10, 16, 26, 0.97) 0%, rgba(5, 9, 15, 0.99) 100%) padding-box,
+    linear-gradient(165deg, #0a101a 0%, #05090f 100%) padding-box,
     conic-gradient(
       from var(--bounty-angle),
       rgba(83, 252, 24, 0.32) 0deg,
@@ -263,6 +264,7 @@
       #53fc18 308deg,
       rgba(83, 252, 24, 0.32) 360deg
     ) border-box;
+  background-color: #070b14;
   border: 2px solid transparent;
   padding: 16px;
   display: flex;
@@ -394,7 +396,7 @@
   gap: 4px;
   padding: 6px 14px;
   border-radius: 10px;
-  background: rgba(6, 10, 18, 0.92);
+  background-color: #060a12;
   border: 1.5px solid var(--tier-color);
   box-shadow: 0 0 18px var(--tier-glow);
   font-family: var(--font-display);
@@ -424,7 +426,7 @@
   align-items: center;
   padding: 10px;
   border-radius: 12px;
-  background: rgba(5, 8, 15, 0.82);
+  background-color: #05080f;
   border: 1px solid rgba(83, 252, 24, 0.18);
 }
 
@@ -435,7 +437,8 @@
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
-  background: radial-gradient(circle at 50% 35%, rgba(83, 252, 24, 0.2), rgba(7, 10, 18, 0.98));
+  background-color: #070a12;
+  background-image: radial-gradient(circle at 50% 35%, rgba(83, 252, 24, 0.2), rgba(7, 10, 18, 0.98));
   border: 1.5px solid rgba(83, 252, 24, 0.45);
   box-shadow: 0 0 10px rgba(83, 252, 24, 0.22);
   transition: border-color 0.22s ease, box-shadow 0.22s ease;
@@ -470,8 +473,8 @@
   font-size: 9.5px;
   font-weight: 900;
   letter-spacing: 0.7px;
-  color: #00e5ff;
-  background: rgba(0, 229, 255, 0.12);
+  color: #38bdf8;
+  background-color: #061826;
   border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: 4px;
   padding: 2px 6px;
@@ -503,7 +506,7 @@
   font-size: 9.5px;
   font-weight: 800;
   color: #fde047;
-  background: rgba(250, 204, 21, 0.12);
+  background-color: #1f1907;
   border: 1px solid rgba(250, 204, 21, 0.3);
   border-radius: 4px;
   padding: 1px 5px;
@@ -521,7 +524,7 @@
 .bounty-req-box {
   padding: 9px 11px;
   border-radius: 10px;
-  background: rgba(9, 14, 25, 0.9);
+  background-color: #090e19;
   border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
 }
@@ -530,7 +533,7 @@
   font-family: var(--font-display);
   font-size: 9.5px;
   font-weight: 800;
-  color: #94a3b8;
+  color: #cbd5e1;
   letter-spacing: 0.7px;
   text-transform: uppercase;
   margin-bottom: 2px;
@@ -558,14 +561,15 @@
   gap: 8px;
   padding: 8px 11px;
   border-radius: 10px;
-  background: rgba(15, 23, 42, 0.78);
+  background-color: #0f172a;
   border: 1px dashed rgba(255, 255, 255, 0.14);
   font-size: 11.5px;
   color: #cbd5e1;
 }
 
 .bounty-hunter-strip.hunted-winner {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.16), rgba(83, 252, 24, 0.12));
+  background-color: #1a1808;
+  background-image: linear-gradient(90deg, rgba(255, 215, 0, 0.16), rgba(83, 252, 24, 0.12));
   border: 1px solid rgba(255, 215, 0, 0.55);
   color: #ffffff;
 }
@@ -593,7 +597,8 @@
   padding: 9px 12px;
   border-radius: 9px;
   border: 1px solid var(--tier-color);
-  background: linear-gradient(135deg, rgba(83, 252, 24, 0.2), rgba(0, 229, 255, 0.14));
+  background-color: #0c1f17;
+  background-image: linear-gradient(135deg, rgba(83, 252, 24, 0.2), rgba(0, 229, 255, 0.14));
   color: #ffffff;
   font-family: var(--font-display);
   font-size: 11.5px;
@@ -622,7 +627,7 @@
   justify-content: center;
   padding: 9px 10px;
   border-radius: 9px;
-  background: rgba(15, 23, 42, 0.9);
+  background-color: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #cbd5e1;
   font-family: var(--font-display);
