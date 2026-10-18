@@ -103,20 +103,20 @@
           <span class="nav-item-icon">🎁</span>
           <span class="nav-item-text">Rewards Store</span>
         </a>
-        <a href="#leaderboard" class="nav-link-btn" data-target="#leaderboard" title="Historical Community Leaderboard">
+        <a href="#leaderboard" class="nav-link-btn has-badge" data-target="#leaderboard" title="Historical Community Leaderboard">
           <span class="nav-item-icon">🏆</span>
           <span class="nav-item-text">Leaderboard</span>
-          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(83, 252, 24, 0.15); border: 1px solid #53fc18; color: #53fc18; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; border-radius: 4px;">ALL-TIME</span>
+          <span class="reward-badge-pill sidebar-nav-badge" style="margin-left: auto; background: rgba(83, 252, 24, 0.15); border: 1px solid #53fc18; color: #53fc18; font-weight: 800; border-radius: 4px;">ALL-TIME</span>
         </a>
-        <a href="#admin" class="nav-link-btn admin-nav-tab" id="nav-tab-admin" style="display: none;" data-target="#admin" title="Streamer Admin">
+        <a href="#admin" class="nav-link-btn admin-nav-tab has-badge" id="nav-tab-admin" style="display: none;" data-target="#admin" title="Streamer Admin">
           <span class="nav-item-icon">👑</span>
           <span class="nav-item-text">Streamer Admin</span>
-          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; border-radius: 4px; letter-spacing: 0.5px;">MASTER</span>
+          <span class="reward-badge-pill sidebar-nav-badge" style="margin-left: auto; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; font-weight: 800; border-radius: 4px; letter-spacing: 0.4px;">MASTER</span>
         </a>
-        <a href="#control-panel" class="nav-link-btn admin-nav-tab" id="nav-tab-control" style="display: none;" data-target="#control-panel" title="Control Panel">
+        <a href="#control-panel" class="nav-link-btn admin-nav-tab has-badge" id="nav-tab-control" style="display: none;" data-target="#control-panel" title="Control Panel">
           <span class="nav-item-icon">🎛️</span>
           <span class="nav-item-text">Control Panel</span>
-          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; border-radius: 4px; letter-spacing: 0.5px;">LIVE</span>
+          <span class="reward-badge-pill sidebar-nav-badge" style="margin-left: auto; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff; font-weight: 800; border-radius: 4px; letter-spacing: 0.4px;">LIVE</span>
         </a>
       </nav>
 
@@ -133,14 +133,16 @@
          MAIN VIEWPORT CONTAINER (Integrated Top Panel + Views)
          ======================================================== -->
     <div class="main-viewport-container">
-      <!-- Top Utility Panel (Integrated into page block, no yellow line, 33% smaller, scrolls with page) -->
+      <!-- Top Utility Panel (Unified Right Wallet + Profile Cluster per Fitts & Proximity Laws) -->
       <header class="site-topbar">
         <div class="topbar-left">
           <span id="topbar-active-title" style="display: none;"><span class="view-title-text"></span></span>
         </div>
 
-        <div class="topbar-center">
-          <!-- User $DIG Points Balance Pill (Grid-locked so it never collides at any zoom) -->
+        <div class="topbar-center" aria-hidden="true"></div>
+
+        <div class="topbar-right">
+          <!-- User $DIG Points Balance Pill (Docked directly to the left of @username with gap: 14px) -->
           <div class="user-balance-pill" id="topbar-dig-balance-pill" title="$DIG Points Balance (Earned only when kick.com/diggitybets is LIVE + active in Kick chat)">
             <span class="coin-icon" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0;">
               <svg viewBox="0 0 32 32" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 5px rgba(255,215,0,0.45));">
@@ -174,9 +176,7 @@
             <span class="user-balance-val">0</span>
             <span class="currency-label">$DIG</span>
           </div>
-        </div>
 
-        <div class="topbar-right">
           <!-- Auth Guest Panel (Link Kick + Guest Profile Access) -->
           <div id="auth-guest-panel" style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="btn-header-cta" id="btn-kick-login" title="Link Kick.com account">
@@ -212,87 +212,186 @@
     <h1 class="sr-only">Diggity Bets — live stream, free house games and rewards hub</h1>
 
     <!-- ========================================================
-         SECTION 1: WATCH & LIVE STREAM HERO (Includes Provably Fair & Community)
+         SECTION 1: WATCH & LIVE STREAM HERO (Golden Ratio 61.8% / 38.2% Bento Grid)
          ======================================================== -->
     <section class="section-container view-section active-view" id="watch">
-      <div class="section-header-row">
-        <div>
-          <h2 class="section-title">
-            <span>📡</span> LIVE STREAM / SOCIALS <img src="site/images/kick-wordmark.png" alt="KICK" class="kick-title-wordmark" height="24" style="height: 24px; max-height: 24px; width: auto; max-width: 90px; object-fit: contain; vertical-align: middle; margin-left: 10px;">
-          </h2>
-          <p class="section-subtitle">Official diggitybets broadcast & verified community channels</p>
-        </div>
-        <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="btn-header-cta">Watch on Kick ↗</a>
-      </div>
+      <div class="watch-golden-bento">
+        <!-- LEFT PRIMARY COLUMN (61.8% — Stream Stage) -->
+        <div class="watch-stage-col">
+          <div class="watch-stage-header">
+            <div class="watch-stage-title-group">
+              <h2 class="section-title" style="font-size: 18px; margin: 0;">
+                <span>📡</span> LIVE STREAM / SOCIALS
+                <img src="site/images/kick-wordmark.png" alt="KICK" class="kick-title-wordmark" height="20" style="height: 20px; max-height: 20px; width: auto; max-width: 82px; object-fit: contain; vertical-align: middle; margin-left: 8px;">
+              </h2>
+            </div>
+            <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="btn-header-cta watch-kick-cta">Watch on Kick ↗</a>
+          </div>
 
-      <div class="hero-stream-grid cinema-mode">
-        <!-- Full-Width Cinema Kick Stream Player (Chat commands panel removed per request) -->
-        <div class="stream-player-card">
-          <iframe 
-            src="https://player.kick.com/diggitybets?autoplay=true&muted=true" 
-            allowfullscreen="true" 
-            scrolling="no"
-            title="diggitybets live kick stream">
-          </iframe>
-        </div>
-      </div>
+          <div class="hero-stream-grid cinema-mode">
+            <div class="stream-player-card">
+              <iframe 
+                src="https://player.kick.com/diggitybets?autoplay=true&muted=true" 
+                allowfullscreen="true" 
+                scrolling="no"
+                title="diggitybets live kick stream">
+              </iframe>
+            </div>
+          </div>
 
+          <!-- Quick Stream Telemetry Bar Below Player -->
+          <div class="watch-telemetry-strip" role="region" aria-label="Live Stream Quick Telemetry">
+            <div class="watch-telemetry-pill">
+              <span class="telemetry-dot dot-green"></span>
+              <div class="telemetry-meta">
+                <span class="telemetry-label">WATCH-TO-EARN</span>
+                <strong class="telemetry-value" style="color: var(--kick-green);">+10 $DIG / 15m</strong>
+              </div>
+              <div class="telemetry-progress-track" aria-hidden="true">
+                <div class="telemetry-progress-fill" id="watch-w2e-progress-bar" style="width: 62%;"></div>
+              </div>
+            </div>
 
+            <a href="#battle" data-target="#battle" class="watch-telemetry-pill telemetry-link-pill" title="Open 1v1 Battle Arena (King of the Hill)">
+              <span class="telemetry-icon">👑</span>
+              <div class="telemetry-meta">
+                <span class="telemetry-label">KING OF THE HILL</span>
+                <strong class="telemetry-value" id="watch-telemetry-koth" style="color: var(--gold);">Open Throne · $5/Win</strong>
+              </div>
+            </a>
 
-      <!-- FUSED COMMUNITY & SOCIAL LINKS (Integrated into Live Stream Hub) -->
-      <div id="links" class="stream-fused-section" style="margin-top: 36px;">
-        <div class="section-header-row" style="margin-bottom: 16px;">
-          <div>
-            <h3 class="section-title" style="font-size: 18px;"><span>🔗</span> COMMUNITY & <span class="accent">OFFICIAL SOCIALS</span></h3>
-            <p class="section-subtitle">Follow diggitybets across all official verified platforms</p>
+            <a href="#bonushunt" data-target="#bonushunt" class="watch-telemetry-pill telemetry-link-pill" title="Open Live Bonus Hunt Tracker">
+              <span class="telemetry-icon">💎</span>
+              <div class="telemetry-meta">
+                <span class="telemetry-label">BONUS HUNT</span>
+                <strong class="telemetry-value" id="watch-telemetry-hunt" style="color: var(--cyan);">Live Tracker Ready</strong>
+              </div>
+            </a>
           </div>
         </div>
 
-        <div class="socials-horizontal-grid">
-          <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="module-card social-card-kick" style="text-decoration: none;">
-            <div>
-              <div class="social-icon-wrap">
-                <img src="site/images/kick-official-logo.png" alt="Kick Official" class="social-logo-img social-logo-kick">
+        <!-- RIGHT SECONDARY COLUMN (38.2% — Companion & Socials Dock, Subdivided 61.8% / 38.2%) -->
+        <aside class="watch-dock-col" aria-label="Live Stream Companion & Official Socials">
+          <!-- TOP BLOCK (61.8%): Live Stream Dynamics & Quick Chat Commands -->
+          <div class="watch-companion-card">
+            <div class="watch-dock-card-header">
+              <div>
+                <h3 class="watch-dock-title">⚡ LIVE DYNAMICS &amp; QUICK COMMANDS</h3>
+                <p class="watch-dock-subtitle">1-click arena navigation &amp; Kick chat command triggers</p>
               </div>
-              <h3 class="module-name">Kick.com Official</h3>
-              <p class="module-desc">Watch live daily broadcasts, chat, participate in giveaways, and queue for slot duels.</p>
+              <span class="reward-badge-pill" style="background: rgba(83,252,24,0.14); border: 1px solid #53fc18; color: #53fc18; font-size: 9.5px; padding: 2px 7px; font-weight: 800;">100% FREE</span>
             </div>
-            <div style="font-family: var(--font-display); font-weight: 800; color: var(--kick-green);">@diggitybets ↗</div>
-          </a>
 
-          <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" class="module-card social-card-discord" style="text-decoration: none;">
-            <div>
-              <div class="social-icon-wrap">
-                <img src="site/images/discord-official-logo.png" alt="Discord Official" class="social-logo-img social-logo-discord">
-              </div>
-              <h3 class="module-name">Discord VIP Community</h3>
-              <p class="module-desc">Stream alerts, exclusive VIP bounties, bonus buy discussions, and community chat.</p>
+            <!-- 1-Click Quick Arena Launchers -->
+            <div class="watch-dynamics-grid">
+              <a href="#battle" data-target="#battle" class="watch-dynamic-btn">
+                <span class="dynamic-btn-icon">⚔️</span>
+                <div class="dynamic-btn-copy">
+                  <strong>1v1 Battle KOH</strong>
+                  <span>Defend the throne</span>
+                </div>
+              </a>
+              <a href="#tournament" data-target="#tournament" class="watch-dynamic-btn">
+                <span class="dynamic-btn-icon">🏆</span>
+                <div class="dynamic-btn-copy">
+                  <strong>8-Bracket Tourney</strong>
+                  <span>Predict &amp; win $DIG</span>
+                </div>
+              </a>
+              <a href="#bonushunt" data-target="#bonushunt" class="watch-dynamic-btn">
+                <span class="dynamic-btn-icon">💎</span>
+                <div class="dynamic-btn-copy">
+                  <strong>Bonus Hunt</strong>
+                  <span>Guess final balance</span>
+                </div>
+              </a>
+              <a href="#store" data-target="#store" class="watch-dynamic-btn">
+                <span class="dynamic-btn-icon">🎁</span>
+                <div class="dynamic-btn-copy">
+                  <strong>Rewards Store</strong>
+                  <span>Redeem $DIG points</span>
+                </div>
+              </a>
             </div>
-            <div style="font-family: var(--font-display); font-weight: 800; color: #5865f2;">Join Discord ↗</div>
-          </a>
 
-          <a href="https://www.instagram.com/diggity.bets/" target="_blank" rel="noopener noreferrer" class="module-card social-card-instagram" style="text-decoration: none;">
-            <div>
-              <div class="social-icon-wrap">
-                <img src="site/images/instagram-official-logo.png" alt="Instagram Official" class="social-logo-img social-logo-instagram">
+            <!-- 1-Click Clipboard Chat Commands -->
+            <div class="watch-commands-block">
+              <div class="watch-commands-header">
+                <span>💬 CLICK TO COPY KICK CHAT COMMAND</span>
+                <span style="color: var(--kick-green);">Paste in kick.com/diggitybets</span>
               </div>
-              <h3 class="module-name">Instagram Official</h3>
-              <p class="module-desc">Behind-the-scenes reels, big win highlights, schedule updates, and live stream stories.</p>
+              <div class="watch-commands-list">
+                <div class="cmd-pill-row" title="Click to copy !battle <slot>">
+                  <span class="cmd-pill-tag">!battle &lt;slot&gt;</span>
+                  <span class="cmd-pill-desc">Enter 1v1 KOTH Queue 📋</span>
+                </div>
+                <div class="cmd-pill-row" title="Click to copy !tourney <slot>">
+                  <span class="cmd-pill-tag">!tourney &lt;slot&gt;</span>
+                  <span class="cmd-pill-desc">Join 8-Bracket Tourney 📋</span>
+                </div>
+                <div class="cmd-pill-row" title="Click to copy !slot <name>">
+                  <span class="cmd-pill-tag">!slot &lt;name&gt;</span>
+                  <span class="cmd-pill-desc">Request a Slot Spin 📋</span>
+                </div>
+              </div>
             </div>
-            <div style="font-family: var(--font-display); font-weight: 800; color: #e1306c;">@diggity.bets ↗</div>
-          </a>
+          </div>
 
-          <a href="https://stake.com/?offer=diggity&c=DIGGITY" target="_blank" rel="noopener noreferrer" class="module-card social-card-stake" style="text-decoration: none;">
-            <div>
-              <div class="social-icon-wrap" style="background: transparent; padding: 0;">
-                <img src="site/images/stake-official-logo.png" alt="Stake Official" class="social-logo-img social-logo-stake">
+          <!-- BOTTOM BLOCK (38.2%): VIP Code Card & Official Socials Above the Fold -->
+          <div id="links" class="watch-socials-dock stream-fused-section">
+            <!-- Featured VIP Code Card with Transparent Vector Stake SVG & Quick Copy -->
+            <div class="watch-stake-vip-card">
+              <div class="watch-stake-vip-top">
+                <div class="watch-stake-brand">
+                  <svg class="stake-vector-svg" viewBox="0 0 150 44" width="92" height="28" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stake Official">
+                    <text x="2" y="33" fill="#ffffff" font-family="'Outfit', 'Chakra Petch', sans-serif" font-weight="900" font-size="33" font-style="italic" letter-spacing="-0.8">Stake</text>
+                    <path d="M98 37C112 34 128 33 144 36" stroke="#00e701" stroke-width="3" stroke-linecap="round"/>
+                  </svg>
+                  <div class="watch-stake-vip-copy">
+                    <span class="vip-code-eyebrow">OFFICIAL VIP AFFILIATE CODE</span>
+                    <strong class="vip-code-headline">USE CODE: <span style="color: var(--gold);">DIGGITYBETS</span></strong>
+                  </div>
+                </div>
+                <div class="watch-stake-actions">
+                  <button type="button" class="btn-chat-toggle btn-copy-vip-code" id="btn-copy-stake-vip-code" data-copy-code="DIGGITYBETS" title="Copy code DIGGITYBETS to clipboard">
+                    📋 Copy Code
+                  </button>
+                  <a href="https://stake.com/?offer=diggity&c=DIGGITY" target="_blank" rel="noopener noreferrer" class="btn-header-cta btn-stake-vip-link" title="Open Stake with code DIGGITY">
+                    Stake ↗
+                  </a>
+                </div>
               </div>
-              <h3 class="module-name">USE CODE: DIGGITY</h3>
-              <p class="module-desc">Play slots & Stake Originals under our official code DIGGITY. Instant rakeback, VIP race eligibility, and exclusive rewards.</p>
+              <p class="watch-stake-vip-desc">Instant rakeback, VIP race eligibility &amp; 3x daily slot requests when verified.</p>
             </div>
-            <div style="font-family: var(--font-display); font-weight: 800; color: var(--gold);">stake.com/?offer=diggity ↗</div>
-          </a>
-        </div>
+
+            <!-- Compact Official Social Channels Row (Discord + Kick + Instagram) -->
+            <div class="watch-socials-mini-grid">
+              <a href="https://discord.gg/uHKTcPY7eD" target="_blank" rel="noopener noreferrer" class="watch-social-pill social-pill-discord">
+                <img src="site/images/discord-official-logo.png" alt="Discord" width="24" height="24" class="watch-social-icon">
+                <div class="watch-social-meta">
+                  <strong>Discord VIP</strong>
+                  <span>Join Server ↗</span>
+                </div>
+              </a>
+
+              <a href="https://kick.com/diggitybets" target="_blank" rel="noopener noreferrer" class="watch-social-pill social-pill-kick">
+                <img src="site/images/kick-official-logo.png" alt="Kick" width="44" height="18" class="watch-social-icon kick-wide">
+                <div class="watch-social-meta">
+                  <strong>Kick Official</strong>
+                  <span>@diggitybets ↗</span>
+                </div>
+              </a>
+
+              <a href="https://www.instagram.com/diggity.bets/" target="_blank" rel="noopener noreferrer" class="watch-social-pill social-pill-instagram">
+                <img src="site/images/instagram-official-logo.png" alt="Instagram" width="24" height="24" class="watch-social-icon">
+                <div class="watch-social-meta">
+                  <strong>Instagram</strong>
+                  <span>@diggity.bets ↗</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
     
@@ -1985,20 +2084,22 @@
           <div class="voucher-main">
             <div class="voucher-badge-row">
               <span class="store-item-badge" style="background: rgba(0, 229, 255, 0.15); border-color: #00e5ff; color: #00e5ff;">KICK EXCLUSIVE</span>
-              <span class="store-stock-pill" data-stock-pill="og_badge_role">LIMIT: 1 PER ACCOUNT</span>
+              <span class="store-stock-pill" data-stock-pill="og_badge_role" data-weekly-limit="3">WEEKLY STOCK: 3 / 3 AVAILABLE</span>
             </div>
-            <h4 class="store-item-title voucher-title" style="display: flex; align-items: center; gap: 8px;">
-              <img src="site/images/kick-og-badge.png" alt="OG" width="22" height="22" style="image-rendering: pixelated; border-radius: 4px; box-shadow: 0 0 10px rgba(0,229,255,0.6);" />
+            <h4 class="store-item-title voucher-title" style="display: flex; align-items: center; gap: 10px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.45); box-shadow: 0 0 14px rgba(0, 229, 255, 0.35); flex-shrink: 0;">
+                <img src="site/images/kick-og-badge.png" alt="OG" width="20" height="20" style="image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.8)); display: block;" />
+              </span>
               OG Badge Kick Role
             </h4>
             <p class="store-item-desc voucher-desc">Exclusive permanent OG Badge &amp; VIP Chatter Role on kick.com/diggitybets. Show off your legendary early supporter badge directly in Kick chat!</p>
-            <div class="voucher-meta-tag" id="og-badge-vip-tag">💎 Official Kick Chat Badge · Permanent Role · Out-of-band delivery</div>
+            <div class="voucher-meta-tag" id="og-badge-vip-tag">💎 Official Kick Chat Badge · ⚡ 2,000 $DIG Stake VIP · Limit: 3 per week</div>
           </div>
           <div class="voucher-perforation"></div>
           <div class="voucher-stub">
             <div class="voucher-stub-header">REDEEM</div>
-            <div class="store-item-cost voucher-stub-cost" id="og-badge-cost-display" data-cost-display="og_badge_role">1,500 $DIG</div>
-            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-redeem-og-badge" data-key="og_badge_role" data-cost="1500" data-regular-cost="1500" data-vip-cost="1200" data-item="OG Badge Kick Role">Redeem</button>
+            <div class="store-item-cost voucher-stub-cost" id="og-badge-cost-display" data-cost-display="og_badge_role">2,500 $DIG</div>
+            <button type="button" class="btn-voucher-action btn-game-action primary btn-store-redeem" id="btn-redeem-og-badge" data-key="og_badge_role" data-cost="2500" data-regular-cost="2500" data-vip-cost="2000" data-weekly-limit="3" data-item="OG Badge Kick Role">Redeem</button>
           </div>
         </div>
 
