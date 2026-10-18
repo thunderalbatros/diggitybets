@@ -240,12 +240,13 @@ body {
   gap: 8px;
   width: 100%;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: #94a3b8;
   font-family: var(--font-display);
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.25px;
   border-radius: 8px;
   cursor: pointer;
@@ -281,35 +282,38 @@ body {
 
 .sidebar-nav-menu .nav-link-btn:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.08);
   transform: translateX(2px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-nav-menu .nav-link-btn.active {
   color: #ffffff;
-  background: linear-gradient(90deg, rgba(83, 252, 24, 0.22) 0%, rgba(83, 252, 24, 0.06) 100%);
+  font-weight: 800;
+  background: linear-gradient(90deg, rgba(83, 252, 24, 0.18) 0%, rgba(83, 252, 24, 0.04) 100%);
   border-color: var(--kick-green);
-  box-shadow: 0 0 14px rgba(83, 252, 24, 0.3);
+  box-shadow: 0 0 14px rgba(83, 252, 24, 0.25);
   transform: translateX(2px);
 }
 
 .sidebar-nav-menu .nav-link-btn.admin-nav-tab {
-  color: var(--gold);
-  border-color: var(--border-gold);
-  background: rgba(255, 215, 0, 0.09);
+  color: #eab308;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .sidebar-nav-menu .nav-link-btn.admin-nav-tab:hover {
-  background: rgba(255, 215, 0, 0.22);
-  box-shadow: 0 0 18px var(--gold-glow);
+  color: var(--gold);
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.18);
 }
 
 .sidebar-nav-menu .nav-link-btn.admin-nav-tab.active {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.32) 0%, rgba(255, 215, 0, 0.1) 100%);
+  font-weight: 800;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.26) 0%, rgba(255, 215, 0, 0.06) 100%);
   border-color: var(--gold);
-  box-shadow: 0 0 20px var(--gold-glow);
+  box-shadow: 0 0 18px var(--gold-glow);
   color: #ffffff;
 }
 
@@ -431,7 +435,7 @@ body {
   position: relative;
 }
 
-/* Topbar Panel (68px compact height, Unified Wallet + Profile Cluster on the right with gap: 14px) */
+/* Topbar Panel (Symmetric HUD with Exact Screen-Centered 2x $DIG Pill & Right Unified Profile) */
 .site-topbar {
   position: relative;
   top: auto;
@@ -440,9 +444,9 @@ body {
   background: transparent;
   border-bottom: none;
   box-shadow: none;
-  padding: 0 24px;
-  height: 68px;
-  min-height: 68px;
+  padding: 0 28px;
+  height: 92px;
+  min-height: 92px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -454,7 +458,6 @@ body {
 .topbar-left {
   display: flex;
   align-items: center;
-  justify-self: start;
   gap: 12px;
   height: 100%;
   position: relative;
@@ -462,7 +465,21 @@ body {
 }
 
 .topbar-center {
-  display: none;
+  position: absolute;
+  left: calc(50% - 124px);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 25;
+  pointer-events: auto;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.site-sidebar.collapsed ~ .main-viewport-container .topbar-center {
+  left: calc(50% - 36px);
 }
 
 .sidebar-mobile-toggle {
@@ -503,9 +520,9 @@ body {
 }
 
 .site-header-logo {
-  height: 76px;
-  max-height: 78px;
-  max-width: 185px;
+  height: 82px;
+  max-height: 84px;
+  max-width: 190px;
   width: auto;
   object-fit: contain;
   margin-top: 0;
@@ -527,33 +544,77 @@ body {
   align-items: center;
   justify-content: flex-end;
   margin-left: auto;
-  gap: 14px;
+  gap: 8px;
   flex-shrink: 0;
   white-space: nowrap;
   position: relative;
   z-index: 20;
 }
 
-/* User Balance Pill (Part of the right Wallet + Profile Cluster) */
+/* User Balance Pill (Base + 2x Centerpiece Scale in Topbar Center) */
 .user-balance-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  background: rgba(10, 14, 24, 0.88);
+  background: rgba(10, 14, 24, 0.92);
   border: 1.5px solid var(--border-gold);
-  border-radius: 28px;
+  border-radius: 999px;
   padding: 6px 14px;
   font-family: var(--font-display);
   font-size: 13.5px;
-  font-weight: 900;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   color: var(--gold);
   box-shadow: 0 0 14px rgba(255, 215, 0, 0.18), inset 0 0 8px rgba(255, 215, 0, 0.06);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+.topbar-center .user-balance-pill,
+#topbar-dig-balance-pill {
+  min-height: 58px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 215, 0, 0.55);
+  background: linear-gradient(180deg, rgba(16, 23, 38, 0.96) 0%, rgba(9, 13, 22, 0.98) 100%);
+  gap: 14px;
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 24px rgba(255, 215, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 .user-balance-pill .coin-icon {
   font-size: 16px;
+}
+
+.topbar-center .user-balance-pill .coin-icon,
+#topbar-dig-balance-pill .coin-icon,
+#topbar-dig-balance-pill .coin-icon svg {
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 38px;
+}
+
+#topbar-dig-balance-pill .user-balance-val {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+}
+
+#topbar-dig-balance-pill .currency-label {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--gold);
+  letter-spacing: 0.8px;
 }
 
 /* Stake Verified Badge in Topbar */
@@ -922,10 +983,12 @@ body {
     padding: 0 20px;
     gap: 12px;
   }
-  .topbar-center .user-balance-pill {
-    padding: 6px 14px;
-    font-size: 13.5px;
-    gap: 6px;
+  .topbar-center .user-balance-pill,
+  #topbar-dig-balance-pill {
+    min-height: 54px;
+    padding: 10px 28px;
+    font-size: 26px;
+    gap: 12px;
   }
   .user-session-card {
     padding: 4px 12px 4px 5px;
@@ -969,14 +1032,32 @@ body {
     height: 92px;
     min-height: 92px;
   }
+  .topbar-center,
+  .site-sidebar.collapsed ~ .main-viewport-container .topbar-center {
+    left: 50%;
+  }
   .site-header-logo {
     height: 74px;
     max-height: 76px;
     max-width: 170px;
   }
-  .topbar-center .user-balance-pill {
-    padding: 6px 13px;
-    font-size: 13px;
+  .topbar-center .user-balance-pill,
+  #topbar-dig-balance-pill {
+    min-height: 50px;
+    padding: 10px 24px;
+    font-size: 24px;
+    gap: 10px;
+  }
+  #topbar-dig-balance-pill .user-balance-val {
+    font-size: 24px;
+  }
+  #topbar-dig-balance-pill .currency-label {
+    font-size: 18px;
+  }
+  #topbar-dig-balance-pill .coin-icon,
+  #topbar-dig-balance-pill .coin-icon svg {
+    width: 32px !important;
+    height: 32px !important;
   }
   .modules-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1002,9 +1083,23 @@ body {
     max-width: 150px;
     margin-top: 0;
   }
-  .topbar-center .user-balance-pill {
-    padding: 6px 11px;
-    font-size: 12.5px;
+  .topbar-center .user-balance-pill,
+  #topbar-dig-balance-pill {
+    min-height: 46px;
+    padding: 8px 20px;
+    font-size: 21px;
+    gap: 9px;
+  }
+  #topbar-dig-balance-pill .user-balance-val {
+    font-size: 21px;
+  }
+  #topbar-dig-balance-pill .currency-label {
+    font-size: 16px;
+  }
+  #topbar-dig-balance-pill .coin-icon,
+  #topbar-dig-balance-pill .coin-icon svg {
+    width: 28px !important;
+    height: 28px !important;
   }
   .btn-top-profile {
     padding: 7px 11px;
@@ -1023,14 +1118,28 @@ body {
   .topbar-center {
     position: static;
     transform: none;
+    justify-self: center;
   }
   .topbar-center .user-balance-pill,
+  #topbar-dig-balance-pill,
   .user-balance-pill {
-    padding: 6px 10px;
-    font-size: 12.5px;
-  }
-  .topbar-center .user-balance-pill .coin-icon {
+    min-height: 40px;
+    padding: 7px 14px;
     font-size: 16px;
+    gap: 7px;
+  }
+  #topbar-dig-balance-pill .user-balance-val {
+    font-size: 16px;
+  }
+  #topbar-dig-balance-pill .currency-label {
+    font-size: 13px;
+  }
+  .topbar-center .user-balance-pill .coin-icon,
+  #topbar-dig-balance-pill .coin-icon,
+  #topbar-dig-balance-pill .coin-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 22px;
   }
   .btn-top-profile .top-profile-text {
     display: none;
@@ -1067,25 +1176,25 @@ body {
    2. MAIN CONTAINER & SECTIONS
    ======================================================= */
 .main-wrapper {
-  max-width: 1480px;
+  max-width: 1440px;
   width: 100%;
   margin: 0 auto;
-  padding: 6px 20px 64px;
+  padding: 20px 20px 80px;
   box-sizing: border-box;
 }
 
 .section-container {
-  margin-bottom: 36px;
-  scroll-margin-top: 72px;
+  margin-bottom: 56px;
+  scroll-margin-top: 80px;
 }
 
 .section-header-row {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 .section-title {
@@ -1108,61 +1217,29 @@ body {
 }
 
 /* =======================================================
-   3. HERO WATCH & STREAM SECTION (GOLDEN RATIO 61.8% / 38.2% BENTO)
+   3. HERO WATCH & STREAM SECTION (CLEAN FULL-WIDTH STAGE)
    ======================================================= */
-.watch-golden-bento {
-  display: grid;
-  grid-template-columns: 1.618fr 1fr;
-  gap: 20px;
-  align-items: stretch;
-  width: 100%;
-}
-
-.watch-stage-col {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.watch-stage-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 2px;
-  flex-wrap: wrap;
-}
-
-.watch-stage-title-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.watch-kick-cta {
-  padding: 7px 14px;
-  font-size: 12.5px;
-  border-radius: 10px;
-}
-
 .hero-stream-grid {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .hero-stream-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stream-player-card {
   background: #000000;
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
   width: 100%;
   aspect-ratio: 16 / 9;
-  max-height: calc(100vh - 190px);
   position: relative;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
 }
 
 .stream-player-card iframe {
@@ -1170,380 +1247,6 @@ body {
   height: 100%;
   border: none;
   display: block;
-}
-
-/* Quick Stream Telemetry Bar Below Player */
-.watch-telemetry-strip {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr 1fr;
-  gap: 10px;
-  width: 100%;
-}
-
-.watch-telemetry-pill {
-  background: rgba(12, 18, 30, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 11px;
-  padding: 9px 12px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 44px;
-  text-decoration: none;
-  box-sizing: border-box;
-  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
-}
-
-.watch-telemetry-pill.telemetry-link-pill:hover {
-  border-color: rgba(255, 215, 0, 0.45);
-  background: rgba(18, 26, 44, 0.96);
-  transform: translateY(-1px);
-}
-
-.telemetry-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.telemetry-dot.dot-green {
-  background: var(--kick-green);
-  box-shadow: 0 0 8px var(--kick-green);
-}
-
-.telemetry-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.telemetry-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1;
-}
-
-.telemetry-label {
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.6px;
-}
-
-.telemetry-value {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-.telemetry-progress-track {
-  width: 48px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.telemetry-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--kick-green), var(--gold));
-  border-radius: 999px;
-}
-
-/* Right Secondary Column (38.2% — Subdivided 61.8% / 38.2% Vertically) */
-.watch-dock-col {
-  min-width: 0;
-  display: grid;
-  grid-template-rows: 1.618fr 1fr;
-  gap: 14px;
-}
-
-.watch-companion-card {
-  background: rgba(12, 18, 30, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-}
-
-.watch-dock-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.watch-dock-title {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  font-weight: 900;
-  color: #ffffff;
-  margin: 0;
-  letter-spacing: 0.3px;
-}
-
-.watch-dock-subtitle {
-  font-size: 11.5px;
-  color: #94a3b8;
-  margin: 2px 0 0 0;
-}
-
-.watch-dynamics-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.watch-dynamic-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  min-height: 46px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  text-decoration: none;
-  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
-}
-
-.watch-dynamic-btn:hover {
-  border-color: var(--gold);
-  background: rgba(255, 215, 0, 0.09);
-  transform: translateY(-1px);
-}
-
-.dynamic-btn-icon {
-  font-size: 17px;
-  flex-shrink: 0;
-}
-
-.dynamic-btn-copy {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.dynamic-btn-copy strong {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.dynamic-btn-copy span {
-  font-size: 10.5px;
-  color: #94a3b8;
-  line-height: 1.2;
-}
-
-.watch-commands-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.watch-commands-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.4px;
-}
-
-.watch-commands-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Bottom Block (38.2%): VIP Code Card & Official Socials Dock */
-.watch-socials-dock {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 0 !important;
-}
-
-.watch-stake-vip-card {
-  background: linear-gradient(135deg, rgba(16, 24, 40, 0.96) 0%, rgba(10, 15, 26, 0.98) 100%);
-  border: 1.5px solid rgba(255, 215, 0, 0.45);
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.12);
-}
-
-.watch-stake-vip-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.watch-stake-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.stake-vector-svg {
-  flex-shrink: 0;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
-}
-
-.watch-stake-vip-copy {
-  display: flex;
-  flex-direction: column;
-}
-
-.vip-code-eyebrow {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.6px;
-}
-
-.vip-code-headline {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-.watch-stake-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-copy-vip-code {
-  padding: 6px 10px;
-  font-size: 11.5px;
-  min-height: 36px;
-  border-color: rgba(255, 215, 0, 0.4);
-  color: var(--gold);
-}
-
-.btn-stake-vip-link {
-  padding: 6px 11px;
-  font-size: 11.5px;
-  min-height: 36px;
-  border-radius: 8px;
-}
-
-.watch-stake-vip-desc {
-  font-size: 11px;
-  color: #cbd5e1;
-  margin: 0;
-  line-height: 1.35;
-}
-
-.watch-socials-mini-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.watch-social-pill {
-  background: rgba(12, 18, 30, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 11px;
-  padding: 8px 10px;
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  transition: border-color 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
-}
-
-.watch-social-pill:hover {
-  transform: translateY(-2px);
-  background: rgba(18, 26, 44, 0.96);
-}
-
-.watch-social-pill.social-pill-discord:hover {
-  border-color: #5865f2;
-}
-
-.watch-social-pill.social-pill-kick:hover {
-  border-color: var(--kick-green);
-}
-
-.watch-social-pill.social-pill-instagram:hover {
-  border-color: #e1306c;
-}
-
-.watch-social-icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  flex-shrink: 0;
-  border-radius: 6px;
-}
-
-.watch-social-icon.kick-wide {
-  width: 38px;
-  height: 16px;
-  border-radius: 0;
-}
-
-.watch-social-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.watch-social-meta strong {
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.watch-social-meta span {
-  font-size: 10px;
-  color: #94a3b8;
-  line-height: 1.2;
-}
-
-@media (max-width: 1100px) {
-  .watch-golden-bento {
-    grid-template-columns: 1fr;
-  }
-  .watch-dock-col {
-    grid-template-rows: auto auto;
-  }
-}
-
-@media (max-width: 640px) {
-  .watch-telemetry-strip,
-  .watch-dynamics-grid,
-  .watch-socials-mini-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .cmd-pill-row {
@@ -5181,14 +4884,13 @@ footer.site-footer {
   flex-direction: column;
   width: 100%;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
 .hero-stream-grid.cinema-mode .stream-player-card {
   width: 100%;
   max-width: 1320px;
   aspect-ratio: 16 / 9;
-  max-height: calc(100vh - 190px);
   border-radius: 14px;
   overflow: hidden;
   background: #000000;
