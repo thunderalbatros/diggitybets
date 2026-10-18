@@ -870,34 +870,6 @@
 
     bind3DCardInteractiveHandlers: function(gridEl) {
       var self = this;
-      var cards = gridEl.querySelectorAll('.bounty-card-3d');
-      for (var i = 0; i < cards.length; i++) {
-        (function(card) {
-          var rect = null;
-          card.addEventListener('pointerenter', function() {
-            rect = card.getBoundingClientRect();
-            if (window.proFxAudio && typeof window.proFxAudio.playFoilCrinkle === 'function') {
-              try { window.proFxAudio.playFoilCrinkle(); } catch (_) {}
-            }
-          });
-          card.addEventListener('pointermove', function(e) {
-            if (!rect) rect = card.getBoundingClientRect();
-            var px = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-            var py = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-            var rx = ((50 - py) / 50) * 6.5;
-            var ry = ((px - 50) / 50) * 6.5;
-            card.style.setProperty('--pointer-x', px.toFixed(1) + '%');
-            card.style.setProperty('--pointer-y', py.toFixed(1) + '%');
-            card.style.setProperty('--rotate-x', rx.toFixed(2) + 'deg');
-            card.style.setProperty('--rotate-y', ry.toFixed(2) + 'deg');
-          });
-          card.addEventListener('pointerleave', function() {
-            rect = null;
-            card.style.setProperty('--rotate-x', '0deg');
-            card.style.setProperty('--rotate-y', '0deg');
-          });
-        })(cards[i]);
-      }
 
       var claimBtns = gridEl.querySelectorAll('[data-claim-bounty-id]');
       for (var j = 0; j < claimBtns.length; j++) {
