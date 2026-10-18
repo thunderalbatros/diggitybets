@@ -632,11 +632,24 @@
       - `🎡 Cargar a Ruleta !sr (X)`: Encola todas las cartas en la lista de Slot Requests para la ruleta.
       - `🧹 Nueva Ronda`: Limpia la bandeja para iniciar una nueva tanda de hasta 10 cartas.
     - Persistencia en `localStorage` (`hunthub_vault_round_deck`).
+- **Stage 28 (Kick Points Podium: Marca de Agua de Kick con Transparencia, Fuentes Agrandadas y Contraste Óptimo):** COMPLETED & TESTED.
+  - **1. Marca de Agua Oficial de Kick con Transparencia:**
+    - Se incorporó el emblema vectorial oficial de Kick con silueta "K" escalada y respiración suave (`@keyframes kickWatermarkBreathe`) en dos capas clave:
+      - **En el escenario global (`.kick-podium-watermark`):** Marca de agua de gran formato (580x580px, opacidad 0.18-0.28 con resplandor neón `filter: drop-shadow(0 0 54px rgba(83, 252, 24, 0.75))`) ubicada centralmente detrás de las tres columnas del podio.
+      - **En el fondo de cada tarjeta individual (`.kick-card-center-watermark`):** Logo de Kick de 220px (260px en el campeón) con transparencia calibrada (0.14 - 0.20) ubicado directamente detrás del avatar y textos para que sea claramente visible sin importar el ancho o posición.
+  - **2. Agrandamiento y Alta Definición Tipográfica:**
+    - Nombres de usuario (`.kick-podium-user`): Agrandados a 28px (36px en el campeón #1) con text-shadow multicapa de alta legibilidad (`0 2px 10px rgba(0,0,0,0.95)` y halo flúor).
+    - Pastillas de Rol / Nivel (`.kick-podium-tier-pill`): Se erradicó el texto tenue y diminuto de 10px gris (`#64748b`); ahora luce una tipografía nítida de 13.5px bold en blanco ultra brillante (`#ffffff`) sobre cristal oscuro con borde verde flúor (`border: 1.5px solid rgba(83, 252, 24, 0.6)`).
+    - Caja de Puntos (`.kick-podium-points-box`): Etiquetas a 13.5px (`#f8fafc`) y valores de puntos a 28px (`#ffffff`) y 36px flúor en el campeón (`#53fc18`).
+    - Crestas Superiores (`.kick-rank-crest`): Aumentadas a 15px/16px con tipografía de alto peso (900) y sombras profundas.
+    - Pastillas de Premios (`.kick-podium-prize-pill`): Valores principales agrandados a 30px / 40px / 28px y badges de multiplicador 2X con tipografía nítida de 15px/16px.
+    - Pedestales (`.kick-podium-pedestal`): Números #1, #2, #3 escalados a 32px/40px y subtítulos a 14px en blanco brillante.
+    - Renderizado vectorial: Se añadieron directivas `-webkit-font-smoothing: antialiased`, `-moz-osx-font-smoothing: grayscale` y `text-rendering: optimizeLegibility` para eliminar cualquier borrosidad en OBS y pantallas de alta resolución.
 
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium, Admin Cleanup & Holo-Vault 10-Card Round Deck (Stages 1 to 27): 100% COMPLETED, VERIFIED & DEPLOYED.**
+- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium, Admin Cleanup, Holo-Vault 10-Card Round Deck & Kick Podium High-Contrast Watermarks (Stages 1 to 28): 100% COMPLETED, VERIFIED & DEPLOYED.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
