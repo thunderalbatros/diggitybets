@@ -84,6 +84,8 @@ class UserStoreController {
     this.bindDiscordLinking();
     this.bindStoreRedemptions();
     this.renderLeaderboard();
+    this.renderHistoricalLeaderboard();
+    this.bindLeaderboardTabs();
     this.startTotpTimer();
     this.startWatchHeartbeat();
     this.syncStoreStockFromServer();
@@ -168,7 +170,7 @@ class UserStoreController {
 
     const topbarVerifiedBadge = document.getElementById('auth-stake-verified-badge');
     if (topbarVerifiedBadge) {
-      topbarVerifiedBadge.style.display = this.stakeVerified ? 'inline-flex' : 'none';
+      topbarVerifiedBadge.style.display = 'none';
       topbarVerifiedBadge.textContent = '✓ VERIFIED';
     }
 
@@ -201,8 +203,71 @@ class UserStoreController {
       window.adminHub.checkAdminAccess();
     }
 
+    this.syncTopbarRoleBadge();
+
     if (window.dispatchEvent) {
       window.dispatchEvent(new CustomEvent('hunthub:auth-updated', { detail: { username: this.username } }));
+    }
+  }
+
+  syncTopbarRoleBadge() {
+    const roleBadgeEl = document.getElementById('auth-role-status-badge');
+    const roleRowEl = document.getElementById('auth-role-under-row');
+    if (!roleBadgeEl) return;
+
+    if (!this.isLoggedIn) {
+      roleBadgeEl.style.display = 'none';
+      if (roleRowEl) roleRowEl.style.display = 'none';
+      return;
+    }
+
+    const cleanUser = (this.username || localStorage.getItem('hunthub_kick_username') || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^@/, '');
+    const isAdmin =
+      cleanUser === 'diggitybets' ||
+      cleanUser === 'diggity_bets' ||
+      cleanUser === 'tarkansky' ||
+      localStorage.getItem('hunthub_is_admin') === 'true';
+    const isSub = Boolean(this.isSub || localStorage.getItem('hunthub_is_sub') === 'true');
+    const isVerified = Boolean(this.stakeVerified || localStorage.getItem('hunthub_stake_verified') === 'true');
+
+    if (isAdmin) {
+      roleBadgeEl.textContent = '👑 STREAMER';
+      roleBadgeEl.style.display = 'inline-flex';
+      roleBadgeEl.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)';
+      roleBadgeEl.style.color = '#000000';
+      roleBadgeEl.style.border = '1px solid #ffd700';
+      roleBadgeEl.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.35)';
+      if (roleRowEl) roleRowEl.style.display = 'flex';
+    } else if (isSub && isVerified) {
+      roleBadgeEl.textContent = '⭐ SUBSCRIBER / ✓ VERIFIED';
+      roleBadgeEl.style.display = 'inline-flex';
+      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.2)';
+      roleBadgeEl.style.color = 'var(--kick-green)';
+      roleBadgeEl.style.border = '1.5px solid var(--gold)';
+      roleBadgeEl.style.boxShadow = '0 0 10px rgba(83, 252, 24, 0.28)';
+      if (roleRowEl) roleRowEl.style.display = 'flex';
+    } else if (isSub) {
+      roleBadgeEl.textContent = '⭐ SUBSCRIBER';
+      roleBadgeEl.style.display = 'inline-flex';
+      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.18)';
+      roleBadgeEl.style.color = 'var(--kick-green)';
+      roleBadgeEl.style.border = '1px solid var(--kick-green)';
+      roleBadgeEl.style.boxShadow = '0 0 8px rgba(83, 252, 24, 0.25)';
+      if (roleRowEl) roleRowEl.style.display = 'flex';
+    } else if (isVerified) {
+      roleBadgeEl.textContent = '✓ VERIFIED';
+      roleBadgeEl.style.display = 'inline-flex';
+      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.2)';
+      roleBadgeEl.style.color = 'var(--kick-green)';
+      roleBadgeEl.style.border = '1px solid var(--kick-green)';
+      roleBadgeEl.style.boxShadow = '0 0 8px rgba(83, 252, 24, 0.25)';
+      if (roleRowEl) roleRowEl.style.display = 'flex';
+    } else {
+      roleBadgeEl.style.display = 'none';
+      if (roleRowEl) roleRowEl.style.display = 'none';
     }
   }
 
@@ -261,7 +326,26 @@ class UserStoreController {
       }
     };
 
-    if (logoutBtn) logoutBtn.addEventListener('click', handleKickLogout);
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const profileSection = document.getElementById('profile');
+        const isProfileOpen =
+          window.location.hash === '#profile' ||
+          (profileSection && profileSection.classList.contains('active-view'));
+        if (isProfileOpen) {
+          if (typeof window.switchView === 'function') {
+            window.switchView('#watch');
+          } else {
+            window.location.hash = '#watch';
+          }
+          if (window.soundEngine) window.soundEngine.playTick();
+          return;
+        }
+        handleKickLogout();
+      });
+    }
     if (profLogoutBtn) profLogoutBtn.addEventListener('click', handleKickLogout);
 
     const syncBtn = document.getElementById('btn-profile-sync-kick');
@@ -781,6 +865,177 @@ class UserStoreController {
     `).join('');
   }
 
+  /**
+   * Historical All-Time $DIG Community Leaderboard
+   * Persisted in localStorage: hunthub_historical_leaderboard
+   */
+  getHistoricalLeaderboard() {
+    let list = [];
+    try {
+      list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || 'null');
+    } catch (_) {}
+
+    if (!Array.isArray(list) || list.length === 0) {
+      list = [
+        { rank: 1, kickUser: '@DiggityVIP', totalDig: 14850, tourneysWon: 5, huntHits: 12, tier: 'DIAMOND', status: 'LEGEND' },
+        { rank: 2, kickUser: '@LuckyRoller', totalDig: 11420, tourneysWon: 4, huntHits: 9, tier: 'GOLD', status: 'ACTIVE' },
+        { rank: 3, kickUser: '@StakeHighRoller', totalDig: 9900, tourneysWon: 3, huntHits: 8, tier: 'EMERALD', status: 'ACTIVE' },
+        { rank: 4, kickUser: '@GamerStake88', totalDig: 8450, tourneysWon: 2, huntHits: 7, tier: 'EMERALD', status: 'ACTIVE' },
+        { rank: 5, kickUser: '@NachoGamer', totalDig: 7200, tourneysWon: 2, huntHits: 6, tier: 'SILVER', status: 'ACTIVE' },
+        { rank: 6, kickUser: '@SlotKing21', totalDig: 6100, tourneysWon: 2, huntHits: 5, tier: 'SILVER', status: 'ACTIVE' },
+        { rank: 7, kickUser: '@CryptoChad', totalDig: 5400, tourneysWon: 1, huntHits: 4, tier: 'SILVER', status: 'ACTIVE' },
+        { rank: 8, kickUser: '@SpinsQueen', totalDig: 4650, tourneysWon: 1, huntHits: 3, tier: 'SILVER', status: 'ACTIVE' },
+        { rank: 9, kickUser: '@StakeHunter', totalDig: 3800, tourneysWon: 1, huntHits: 3, tier: 'SILVER', status: 'ACTIVE' },
+        { rank: 10, kickUser: '@AgusKick', totalDig: 2950, tourneysWon: 0, huntHits: 2, tier: 'SILVER', status: 'ACTIVE' }
+      ];
+      try {
+        localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
+      } catch (_) {}
+    }
+
+    // If current logged-in user exists and has points, ensure they are tracked
+    if (this.username) {
+      const cleanUser = this.username.startsWith('@') ? this.username : `@${this.username}`;
+      const found = list.find(u => u.kickUser.toLowerCase() === cleanUser.toLowerCase());
+      const careerDig = parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || (window.houseGames ? window.houseGames.balance : 0);
+      if (!found && careerDig > 0) {
+        list.push({
+          rank: list.length + 1,
+          kickUser: cleanUser,
+          totalDig: careerDig,
+          tourneysWon: 0,
+          huntHits: 0,
+          tier: this.isSub ? 'GOLD' : 'SILVER',
+          status: 'ACTIVE'
+        });
+        list.sort((a, b) => b.totalDig - a.totalDig);
+        list.forEach((item, idx) => { item.rank = idx + 1; });
+        try {
+          localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
+        } catch (_) {}
+      }
+    }
+
+    return list;
+  }
+
+  renderHistoricalLeaderboard() {
+    const tbody = document.getElementById('historical-leaderboard-tbody');
+    if (!tbody) return;
+
+    const list = this.getHistoricalLeaderboard();
+    const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
+
+    // Update Top 3 Podium
+    const p1 = list[0];
+    const p2 = list[1];
+    const p3 = list[2];
+    if (p1) {
+      const u1 = document.getElementById('podium-1-user');
+      const pts1 = document.getElementById('podium-1-points');
+      if (u1) u1.textContent = p1.kickUser;
+      if (pts1) pts1.textContent = `${p1.totalDig.toLocaleString()} $DIG All-Time`;
+    }
+    if (p2) {
+      const u2 = document.getElementById('podium-2-user');
+      const pts2 = document.getElementById('podium-2-points');
+      if (u2) u2.textContent = p2.kickUser;
+      if (pts2) pts2.textContent = `${p2.totalDig.toLocaleString()} $DIG All-Time`;
+    }
+    if (p3) {
+      const u3 = document.getElementById('podium-3-user');
+      const pts3 = document.getElementById('podium-3-points');
+      if (u3) u3.textContent = p3.kickUser;
+      if (pts3) pts3.textContent = `${p3.totalDig.toLocaleString()} $DIG All-Time`;
+    }
+
+    tbody.innerHTML = list.map((item, idx) => {
+      const rank = idx + 1;
+      const isTop3 = rank <= 3;
+      const rankColor = rank === 1 ? 'var(--gold)' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#cd7f32' : 'var(--text-muted)'));
+      const rankText = rank === 1 ? '🥇 #1' : (rank === 2 ? '🥈 #2' : (rank === 3 ? '🥉 #3' : `#${rank}`));
+      const isMe = this.username && item.kickUser.toLowerCase() === (this.username.startsWith('@') ? this.username.toLowerCase() : `@${this.username.toLowerCase()}`);
+
+      let tierBadge = '';
+      if (item.tier === 'DIAMOND') {
+        tierBadge = '<span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.18); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 DIAMOND VIP</span>';
+      } else if (item.tier === 'GOLD') {
+        tierBadge = '<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.18); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 GOLD VIP</span>';
+      } else if (item.tier === 'EMERALD') {
+        tierBadge = '<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.18); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ EMERALD VIP</span>';
+      } else {
+        tierBadge = '<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.08); border-color: var(--border-subtle); color: #cbd5e1; font-size: 10px;">🥈 SILVER</span>';
+      }
+
+      return `
+        <tr class="leaderboard-row ${isTop3 ? `top-${rank}` : ''} ${isMe ? 'my-rank-row' : ''}" style="${isMe ? 'background: rgba(83, 252, 24, 0.08); border: 1px solid rgba(83, 252, 24, 0.4);' : ''}">
+          <td style="font-family: var(--font-display); font-weight: 800; font-size: 14.5px; color: ${rankColor};">
+            ${rankText}
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.kickUser, 28) : `<span style="font-size: 18px;">👤</span>`}
+              <div>
+                <strong style="color: #ffffff; font-size: 13px;">${esc(item.kickUser)}</strong>
+                ${isMe ? '<span style="font-size: 10px; color: var(--kick-green); margin-left: 6px; font-weight: 800;">(YOU)</span>' : ''}
+              </div>
+            </div>
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--gold);">
+            ${item.totalDig.toLocaleString()} $DIG
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 700; color: #38bdf8;">
+            🏆 ${item.tourneysWon || 0}
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 700; color: var(--kick-green);">
+            🎰 ${item.huntHits || 0}
+          </td>
+          <td>
+            ${tierBadge}
+          </td>
+          <td>
+            <span style="font-size: 11px; font-weight: 700; color: ${item.status === 'LEGEND' ? 'var(--gold)' : 'var(--text-dim)'};">
+              ${esc(item.status || 'ACTIVE')}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  bindLeaderboardTabs() {
+    const btnHist = document.getElementById('tab-btn-historical-lb');
+    const btnWager = document.getElementById('tab-btn-wager-lb');
+    const boxHist = document.getElementById('historical-leaderboard-container');
+    const boxWager = document.getElementById('wager-leaderboard-container');
+
+    if (!btnHist || !btnWager || !boxHist || !boxWager) return;
+
+    btnHist.addEventListener('click', () => {
+      btnHist.classList.add('primary');
+      btnHist.style.background = '';
+      btnHist.style.color = '';
+      btnWager.classList.remove('primary');
+      btnWager.style.background = 'rgba(255, 255, 255, 0.05)';
+      btnWager.style.color = 'var(--text-dim)';
+      boxHist.style.display = 'block';
+      boxWager.style.display = 'none';
+      this.renderHistoricalLeaderboard();
+    });
+
+    btnWager.addEventListener('click', () => {
+      btnWager.classList.add('primary');
+      btnWager.style.background = '';
+      btnWager.style.color = '';
+      btnHist.classList.remove('primary');
+      btnHist.style.background = 'rgba(255, 255, 255, 0.05)';
+      btnHist.style.color = 'var(--text-dim)';
+      boxHist.style.display = 'none';
+      boxWager.style.display = 'block';
+      this.renderLeaderboard();
+    });
+  }
+
   getIsoWeekKey(date = new Date()) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
@@ -1122,8 +1377,40 @@ class UserStoreController {
             this.storeStock.tourney_entry = Math.max(0, (this.storeStock.tourney_entry ?? 6) - 1);
           } else if (itemKey === 'bonus_split_20') {
             this.storeStock.bonus_split_20 = Math.max(0, (this.storeStock.bonus_split_20 ?? 3) - 1);
+            try {
+              const pending = JSON.parse(localStorage.getItem('hunthub_pending_splits') || '[]');
+              pending.unshift({
+                id: 'split_' + Date.now(),
+                type: '$20 Split',
+                amountUsd: 20,
+                username: this.username || '@Viewer',
+                slot: 'Viewer Choice',
+                timestamp: Date.now(),
+                status: 'PENDING BUY'
+              });
+              localStorage.setItem('hunthub_pending_splits', JSON.stringify(pending.slice(0, 10)));
+              if (typeof BroadcastChannel !== 'undefined') {
+                new BroadcastChannel('hunthub_bus').postMessage({ type: 'splits_updated' });
+              }
+            } catch (_) {}
           } else if (itemKey === 'bonus_split_40') {
             this.storeStock.bonus_split_40 = Math.max(0, (this.storeStock.bonus_split_40 ?? 2) - 1);
+            try {
+              const pending = JSON.parse(localStorage.getItem('hunthub_pending_splits') || '[]');
+              pending.unshift({
+                id: 'split_' + Date.now(),
+                type: '$40 Split',
+                amountUsd: 40,
+                username: this.username || '@Viewer',
+                slot: 'Viewer Choice',
+                timestamp: Date.now(),
+                status: 'PENDING BUY'
+              });
+              localStorage.setItem('hunthub_pending_splits', JSON.stringify(pending.slice(0, 10)));
+              if (typeof BroadcastChannel !== 'undefined') {
+                new BroadcastChannel('hunthub_bus').postMessage({ type: 'splits_updated' });
+              }
+            } catch (_) {}
           } else if (itemKey === 'og_badge_role') {
             this.ogBadgeClaimed = true;
             localStorage.setItem('hunthub_og_badge_claimed', 'true');

@@ -589,22 +589,70 @@ body {
   color: #ffffff;
 }
 
-/* User Session Card (33% smaller) */
+/* Unified User Session Panel (Clickable Profile Pill + Right X + Role Clarification Below) */
+.auth-user-unified {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+
+.user-profile-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* User Session Card (Unified Profile Trigger) */
 .user-session-card {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(14, 20, 32, 0.9);
+  background: rgba(14, 20, 32, 0.92);
   border: 1.5px solid var(--border-gold);
   border-radius: 28px;
   padding: 4px 13px 4px 5px;
   box-shadow: 0 0 14px rgba(255, 215, 0, 0.18);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease, background-color 0.2s ease;
 }
 
 .user-session-card:hover {
   border-color: var(--gold);
   box-shadow: 0 0 20px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+.user-session-card.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.18) 0%, rgba(14, 20, 32, 0.96) 100%);
+  border-color: var(--gold);
+  box-shadow: 0 0 22px rgba(255, 215, 0, 0.35);
+}
+
+.user-role-under-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 34px);
+  min-height: 16px;
+}
+
+.user-under-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.55px;
+  line-height: 1.2;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .user-avatar-display {
@@ -642,8 +690,9 @@ body {
 }
 
 .btn-auth-logout {
-  padding: 6px 10px;
+  padding: 6px 9px;
   font-size: 11.5px;
+  line-height: 1;
   color: var(--text-dim);
   border-radius: 8px;
   transition: var(--transition-fast);
@@ -7502,6 +7551,16 @@ html.lenis, html.lenis body {
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Stage 6 Navigation & Component Aliases */
+.header-left-col { display: flex; align-items: center; gap: 12px; }
+.brand-logo-img { height: 38px; width: auto; object-fit: contain; }
+.kick-badge-icon { display: inline-flex; vertical-align: middle; }
+.kick-title-wordmark { height: 24px; vertical-align: middle; }
+.nav-menu { display: flex; flex-direction: column; gap: 4px; }
+.nav-link-btn { display: flex; align-items: center; gap: 10px; }
+.badge-soon { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+.totp-challenge-card { background: var(--surface-card); border-radius: 12px; }
 
 
 

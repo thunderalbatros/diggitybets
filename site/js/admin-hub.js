@@ -265,7 +265,10 @@ class AdminHubController {
       navTabControl.style.display = isAdmin ? 'inline-flex' : 'none';
     }
     if (adminBadge) {
-      adminBadge.style.display = isAdmin ? 'inline-block' : 'none';
+      adminBadge.style.display = 'none';
+    }
+    if (window.userStore && typeof window.userStore.syncTopbarRoleBadge === 'function') {
+      window.userStore.syncTopbarRoleBadge();
     }
 
     if (isAdmin) {

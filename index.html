@@ -21,8 +21,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Design System Stylesheet -->
-  <link rel="stylesheet" href="site/css/style.css?v=28.0">
-  <link rel="stylesheet" href="site/css/diggity-intel.css?v=28.0">
+  <link rel="stylesheet" href="site/css/style.css?v=29.0">
+  <link rel="stylesheet" href="site/css/diggity-intel.css?v=29.0">
   <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM & Agentic Context Index">
   <script type="application/ld+json">
   {
@@ -101,10 +101,10 @@
           <span class="nav-item-icon">🎁</span>
           <span class="nav-item-text">Rewards Store</span>
         </a>
-        <a href="#leaderboard" class="nav-link-btn" data-target="#leaderboard" title="Leaderboard">
-          <span class="nav-item-icon">📊</span>
+        <a href="#leaderboard" class="nav-link-btn" data-target="#leaderboard" title="Historical Community Leaderboard">
+          <span class="nav-item-icon">🏆</span>
           <span class="nav-item-text">Leaderboard</span>
-          <span class="badge-soon">SOON</span>
+          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(83, 252, 24, 0.15); border: 1px solid #53fc18; color: #53fc18; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; border-radius: 4px;">ALL-TIME</span>
         </a>
         <a href="#admin" class="nav-link-btn admin-nav-tab" id="nav-tab-admin" style="display: none;" data-target="#admin" title="Streamer Admin">
           <span class="nav-item-icon">👑</span>
@@ -175,33 +175,33 @@
         </div>
 
         <div class="topbar-right">
-          <!-- Auth Guest Panel (Link Kick) -->
-          <div id="auth-guest-panel" style="display: flex; align-items: center;">
+          <!-- Auth Guest Panel (Link Kick + Guest Profile Access) -->
+          <div id="auth-guest-panel" style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="btn-header-cta" id="btn-kick-login" title="Link Kick.com account">
               <img src="site/images/kick-k-logo.png" alt="K" class="kick-btn-icon" width="16" height="16" style="height: 16px; width: 16px; max-height: 16px; max-width: 16px; object-fit: contain; vertical-align: middle;">
               <span>Link Kick</span>
             </button>
+            <a href="#profile" class="nav-link-btn btn-top-profile" data-target="#profile" id="topbar-guest-profile-link" title="User Profile &amp; Stake Verification" style="padding: 7px 11px;">
+              <span class="top-profile-icon">👤</span>
+            </a>
           </div>
 
-          <!-- Auth User Session Panel (Kick Username with Avatar directly to the left) -->
-          <div id="auth-user-panel" style="display: none; align-items: center; gap: 8px; flex-shrink: 0;">
-            <div class="user-session-card" title="Connected Kick Account">
-              <span class="user-avatar-display">🤠</span>
-              <span id="auth-username-label">@Viewer</span>
+          <!-- Auth User Session Panel (Unified Profile Trigger + X on Right + Role Badge Below Avatar/Username) -->
+          <div id="auth-user-panel" class="auth-user-unified" style="display: none;">
+            <div class="user-profile-row">
+              <a href="#profile" data-target="#profile" class="user-session-card nav-link-btn" id="topbar-profile-link" title="Click to open User Profile &amp; Verification">
+                <span class="user-avatar-display">🤠</span>
+                <span id="auth-username-label">@Viewer</span>
+              </a>
+              <button type="button" class="btn-chat-toggle btn-auth-logout" id="btn-kick-logout" title="Close Profile / Disconnect Account">✕</button>
             </div>
-            <span id="auth-sub-badge" class="reward-badge-pill" style="display: none; background: rgba(83, 252, 24, 0.2); border-color: var(--kick-green); color: var(--kick-green); font-size: 10.5px;">SUB (2X)</span>
-            <span id="auth-admin-badge" class="reward-badge-pill" style="display: none; background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); font-size: 10.5px;">👑 STREAMER</span>
-            <button type="button" class="btn-chat-toggle btn-auth-logout" id="btn-kick-logout" title="Sign Out">✕</button>
+            <div class="user-role-under-row" id="auth-role-under-row">
+              <span id="auth-role-status-badge" class="reward-badge-pill user-under-role-badge" style="display: none;">👑 STREAMER</span>
+              <span id="auth-sub-badge" style="display: none !important;"></span>
+              <span id="auth-admin-badge" style="display: none !important;"></span>
+              <span id="auth-stake-verified-badge" style="display: none !important;"></span>
+            </div>
           </div>
-
-          <!-- Stake Account Verified Badge in Topbar -->
-          <span id="auth-stake-verified-badge" class="reward-badge-pill stake-verified-top-badge" style="display: none; background: rgba(83, 252, 24, 0.22); border-color: var(--kick-green); color: var(--kick-green); font-weight: 900;" title="Stake Account Verified (Code: DIGGITY)">✓ VERIFIED</span>
-
-          <!-- Profile Section Link (Placed to the right of Account Name per user request) -->
-          <a href="#profile" class="nav-link-btn btn-top-profile" data-target="#profile" id="topbar-profile-link" title="User Profile & Verification">
-            <span class="top-profile-icon">👤</span>
-            <span class="top-profile-text">Profile</span>
-          </a>
         </div>
       </header>
 
@@ -1521,12 +1521,6 @@
           <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
             🎰 COLLECTED BONUSES & CALLERS
           </h3>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <span style="font-size: 12px; color: var(--text-dim);">Live Sync</span>
-            <a href="/overlay-bonushunt/index.html?obs=1" target="_blank" rel="noopener" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 11px; text-decoration: none; border-color: rgba(0, 229, 255, 0.4); color: var(--cyan);">
-              📺 Open OBS Overlay
-            </a>
-          </div>
         </div>
         <div style="overflow-x: auto;">
           <table class="bh-table">
@@ -2057,45 +2051,53 @@
       <div class="section-header-row">
         <div>
           <h2 class="section-title">
-            <span>📊</span> MONTHLY WAGER <span class="accent">LEADERBOARD</span>
+            <span>🏆</span> COMMUNITY <span class="accent">HALL OF FAME &amp; LEADERBOARD</span>
           </h2>
-          <p class="section-subtitle">Play on Stake with affiliate code <strong>DIGGITY</strong> · Live wager tracking and automated payouts</p>
-        </div>
-        <div class="roadmap-badge-pill">
-          🚀 BACKLOG / OFFICIAL LAUNCH COMING SOON
-        </div>
-      </div>
-
-      <!-- $2,000 USD Prize Pool Banner -->
-      <div class="leaderboard-prize-card">
-        <div class="prize-card-left">
-          <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">
-            MONTHLY PRIZE POOL
-          </span>
-          <h3 class="prize-total-title">$2,000 <span style="color: var(--gold);">USD</span></h3>
-          <p style="font-size: 13px; color: #cbd5e1; max-width: 620px; line-height: 1.5;">
-            Top 3 verified Stake affiliates with highest monthly wagered volume share the $2,000 USD prize pool, delivered out-of-band directly to your crypto address.
+          <p class="section-subtitle">
+            Historical all-time ranking of the most active viewers and biggest winners on <strong>kick.com/diggitybets</strong> · Real lifetime $DIG points, tournaments &amp; hunt hits
           </p>
         </div>
-        <div class="prize-timer-box">
-          <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display);">Next Competition Starts In:</div>
-          <div class="prize-timer-clock">12d 08h 45m</div>
-          <div style="font-size: 11px; color: var(--kick-green); font-weight: 700;">Bi-Weekly Sprint Race</div>
+        <div class="roadmap-badge-pill" style="background: rgba(83, 252, 24, 0.12); border-color: var(--kick-green); color: var(--kick-green);">
+          ⚡ LIVE COMMUNITY REGISTRY
         </div>
       </div>
 
-      <!-- Top 3 Podium Showcase -->
+      <!-- Historical Community Stats Strip -->
+      <div class="stats-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
+        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
+          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">👑 ALL-TIME #1 LEGEND</div>
+          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--gold); margin-top: 4px;">@DiggityVIP</div>
+          <div style="font-size: 12px; color: var(--kick-green); font-weight: 700; margin-top: 2px;">14,850 $DIG · 5 Trophies</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
+          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🏆 TOURNAMENT RECORD</div>
+          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #38bdf8; margin-top: 4px;">@LuckyRoller</div>
+          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">4 Bracket Tournament Titles</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
+          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🎰 TOP HUNT SNIPER</div>
+          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--kick-green); margin-top: 4px;">@StakeHighRoller</div>
+          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">8 Exact Payout Guesses</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
+          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">💎 TOTAL REWARDS DISTRIBUTED</div>
+          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #ffffff; margin-top: 4px;">142,500 <span style="font-size: 14px; color: var(--gold);">$DIG</span></div>
+          <div style="font-size: 12px; color: var(--kick-green); font-weight: 700; margin-top: 2px;">100% Free Spectator Pool</div>
+        </div>
+      </div>
+
+      <!-- Top 3 All-Time Podium Showcase -->
       <div class="podium-grid">
         <!-- 2nd Place -->
         <div class="podium-card silver">
-          <div class="podium-medal">2ND PLACE</div>
+          <div class="podium-medal">🥈 2ND PLACE ALL-TIME</div>
           <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(56,189,248,0.35);"><circle cx="32" cy="32" r="30" fill="#09182a" stroke="#38bdf8" stroke-width="2"/><path d="M20 22 H44 V36 C44 42 38 46 32 48 C26 46 20 42 20 36 Z" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round"/><line x1="24" y1="30" x2="40" y2="30" stroke="#38bdf8" stroke-width="2"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#38bdf8" text-anchor="middle">N</text></svg>
+            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(56,189,248,0.35);"><circle cx="32" cy="32" r="30" fill="#09182a" stroke="#38bdf8" stroke-width="2"/><path d="M20 22 H44 V36 C44 42 38 46 32 48 C26 46 20 42 20 36 Z" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round"/><line x1="24" y1="30" x2="40" y2="30" stroke="#38bdf8" stroke-width="2"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#38bdf8" text-anchor="middle">L</text></svg>
           </div>
-          <div class="podium-user">NachoSpin</div>
-          <div class="podium-kick">@NachoGamer</div>
-          <div class="podium-wager">$34,120.50 Wagered</div>
-          <div class="podium-prize">$500 USD PRIZE</div>
+          <div class="podium-user" id="podium-2-user">@LuckyRoller</div>
+          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 GOLD VIP</span></div>
+          <div class="podium-wager" id="podium-2-points" style="color: #cbd5e1; font-size: 15px; font-weight: 800; margin-top: 6px;">11,420 $DIG All-Time</div>
+          <div class="podium-prize" style="font-size: 11px; color: #38bdf8;">🏆 4 TOURNAMENTS WON</div>
         </div>
 
         <!-- 1st Place (Champion) -->
@@ -2103,32 +2105,90 @@
           <div class="podium-crown">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M4 14l3-8 5 5 5-5 3 8H4z" fill="rgba(255,215,0,0.2)"/></svg>
           </div>
-          <div class="podium-medal">1ST PLACE CHAMPION</div>
+          <div class="podium-medal">🥇 #1 ALL-TIME CHAMPION</div>
           <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="58" height="58" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 14px rgba(255,215,0,0.4);"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="#ffd700" stroke-width="2"/><path d="M18 42 L46 42 L48 24 L38 31 L32 20 L26 31 L16 24 Z" fill="#ffd700" fill-opacity="0.25" stroke="#ffd700" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ffd700" text-anchor="middle">G</text></svg>
+            <svg viewBox="0 0 64 64" width="58" height="58" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 14px rgba(255,215,0,0.4);"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="#ffd700" stroke-width="2"/><path d="M18 42 L46 42 L48 24 L38 31 L32 20 L26 31 L16 24 Z" fill="#ffd700" fill-opacity="0.25" stroke="#ffd700" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ffd700" text-anchor="middle">D</text></svg>
           </div>
-          <div class="podium-user">GS8***</div>
-          <div class="podium-kick">@GamerStake88</div>
-          <div class="podium-wager">$68,450.00 Wagered</div>
-          <div class="podium-prize highlight">$1,200 USD PRIZE</div>
+          <div class="podium-user" id="podium-1-user">@DiggityVIP</div>
+          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 DIAMOND VIP</span></div>
+          <div class="podium-wager" id="podium-1-points" style="color: var(--gold); font-size: 17px; font-weight: 900; margin-top: 6px;">14,850 $DIG All-Time</div>
+          <div class="podium-prize highlight" style="font-size: 11px;">👑 5 TOURNAMENTS · 12 HUNT HITS</div>
         </div>
 
         <!-- 3rd Place -->
         <div class="podium-card bronze">
-          <div class="podium-medal">3RD PLACE</div>
+          <div class="podium-medal">🥉 3RD PLACE ALL-TIME</div>
           <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(255,42,95,0.35);"><circle cx="32" cy="32" r="30" fill="#230a10" stroke="#ff2a5f" stroke-width="2"/><path d="M34 16 L22 34 L31 34 L28 48 L42 28 L33 28 Z" fill="#ff2a5f" fill-opacity="0.25" stroke="#ff2a5f" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ff2a5f" text-anchor="middle">Z</text></svg>
+            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(255,42,95,0.35);"><circle cx="32" cy="32" r="30" fill="#230a10" stroke="#ff2a5f" stroke-width="2"/><path d="M34 16 L22 34 L31 34 L28 48 L42 28 L33 28 Z" fill="#ff2a5f" fill-opacity="0.25" stroke="#ff2a5f" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ff2a5f" text-anchor="middle">S</text></svg>
           </div>
-          <div class="podium-user">ZeusMax</div>
-          <div class="podium-kick">@SlotKing21</div>
-          <div class="podium-wager">$22,890.00 Wagered</div>
-          <div class="podium-prize">$300 USD PRIZE</div>
+          <div class="podium-user" id="podium-3-user">@StakeHighRoller</div>
+          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ EMERALD VIP</span></div>
+          <div class="podium-wager" id="podium-3-points" style="color: #cbd5e1; font-size: 15px; font-weight: 800; margin-top: 6px;">9,900 $DIG All-Time</div>
+          <div class="podium-prize" style="font-size: 11px; color: var(--kick-green);">🎰 8 HUNT HITS · 3 TOURNAMENTS</div>
         </div>
       </div>
 
-      <!-- Live Wager Standings Table -->
-      <div class="bh-table-card" style="margin-top: 28px;">
-        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+      <!-- Mode Selector Tabs: Historical All-Time vs Stake Wager Race -->
+      <div style="display: flex; gap: 10px; align-items: center; margin-top: 32px; margin-bottom: 16px; flex-wrap: wrap;">
+        <button type="button" class="btn-game-action primary btn-leaderboard-tab" id="tab-btn-historical-lb" style="padding: 8px 18px; font-size: 13px;">
+          🏆 All-Time $DIG Leaders (Hall of Fame)
+        </button>
+        <button type="button" class="btn-game-action btn-leaderboard-tab" id="tab-btn-wager-lb" style="padding: 8px 18px; font-size: 13px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-dim);">
+          ⚡ Monthly Stake Wager Sprint (Code: DIGGITY)
+        </button>
+      </div>
+
+      <!-- Tab 1: Historical All-Time $DIG Standings Table -->
+      <div class="bh-table-card" id="historical-leaderboard-container">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
+            📋 ALL-TIME COMMUNITY CAREER STANDINGS
+          </h3>
+          <span style="font-size: 12px; color: var(--gold); font-weight: 700; font-family: var(--font-display);">
+            SYNCS WITH OBS INTRO SCENE
+          </span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="bh-table">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>COMMUNITY VIEWER</th>
+                <th>ALL-TIME $DIG WON</th>
+                <th>TOURNAMENTS WON</th>
+                <th>HUNT ACCURACY</th>
+                <th>VIP TIER</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="historical-leaderboard-tbody">
+              <!-- Rendered dynamically by user-store.js from hunthub_historical_leaderboard -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Live Stake Affiliate Wager Standings Table (Hidden by default) -->
+      <div class="bh-table-card" id="wager-leaderboard-container" style="display: none;">
+        <!-- $2,000 USD Prize Pool Banner -->
+        <div class="leaderboard-prize-card" style="margin: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px;">
+          <div class="prize-card-left">
+            <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">
+              MONTHLY WAGER PRIZE POOL
+            </span>
+            <h3 class="prize-total-title">$2,000 <span style="color: var(--gold);">USD</span></h3>
+            <p style="font-size: 13px; color: #cbd5e1; max-width: 620px; line-height: 1.5;">
+              Top 3 verified Stake affiliates with highest monthly wagered volume share the $2,000 USD prize pool ($1,200 1st, $500 2nd, $300 3rd), delivered out-of-band directly to your crypto address.
+            </p>
+          </div>
+          <div class="prize-timer-box">
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display);">Next Competition Starts In:</div>
+            <div class="prize-timer-clock">12d 08h 45m</div>
+            <div style="font-size: 11px; color: var(--kick-green); font-weight: 700;">Bi-Weekly Sprint Race</div>
+          </div>
+        </div>
+
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff;">
             📋 ACTIVE STAKE AFFILIATE WAGER STANDINGS
           </h3>
@@ -3627,26 +3687,26 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=28.0"></script>
-  <script src="site/js/slot-resolver.js?v=28.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=28.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=28.0"></script>
-  <script src="site/js/audio.js?v=28.0"></script>
-  <script src="site/js/pro-fx-audio.js?v=28.0"></script>
-  <script src="site/js/provably-fair.js?v=28.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=28.0"></script>
-  <script src="site/js/avatar-generator.js?v=28.0"></script>
-  <script src="site/js/user-store.js?v=28.0"></script>
-  <script src="site/js/auth-oauth.js?v=28.0"></script>
-  <script src="site/js/admin-hub.js?v=28.0"></script>
-  <script src="site/js/house-games.js?v=28.0"></script>
-  <script src="site/js/tournament-prediction.js?v=28.0"></script>
-  <script src="site/js/bonushunt.js?v=28.0"></script>
-  <script src="site/js/diggity-intel-suite.js?v=28.0"></script>
-  <script src="site/js/viral-share.js?v=28.0"></script>
-  <script src="site/js/motion-fx.js?v=28.0"></script>
-  <script src="site/js/sonner-toast.js?v=28.0"></script>
-  <script src="site/js/app.js?v=28.0"></script>
+  <script src="data/curated_slots.js?v=29.0"></script>
+  <script src="site/js/slot-resolver.js?v=29.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=29.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=29.0"></script>
+  <script src="site/js/audio.js?v=29.0"></script>
+  <script src="site/js/pro-fx-audio.js?v=29.0"></script>
+  <script src="site/js/provably-fair.js?v=29.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=29.0"></script>
+  <script src="site/js/avatar-generator.js?v=29.0"></script>
+  <script src="site/js/user-store.js?v=29.0"></script>
+  <script src="site/js/auth-oauth.js?v=29.0"></script>
+  <script src="site/js/admin-hub.js?v=29.0"></script>
+  <script src="site/js/house-games.js?v=29.0"></script>
+  <script src="site/js/tournament-prediction.js?v=29.0"></script>
+  <script src="site/js/bonushunt.js?v=29.0"></script>
+  <script src="site/js/diggity-intel-suite.js?v=29.0"></script>
+  <script src="site/js/viral-share.js?v=29.0"></script>
+  <script src="site/js/motion-fx.js?v=29.0"></script>
+  <script src="site/js/sonner-toast.js?v=29.0"></script>
+  <script src="site/js/app.js?v=29.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 
