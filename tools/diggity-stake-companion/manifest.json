@@ -1,25 +1,114 @@
 {
   "manifest_version": 3,
   "name": "DiggityBets Stake Companion (Hands-Free Bonus Hunt & Odds HUD)",
-  "version": "1.0.0",
-  "description": "Clean-room Manifest V3 companion for diggitybets.vip. Auto-detects active Stake slot & bet size, shows Mystery Bonus Odds, and logs bonuses hands-free (Alt+B).",
-  "permissions": ["storage"],
+  "version": "1.2.0",
+  "description": "Clean-room Manifest V3 companion for diggitybets.vip & all Stake mirrors (stake.krd, stake.com, stake.bet). Auto-detects active slot & bet size and logs bonuses hands-free via Alt+B / Alt+S even inside slot iframes.",
+  "permissions": ["storage", "tabs", "activeTab", "scripting"],
   "host_permissions": [
     "https://stake.com/*",
     "https://*.stake.com/*",
+    "https://stake.krd/*",
+    "https://*.stake.krd/*",
+    "https://stake.bet/*",
+    "https://*.stake.bet/*",
+    "https://stake.games/*",
+    "https://*.stake.games/*",
+    "https://stake.ac/*",
+    "https://*.stake.ac/*",
+    "https://stake.pet/*",
+    "https://*.stake.pet/*",
+    "https://stake.bz/*",
+    "https://*.stake.bz/*",
+    "https://stake.mba/*",
+    "https://*.stake.mba/*",
+    "https://stake.jp/*",
+    "https://*.stake.jp/*",
+    "https://stake.us/*",
+    "https://*.stake.us/*",
+    "https://stake.br/*",
+    "https://*.stake.br/*",
+    "https://stake.pe/*",
+    "https://*.stake.pe/*",
+    "https://stake.com.co/*",
+    "https://*.stake.com.co/*",
+    "https://stake.com.ar/*",
+    "https://*.stake.com.ar/*",
+    "https://stake.tv/*",
+    "https://*.stake.tv/*",
+    "https://stake.ceo/*",
+    "https://*.stake.ceo/*",
     "https://diggitybets.vip/*",
+    "https://*.diggitybets.vip/*",
+    "https://*.pages.dev/*",
     "http://127.0.0.1/*",
     "http://localhost/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Diggity Stake Companion (Alt+B / Alt+S)",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "capture-bonus-3s": {
+      "suggested_key": {
+        "default": "Alt+B"
+      },
+      "description": "Auto-capture active Stake slot as 3S Standard Bonus into DiggityBets Bonus Hunt"
+    },
+    "capture-bonus-super": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Auto-capture active Stake slot as SUPER Bonus into DiggityBets Bonus Hunt"
+    }
+  },
   "content_scripts": [
     {
-      "matches": ["https://stake.com/*", "https://*.stake.com/*"],
+      "matches": [
+        "https://stake.com/*",
+        "https://*.stake.com/*",
+        "https://stake.krd/*",
+        "https://*.stake.krd/*",
+        "https://stake.bet/*",
+        "https://*.stake.bet/*",
+        "https://stake.games/*",
+        "https://*.stake.games/*",
+        "https://stake.ac/*",
+        "https://*.stake.ac/*",
+        "https://stake.pet/*",
+        "https://*.stake.pet/*",
+        "https://stake.bz/*",
+        "https://*.stake.bz/*",
+        "https://stake.mba/*",
+        "https://*.stake.mba/*",
+        "https://stake.jp/*",
+        "https://*.stake.jp/*",
+        "https://stake.us/*",
+        "https://*.stake.us/*",
+        "https://stake.br/*",
+        "https://*.stake.br/*",
+        "https://stake.pe/*",
+        "https://*.stake.pe/*",
+        "https://stake.com.co/*",
+        "https://*.stake.com.co/*",
+        "https://stake.com.ar/*",
+        "https://*.stake.com.ar/*",
+        "https://stake.tv/*",
+        "https://*.stake.tv/*",
+        "https://stake.ceo/*",
+        "https://*.stake.ceo/*"
+      ],
       "js": ["content-stake.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     },
     {
       "matches": [
         "https://diggitybets.vip/*",
+        "https://*.diggitybets.vip/*",
+        "https://*.pages.dev/*",
         "http://127.0.0.1/*",
         "http://localhost/*"
       ],

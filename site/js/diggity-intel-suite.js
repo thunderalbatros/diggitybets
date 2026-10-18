@@ -125,21 +125,121 @@
       });
     }
 
-    indexCasinoRtpList(casinoKey, raw) {
+    indexCasinoRtpList(casinoKey, raw, merge = false) {
       const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.items) ? raw.items : []);
-      if (!list.length) return;
+      if (!list.length) return 0;
       if (this._rtpPoolCache) this._rtpPoolCache.clear();
-      if (!this.liveRtpIndex[casinoKey]) {
+      if (!this.liveRtpIndex[casinoKey] || !merge) {
         this.liveRtpIndex[casinoKey] = { bySlug: new Map(), byNorm: new Map(), list: [] };
       }
       const bucket = this.liveRtpIndex[casinoKey];
-      bucket.list = list;
+      const windowKeys = ['tenMinutes', 'hour', 'day', 'week', 'month', 'all'];
+      let indexedCount = 0;
+
       for (let i = 0; i < list.length; i++) {
-        const item = list[i];
-        if (!item) continue;
-        if (item.slug) bucket.bySlug.set(String(item.slug).toLowerCase(), item);
-        if (item.name) bucket.byNorm.set(this.normalizeKey(item.name), item);
+        const rawItem = list[i];
+        if (!rawItem || typeof rawItem !== 'object') continue;
+
+        let slug = String(rawItem.slug || '').trim().toLowerCase();
+        if (!slug && rawItem.url) {
+          const m = String(rawItem.url).match(/\/(?:slots|games)\/[^/]+\/([a-z0-9-_]+)/i);
+          if (m && m[1]) slug = m[1].toLowerCase();
+        }
+        const cleanSlug = slug.replace(/^(pragmatic-play|pragmatic|hacksaw-gaming|hacksaw|nolimit-city|nolimit|push-gaming|push|relax-gaming|relax|play-n-go|playngo|avatarux|thunderkick|elk-studios|elk|paperclip-gaming|paperclip|backseat-gaming|backseat|bullshark-games|bullshark|twist-gaming|twist|massive-studios|massive|titan-gaming|titan)-/i, '');
+
+        const existing = (slug && bucket.bySlug.get(slug)) ||
+          (cleanSlug && bucket.bySlug.get(cleanSlug)) ||
+          (rawItem.name && bucket.byNorm.get(this.normalizeKey(rawItem.name))) ||
+          null;
+
+        const rtp = existing && existing.rtp ? { ...existing.rtp } : {};
+        const windowStats = existing && existing.windowStats ? { ...existing.windowStats } : {};
+
+        // 1. Format A: Direct rtp object ({ tenMinutes, hour, day, week, month, all })
+        if (rawItem.rtp && typeof rawItem.rtp === 'object') {
+          windowKeys.forEach(wk => {
+            const v = Number(rawItem.rtp[wk]);
+            if (Number.isFinite(v) && v > 0) {
+              rtp[wk] = Number((v <= 2 ? v * 100 : v).toFixed(2));
+            }
+          });
+        }
+
+        // 2. Format B: data/live_casino_intel.json -> windows.{day, week, month, all, hour, tenMinutes}
+        if (rawItem.windows && typeof rawItem.windows === 'object') {
+          windowKeys.forEach(wk => {
+            const wObj = rawItem.windows[wk];
+            if (wObj && typeof wObj === 'object') {
+              const v = Number(wObj.rtp);
+              if (Number.isFinite(v) && v > 0) {
+                rtp[wk] = Number((v <= 2 ? v * 100 : v).toFixed(2));
+              }
+              windowStats[wk] = {
+                betCount: Number(wObj.betCount || 0),
+                wageredValue: Math.round(Number(wObj.wageredValue || 0)),
+                playerCount: Number(wObj.playerCount || 0)
+              };
+            }
+          });
+        }
+
+        // 3. Format C: /api/intel/live-rtp edge worker -> stats.{day, week, month, all} (0..1 ratios)
+        if (rawItem.stats && typeof rawItem.stats === 'object') {
+          windowKeys.forEach(wk => {
+            const sObj = rawItem.stats[wk];
+            if (sObj && typeof sObj === 'object') {
+              const v = Number(sObj.rtp);
+              if (Number.isFinite(v) && v > 0) {
+                rtp[wk] = Number((v <= 2 ? v * 100 : v).toFixed(2));
+              }
+              windowStats[wk] = {
+                betCount: Number(sObj.betCount || 0),
+                wageredValue: Math.round(Number(sObj.wageredValue || 0)),
+                playerCount: Number(sObj.playerCount || 0)
+              };
+            }
+          });
+        }
+
+        // 4. Single observedRtp fallback
+        if (typeof rawItem.observedRtp === 'number' && rawItem.observedRtp > 0 && Object.keys(rtp).length === 0) {
+          const v = rawItem.observedRtp <= 2 ? rawItem.observedRtp * 100 : rawItem.observedRtp;
+          rtp.day = Number(v.toFixed(2));
+        }
+
+        if (Object.keys(rtp).length === 0) continue;
+
+        let theo = Number(rawItem.theoreticalRtp ?? rawItem.theoRtp ?? (existing && existing.theoreticalRtp) ?? 96.0);
+        if (Number.isFinite(theo) && theo > 0 && theo <= 2) theo = theo * 100;
+        if (!Number.isFinite(theo) || theo < 80 || theo > 99.9) theo = 96.0;
+
+        const dayStat = windowStats.day || windowStats.week || windowStats.month || windowStats.all || {};
+        const normalized = {
+          slug: slug || (existing && existing.slug) || '',
+          cleanSlug: cleanSlug || (existing && existing.cleanSlug) || '',
+          name: rawItem.name || (existing && existing.name) || '',
+          provider: rawItem.provider || rawItem.providerSlug || (existing && existing.provider) || '',
+          theoreticalRtp: Number(theo.toFixed(2)),
+          rtp,
+          windowStats,
+          betCount: Number(rawItem.betCount || dayStat.betCount || (existing && existing.betCount) || 0),
+          wageredValue: Math.round(Number(rawItem.wageredValue || dayStat.wageredValue || (existing && existing.wageredValue) || 0)),
+          playerCount: Number(rawItem.playerCount || dayStat.playerCount || (existing && existing.playerCount) || 0),
+          thumbnailUrl: rawItem.thumbnailUrl || rawItem.image || (existing && existing.thumbnailUrl) || ''
+        };
+
+        if (!existing) {
+          bucket.list.push(normalized);
+        } else {
+          Object.assign(existing, normalized);
+        }
+        const ref = existing || normalized;
+        if (ref.slug) bucket.bySlug.set(ref.slug, ref);
+        if (ref.cleanSlug) bucket.bySlug.set(ref.cleanSlug, ref);
+        if (ref.name) bucket.byNorm.set(this.normalizeKey(ref.name), ref);
+        indexedCount++;
       }
+      return indexedCount;
     }
 
     async loadLiveCasinoIntel() {
@@ -152,18 +252,23 @@
           const data = await res.json();
           if (data && data.liveRtpByCasino) {
             this.liveIntelData = data;
+            let totalIndexed = 0;
             Object.keys(data.liveRtpByCasino).forEach(cKey => {
-              this.indexCasinoRtpList(cKey, data.liveRtpByCasino[cKey]);
+              totalIndexed += this.indexCasinoRtpList(cKey, data.liveRtpByCasino[cKey], false);
             });
             const tsEl = document.getElementById('intel-rtp-feed-timestamp');
-            if (tsEl && data.syncedAt) {
-              const dt = new Date(data.syncedAt);
-              const label = isNaN(dt.getTime()) ? data.syncedAt : dt.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-              tsEl.textContent = `🟢 Multi-Casino Snapshot: ${label} (${(data.totalCatalogSlots || 11282).toLocaleString()} Slots)`;
+            const snapTs = data.fetchedAt || data.syncedAt;
+            const totalCat = data.catalogTotal || data.totalCatalogSlots || 11282;
+            const stakeCount = this.liveRtpIndex[this.rtpCasino || 'stake']?.list?.length || totalIndexed;
+            if (tsEl && snapTs) {
+              const dt = new Date(snapTs);
+              const label = isNaN(dt.getTime()) ? snapTs : dt.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+              tsEl.textContent = `🟢 Verified Multi-Casino Telemetry: ${label} · ${stakeCount.toLocaleString()} Live Tracked (${Number(totalCat).toLocaleString()} Catalog)`;
             }
             const bannerEl = document.getElementById('intel-drops-lobby-banner');
-            if (bannerEl && data.casinoLobbySummary) {
-              const s = data.casinoLobbySummary;
+            const lobbySum = data.lobbySummary || data.casinoLobbySummary;
+            if (bannerEl && lobbySum) {
+              const s = lobbySum;
               bannerEl.innerHTML = `📡 <strong style="color:#fff;">${(s.totalLobbyListings || 161053).toLocaleString()}</strong> Lobby Games Tracked Across <strong style="color:var(--cyan);">${s.casinosTracked || 27} Casinos</strong> · <span style="color:#53fc18;">+${(s.addedLast7d || 2342).toLocaleString()} Added</span> / <span style="color:#fda4af;">-${(s.removedLast7d || 553).toLocaleString()} Removed</span> (7D Hourly Diff)`;
             }
             this.renderRtpRadar();
@@ -187,67 +292,71 @@
       }
       try {
         const casino = this.rtpCasino || 'stake';
+        const periodToEdgeWindow = {
+          '10m': 'tenMinutes',
+          '1h': 'hour',
+          '24h': 'day',
+          '7d': 'week',
+          '30d': 'month',
+          'all': 'all'
+        };
+        const winParam = periodToEdgeWindow[this.rtpPeriod] || 'day';
         let syncedCount = 0;
 
-        // Try our Cloudflare Edge Proxy first, then fallback to direct CORS slots.ddk.gg feed
+        // 1. Try our Cloudflare Edge Proxy (/api/intel/live-rtp returns { ok: true, items: [...] })
         let liveLoaded = false;
         try {
-          const edgeRes = await fetch(`/api/intel/live-rtp?casino=${encodeURIComponent(casino)}`, { cache: 'no-store' });
+          const edgeRes = await fetch(`/api/intel/live-rtp?casino=${encodeURIComponent(casino)}&window=${encodeURIComponent(winParam)}`, { cache: 'no-store' });
           if (edgeRes.ok) {
             const edgeJson = await edgeRes.json();
-            const bucket = edgeJson && edgeJson.casinos && edgeJson.casinos[casino];
-            if (Array.isArray(bucket) && bucket.length > 0) {
-              this.indexCasinoRtpList(casino, bucket);
-              syncedCount = bucket.length;
+            const bucket = Array.isArray(edgeJson?.items)
+              ? edgeJson.items
+              : (edgeJson?.casinos && Array.isArray(edgeJson.casinos[casino]) ? edgeJson.casinos[casino] : []);
+            if (bucket.length > 0) {
+              this.indexCasinoRtpList(casino, bucket, true);
+              syncedCount = this.liveRtpIndex[casino]?.list?.length || bucket.length;
               liveLoaded = true;
             }
           }
         } catch (_) {}
 
+        // 2. Fallback to direct CORS slots.ddk.gg feed if needed
         if (!liveLoaded) {
-          const directRes = await fetch(`https://slots.ddk.gg/api/slots/${encodeURIComponent(casino)}`, { cache: 'no-store' });
-          if (directRes.ok) {
-            const directJson = await directRes.json();
-            const rawSlots = Array.isArray(directJson.slots) ? directJson.slots : [];
-            const mapped = [];
-            for (let i = 0; i < rawSlots.length; i++) {
-              const s = rawSlots[i];
-              if (!s || !s.rtp || typeof s.rtp !== 'object') continue;
-              const rtp = {};
-              ['tenMinutes', 'hour', 'day', 'week', 'month', 'all'].forEach(k => {
-                if (typeof s.rtp[k] === 'number' && s.rtp[k] > 0) rtp[k] = Number(s.rtp[k].toFixed(2));
-              });
-              if (Object.keys(rtp).length === 0) continue;
-              mapped.push({
-                slug: s.slug || '',
-                name: s.name || '',
-                provider: s.providerSlug || s.provider || '',
-                theoreticalRtp: typeof s.theoreticalRtp === 'number' ? Number(s.theoreticalRtp.toFixed(2)) : (typeof s.rtpValue === 'number' ? Number((s.rtpValue * 100).toFixed(2)) : 96.0),
-                rtp,
-                betCount: Number(s.betCount || 0),
-                wageredValue: Math.round(Number(s.wageredValue || 0)),
-                playerCount: Number(s.playerCount || 0),
-                thumbnailUrl: s.thumbnailUrl || ''
-              });
+          try {
+            const directRes = await fetch(`https://slots.ddk.gg/api/slots/${encodeURIComponent(casino)}`, { cache: 'no-store' });
+            if (directRes.ok) {
+              const directJson = await directRes.json();
+              const rawSlots = Array.isArray(directJson.slots) ? directJson.slots : (Array.isArray(directJson.items) ? directJson.items : []);
+              if (rawSlots.length > 0) {
+                this.indexCasinoRtpList(casino, rawSlots, true);
+                syncedCount = this.liveRtpIndex[casino]?.list?.length || rawSlots.length;
+                liveLoaded = true;
+              }
             }
-            if (mapped.length > 0) {
-              this.indexCasinoRtpList(casino, mapped);
-              syncedCount = mapped.length;
-              liveLoaded = true;
-            }
-          }
+          } catch (_) {}
+        }
+
+        // 3. Ensure local verified multi-casino snapshot is loaded if still empty
+        if (!this.liveRtpIndex[casino] || !this.liveRtpIndex[casino].list.length) {
+          await this.loadLiveCasinoIntel();
+          syncedCount = this.liveRtpIndex[casino]?.list?.length || 0;
+          if (syncedCount > 0) liveLoaded = true;
+        } else if (!syncedCount) {
+          syncedCount = this.liveRtpIndex[casino].list.length;
+          liveLoaded = true;
         }
 
         const tsEl = document.getElementById('intel-rtp-feed-timestamp');
         if (tsEl && liveLoaded) {
-          tsEl.textContent = `🟢 Live ${casino.toUpperCase()} Feed Synced (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${syncedCount.toLocaleString()} active slots)`;
+          tsEl.textContent = `🟢 Live ${casino.toUpperCase()} Feed Synced (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${syncedCount.toLocaleString()} verified slots)`;
         }
+        if (this._rtpPoolCache) this._rtpPoolCache.clear();
         this.renderRtpRadar();
         if (manualTrigger && window.sonner) {
           window.sonner.toast({
             title: liveLoaded ? `📡 ${casino.toUpperCase()} Live RTP Synced!` : '⚡ Snapshot Telemetry Active',
             message: liveLoaded
-              ? `Updated ${syncedCount.toLocaleString()} live slot RTP windows directly from ${casino.toUpperCase()}.`
+              ? `Synchronized ${syncedCount.toLocaleString()} verified slot RTP windows (${this.rtpPeriod.toUpperCase()}) for ${casino.toUpperCase()}.`
               : 'Using cached multi-casino telemetry snapshot.',
             type: liveLoaded ? 'green' : 'gold'
           });
@@ -256,7 +365,7 @@
         if (manualTrigger && window.sonner) {
           window.sonner.toast({
             title: '⚡ Multi-Casino Snapshot Active',
-            message: 'Using local verified multi-casino telemetry snapshot.',
+            message: 'Using verified multi-casino telemetry snapshot.',
             type: 'gold'
           });
         }
@@ -446,13 +555,17 @@
 
     findLiveCasinoRecord(slot) {
       const slug = String(slot.slug || slot.id || '').toLowerCase();
+      const cleanSlug = slug.replace(/^(pragmatic-play|pragmatic|hacksaw-gaming|hacksaw|nolimit-city|nolimit|push-gaming|push|relax-gaming|relax|play-n-go|playngo|avatarux|thunderkick|elk-studios|elk|paperclip-gaming|paperclip|backseat-gaming|backseat|bullshark-games|bullshark|twist-gaming|twist|massive-studios|massive|titan-gaming|titan)-/i, '');
       const norm = this.normalizeKey(slot.name);
       const primaryCasino = this.rtpCasino || 'stake';
 
       const lookupIn = (cKey) => {
         const bucket = this.liveRtpIndex[cKey];
         if (!bucket) return null;
-        return bucket.bySlug.get(slug) || bucket.byNorm.get(norm) || null;
+        return bucket.bySlug.get(slug) ||
+          (cleanSlug && bucket.bySlug.get(cleanSlug)) ||
+          bucket.byNorm.get(norm) ||
+          null;
       };
 
       const direct = lookupIn(primaryCasino);
@@ -465,7 +578,7 @@
       return null;
     }
 
-    resolveWindowRtp(rtpObj, periodKey) {
+    resolveWindowRtp(rtpObj, periodKey, windowStatsObj) {
       if (!rtpObj || typeof rtpObj !== 'object') return null;
       const map = {
         '10m': ['tenMinutes', 'hour', 'day', 'week', 'month', 'all'],
@@ -486,7 +599,13 @@
       const order = map[periodKey] || map['24h'];
       for (const k of order) {
         if (typeof rtpObj[k] === 'number' && rtpObj[k] > 0) {
-          return { value: rtpObj[k], windowLabel: labelMap[k] || '24H' };
+          const stat = (windowStatsObj && windowStatsObj[k]) || null;
+          return {
+            value: rtpObj[k],
+            windowKey: k,
+            windowLabel: labelMap[k] || '24H',
+            stat
+          };
         }
       }
       return null;
@@ -564,21 +683,20 @@
         if (typeof rec.theoreticalRtp === 'number' && rec.theoreticalRtp >= 85 && rec.theoreticalRtp <= 99.5) {
           baseRtp = rec.theoreticalRtp;
         }
-        const winResolved = this.resolveWindowRtp(rec.rtp, this.rtpPeriod);
+        const winResolved = this.resolveWindowRtp(rec.rtp, this.rtpPeriod, rec.windowStats);
         if (winResolved) {
           isRealCasinoFeed = true;
           sourceCasino = liveMatch.casino.toUpperCase();
           sourceWindow = winResolved.windowLabel;
-          let rawVal = winResolved.value;
-          // In long-horizon windows (ALL / 30D), raw RTP converges tightly toward theoretical; blend short-term session wave when flat
-          if (Math.abs(rawVal - baseRtp) < 0.35) {
-            rawVal = baseRtp + (rawVal - baseRtp) + (wave * periodDamp * 0.65);
-          }
+          const rawVal = winResolved.value;
           observedRtp = Number((rawVal + huntDelta + archiveDelta + voteDelta).toFixed(2));
           delta = Number((observedRtp - baseRtp).toFixed(2));
-          roundsSampled = Math.max(120, Number(rec.betCount || 0)) + (huntSamples * 150) + archiveSpins;
-          wageredUsd = Number(rec.wageredValue || 0);
-          playerCount = Number(rec.playerCount || 0);
+          const winBets = winResolved.stat && winResolved.stat.betCount > 0 ? winResolved.stat.betCount : Number(rec.betCount || 0);
+          const winWagered = winResolved.stat && winResolved.stat.wageredValue > 0 ? winResolved.stat.wageredValue : Number(rec.wageredValue || 0);
+          const winPlayers = winResolved.stat && winResolved.stat.playerCount > 0 ? winResolved.stat.playerCount : Number(rec.playerCount || 0);
+          roundsSampled = Math.max(120, winBets) + (huntSamples * 150) + archiveSpins;
+          wageredUsd = winWagered;
+          playerCount = winPlayers;
         }
       }
 
@@ -1963,20 +2081,29 @@
     }
 
     initCompanionExtensionBridge() {
+      this._lastCapturedBonusTs = 0;
+      const handleIncoming = (data) => {
+        if (!data || data.action !== 'AUTO_CAPTURE_BONUS') return;
+        const ts = Number(data.ts || 0);
+        if (ts > 0 && ts === this._lastCapturedBonusTs) return;
+        if (ts > 0) this._lastCapturedBonusTs = ts;
+        this.autoCaptureBonusToHunt(data);
+      };
+
       try {
         this.companionChannel = new BroadcastChannel('diggity_stake_companion');
-        this.companionChannel.onmessage = (e) => {
-          if (e.data && e.data.action === 'AUTO_CAPTURE_BONUS') {
-            this.autoCaptureBonusToHunt(e.data);
-          }
-        };
+        this.companionChannel.onmessage = (e) => handleIncoming(e.data);
       } catch (_) {}
 
       window.addEventListener('message', (e) => {
         if (e.origin !== window.location.origin || e.source !== window) return;
-        if (e.data && e.data.source === 'DIGGITY_STAKE_COMPANION' && e.data.action === 'AUTO_CAPTURE_BONUS') {
-          this.autoCaptureBonusToHunt(e.data);
+        if (e.data && e.data.source === 'DIGGITY_STAKE_COMPANION') {
+          handleIncoming(e.data);
         }
+      });
+
+      window.addEventListener('diggity:companion-capture', (e) => {
+        if (e && e.detail) handleIncoming(e.detail);
       });
     }
 
@@ -1984,10 +2111,25 @@
       const slotName = String(payload.slotName || 'Wanted Dead or a Wild').trim();
       const bet = parseFloat(payload.betSize || 2.0) || 2.0;
       const tier = String(payload.bonusTier || '3S').toUpperCase();
-      const caller = String(payload.caller || '@StakeAutoCapture');
+      const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '';
+      const rawCaller = String(payload.caller || '').trim();
+      const caller = (!rawCaller || rawCaller === '@StakeAutoCapture') && activeUser
+        ? activeUser
+        : (rawCaller || activeUser || '@DiggityBets');
       const payout = parseFloat(payload.payout || 0) || 0;
 
-      const resolved = window.SlotResolver ? window.SlotResolver.resolve(slotName) : { name: slotName, provider: 'Stake', image: '' };
+      let resolved = null;
+      if (window.SlotResolver) {
+        if (typeof window.SlotResolver.smartSearch === 'function') {
+          const matches = window.SlotResolver.smartSearch(slotName, 1);
+          if (Array.isArray(matches) && matches.length > 0) resolved = matches[0];
+        }
+        if (!resolved && typeof window.SlotResolver.resolve === 'function') {
+          resolved = window.SlotResolver.resolve(slotName);
+        }
+      }
+      if (!resolved) resolved = { name: slotName, provider: 'Stake Casino', image: '' };
+
       let slots = [];
       try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (_) {}
 
@@ -1999,11 +2141,16 @@
         payout,
         bonusTier: tier,
         caller: caller.startsWith('@') ? caller : '@' + caller,
-        image: resolved.image
+        image: resolved.image || ''
       });
 
       localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
       localStorage.setItem('hunthub_hunt_active', 'true');
+
+      try {
+        const chBh = new BroadcastChannel('hunthub_bonushunt');
+        chBh.postMessage({ action: 'slots_updated', slots });
+      } catch (_) {}
 
       if (window.bonusHunt) {
         window.bonusHunt.slots = slots;
@@ -2017,8 +2164,8 @@
       this.renderRtpRadar();
       if (window.sonner) {
         window.sonner.toast({
-          title: `⚡ Auto-Captured: ${resolved.name} (${tier})`,
-          message: `Bet $${bet.toFixed(2)} logged hands-free to Bonus Hunt!`,
+          title: `⚡ Auto-Captured: ${resolved.name || slotName} (${tier})`,
+          message: `Bet $${bet.toFixed(2)} logged hands-free by ${caller.startsWith('@') ? caller : '@' + caller}!`,
           type: 'green'
         });
       }

@@ -31,7 +31,7 @@ class AdminHubController {
       'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
       'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar',
       'altfarmer_450', 'stakefarmer_01', 'stakefarmer_02',
-      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'viewer', 'catlover'
+      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'catlover'
     ]);
 
     // Duo-Wheel Queue (Unified with wheel-duo/main.js via hunthub_duo_pool_v2)
@@ -1395,30 +1395,42 @@ class AdminHubController {
 
     // Add Bonus Button
     if (btnAddBonus) {
-      btnAddBonus.addEventListener('click', () => {
+      const triggerAddBonus = () => {
         const slotName = inputSearch ? inputSearch.value.trim() : '';
-        const caller = (document.getElementById('admin-hunt-caller-input')?.value || '').trim() || '@Viewer';
+        const rawCaller = (document.getElementById('admin-hunt-caller-input')?.value || '').trim();
+        const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@DiggityBets';
+        const caller = rawCaller || activeUser || '@DiggityBets';
         const bet = parseFloat(document.getElementById('admin-hunt-bet-input')?.value || '1.0');
         const bonusTier = (document.getElementById('admin-hunt-bonus-tier')?.value || '3S').toUpperCase();
 
         if (!slotName) {
-          if (window.sonner) window.sonner.toast({ title: 'Slot Name Required', message: 'Select a slot from catalog.', type: 'danger' });
+          if (window.sonner) window.sonner.toast({ title: 'Slot Name Required', message: 'Type or select a slot from the catalog.', type: 'danger' });
           return;
         }
 
         let slots = [];
         try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (e) {}
 
-        const resolved = window.SlotResolver ? window.SlotResolver.resolve(this.selectedSlot || slotName) : null;
+        let resolved = this.selectedSlot || null;
+        if (!resolved && window.SlotResolver) {
+          if (typeof window.SlotResolver.smartSearch === 'function') {
+            const matches = window.SlotResolver.smartSearch(slotName, 1);
+            if (Array.isArray(matches) && matches.length > 0) resolved = matches[0];
+          }
+          if (!resolved && typeof window.SlotResolver.resolve === 'function') {
+            resolved = window.SlotResolver.resolve(slotName);
+          }
+        }
+
         const newBonus = {
-          id: resolved ? resolved.id : (this.selectedSlot ? this.selectedSlot.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-')),
-          name: resolved ? resolved.name : slotName,
-          provider: resolved ? (resolved.provider || resolved.badge) : (this.selectedSlot ? this.selectedSlot.provider : 'Casino Slot'),
-          bet: bet || 2.0,
+          id: resolved && resolved.id ? resolved.id : slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          name: resolved && resolved.name ? resolved.name : slotName,
+          provider: resolved ? (resolved.provider || resolved.badge || 'Casino Slot') : 'Casino Slot',
+          bet: bet > 0 ? bet : 2.0,
           payout: 0,
           bonusTier: bonusTier || '3S',
           caller: caller.startsWith('@') ? caller : '@' + caller,
-          image: resolved ? resolved.image : (this.selectedSlot ? this.selectedSlot.image : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format')
+          image: resolved && resolved.image ? resolved.image : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
         };
 
         slots.push(newBonus);
@@ -1426,6 +1438,7 @@ class AdminHubController {
         localStorage.setItem('hunthub_hunt_active', 'true');
 
         if (inputSearch) inputSearch.value = '';
+        if (dropdown) dropdown.style.display = 'none';
         this.selectedSlot = null;
 
         if (window.bonusHunt) {
@@ -1436,8 +1449,21 @@ class AdminHubController {
         }
 
         if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') window.soundEngine.playCoin();
-        if (window.sonner) window.sonner.toast({ title: `Bonus Added (${newBonus.bonusTier})! 🎰`, message: `${newBonus.name} added to hunt.`, type: 'green' });
+        if (window.sonner) window.sonner.toast({ title: `Bonus Added (${newBonus.bonusTier})! 🎰`, message: `${newBonus.name} (${newBonus.caller}) added to hunt.`, type: 'green' });
         this.renderBonusHuntAdmin();
+      };
+
+      btnAddBonus.addEventListener('click', triggerAddBonus);
+      ['admin-hunt-slot-search', 'admin-hunt-caller-input', 'admin-hunt-bet-input'].forEach(inputId => {
+        const el = document.getElementById(inputId);
+        if (el) {
+          el.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              triggerAddBonus();
+            }
+          });
+        }
       });
     }
 
@@ -1450,6 +1476,7 @@ class AdminHubController {
           window.bonusHunt.isActive = true;
           window.bonusHunt.renderSlotTable();
         }
+        this.renderBonusHuntAdmin();
         if (window.sonner) window.sonner.toast({ title: 'Bonus Hunt Started! 💎', message: 'Predictions are open.', type: 'green' });
       };
     }
@@ -1590,6 +1617,22 @@ class AdminHubController {
       chBh.postMessage({ action: 'slots_updated', slots });
     } catch (_) {}
     window.dispatchEvent(new CustomEvent('hunthub:bonushunt-sync', { detail: { slots } }));
+
+    if (typeof fetch === 'function') {
+      fetch('/api/sync/state', {
+        method: 'POST',
+        headers: this.getAdminHeaders(),
+        body: JSON.stringify({
+          overlayEvent: {
+            target: 'overlay-bonushunt',
+            slots,
+            active: localStorage.getItem('hunthub_hunt_active') === 'true',
+            startCost: Number(localStorage.getItem('hunthub_hunt_start_cost') || 0),
+            ts: Date.now()
+          }
+        })
+      }).catch(() => {});
+    }
 
     if (!tbody) return;
 
@@ -4703,6 +4746,7 @@ class AdminHubController {
     const isDemo = (u) => {
       const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
       if (!clean) return true;
+      if (['viewer', 'streamer', 'diggitybets', 'tarkansky', 'stakeautocapture', 'stakecompanionext', 'vaultpack'].includes(clean)) return false;
       if (clean.startsWith('altfarmer') || clean.startsWith('stakefarmer')) return true;
       return this.demoUsernames.has(clean);
     };
