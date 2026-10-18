@@ -1127,3 +1127,387 @@
   letter-spacing: 0.3px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+
+/* ==========================================================================
+   10-CARD ROUND VAULT TRAY (Viewer Picks, Community Draws & Random Bonus Hunt Deck)
+   ========================================================================== */
+.vault-round-tray-container {
+  margin-top: 24px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.08) 0%, rgba(15, 23, 42, 0.85) 40%, rgba(6, 9, 17, 0.96) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.vault-tray-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vault-tray-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vault-tray-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 10px;
+  font-weight: 900;
+  color: #00e5ff;
+  letter-spacing: 0.8px;
+  width: fit-content;
+}
+
+.vault-tray-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
+  animation: vaultTrayDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes vaultTrayDotPulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+.vault-tray-title {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vault-tray-subtitle {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.vault-tray-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vault-btn-green {
+  background: rgba(83, 252, 24, 0.12) !important;
+  border-color: #53fc18 !important;
+  color: #53fc18 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 14px rgba(83, 252, 24, 0.18) !important;
+}
+
+.vault-btn-green:hover:not(:disabled) {
+  background: #53fc18 !important;
+  color: #05070e !important;
+  box-shadow: 0 0 20px rgba(83, 252, 24, 0.45) !important;
+}
+
+.vault-btn-gold {
+  background: rgba(255, 215, 0, 0.12) !important;
+  border-color: #ffd700 !important;
+  color: #ffd700 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.18) !important;
+}
+
+.vault-btn-gold:hover:not(:disabled) {
+  background: #ffd700 !important;
+  color: #05070e !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.45) !important;
+}
+
+.vault-btn-danger {
+  background: rgba(255, 42, 95, 0.1) !important;
+  border-color: rgba(255, 42, 95, 0.45) !important;
+  color: #ff6b8b !important;
+  font-weight: 800 !important;
+}
+
+.vault-btn-danger:hover:not(:disabled) {
+  background: rgba(255, 42, 95, 0.25) !important;
+  border-color: #ff2a5f !important;
+  color: #ffffff !important;
+}
+
+/* 10 Card Grid Layout: 5 columns x 2 rows on desktop */
+.vault-tray-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 1280px) {
+  .vault-tray-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .vault-tray-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .vault-tray-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Empty Slot Silhouette */
+.vault-tray-empty-slot {
+  min-height: 220px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  color: #64748b;
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  text-align: center;
+  transition: all 0.28s ease;
+  user-select: none;
+}
+
+.vault-tray-empty-slot:hover {
+  border-color: rgba(0, 229, 255, 0.42);
+  background: rgba(0, 229, 255, 0.04);
+  color: #94a3b8;
+}
+
+.vault-empty-slot-number {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vault-empty-slot-icon {
+  font-size: 26px;
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: transform 0.2s ease;
+}
+
+.vault-tray-empty-slot:hover .vault-empty-slot-icon {
+  transform: scale(1.15);
+  opacity: 0.6;
+}
+
+.vault-empty-slot-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Filled Mini 3D Holographic Card in Tray */
+.vault-tray-card {
+  min-height: 220px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #0b1325 0%, #070a12 55%, #150f28 100%);
+  border: 1.5px solid rgba(255, 215, 0, 0.65);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 18px rgba(255, 215, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+  animation: vaultCardDockIn 0.45s cubic-bezier(0.18, 1.25, 0.35, 1) both;
+}
+
+@keyframes vaultCardDockIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.vault-tray-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.82), 0 0 24px rgba(0, 229, 255, 0.35);
+  z-index: 5;
+}
+
+.vault-tray-card[data-rarity="mythic-gold"] {
+  border-color: #ffd700;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(255, 215, 0, 0.28);
+}
+
+.vault-tray-card[data-rarity="radiant-prism"] {
+  border-color: #00e5ff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 229, 255, 0.28);
+}
+
+.vault-tray-card[data-rarity="cosmos-holo"] {
+  border-color: #53fc18;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(83, 252, 24, 0.28);
+}
+
+.vault-tray-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.vault-tray-card-slot-idx {
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffd700;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.vault-tray-card-thumb-wrap {
+  width: 100%;
+  height: 90px;
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+  background: #05070e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 7px;
+}
+
+.vault-tray-card-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vault-tray-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.vault-tray-card-name {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
+}
+
+.vault-tray-card-provider {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.vault-tray-card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 7px;
+}
+
+.vault-tray-card-rtp {
+  color: #53fc18;
+}
+
+.vault-tray-card-maxwin {
+  color: #ffd700;
+}
+
+.vault-tray-card-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.vault-tray-mini-btn {
+  padding: 4px 5px !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+  text-align: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+.vault-tray-mini-btn.btn-remove {
+  background: rgba(255, 42, 95, 0.15) !important;
+  border: 1px solid rgba(255, 42, 95, 0.45) !important;
+  color: #ff6b8b !important;
+  padding: 4px 6px !important;
+}
+
+.vault-tray-mini-btn.btn-remove:hover {
+  background: #ff2a5f !important;
+  color: #ffffff !important;
+}
+
+@keyframes vaultCountdownPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
