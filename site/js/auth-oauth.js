@@ -544,7 +544,10 @@ class OAuthEngine {
       navTabControl.style.display = isAdmin ? 'inline-flex' : 'none';
     }
     if (authAdminBadge) {
-      authAdminBadge.style.display = isAdmin ? 'inline-block' : 'none';
+      authAdminBadge.style.display = 'none';
+    }
+    if (window.userStore && typeof window.userStore.syncTopbarRoleBadge === 'function') {
+      window.userStore.syncTopbarRoleBadge();
     }
     if (!isAdmin && adminHubSection) {
       adminHubSection.style.display = 'none';
