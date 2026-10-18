@@ -2004,8 +2004,12 @@ class AdminHubController {
     state.ts = Date.now();
     state.gameMode = state.gameMode || this.tourneyMode || 'BONUS_BUY';
     state.mode = state.gameMode;
+    const filledSeeds = this.getTourneySeedSlotsMap().filter(s => state.matches?.[s.matchId]?.[s.side]?.username).length;
     try {
       localStorage.setItem('hunthub_tourney_state', JSON.stringify(state));
+      if (filledSeeds > 0 || state.status === 'IN_PROGRESS' || state.status === 'FINISHED') {
+        localStorage.setItem('hunthub_tourney_active', 'true');
+      }
     } catch (_) {}
 
     const badge = document.getElementById('admin-tourney-status-badge');
@@ -2014,9 +2018,8 @@ class AdminHubController {
         badge.textContent = `CHAMPION: ${state.champion.username}`;
         badge.style.color = 'var(--gold)';
         badge.style.borderColor = 'var(--gold)';
-      } else if (state.status === 'IN_PROGRESS') {
-        const filled = this.getTourneySeedSlotsMap().filter(s => state.matches?.[s.matchId]?.[s.side]?.username).length;
-        badge.textContent = state.isDemo ? 'DEMO BRACKET' : `BRACKET LIVE (${filled}/8)`;
+      } else if (state.status === 'IN_PROGRESS' || filledSeeds > 0) {
+        badge.textContent = state.isDemo ? 'DEMO BRACKET' : `BRACKET LIVE (${filledSeeds}/8)`;
         badge.style.color = 'var(--kick-green)';
         badge.style.borderColor = 'var(--kick-green)';
       } else {
@@ -2025,6 +2028,11 @@ class AdminHubController {
         badge.style.borderColor = 'var(--cyan)';
       }
     }
+
+    if (window.tournamentPrediction && typeof window.tournamentPrediction.syncWithTourneyState === 'function') {
+      window.tournamentPrediction.syncWithTourneyState(state);
+    }
+    window.dispatchEvent(new CustomEvent('hunthub:tourney-sync', { detail: { state } }));
 
     if (broadcast) {
       if (this.channelTourney) {
