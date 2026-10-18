@@ -869,8 +869,8 @@
   height: 192px;
   aspect-ratio: 180 / 236;
   border-radius: 11px;
-  object-fit: cover;
-  background: #070a12;
+  object-fit: contain;
+  background: radial-gradient(circle at 50% 40%, rgba(0, 229, 255, 0.16), #070a12 78%);
 }
 
 /* 3D Depth Plane 3 (Z: +36px): Collector Title & Telemetry Footer Plate */
@@ -1283,27 +1283,28 @@
 
 /* Empty Slot Silhouette */
 .vault-tray-empty-slot {
-  min-height: 220px;
+  min-height: 304px;
   border: 1.5px dashed rgba(255, 255, 255, 0.14);
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.32);
+  background-color: #090e1a;
+  background-image: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.55), rgba(6, 9, 17, 0.85));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 16px 12px;
-  color: #64748b;
+  color: #94a3b8;
   font-family: var(--font-display, 'Chakra Petch', sans-serif);
   text-align: center;
-  transition: all 0.28s ease;
+  transition: border-color 0.28s ease, background-color 0.28s ease, color 0.28s ease;
   user-select: none;
 }
 
 .vault-tray-empty-slot:hover {
   border-color: rgba(0, 229, 255, 0.42);
-  background: rgba(0, 229, 255, 0.04);
-  color: #94a3b8;
+  background-color: #0c1626;
+  color: #cbd5e1;
 }
 
 .vault-empty-slot-number {
@@ -1320,7 +1321,7 @@
   font-size: 26px;
   opacity: 0.35;
   filter: grayscale(1);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .vault-tray-empty-slot:hover .vault-empty-slot-icon {
@@ -1337,15 +1338,16 @@
 
 /* Filled Mini 3D Holographic Card in Tray */
 .vault-tray-card {
-  min-height: 220px;
+  min-height: 304px;
   border-radius: 14px;
-  background: linear-gradient(160deg, #0b1325 0%, #070a12 55%, #150f28 100%);
+  background-color: #070a12;
+  background-image: linear-gradient(160deg, #0b1325 0%, #070a12 55%, #150f28 100%);
   border: 1.5px solid rgba(255, 215, 0, 0.65);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 18px rgba(255, 215, 0, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
+  padding: 11px;
   position: relative;
   overflow: hidden;
   transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
@@ -1389,7 +1391,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
   position: relative;
   z-index: 2;
 }
@@ -1405,22 +1407,64 @@
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
+/* Portrait Slot Cover Stage — Shows 100% of the Slot Artwork Without Any Cropping */
 .vault-tray-card-thumb-wrap {
   width: 100%;
-  height: 90px;
-  border-radius: 9px;
+  height: 168px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
-  background: #05070e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background-color: #05070e;
+  background-image:
+    radial-gradient(circle at 50% 45%, rgba(0, 229, 255, 0.16) 0%, rgba(255, 215, 0, 0.08) 42%, rgba(5, 7, 14, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.75);
+  margin-bottom: 8px;
+}
+
+.vault-tray-card[data-rarity="mythic-gold"] .vault-tray-card-thumb-wrap {
+  background-image: radial-gradient(circle at 50% 45%, rgba(255, 215, 0, 0.22) 0%, rgba(5, 7, 14, 0.98) 85%);
+  border-color: rgba(255, 215, 0, 0.32);
+}
+
+.vault-tray-card[data-rarity="radiant-prism"] .vault-tray-card-thumb-wrap {
+  background-image: radial-gradient(circle at 50% 45%, rgba(0, 229, 255, 0.22) 0%, rgba(5, 7, 14, 0.98) 85%);
+  border-color: rgba(0, 229, 255, 0.32);
+}
+
+.vault-tray-card[data-rarity="cosmos-holo"] .vault-tray-card-thumb-wrap {
+  background-image: radial-gradient(circle at 50% 45%, rgba(83, 252, 24, 0.20) 0%, rgba(5, 7, 14, 0.98) 85%);
+  border-color: rgba(83, 252, 24, 0.32);
+}
+
+/* Soft ambient glow backdrop using the slot cover itself so portrait covers have zero black bars */
+.vault-tray-card-thumb-backdrop {
+  position: absolute;
+  inset: -12px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(14px) brightness(0.42) saturate(1.35);
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .vault-tray-card-thumb-img {
-  width: 100%;
+  position: relative;
+  z-index: 1;
+  width: auto;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 154px;
+  aspect-ratio: 180 / 236;
+  object-fit: contain;
+  border-radius: 7px;
   display: block;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.85);
 }
 
 .vault-tray-card-info {
@@ -1434,7 +1478,7 @@
 
 .vault-tray-card-name {
   font-family: var(--font-display, 'Chakra Petch', sans-serif);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;

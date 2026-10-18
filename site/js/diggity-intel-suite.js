@@ -2326,6 +2326,10 @@
             : (card.rarity === 'radiant-prism' ? '🌈 RADIANT' : '🌌 COSMOS');
           const rarityTierBadge = card.rarity === 'mythic-gold' ? 'tier-5s' : (card.rarity === 'radiant-prism' ? 'tier-6s' : 'tier-max');
           const stakeUrl = `https://stake.com/casino/games/${encodeURIComponent(card.slug || card.id || '')}`;
+          const safeImg = this.escapeHTML(card.image || 'site/images/slots/wanted.svg');
+          const safeName = this.escapeHTML(card.name || 'Slot Mystery');
+          const safeProv = this.escapeHTML(card.provider || 'Stake VIP');
+          const safeMaxWin = this.escapeHTML(card.maxWin || '15,000x');
 
           const cardEl = document.createElement('div');
           cardEl.className = 'vault-tray-card';
@@ -2337,15 +2341,16 @@
                 <span class="bh-tier-badge ${rarityTierBadge}" style="font-size: 8px; padding: 2px 6px;">${rarityBadge}</span>
               </div>
               <div class="vault-tray-card-thumb-wrap">
-                <img class="vault-tray-card-thumb-img" src="${card.image || 'site/images/slots/wanted.svg'}" alt="${card.name}" loading="lazy" onerror="this.src='site/images/slots/wanted.svg'">
+                <div class="vault-tray-card-thumb-backdrop" style="background-image: url('${safeImg}');" aria-hidden="true"></div>
+                <img class="vault-tray-card-thumb-img" src="${safeImg}" alt="${safeName}" width="118" height="154" loading="lazy" decoding="async" onerror="this.src='site/images/slots/wanted.svg'">
               </div>
               <div class="vault-tray-card-info">
-                <div class="vault-tray-card-name" title="${card.name}">${card.name}</div>
-                <div class="vault-tray-card-provider">${card.provider}</div>
+                <div class="vault-tray-card-name" title="${safeName}">${safeName}</div>
+                <div class="vault-tray-card-provider">${safeProv}</div>
               </div>
               <div class="vault-tray-card-stats">
-                <span class="vault-tray-card-rtp">${typeof card.rtp === 'number' ? card.rtp.toFixed(2) : card.rtp}% RTP</span>
-                <span class="vault-tray-card-maxwin">MAX ${card.maxWin}</span>
+                <span class="vault-tray-card-rtp">${typeof card.rtp === 'number' ? card.rtp.toFixed(2) : this.escapeHTML(String(card.rtp || '96.40'))}% RTP</span>
+                <span class="vault-tray-card-maxwin">MAX ${safeMaxWin}</span>
               </div>
             </div>
             <div class="vault-tray-card-btns">
