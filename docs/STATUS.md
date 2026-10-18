@@ -514,10 +514,31 @@
     - Servidor estático y SPA routing verificado sirviendo HTTP 200 OK en 1,217 archivos estáticos y Stake Originals.
     - Proxy de telemetría de slots y RTPs verificado y activo en [/api/intel/live-rtp](https://diggitybets.positive-handspring.workers.dev/api/intel/live-rtp?casino=stake&window=day).
 
+- [x] **Stage 21 (Ajustes de Control Panel, Fix Racha 7 Días, BJ 21 Lock, Ruleta y Economía de Vouchers):** COMPLETED, VERIFIED & DEPLOYED.
+  - **1. Settle GTB & Award $DIG (Control Panel):**
+    - Se restringió estrictamente la liquidación de Guess The Balance en `site/js/bonushunt.js` para autorizar exclusivamente a `@diggitybets` y `@tarkansky`.
+    - Se ocultó el contenedor de liquidación para usuarios generales y se integró el botón `🏆 Settle GTB & Award $DIG` (`#cp-btn-settle-gtb`) en la sección *Master Control Deck* del Control Panel (`#control-panel`).
+  - **2. Corrección 7-Day Loyalty Streak:**
+    - Se bloqueó el reclamo para visitantes no registrados requiriendo vinculación de cuenta Kick (`isLoggedIn` en `site/js/diggity-intel-suite.js`), mostrando toast de advertencia.
+    - Se subsanó el error off-by-one donde al reclamar el Día 1 se marcaban erróneamente los Días 1 y 2. Ahora rastrea `completedDays` (0–7) marcando únicamente el día efectivamente reclamado. Escala de recompensas calibrada a `[50, 75, 100, 125, 150, 200, 300] $DIG`.
+  - **3. Bloqueo de Hit en Blackjack al alcanzar 21:**
+    - Al sumar exactamente 21 puntos en `site/js/house-games.js`, se deshabilitan inmediatamente los botones de acción (`#bj-btn-hit` y `#bj-btn-stand`) y el turno pasa de forma automática al croupier tras 500 ms de gracia.
+  - **4. Alineación Angular y Parada de Ruleta:**
+    - Corrección del cálculo angular mediante módulo positivo riguroso en `site/js/house-games.js`. La trayectoria helicoidal de la bola converge con precisión matemática al casillero ganador bajo el índice superior (270° / 1.5π).
+    - La bola permanece fija y destacada durante un mínimo de 2.2 segundos tras detenerse el giro, manteniendo resaltado el número ganador en la rueda y en el husillo central.
+  - **5. Rebalanceo Económico de Vouchers y Nuevos Items:**
+    - Calibración de ganancias: 360 minutos de stream semanal = ~3,000 $DIG. El voucher de `$20 Bonus Buy Split Profit (50/50)` se fijó en 3,000 $DIG regular / 2,400 $DIG Stake VIP.
+    - Nuevo voucher: `$40 Bonus Buy Split Profit (50/50)` al doble exacto (6,000 $DIG regular / 4,800 $DIG Stake VIP) con límite semanal de 2 unidades y tarjeta de lujo púrpura.
+    - Nuevo voucher: `OG Badge Kick Role` utilizando la insignia pixel art original (`site/images/kick-og-badge.png`), al mismo valor del 8-Bracket (1,500 $DIG regular / 1,200 $DIG Stake VIP).
+    - Ajuste de precios: Entrada 1v1 Battle a 1,000 $DIG (VIP 800 $DIG); Rol VIP Discord a 500 $DIG; Rifa semanal a 50 $DIG.
+  - **Despliegue y Verificación en Vivo:**
+    - Commit `158c418` subido a `origin/main` e implementado en Cloudflare Pages / Workers.
+    - Verificación exitosa HTTP 200 en [https://diggitybets.vip/](https://diggitybets.vip/) con todos los nuevos activos y lógica interactiva sincronizados.
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements & SOTA 2026 Evolution (Stages 1 to 20): 100% COMPLETED, VERIFIED & LIVE ONLINE.**
+- **All Phases, Refinements & SOTA 2026 Evolution (Stages 1 to 21): 100% COMPLETED, VERIFIED & LIVE ONLINE.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
