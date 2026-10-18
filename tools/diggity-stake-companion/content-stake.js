@@ -157,6 +157,7 @@
         <button id="diggity-ext-btn-5s" type="button" style="flex:1;background:#ffd700;color:#000;border:none;border-radius:6px;padding:5px 6px;font-weight:800;font-size:11px;cursor:pointer;">+5S</button>
         <button id="diggity-ext-btn-super" type="button" style="flex:1;background:#ff2a5f;color:#fff;border:none;border-radius:6px;padding:5px 6px;font-weight:800;font-size:11px;cursor:pointer;">+SUPER</button>
       </div>
+      <button id="diggity-ext-btn-verify-bounty" type="button" style="width:100%;background:rgba(255,215,0,0.16);color:#ffd700;border:1px solid rgba(255,215,0,0.55);border-radius:6px;padding:5px 8px;font-weight:800;font-size:10.5px;cursor:pointer;margin-bottom:5px;">🎯 Auto-Verify Open Bet ID (Bounty)</button>
       <div id="diggity-ext-status" style="font-size:10px;color:#38bdf8;">Ready — Synced with diggitybets.vip</div>
     `;
     document.body.appendChild(hud);
@@ -165,11 +166,70 @@
     const betInp = document.getElementById('diggity-ext-bet');
     const callerInp = document.getElementById('diggity-ext-caller');
 
+    const inspectAndVerifyOpenStakeBet = (isAuto = false) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      let betId = urlParams.get('iid') || '';
+      const bodyText = document.body ? document.body.innerText : '';
+      if (!betId) {
+        const idMatch = bodyText.match(/((?:house|casino)[_:]\s*[\d,]{6,25})/i);
+        if (idMatch) betId = idMatch[1].replace(/[\s,]/g, '').toLowerCase();
+      }
+      if (!betId) {
+        if (!isAuto) {
+          const st = document.getElementById('diggity-ext-status');
+          if (st) { st.textContent = '⚠️ Open a Stake Bet modal (?iid=...) first'; st.style.color = '#fbbf24'; }
+        }
+        return;
+      }
+      const multMatch = bodyText.match(/([\d,]+(?:\.\d{1,2})?)\s*x\b/i);
+      const amounts = Array.from(bodyText.matchAll(/\$\s*([\d,]+(?:\.\d{2,4})?)/g)).map(m => parseFloat(m[1].replace(/,/g, ''))).filter(n => !isNaN(n) && n >= 0);
+      const detectedSlot = detectActiveSlotName();
+      const betSize = amounts.length > 0 ? amounts[0] : (parseFloat(betInp && betInp.value) || 0.20);
+      const payout = amounts.length > 1 ? amounts[amounts.length - 1] : 0;
+      const multiplier = multMatch ? parseFloat(multMatch[1].replace(/,/g, '')) : (betSize > 0 && payout > 0 ? Number((payout / betSize).toFixed(2)) : 0);
+
+      const verifyPayload = {
+        source: 'DIGGITY_STAKE_COMPANION',
+        action: 'AUTO_VERIFY_BOUNTY_BET',
+        betId: betId.replace(/[\s,]/g, ''),
+        slotName: detectedSlot,
+        betSize,
+        payout,
+        multiplier,
+        ts: Date.now()
+      };
+
+      try {
+        if (window.opener && !window.opener.closed) window.opener.postMessage(verifyPayload, '*');
+      } catch (_) {}
+      try {
+        fetch('https://diggitybets.vip/api/companion/capture', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify(verifyPayload)
+        }).catch(() => {});
+      } catch (_) {}
+      try {
+        const b = new Image();
+        b.src = `https://diggitybets.vip/api/companion/capture?beacon=1&action=AUTO_VERIFY_BOUNTY_BET&betId=${encodeURIComponent(verifyPayload.betId)}&slot=${encodeURIComponent(detectedSlot)}&bet=${encodeURIComponent(betSize)}&payout=${encodeURIComponent(payout)}&mult=${encodeURIComponent(multiplier)}&ts=${verifyPayload.ts}`;
+      } catch (_) {}
+
+      const st = document.getElementById('diggity-ext-status');
+      if (st) {
+        st.textContent = `✓ Bet Verified: ${verifyPayload.betId} (${multiplier || '?'}x)`;
+        st.style.color = '#ffd700';
+      }
+    };
+
     const syncDetectedSlot = () => {
       const detected = detectActiveSlotName();
       if (slotLabelEl) slotLabelEl.textContent = `🎰 ${detected}`;
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ diggity_last_slot_name: detected });
+      }
+      if (window.location.search.includes('iid=')) {
+        inspectAndVerifyOpenStakeBet(true);
       }
     };
     syncDetectedSlot();
@@ -205,6 +265,8 @@
     document.getElementById('diggity-ext-btn-4s').onclick = () => sendBonusCapture('4S');
     document.getElementById('diggity-ext-btn-5s').onclick = () => sendBonusCapture('5S');
     document.getElementById('diggity-ext-btn-super').onclick = () => sendBonusCapture('SUPER');
+    const verifyBtn = document.getElementById('diggity-ext-btn-verify-bounty');
+    if (verifyBtn) verifyBtn.onclick = () => inspectAndVerifyOpenStakeBet(false);
 
     setInterval(syncDetectedSlot, 2000);
   }

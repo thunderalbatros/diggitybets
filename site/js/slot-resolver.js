@@ -817,10 +817,14 @@
     return 0;
   }
 
+  var ONLY_ON_STAKE_STUDIOS_RE = /(valkyrie|degen\s*lab|degen\s*studios|maverick|creative\s*city|truelab|true\s*lab|shady\s*lady|uppercut|paperclip|twist\s*gaming|twisting\s*play|donut\s*gaming|titan\s*gaming|titanbyte|titanforge|pocket\s*play|colorful|massive\s*studios|backseat|bullshark|stake\s*exclusive)/i;
+  var ONLY_ON_STAKE_TITLES_RE = /^(Reactorgames|Harmonica|Wildgoose|Tinexgames|Jadebird|Geminigaming|Afterhoursstudios|Quickstrike|0x0x|Merveillesstudio|Burstpilot|Titan|Twist|Massive|Paperclip|Spicy SixSixSix|Gates of Heaven|Sugar Twist)/i;
+
   function extractCreatorStudio(es) {
     if (!es) return 'Stake Exclusive';
     if (es.creatorStudio) return es.creatorStudio;
     var n = String(es.name || '');
+    var p = String(es.provider || '');
     if (/^Reactorgames/i.test(n)) return 'Reactor Games';
     if (/^Harmonica/i.test(n)) return 'Harmonica';
     if (/^Wildgoose/i.test(n)) return 'Wildgoose';
@@ -832,12 +836,22 @@
     if (/^0x0x/i.test(n)) return '0x0x Studios';
     if (/^Merveillesstudio/i.test(n)) return 'Merveilles Studio';
     if (/^Burstpilot/i.test(n)) return 'Burstpilot';
-    if (/titan/i.test(es.provider || '') || /titan/i.test(n)) return 'Titan Gaming';
-    if (/twist/i.test(es.provider || '') || /twist/i.test(n)) return 'Twist Gaming';
-    if (/massive/i.test(es.provider || '') || /massive/i.test(n)) return 'Massive Studios';
-    if (/paperclip/i.test(es.provider || '') || /paperclip/i.test(n)) return 'Paperclip Gaming';
-    if (/avatarux/i.test(es.provider || '')) return 'AvatarUX';
-    if (es.provider && es.provider !== 'Stake Exclusive') return es.provider;
+    if (/valkyrie/i.test(p)) return 'Valkyrie';
+    if (/degen/i.test(p)) return 'Degen Lab';
+    if (/maverick/i.test(p)) return 'Maverick Studios';
+    if (/creative\s*city/i.test(p)) return 'Creative City';
+    if (/true\s*lab/i.test(p)) return 'TrueLab';
+    if (/shady\s*lady/i.test(p)) return 'Shady Lady';
+    if (/uppercut/i.test(p)) return 'Uppercut Gaming';
+    if (/paperclip/i.test(p) || /paperclip/i.test(n)) return 'Paperclip Gaming';
+    if (/twist/i.test(p) || /twist/i.test(n)) return 'Twist Gaming';
+    if (/donut/i.test(p)) return 'Donut Gaming';
+    if (/titan/i.test(p) || /titan/i.test(n)) return 'Titan Gaming';
+    if (/pocket\s*play/i.test(p)) return 'Pocket Play';
+    if (/colorful/i.test(p)) return 'Colorful Play';
+    if (/massive/i.test(p) || /massive/i.test(n)) return 'Massive Studios';
+    if (/avatarux/i.test(p)) return 'AvatarUX';
+    if (p && p !== 'Stake Exclusive') return p;
     return 'Stake Exclusive Studio';
   }
 
@@ -845,8 +859,10 @@
     if (!es) return false;
     if (es.isOnlyOnStake === true) return true;
     if (es.category === 'stake' || es.provider === 'Stake Exclusive' || es.badge === 'ONLY ON STAKE') return true;
+    var p = String(es.provider || '');
     var n = String(es.name || '');
-    return /^(Reactorgames|Harmonica|Wildgoose|Tinexgames|Jadebird|Geminigaming|Afterhoursstudios|Quickstrike|0x0x|Merveillesstudio|Burstpilot|Titan|Twist|Massive|Paperclip)/i.test(n);
+    if (ONLY_ON_STAKE_STUDIOS_RE.test(p)) return true;
+    return ONLY_ON_STAKE_TITLES_RE.test(n);
   }
 
   function formatCatalogSlot(es, baseContext) {
@@ -1329,6 +1345,7 @@
     if (ctx === 'battle') data.battleImpressions = (data.battleImpressions || 0) + 1;
     else if (ctx === 'tourney') data.tourneyImpressions = (data.tourneyImpressions || 0) + 1;
     else if (ctx === 'bonushunt') data.huntImpressions = (data.huntImpressions || 0) + 1;
+    else if (ctx === 'bounty' || ctx === 'bounties') data.bountyImpressions = (data.bountyImpressions || 0) + 1;
 
     var studio = slot.creatorStudio || 'Stake Exclusive Studio';
     if (!data.studios[studio]) data.studios[studio] = { impressions: 0, slotsRun: 0 };

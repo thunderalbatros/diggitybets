@@ -38,7 +38,7 @@ window.switchView = function(targetId) {
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#stake-leaderboard', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
+  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#stake-leaderboard', '#bounties', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -71,6 +71,9 @@ window.switchView = function(targetId) {
   if (targetId === '#stake-leaderboard' && window.userStore && typeof window.userStore.renderLeaderboard === 'function') {
     window.userStore.renderLeaderboard();
   }
+  if (targetId === '#bounties' && window.DiggityBountySystem && typeof window.DiggityBountySystem.renderPublicBoard === 'function') {
+    window.DiggityBountySystem.renderPublicBoard();
+  }
   if (targetId === '#leaderboard' && window.userStore && typeof window.userStore.renderHistoricalLeaderboard === 'function') {
     window.userStore.renderHistoricalLeaderboard();
   }
@@ -80,6 +83,9 @@ window.switchView = function(targetId) {
     window.adminHub._adminDecksDirty = false;
     window.adminHub.renderAllDecks();
     window.adminHub.syncCondensedControlPanelUI();
+  }
+  if (targetId === '#control-panel' && window.DiggityBountySystem && typeof window.DiggityBountySystem.renderAdminControlPanel === 'function') {
+    window.DiggityBountySystem.renderAdminControlPanel();
   }
 
   // Update navigation tabs
@@ -103,6 +109,7 @@ window.switchView = function(targetId) {
     '#slot-intel': '🔥 SLOT RADAR, ENGINE DNA & VAULT',
     '#store': '🎁 REWARDS STORE & RAFFLES',
     '#stake-leaderboard': '⚡ STAKE WAGER LEADERBOARD ($1,500)',
+    '#bounties': '🎯 ONLY ON STAKE BOUNTYS ($3 – $20 USD)',
     '#leaderboard': '🏆 KICK LEADERBOARD',
     '#profile': '👤 USER PROFILE & VERIFICATION',
     '#admin-hub': '👑 STREAMER ADMIN & MODERATION HUB',

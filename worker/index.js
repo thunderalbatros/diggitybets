@@ -1188,8 +1188,41 @@ export default {
           };
         }
 
+        const actionType = String(payload.action || url.searchParams.get('action') || 'AUTO_CAPTURE_BONUS').toUpperCase();
         const slotName = String(payload.slotName || '').trim().slice(0, 120);
-        if (slotName) {
+
+        if (actionType === 'AUTO_VERIFY_BOUNTY_BET') {
+          const rawBetId = String(payload.betId || url.searchParams.get('betId') || '').trim().slice(0, 120);
+          if (rawBetId) {
+            const current = await readOverlaySyncState();
+            current.companionVerifiedBets = Array.isArray(current.companionVerifiedBets) ? current.companionVerifiedBets : [];
+            const verifiedEntry = {
+              action: 'AUTO_VERIFY_BOUNTY_BET',
+              betId: rawBetId,
+              slotName: slotName || String(payload.game || '').trim().slice(0, 120),
+              betSize: parseFloat(payload.betSize || payload.amount || url.searchParams.get('bet') || '0') || 0,
+              payout: parseFloat(payload.payout || url.searchParams.get('payout') || '0') || 0,
+              multiplier: parseFloat(payload.multiplier || url.searchParams.get('mult') || '0') || 0,
+              stakeUser: String(payload.stakeUser || url.searchParams.get('user') || '').trim().slice(0, 64),
+              ts: Number(payload.ts || Date.now())
+            };
+            current.companionVerifiedBets = current.companionVerifiedBets.filter(b => b.betId !== rawBetId);
+            current.companionVerifiedBets.push(verifiedEntry);
+            if (current.companionVerifiedBets.length > 50) {
+              current.companionVerifiedBets = current.companionVerifiedBets.slice(-50);
+            }
+            // Automatically upgrade any matching pending claim in current.bountyClaims
+            if (Array.isArray(current.bountyClaims)) {
+              for (const claim of current.bountyClaims) {
+                if (claim.canonicalBetId === rawBetId || claim.rawBetId === rawBetId) {
+                  claim.companionVerified = true;
+                  claim.companionData = verifiedEntry;
+                }
+              }
+            }
+            await writeOverlaySyncState(current);
+          }
+        } else if (slotName) {
           const current = await readOverlaySyncState();
           current.companionCaptures = Array.isArray(current.companionCaptures) ? current.companionCaptures : [];
           const captureItem = {
@@ -1223,7 +1256,117 @@ export default {
           });
         }
 
-        return new Response(JSON.stringify({ ok: true, captured: Boolean(slotName) }), { headers: noCacheHeaders });
+        return new Response(JSON.stringify({ ok: true, captured: Boolean(slotName || payload.betId) }), { headers: noCacheHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
+      }
+    }
+
+    // 13c. Bountys State & Automated Bet ID Pre-Verification Engine
+    if (url.pathname === '/api/bounties/state') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (request.method === 'GET') {
+        const syncState = await readOverlaySyncState();
+        return new Response(JSON.stringify({
+          ok: true,
+          bounties: Array.isArray(syncState.bounties) ? syncState.bounties : null,
+          claims: Array.isArray(syncState.bountyClaims) ? syncState.bountyClaims : [],
+          verifiedBets: Array.isArray(syncState.companionVerifiedBets) ? syncState.companionVerifiedBets : [],
+          updatedAt: syncState.updatedAt || 0
+        }), { headers: noCacheHeaders });
+      }
+      if (request.method === 'POST') {
+        if (!isSameOrTrustedOrigin(request)) {
+          return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+        }
+        const body = await request.json().catch(() => ({}));
+        const current = await readOverlaySyncState();
+        if (Array.isArray(body.bounties)) current.bounties = body.bounties;
+        if (Array.isArray(body.claims)) current.bountyClaims = body.claims;
+        await writeOverlaySyncState(current);
+        return new Response(JSON.stringify({ ok: true, updatedAt: current.updatedAt }), { headers: noCacheHeaders });
+      }
+    }
+
+    if (url.pathname === '/api/bounties/verify-bet' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      try {
+        const body = await request.json().catch(() => ({}));
+        const rawInput = String(body.betIdOrUrl || body.betId || '').trim();
+        let canonicalBetId = rawInput;
+        try {
+          if (rawInput.includes('iid=')) {
+            const u = new URL(rawInput.startsWith('http') ? rawInput : 'https://stake.com/' + rawInput);
+            const iid = u.searchParams.get('iid');
+            if (iid) canonicalBetId = decodeURIComponent(iid).trim();
+          }
+        } catch (_) {}
+        const idMatch = canonicalBetId.match(/((?:house|casino|sport)[_:]\d{5,22}|\b\d{8,22}\b)/i);
+        if (idMatch) {
+          canonicalBetId = idMatch[1].includes(':') ? idMatch[1].toLowerCase() : ('house:' + idMatch[1].replace(/^house[_:]?/i, ''));
+        }
+
+        const current = await readOverlaySyncState();
+        current.bountyClaims = Array.isArray(current.bountyClaims) ? current.bountyClaims : [];
+        current.companionVerifiedBets = Array.isArray(current.companionVerifiedBets) ? current.companionVerifiedBets : [];
+
+        const isDuplicate = current.bountyClaims.some(
+          c => c.status !== 'REJECTED' && (c.canonicalBetId === canonicalBetId || c.rawBetId === rawInput)
+        );
+        const companionMatch = current.companionVerifiedBets.find(
+          b => b.betId === canonicalBetId || b.betId === rawInput
+        ) || null;
+
+        const minBetUsd = parseFloat(body.minBetUsd || 0.10) || 0.10;
+        const targetMultiplier = parseFloat(body.targetMultiplier || 100) || 100;
+        const claimedBetUsd = companionMatch && companionMatch.betSize > 0
+          ? companionMatch.betSize
+          : (parseFloat(body.claimedBetUsd || 0) || 0);
+        const claimedPayoutUsd = companionMatch && companionMatch.payout > 0
+          ? companionMatch.payout
+          : (parseFloat(body.claimedPayoutUsd || 0) || 0);
+        const rawClaimedMulti = companionMatch && companionMatch.multiplier > 0
+          ? companionMatch.multiplier
+          : (parseFloat(body.claimedMultiplier || 0) || 0);
+        const effectiveMultiplier = (claimedBetUsd > 0 && claimedPayoutUsd > 0)
+          ? Number((claimedPayoutUsd / claimedBetUsd).toFixed(2))
+          : Number(rawClaimedMulti.toFixed(2));
+
+        const betIdValid = Boolean(canonicalBetId && canonicalBetId.length >= 6 && !isDuplicate);
+        const minBetMet = claimedBetUsd >= (minBetUsd - 0.0001) && claimedBetUsd > 0;
+        const multiplierMet = effectiveMultiplier >= (targetMultiplier - 0.01);
+        const targetSlotNorm = String(body.slotName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const verifiedSlotNorm = companionMatch && companionMatch.slotName
+          ? companionMatch.slotName.toLowerCase().replace(/[^a-z0-9]/g, '')
+          : targetSlotNorm;
+        const slotMatch = !targetSlotNorm || !verifiedSlotNorm || verifiedSlotNorm.includes(targetSlotNorm) || targetSlotNorm.includes(verifiedSlotNorm);
+
+        const passedCount = [betIdValid, slotMatch, minBetMet, multiplierMet].filter(Boolean).length;
+        const preCheckPassed = passedCount === 4;
+        const stakeInspectUrl = `https://stake.com/casino/home?iid=${encodeURIComponent(canonicalBetId)}&modal=bet`;
+        const stakeMirrorInspectUrl = `https://stake.krd/casino/home?iid=${encodeURIComponent(canonicalBetId)}&modal=bet`;
+
+        return new Response(JSON.stringify({
+          ok: true,
+          preCheckPassed,
+          autoScore: `${passedCount}/4`,
+          isDuplicate,
+          canonicalBetId,
+          stakeInspectUrl,
+          stakeMirrorInspectUrl,
+          effectiveMultiplier,
+          claimedBetUsd,
+          claimedPayoutUsd,
+          companionVerified: Boolean(companionMatch),
+          companionData: companionMatch,
+          checks: {
+            betIdValid,
+            slotMatch,
+            minBetMet,
+            multiplierMet,
+            referralVerified: Boolean(body.referralVerified)
+          }
+        }), { headers: noCacheHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
       }
@@ -1242,7 +1385,10 @@ export default {
           alt_clusters: [],
           celebrationEvent: syncState.celebrationEvent || null,
           overlayEvents: syncState.overlayEvents || {},
-          companionCaptures: Array.isArray(syncState.companionCaptures) ? syncState.companionCaptures : []
+          companionCaptures: Array.isArray(syncState.companionCaptures) ? syncState.companionCaptures : [],
+          companionVerifiedBets: Array.isArray(syncState.companionVerifiedBets) ? syncState.companionVerifiedBets : [],
+          bounties: Array.isArray(syncState.bounties) ? syncState.bounties : null,
+          bountyClaims: Array.isArray(syncState.bountyClaims) ? syncState.bountyClaims : []
         };
         if (env.DB) {
           try {
