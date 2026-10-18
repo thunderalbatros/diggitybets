@@ -22,6 +22,7 @@
   
   <!-- Design System Stylesheet -->
   <link rel="stylesheet" href="site/css/style.css?v=21.0">
+  <link rel="stylesheet" href="site/css/diggity-intel.css?v=23.0">
   <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM & Agentic Context Index">
   <script type="application/ld+json">
   {
@@ -88,6 +89,11 @@
         <a href="#bonushunt" class="nav-link-btn" data-target="#bonushunt" title="Bonus Hunt">
           <span class="nav-item-icon">💎</span>
           <span class="nav-item-text">Bonus Hunt</span>
+        </a>
+        <a href="#slot-intel" class="nav-link-btn" data-target="#slot-intel" title="Slot Radar, Engine DNA & 3D Vault">
+          <span class="nav-item-icon">🔥</span>
+          <span class="nav-item-text">Slot Radar & Lab</span>
+          <span class="reward-badge-pill" style="margin-left: auto; background: rgba(83, 252, 24, 0.14); border: 1px solid #53fc18; color: #53fc18; font-size: 0.6rem; padding: 1px 5px; font-weight: 800; border-radius: 4px;">NEW</span>
         </a>
         <a href="#store" class="nav-link-btn" data-target="#store" title="Rewards Store">
           <span class="nav-item-icon">🎁</span>
@@ -1420,6 +1426,33 @@
         </div>
       </div>
 
+      <!-- LIVE SESSION BANKROLL COMMAND BAR (DEPOSITED IN vs. WITHDRAWN OUT + NET P&L) -->
+      <div class="session-bankroll-strip" id="bh-session-bankroll-strip">
+        <div class="sb-metrics-group">
+          <span class="bh-tier-badge tier-max">💰 LIVE STREAM BANKROLL</span>
+          <div class="sb-stat-pill">
+            <span class="sb-stat-label">DEPOSITED (IN)</span>
+            <span class="sb-stat-val" id="bh-sb-in-val" style="color: #f8fafc;">$0.00</span>
+          </div>
+          <div class="sb-stat-pill">
+            <span class="sb-stat-label">WITHDRAWN (OUT)</span>
+            <span class="sb-stat-val" id="bh-sb-out-val" style="color: var(--cyan);">$0.00</span>
+          </div>
+          <div class="sb-stat-pill">
+            <span class="sb-stat-label">NET SESSION P&amp;L</span>
+            <span class="sb-stat-val" id="bh-sb-net-val" style="color: #53fc18;">+$0.00 (0.0%)</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="#slot-intel" onclick="window.switchView('#slot-intel'); if(window.diggityIntelSuite) window.diggityIntelSuite.switchIntelTab('sessions'); return false;" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: var(--gold); color: var(--gold);">
+            📅 Monthly P&amp;L Calendar
+          </a>
+          <a href="#slot-intel" onclick="window.switchView('#slot-intel'); if(window.diggityIntelSuite) window.diggityIntelSuite.switchIntelTab('rtp'); return false;" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+            🌡️ Live RTP Radar
+          </a>
+        </div>
+      </div>
+
       <!-- SOTA 2026: Six Core Financial & Mathematical Metrics Cards -->
       <div class="bh-metrics-grid-6">
         <div class="bh-metric-card">
@@ -1582,6 +1615,196 @@
     </section>
 
     <!-- ========================================================
+         SECTION 4B: DIGGITY SLOT RADAR, ENGINE DNA & 3D HOLO-VAULT
+         ======================================================== -->
+    <section class="section-container view-section" id="slot-intel">
+      <div class="section-header-row">
+        <div>
+          <h2 class="section-title"><span>🔥</span> DIGGITY <span class="accent">SLOT RADAR, ENGINE DNA &amp; HOLO-VAULT</span></h2>
+          <p class="section-subtitle">Live Observed RTP Thermal Radar · Mathematical Twin Scanner &amp; Mystery Bonus Odds · 3D Cyber-Vault Booster Pack · Monthly Session P&amp;L Calendar</p>
+        </div>
+        <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.14); border: 1px solid #53fc18; color: #53fc18;">
+          ⚡ CLEAN-ROOM 2026 SUITE
+        </span>
+      </div>
+
+      <!-- Sub-Navigation Tabs -->
+      <div class="intel-tabs-bar" role="tablist">
+        <button type="button" class="intel-tab-btn active" data-intel-tab="rtp">
+          <span>🌡️</span> Live RTP Thermal Radar
+        </button>
+        <button type="button" class="intel-tab-btn" data-intel-tab="engine">
+          <span>🧬</span> Engine DNA &amp; Math Twins
+        </button>
+        <button type="button" class="intel-tab-btn" data-intel-tab="vault">
+          <span>🃏</span> 3D Holo-Vault Pack
+        </button>
+        <button type="button" class="intel-tab-btn" data-intel-tab="sessions">
+          <span>📈</span> Session P&amp;L &amp; Stake Stats
+        </button>
+        <button type="button" class="intel-tab-btn" data-intel-tab="drops">
+          <span>🆕</span> Fresh Drops &amp; Companion Ext
+        </button>
+      </div>
+
+      <!-- TAB 1: LIVE SLOT RTP THERMAL RADAR -->
+      <div class="intel-subpanel" data-intel-panel="rtp" style="display: block;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; padding: 12px 16px; background: rgba(11, 17, 30, 0.86); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+          <div style="flex: 1; min-width: 220px;">
+            <input type="text" id="intel-rtp-search" class="slots-search-input" placeholder="Smart Search (try 'six six six', 'olympus gates', 'hacksaw')..." style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="intel-tab-btn active" data-rtp-period="24h" style="padding: 6px 11px; font-size: 11px;">24H Window</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="7d" style="padding: 6px 11px; font-size: 11px;">7D Window</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="30d" style="padding: 6px 11px; font-size: 11px;">30D Window</button>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="intel-tab-btn active" data-rtp-filter="ALL" style="padding: 6px 11px; font-size: 11px;">All Slots</button>
+            <button type="button" class="intel-tab-btn" data-rtp-filter="HOT" style="padding: 6px 11px; font-size: 11px; color: #fda4af;">🔥 Hot Only</button>
+            <button type="button" class="intel-tab-btn" data-rtp-filter="COLD" style="padding: 6px 11px; font-size: 11px; color: #7dd3fc;">❄️ Cold Only</button>
+          </div>
+        </div>
+        <div class="rtp-heatmap-grid" id="intel-rtp-grid">
+          <!-- Rendered dynamically by diggity-intel-suite.js -->
+        </div>
+      </div>
+
+      <!-- TAB 2: ENGINE DNA, MATH TWINS & MYSTERY BUY ODDS -->
+      <div class="intel-subpanel" data-intel-panel="engine" style="display: none;">
+        <div style="padding: 14px 16px; background: rgba(11, 17, 30, 0.88); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="font-family: var(--font-display); font-size: 14px; color: #fff;">🧬 MATHEMATICAL TWIN DETECTOR &amp; MYSTERY BONUS ODDS</strong>
+            <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Type any slot to inspect its Scatter Tier probabilities and discover mathematical clones across studios.</p>
+          </div>
+          <input type="text" id="intel-engine-search" class="slots-search-input" placeholder="Search slot DNA (e.g. Wanted Dead, Gates 1000, SixSixSix)..." style="min-width: 280px; padding: 8px 12px; font-size: 12.5px;">
+        </div>
+        <div id="intel-engine-results">
+          <!-- Rendered dynamically by diggity-intel-suite.js -->
+        </div>
+      </div>
+
+      <!-- TAB 3: 3D HOLO-VAULT PACK SLOT PICKER -->
+      <div class="intel-subpanel" data-intel-panel="vault" style="display: none;">
+        <div class="holo-vault-stage">
+          <div class="booster-pack-perspective">
+            <div class="booster-pack-3d" id="diggity-booster-pack-3d" title="Click to rip open the 3D Holo-Vault Pack!">
+              <div class="booster-pack-seal-top">✂️ TEAR VAULT SEAL HERE</div>
+              <div class="booster-pack-body">
+                <div class="booster-foil-glare"></div>
+                <span class="bh-tier-badge tier-6s" style="margin-bottom: 10px;">DIGGITY HOLO-VAULT SERIES I</span>
+                <img id="vault-revealed-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="Revealed Slot" style="width: 148px; height: 194px; aspect-ratio: 180/236; border-radius: 12px; object-fit: contain; background: #070a12; border: 2px solid var(--gold); box-shadow: 0 8px 24px rgba(0,0,0,0.7);">
+                <div id="vault-revealed-name" style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #fff; text-align: center; margin-top: 10px;">Wanted Dead or a Wild</div>
+                <div id="vault-revealed-provider" style="font-size: 11px; color: var(--gold); font-weight: 700;">Hacksaw Gaming</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <span class="bh-tier-badge tier-5s">🃏 INTERACTIVE 3D SLOT PICKER</span>
+              <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 900; color: #fff; margin: 6px 0 4px 0;">RIP OPEN A HOLO-VAULT BOOSTER PACK</h3>
+              <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin: 0;">
+                Can't decide which slot to spin next on stream? Filter by studio, rip the 3D holographic foil seal, and send the revealed slot straight to the <strong>!sr Wheel</strong> or <strong>Bonus Hunt</strong>!
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+              <select id="vault-filter-provider" class="slots-search-input" style="padding: 9px 12px; font-size: 12.5px; min-width: 190px;">
+                <option value="ALL">All Studios (4,889 Slots)</option>
+                <option value="hacksaw">Hacksaw Gaming</option>
+                <option value="pragmatic">Pragmatic Play</option>
+                <option value="nolimit">Nolimit City</option>
+                <option value="push">Push Gaming</option>
+                <option value="stake">Only on Stake / Engine</option>
+              </select>
+              <button type="button" id="btn-rip-vault-pack" class="btn-stake-primary" style="padding: 10px 20px; font-size: 13px; font-weight: 900;">
+                ⚡ RIP HOLO-VAULT PACK
+              </button>
+            </div>
+
+            <div id="vault-revealed-stats" style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--cyan);">
+              RTP: 96.38% · Max Win: 12,500x
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-vault-queue-sr" class="btn-chat-toggle" style="padding: 8px 14px; font-size: 12px; border-color: var(--gold); color: var(--gold); font-weight: 800;">
+                🎡 Send to !sr Wheel
+              </button>
+              <button type="button" id="btn-vault-add-hunt" class="btn-chat-toggle" style="padding: 8px 14px; font-size: 12px; border-color: #53fc18; color: #53fc18; font-weight: 800;">
+                💎 + Add to Bonus Hunt
+              </button>
+              <a id="btn-vault-play-stake" href="https://stake.com/casino/games/wanted-dead-or-a-wild" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle" style="padding: 8px 14px; font-size: 12px; text-decoration: none; border-color: var(--cyan); color: var(--cyan); font-weight: 800;">
+                ↗️ Open Slot on Stake
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: MONTHLY SESSION P&L CALENDAR & CLIENT-SIDE STAKE BET ANALYZER -->
+      <div class="intel-subpanel" data-intel-panel="sessions" style="display: none;">
+        <div style="padding: 16px; background: rgba(11, 17, 30, 0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #fff; margin: 0;">
+              📅 STREAM MONTHLY SESSION P&amp;L CALENDAR (IN vs. OUT)
+            </h3>
+            <div id="intel-pnl-month-summary" style="font-family: var(--font-display); font-size: 12.5px; color: #cbd5e1;"></div>
+          </div>
+          <div class="pnl-calendar-grid" id="intel-pnl-calendar-grid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(11, 17, 30, 0.9); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span class="bh-tier-badge tier-bought">🔒 100% LOCAL CLIENT-SIDE PRIVACY</span>
+              <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0;">
+                📊 PERSONAL STAKE BET ARCHIVE ANALYZER (JSON / CSV)
+              </h3>
+              <p style="font-size: 12px; color: #94a3b8; margin: 0;">Drop your Stake bet archive file to inspect total wagered, peak multipliers, and net P&amp;L. Zero data leaves your browser.</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <label class="btn-stake-primary" style="padding: 7px 14px; font-size: 11.5px; font-weight: 900; cursor: pointer;">
+                📂 Upload JSON/CSV
+                <input type="file" id="intel-stake-file-input" accept=".json,.csv" style="display: none;">
+              </label>
+              <button type="button" id="btn-intel-stake-sample" class="btn-chat-toggle" style="padding: 7px 12px; font-size: 11.5px; border-color: var(--gold); color: var(--gold);">
+                ⚡ Load Sample Archive
+              </button>
+            </div>
+          </div>
+          <div id="intel-stake-stats-output"></div>
+        </div>
+      </div>
+
+      <!-- TAB 5: FRESH SLOT DROPS & DIGGITY STAKE COMPANION EXTENSION -->
+      <div class="intel-subpanel" data-intel-panel="drops" style="display: none;">
+        <div style="padding: 16px; background: linear-gradient(135deg, rgba(0, 231, 1, 0.08), rgba(11, 17, 30, 0.92)); border: 1.5px solid rgba(83, 252, 24, 0.45); border-radius: 14px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <span class="bh-tier-badge tier-max">🧩 MANIFEST V3 BROWSER EXTENSION</span>
+            <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0;">
+              ⚡ DIGGITY STAKE COMPANION (HANDS-FREE BONUS CAPTURE)
+            </h3>
+            <p style="font-size: 12px; color: #cbd5e1; margin: 0;">
+              Load unpacked from <code style="color:#53fc18;">tools/diggity-stake-companion</code> in Chrome/Edge. Press <code style="color:var(--gold);">Alt+B</code> while playing on Stake to auto-capture slot name, bet size &amp; scatter badge with zero typing!
+            </p>
+          </div>
+          <button type="button" id="btn-test-stake-companion" class="btn-stake-primary" style="padding: 8px 14px; font-size: 11.5px; font-weight: 900;">
+            ⚡ Simulate Auto-Capture (5S Gold)
+          </button>
+        </div>
+
+        <h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: var(--gold); margin: 0 0 12px 0;">
+          🆕 OCTOBER 2026 FRESH DROPS &amp; HIGH MAX-WIN BEASTS
+        </h4>
+        <div id="intel-fresh-drops-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
          SECTION 5: CHANNEL POINTS REWARDS STORE
          ======================================================== -->
     <section class="section-container view-section" id="store">
@@ -1595,6 +1818,11 @@
           <span>Balance:</span>
           <span class="user-balance-val">0</span> $DIG
         </div>
+      </div>
+
+      <!-- 7-Day $DIG Daily Loyalty Streak Vault -->
+      <div id="dig-daily-streak-container" style="padding: 14px 18px; margin-bottom: 18px; background: rgba(11, 17, 30, 0.9); border: 1px solid rgba(255, 215, 0, 0.32); border-radius: 14px;">
+        <!-- Rendered dynamically by diggity-intel-suite.js -->
       </div>
 
       <!-- Weekly Raffle Hero Voucher Ticket -->
@@ -1620,6 +1848,17 @@
           </div>
           <div style="margin-top: 14px; font-family: var(--font-display); font-size: 13px; color: var(--gold);">
             YOUR ACTIVE TICKETS: <span id="raffle-user-tickets" style="font-weight: 900; font-size: 18px; color: #ffffff;">0</span> 🎟️
+          </div>
+
+          <!-- Public Giveaway Ticket Range Verifier -->
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <input type="text" id="inp-verify-raffle-user" class="slots-search-input" placeholder="Verify @KickUsername ticket range..." style="padding: 5px 10px; font-size: 11.5px; max-width: 240px;">
+              <button type="button" id="btn-verify-raffle-tickets" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; border-color: var(--cyan); color: var(--cyan); font-weight: 800;">
+                🔍 Verify My Ticket Range &amp; Odds
+              </button>
+            </div>
+            <div id="raffle-ticket-verifier-result" style="display: none; margin-top: 8px;"></div>
           </div>
         </div>
 
@@ -3080,25 +3319,56 @@
           </div>
 
           <div id="cp-module-body-bonushunt">
-            <!-- Add Bonus Bar with Catalog Autocomplete -->
+            <!-- Add Bonus Bar with Catalog Smart Search + Chromatic Tier Badge -->
             <div style="padding: 12px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; margin-bottom: 12px;">
               <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
                 <div style="flex: 2; min-width: 170px; position: relative;">
-                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SEARCH SLOT (CATALOG):</label>
-                  <input type="text" id="admin-hunt-slot-search" class="form-input-dark" placeholder="Type slot name (e.g. Wanted Dead, Sweet Bonanza)..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
+                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">SMART SEARCH (e.g. "six six six", "olympus gates"):</label>
+                  <input type="text" id="admin-hunt-slot-search" class="form-input-dark" placeholder="Type slot name or number words..." autocomplete="off" style="width: 100%; padding: 7px 10px; font-size: 12px;">
                   <div id="admin-hunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: #0f172a; border: 1px solid var(--border-subtle); border-radius: 8px; max-height: 220px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
                 </div>
-                <div style="flex: 1; min-width: 105px;">
+                <div style="flex: 1; min-width: 100px;">
                   <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">CALLER (@VIEWER):</label>
                   <input type="text" id="admin-hunt-caller-input" class="form-input-dark" placeholder="@Viewer" style="width: 100%; padding: 7px 10px; font-size: 12px;">
                 </div>
-                <div style="width: 82px;">
+                <div style="width: 78px;">
                   <label style="font-size: 10px; font-family: var(--font-display); color: var(--text-dim); display: block; margin-bottom: 4px;">BET ($):</label>
                   <input type="number" id="admin-hunt-bet-input" class="form-input-dark" value="2.00" step="0.20" style="width: 100%; padding: 7px 8px; font-size: 12px;">
+                </div>
+                <div style="width: 112px;">
+                  <label style="font-size: 10px; font-family: var(--font-display); color: var(--gold); display: block; margin-bottom: 4px;">SCATTER / TIER:</label>
+                  <select id="admin-hunt-bonus-tier" class="form-input-dark" style="width: 100%; padding: 7px 6px; font-size: 11px; font-weight: 800;">
+                    <option value="3S">3S (Standard)</option>
+                    <option value="4S">4S (Silver)</option>
+                    <option value="5S">5S (Gold)</option>
+                    <option value="6S">6S (Holo)</option>
+                    <option value="SUPER">🔥 SUPER</option>
+                    <option value="HIDDEN">🕵️ HIDDEN</option>
+                    <option value="MAX">⚡ MAX</option>
+                    <option value="BOUGHT">🛒 BOUGHT</option>
+                  </select>
                 </div>
                 <button type="button" class="btn-stake-primary" id="btn-admin-add-bonus" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
                   + Add Bonus
                 </button>
+              </div>
+            </div>
+
+            <!-- Live Session Bankroll (IN / OUT / NET P&L) Quick Control -->
+            <div style="padding: 10px 12px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="font-family: var(--font-display); font-size: 10px; font-weight: 900; color: #38bdf8;">💰 SESSION BANKROLL (IN / OUT):</span>
+                <input type="number" id="cp-sb-input-in" class="form-input-dark" placeholder="Deposit IN ($)" style="width: 110px; padding: 5px 8px; font-size: 11px;">
+                <input type="number" id="cp-sb-input-out" class="form-input-dark" placeholder="Cashout OUT ($)" style="width: 115px; padding: 5px 8px; font-size: 11px;">
+                <button type="button" id="btn-sb-apply-custom" class="btn-stake-secondary" style="padding: 5px 10px; font-size: 10px; font-weight: 800;">Set IN/OUT</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                <button type="button" id="btn-sb-add-in-100" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #f87171; color: #f87171;">+$100 IN</button>
+                <button type="button" id="btn-sb-add-in-500" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #f87171; color: #f87171;">+$500 IN</button>
+                <button type="button" id="btn-sb-add-out-100" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">+$100 OUT</button>
+                <button type="button" id="btn-sb-add-out-500" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px; border-color: #53fc18; color: #53fc18;">+$500 OUT</button>
+                <button type="button" id="btn-sb-log-calendar" class="btn-stake-primary" style="padding: 4px 10px; font-size: 10px; font-weight: 800;">📅 Log to P&amp;L Calendar</button>
+                <button type="button" id="btn-sb-reset" class="btn-chat-toggle" style="padding: 4px 8px; font-size: 10px;">Reset</button>
               </div>
             </div>
 
@@ -3158,6 +3428,7 @@
         <a href="#battle">1v1 Battle KOH</a>
         <a href="#tournament">Tournament</a>
         <a href="#bonushunt">Bonus Hunt</a>
+        <a href="#slot-intel">Slot Radar &amp; Lab</a>
         <a href="#store">Rewards Store</a>
         <a href="#leaderboard">Leaderboard</a>
         <a href="#profile">Profile</a>
@@ -3171,24 +3442,25 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=22.0"></script>
-  <script src="site/js/slot-resolver.js?v=22.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=22.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=22.0"></script>
-  <script src="site/js/audio.js?v=22.0"></script>
-  <script src="site/js/pro-fx-audio.js?v=22.0"></script>
-  <script src="site/js/provably-fair.js?v=22.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=22.0"></script>
-  <script src="site/js/avatar-generator.js?v=22.0"></script>
-  <script src="site/js/user-store.js?v=22.0"></script>
-  <script src="site/js/auth-oauth.js?v=22.0"></script>
-  <script src="site/js/admin-hub.js?v=22.0"></script>
-  <script src="site/js/house-games.js?v=22.0"></script>
-  <script src="site/js/tournament-prediction.js?v=22.0"></script>
-  <script src="site/js/bonushunt.js?v=22.0"></script>
-  <script src="site/js/motion-fx.js?v=22.0"></script>
-  <script src="site/js/sonner-toast.js?v=22.0"></script>
-  <script src="site/js/app.js?v=22.0"></script>
+  <script src="data/curated_slots.js?v=23.0"></script>
+  <script src="site/js/slot-resolver.js?v=23.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=23.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=23.0"></script>
+  <script src="site/js/audio.js?v=23.0"></script>
+  <script src="site/js/pro-fx-audio.js?v=23.0"></script>
+  <script src="site/js/provably-fair.js?v=23.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=23.0"></script>
+  <script src="site/js/avatar-generator.js?v=23.0"></script>
+  <script src="site/js/user-store.js?v=23.0"></script>
+  <script src="site/js/auth-oauth.js?v=23.0"></script>
+  <script src="site/js/admin-hub.js?v=23.0"></script>
+  <script src="site/js/house-games.js?v=23.0"></script>
+  <script src="site/js/tournament-prediction.js?v=23.0"></script>
+  <script src="site/js/bonushunt.js?v=23.0"></script>
+  <script src="site/js/diggity-intel-suite.js?v=23.0"></script>
+  <script src="site/js/motion-fx.js?v=23.0"></script>
+  <script src="site/js/sonner-toast.js?v=23.0"></script>
+  <script src="site/js/app.js?v=23.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 

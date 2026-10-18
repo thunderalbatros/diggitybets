@@ -1215,10 +1215,9 @@ class AdminHubController {
           return;
         }
 
-        const slots = (window.HUNTHUB_CURATED_SLOTS && window.HUNTHUB_CURATED_SLOTS.length > 0)
-          ? window.HUNTHUB_CURATED_SLOTS
-          : (window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : []);
-        const matches = slots.filter(s => s.name.toLowerCase().includes(q) || (s.provider && s.provider.toLowerCase().includes(q))).slice(0, 8);
+        const matches = (window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function')
+          ? window.SlotResolver.smartSearch(q, 8)
+          : ((window.HUNTHUB_CURATED_SLOTS || []).filter(s => s.name.toLowerCase().includes(q) || (s.provider && s.provider.toLowerCase().includes(q))).slice(0, 8));
 
         if (matches.length === 0) {
           dropdown.style.display = 'none';
@@ -1230,7 +1229,7 @@ class AdminHubController {
             <img src="${s.image}" alt="${s.name}" style="width: 33px; height: 44px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">
             <div style="flex: 1;">
               <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${s.name}</div>
-              <div style="font-size: 11px; color: var(--gold);">${s.provider} · Max: ${s.maxWin || '10,000x'}</div>
+              <div style="font-size: 11px; color: var(--gold);">${s.provider} · RTP: ${s.rtp || '96.35%'} · Max: ${s.maxWin || '10,000x'}</div>
             </div>
           </div>
         `).join('');
@@ -1264,6 +1263,7 @@ class AdminHubController {
         const slotName = inputSearch ? inputSearch.value.trim() : '';
         const caller = (document.getElementById('admin-hunt-caller-input')?.value || '').trim() || '@Viewer';
         const bet = parseFloat(document.getElementById('admin-hunt-bet-input')?.value || '1.0');
+        const bonusTier = (document.getElementById('admin-hunt-bonus-tier')?.value || '3S').toUpperCase();
 
         if (!slotName) {
           if (window.sonner) window.sonner.toast({ title: 'Slot Name Required', message: 'Select a slot from catalog.', type: 'danger' });
@@ -1280,6 +1280,7 @@ class AdminHubController {
           provider: resolved ? (resolved.provider || resolved.badge) : (this.selectedSlot ? this.selectedSlot.provider : 'Casino Slot'),
           bet: bet || 2.0,
           payout: 0,
+          bonusTier: bonusTier || '3S',
           caller: caller.startsWith('@') ? caller : '@' + caller,
           image: resolved ? resolved.image : (this.selectedSlot ? this.selectedSlot.image : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format')
         };
@@ -1299,7 +1300,7 @@ class AdminHubController {
         }
 
         if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') window.soundEngine.playCoin();
-        if (window.sonner) window.sonner.toast({ title: 'Bonus Added! 🎰', message: `${newBonus.name} added to hunt.`, type: 'green' });
+        if (window.sonner) window.sonner.toast({ title: `Bonus Added (${newBonus.bonusTier})! 🎰`, message: `${newBonus.name} added to hunt.`, type: 'green' });
         this.renderBonusHuntAdmin();
       });
     }
@@ -1321,12 +1322,12 @@ class AdminHubController {
     if (btnDemo) {
       btnDemo.onclick = () => {
         const demoBonuses = [
-          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, caller: '@NachoGamer', image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
-          { id: 'gates-of-olympus-1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
-          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
-          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, caller: '@AgusKick', image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
-          { id: 'sweet-bonanza-1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, caller: '@Valen99', image: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
-          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', bet: 2.0, payout: 0, caller: '@StakeHunter', image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' }
+          { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', bet: 2.0, payout: 184.50, bonusTier: '5S', caller: '@NachoGamer', image: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
+          { id: 'gates-of-olympus-1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 312.00, bonusTier: 'SUPER', caller: '@SlotKing21', image: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
+          { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', bet: 2.0, payout: 74.00, bonusTier: '4S', caller: '@DiggityFan', image: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
+          { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', bet: 2.0, payout: 0, bonusTier: 'HIDDEN', caller: '@AgusKick', image: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
+          { id: 'sweet-bonanza-1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', bet: 2.0, payout: 0, bonusTier: '3S', caller: '@Valen99', image: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
+          { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', bet: 2.0, payout: 0, bonusTier: '6S', caller: '@StakeHunter', image: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' }
         ];
         localStorage.setItem('hunthub_hunt_slots', JSON.stringify(demoBonuses));
         localStorage.setItem('hunthub_hunt_active', 'true');
@@ -1337,7 +1338,7 @@ class AdminHubController {
           window.bonusHunt.renderSlotTable();
         }
         this.renderBonusHuntAdmin();
-        if (window.sonner) window.sonner.toast({ title: 'Demo Hunt Loaded 🎲', message: '6 bonuses populated.', type: 'cyan' });
+        if (window.sonner) window.sonner.toast({ title: 'Demo Hunt Loaded 🎲', message: '6 bonuses with Scatter/Super badges populated.', type: 'cyan' });
       };
     }
 
@@ -1434,6 +1435,10 @@ class AdminHubController {
     } catch (_) {}
   }
 
+  renderHuntAdmin() {
+    this.renderBonusHuntAdmin();
+  }
+
   renderBonusHuntAdmin() {
     const tbody = document.getElementById('admin-hunt-bonuses-tbody');
     const summaryEl = document.getElementById('cp-bh-summary');
@@ -1463,10 +1468,22 @@ class AdminHubController {
       return;
     }
 
+    const tierOptions = [
+      { code: '3S', label: '3S Standard' },
+      { code: '4S', label: '🥈 4S Silver' },
+      { code: '5S', label: '🥇 5S Gold' },
+      { code: '6S', label: '🌈 6S Holo' },
+      { code: 'SUPER', label: '🔥 SUPER' },
+      { code: 'HIDDEN', label: '🕵️ HIDDEN' },
+      { code: 'MAX', label: '⚡ MAX VOL' },
+      { code: 'BOUGHT', label: '🛒 BOUGHT' }
+    ];
+
     tbody.innerHTML = slots.map((s, idx) => {
       const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
       const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : s;
       const imgUrl = (canon && canon.image) ? canon.image : s.image;
+      const curTier = String(s.bonusTier || s.tierBadge || '3S').toUpperCase();
       const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
         ? window.SlotResolver.generateDataUriCard(s.name || 'Slot', s.provider || 'Casino')
         : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
@@ -1477,7 +1494,12 @@ class AdminHubController {
             <div style="display: flex; align-items: center; gap: 10px;">
               <img src="${imgUrl}" alt="${s.name}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
               <div>
-                <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
+                  <select class="admin-bonus-tier-select bh-tier-badge tier-${curTier.toLowerCase()}" data-idx="${idx}" style="cursor:pointer; font-size:9.5px; padding:1px 5px; border-radius:4px; background:#0f172a; color:#fff;">
+                    ${tierOptions.map(o => `<option value="${o.code}" ${o.code === curTier ? 'selected' : ''}>${o.label}</option>`).join('')}
+                  </select>
+                </div>
                 <div style="font-size: 11px; color: var(--text-dim);">${canon && canon.provider ? canon.provider : s.provider}</div>
               </div>
             </div>
@@ -1497,7 +1519,20 @@ class AdminHubController {
       `;
     }).join('');
 
-    // Bind payout inputs and delete buttons
+    // Bind tier badge select, payout inputs, and delete buttons
+    tbody.querySelectorAll('.admin-bonus-tier-select').forEach(sel => {
+      sel.onchange = () => {
+        const idx = parseInt(sel.dataset.idx, 10);
+        slots[idx].bonusTier = sel.value;
+        localStorage.setItem('hunthub_hunt_slots', JSON.stringify(slots));
+        if (window.bonusHunt) {
+          window.bonusHunt.slots = slots;
+          window.bonusHunt.renderSlotTable();
+        }
+        this.renderBonusHuntAdmin();
+      };
+    });
+
     tbody.querySelectorAll('.admin-payout-input').forEach(input => {
       input.onchange = () => {
         const idx = parseInt(input.dataset.idx, 10);
@@ -4419,8 +4454,8 @@ class AdminHubController {
           this.renderDuoQueue();
         } else if (moduleId === 'bracket' && typeof this.renderTournamentAdmin === 'function') {
           this.renderTournamentAdmin();
-        } else if (moduleId === 'bonushunt' && typeof this.renderHuntAdmin === 'function') {
-          this.renderHuntAdmin();
+        } else if (moduleId === 'bonushunt' && typeof this.renderBonusHuntAdmin === 'function') {
+          this.renderBonusHuntAdmin();
         }
       }
     };

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "DiggityBets Stake Companion (Hands-Free Bonus Hunt & Odds HUD)",
+  "version": "1.0.0",
+  "description": "Clean-room Manifest V3 companion for diggitybets.vip. Auto-detects active Stake slot & bet size, shows Mystery Bonus Odds, and logs bonuses hands-free (Alt+B).",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://stake.com/*",
+    "https://*.stake.com/*",
+    "https://diggitybets.vip/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://stake.com/*", "https://*.stake.com/*"],
+      "js": ["content-stake.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://diggitybets.vip/*",
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ],
+      "js": ["content-diggity.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

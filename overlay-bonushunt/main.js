@@ -246,6 +246,7 @@ class BonusHuntOverlayApp {
         betSize: bet,
         payout,
         multiplier: mult,
+        bonusTier: s.bonusTier || s.tierBadge || '3S',
         status: payout > 0 ? 'OPENED' : 'PENDING'
       };
     });
@@ -672,6 +673,19 @@ class BonusHuntOverlayApp {
       ? `<img class="slot-thumb-img" src="${slotImgSrc}" alt="" onerror="this.onerror=null; this.src='${fallbackCardUri}';" />`
       : `<div class="slot-thumb-fallback" style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:18px;">🎰</div>`;
 
+    const tierCode = String(b.bonusTier || '3S').toUpperCase();
+    const tierLabelMap = {
+      '3S': { text: '3 SCATTERS', cls: 'tier-3s' },
+      '4S': { text: '🥈 4S SILVER', cls: 'tier-4s' },
+      '5S': { text: '🥇 5S GOLD', cls: 'tier-5s' },
+      '6S': { text: '🌈 6S HOLO', cls: 'tier-6s' },
+      'SUPER': { text: '🔥 SUPER BONUS', cls: 'tier-super' },
+      'HIDDEN': { text: '🕵️ HIDDEN EPIC', cls: 'tier-hidden' },
+      'MAX': { text: '⚡ MAX VOL', cls: 'tier-max' },
+      'BOUGHT': { text: '🛒 BOUGHT', cls: 'tier-bought' }
+    };
+    const tierInfo = tierLabelMap[tierCode] || tierLabelMap['3S'];
+
     row.innerHTML = `
       <span class="row-num">${idx + 1}</span>
       <div class="row-slot-box">
@@ -679,7 +693,10 @@ class BonusHuntOverlayApp {
           ${imgHtml}
         </div>
         <div class="slot-titles">
-          <span class="slot-main-title">${slotNameDisplay}</span>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span class="slot-main-title">${slotNameDisplay}</span>
+            <span class="bh-tier-badge ${tierInfo.cls}">${tierInfo.text}</span>
+          </div>
           <span class="slot-provider-badge">${slotProviderDisplay}</span>
         </div>
       </div>

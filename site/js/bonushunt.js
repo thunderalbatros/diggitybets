@@ -354,6 +354,19 @@ class BonusHuntController {
         ? window.SlotResolver.generateDataUriCard(canon.name || s.name || 'Slot', canon.provider || s.provider || 'Casino')
         : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
 
+      const tierCode = String(s.bonusTier || s.tierBadge || '3S').toUpperCase();
+      const tierMap = {
+        '3S': { text: '3S', cls: 'tier-3s' },
+        '4S': { text: '🥈 4S SILVER', cls: 'tier-4s' },
+        '5S': { text: '🥇 5S GOLD', cls: 'tier-5s' },
+        '6S': { text: '🌈 6S HOLO', cls: 'tier-6s' },
+        'SUPER': { text: '🔥 SUPER BONUS', cls: 'tier-super' },
+        'HIDDEN': { text: '🕵️ HIDDEN EPIC', cls: 'tier-hidden' },
+        'MAX': { text: '⚡ MAX VOL', cls: 'tier-max' },
+        'BOUGHT': { text: '🛒 BOUGHT', cls: 'tier-bought' }
+      };
+      const tInfo = tierMap[tierCode] || tierMap['3S'];
+
       tr.className = isOpened ? 'bh-row-opened' : 'bh-row-pending';
       tr.innerHTML = `
         <td class="bh-td-num">#${idx + 1}</td>
@@ -361,7 +374,10 @@ class BonusHuntController {
           <div class="bh-slot-info" style="display: flex; align-items: center; gap: 10px;">
             <img class="bh-slot-thumb" src="${imgSrc}" alt="" loading="lazy" style="width: 42px; height: 55px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
             <div>
-              <span class="bh-slot-name" style="font-weight: 700; color: #ffffff; display: block;">${slotName}</span>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span class="bh-slot-name" style="font-weight: 700; color: #ffffff;">${slotName}</span>
+                <span class="bh-tier-badge ${tInfo.cls}">${tInfo.text}</span>
+              </div>
               <span class="bh-slot-provider" style="font-size: 11px; color: var(--text-dim);">${slotProvider}</span>
             </div>
           </div>
