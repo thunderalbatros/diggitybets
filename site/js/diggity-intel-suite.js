@@ -346,15 +346,17 @@
         btn.onclick = () => {
           const slotName = btn.getAttribute('data-slot-name') || 'Wanted Dead or a Wild';
           const user = localStorage.getItem('hunthub_kick_username') || '@DiggityViewer';
-          if (window.bonusHunt && typeof window.bonusHunt.submitSlotRequest === 'function') {
-            window.bonusHunt.submitSlotRequest(user, slotName);
-          }
-          if (window.sonner) {
+          if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+            window.bonusHunt.addSlotRequest(user, slotName, false);
+          } else if (window.sonner) {
             window.sonner.toast({
               title: 'Added to !sr Slot Request Queue! 🎡',
               message: `${slotName} queued for ${user}.`,
               type: 'green'
             });
+          }
+          if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
+            window.adminHub.renderSlotRequestsAdmin();
           }
         };
       });
@@ -496,14 +498,33 @@
       const btnQueueSr = document.getElementById('btn-vault-queue-sr');
 
       if (packEl) {
+        let cachedRect = null;
+        let tiltRafPending = false;
+        let lastClientX = 0;
+        let lastClientY = 0;
+
+        packEl.addEventListener('mouseenter', () => {
+          cachedRect = packEl.getBoundingClientRect();
+        });
         packEl.addEventListener('mousemove', (e) => {
           if (this.isVaultRipping) return;
-          const rect = packEl.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width - 0.5;
-          const y = (e.clientY - rect.top) / rect.height - 0.5;
-          packEl.style.transform = `rotateY(${(x * 24).toFixed(1)}deg) rotateX(${(-y * 22).toFixed(1)}deg)`;
+          lastClientX = e.clientX;
+          lastClientY = e.clientY;
+          if (!tiltRafPending) {
+            tiltRafPending = true;
+            requestAnimationFrame(() => {
+              tiltRafPending = false;
+              if (this.isVaultRipping) return;
+              const rect = cachedRect || packEl.getBoundingClientRect();
+              if (!rect.width || !rect.height) return;
+              const x = (lastClientX - rect.left) / rect.width - 0.5;
+              const y = (lastClientY - rect.top) / rect.height - 0.5;
+              packEl.style.transform = `rotateY(${(x * 24).toFixed(1)}deg) rotateX(${(-y * 22).toFixed(1)}deg)`;
+            });
+          }
         });
         packEl.addEventListener('mouseleave', () => {
+          cachedRect = null;
           if (!this.isVaultRipping) packEl.style.transform = 'rotateY(0deg) rotateX(0deg)';
         });
         packEl.addEventListener('click', () => this.ripHoloVaultPack());
@@ -527,15 +548,17 @@
         btnQueueSr.onclick = () => {
           if (!this.lastRevealedVaultSlot) return;
           const user = localStorage.getItem('hunthub_kick_username') || '@DiggityStreamer';
-          if (window.bonusHunt && typeof window.bonusHunt.submitSlotRequest === 'function') {
-            window.bonusHunt.submitSlotRequest(user, this.lastRevealedVaultSlot.name);
-          }
-          if (window.sonner) {
+          if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+            window.bonusHunt.addSlotRequest(user, this.lastRevealedVaultSlot.name, false);
+          } else if (window.sonner) {
             window.sonner.toast({
               title: 'Sent to !sr Wheel! 🎡',
               message: `${this.lastRevealedVaultSlot.name} added to Slot Requests.`,
               type: 'gold'
             });
+          }
+          if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
+            window.adminHub.renderSlotRequestsAdmin();
           }
         };
       }
@@ -847,6 +870,7 @@
       } catch (_) {}
 
       window.addEventListener('message', (e) => {
+        if (e.origin !== window.location.origin || e.source !== window) return;
         if (e.data && e.data.source === 'DIGGITY_STAKE_COMPANION' && e.data.action === 'AUTO_CAPTURE_BONUS') {
           this.autoCaptureBonusToHunt(e.data);
         }
@@ -945,12 +969,31 @@
         const btn = document.getElementById('btn-claim-daily-streak');
         if (btn && !alreadyClaimedToday) {
           btn.onclick = () => {
-            const rewardAmt = rewards[(state.streak - 1) % 7];
+            const claimedDay = state.streak;
+            const rewardAmt = rewards[(claimedDay - 1) % 7] || 250;
             state.lastClaimDate = todayKey;
-            if (window.userStore && typeof window.userStore.addPoints === 'function') {
-              window.userStore.addPoints(rewardAmt, `Day ${state.streak} Daily Streak Bonus`);
-            }
+            state.streak = (claimedDay % 7) + 1;
             localStorage.setItem('hunthub_daily_streak_v1', JSON.stringify(state));
+
+            if (window.houseGames && typeof window.houseGames.adjustBalance === 'function') {
+              window.houseGames.adjustBalance(rewardAmt);
+            } else {
+              const cur = parseInt(localStorage.getItem('hunthub_points') || '1000', 10) || 1000;
+              localStorage.setItem('hunthub_points', String(cur + rewardAmt));
+            }
+            if (window.userStore && typeof window.userStore.syncAllPointDisplays === 'function') {
+              window.userStore.syncAllPointDisplays();
+            }
+            if (window.userStore && typeof window.userStore.syncStateToBackend === 'function') {
+              window.userStore.syncStateToBackend();
+            }
+            if (window.sonner) {
+              window.sonner.toast({
+                title: `🔥 Day ${claimedDay} Loyalty Vault Claimed!`,
+                message: `+${rewardAmt} $DIG added to your balance!`,
+                type: 'gold'
+              });
+            }
             this.initDailyStreakVault();
           };
         }
@@ -964,6 +1007,13 @@
       const inpUser = document.getElementById('inp-verify-raffle-user');
       const resBox = document.getElementById('raffle-ticket-verifier-result');
       if (!btnVerify || !inpUser || !resBox) return;
+
+      const escHtml = (str) => String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
       const runLookup = () => {
         const rawUser = (inpUser.value || localStorage.getItem('hunthub_kick_username') || 'DiggityViewer').trim().replace(/^@/, '');
@@ -980,7 +1030,7 @@
         resBox.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.35); border-radius:10px; font-family:var(--font-display); font-size:12px;">
             <div>
-              <strong style="color:#fff;">@${window.escapeHTML ? window.escapeHTML(rawUser) : rawUser}</strong> ·
+              <strong style="color:#fff;">@${escHtml(rawUser)}</strong> ·
               <span style="color:var(--gold); font-weight:900;">Tickets #${String(startTicket).padStart(4, '0')} – #${String(endTicket).padStart(4, '0')}</span>
               <span style="color:#94a3b8;">(${Math.max(1, myTickets)} tickets in pool of ${totalPool})</span>
             </div>

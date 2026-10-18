@@ -351,7 +351,7 @@ function startRecommender(user, seconds = 60, avatar = null) {
   el.recTimer.textContent = `${seconds}s`;
 
   if (avatar) {
-    el.recAvatar.innerHTML = `<img src="${avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    el.recAvatar.innerHTML = `<img src="${escapeHtml(avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   } else {
     el.recAvatar.textContent = user.charAt(0).toUpperCase();
   }
@@ -368,7 +368,9 @@ function startRecommender(user, seconds = 60, avatar = null) {
 
     if (state.recommender.timerSeconds <= 0) {
       stopRecommender();
-      el.recSub.innerHTML = `<span class="text-magenta">Time's up! Re-roll viewer in control deck.</span>`;
+      if (el.recSub) {
+        el.recSub.innerHTML = `<span class="text-magenta">Time's up! Re-roll viewer in control deck.</span>`;
+      }
     }
   }, 1000);
 }
@@ -411,7 +413,7 @@ function triggerWinnerCelebration(winnerData) {
   el.gtbWinnerPrize.textContent = `PRIZE: ${winnerData.prizeText || state.gtb.prizeText}`;
 
   if (winnerData.avatar) {
-    el.gtbWinnerAvatar.innerHTML = `<img src="${winnerData.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    el.gtbWinnerAvatar.innerHTML = `<img src="${escapeHtml(winnerData.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   } else {
     el.gtbWinnerAvatar.textContent = (winnerData.user || 'W').charAt(0).toUpperCase();
   }

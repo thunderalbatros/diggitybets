@@ -677,6 +677,28 @@ class StakeOriginalsController {
     }
   }
 
+  unbiasedRandomInt(bound) {
+    if (bound <= 1) return 0;
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      const maxUnbiased = Math.floor(0x100000000 / bound) * bound;
+      const buf = new Uint32Array(1);
+      do {
+        window.crypto.getRandomValues(buf);
+      } while (buf[0] >= maxUnbiased);
+      return buf[0] % bound;
+    }
+    return Math.floor(Math.random() * bound);
+  }
+
+  generateDeck(size = 52) {
+    const deck = Array.from({ length: size }, (_, i) => i);
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = this.unbiasedRandomInt(i + 1);
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+  }
+
   async startMinesGame() {
     if (this.minesState === 'playing') return;
     const betInput = document.getElementById('mines-bet-input');
@@ -689,18 +711,10 @@ class StakeOriginalsController {
     this.minesCurrentMultiplier = 1.0;
 
     // Cryptographic placement of mines
-    let hash = 'mines_' + Date.now();
     if (window.pfEngine && typeof window.pfEngine.generateRoundHash === 'function') {
-      hash = await window.pfEngine.generateRoundHash();
+      await window.pfEngine.generateRoundHash();
     }
-    const indices = Array.from({ length: 25 }, (_, i) => i);
-    let offset = 0;
-    for (let i = indices.length - 1; i > 0; i--) {
-      const chunk = hash.substr(offset % (hash.length - 4), 4);
-      offset += 4;
-      const j = Math.floor((parseInt(chunk, 16) / 0x10000) * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
+    const indices = this.generateDeck(25);
 
     const minePositions = indices.slice(0, this.minesCount);
     this.minesGrid = new Array(25).fill('gem');
@@ -1457,7 +1471,7 @@ class StakeOriginalsController {
       this.bjDeck = window.pfEngine.getShuffledDeck(hash);
       window.pfEngine.nextNonce();
     } else {
-      this.bjDeck = Array.from({ length: 52 }, (_, i) => i).sort(() => Math.random() - 0.5);
+      this.bjDeck = this.generateDeck(52);
     }
 
     this.bjDealerHand = [this.bjDeck.pop(), this.bjDeck.pop()];
@@ -2472,10 +2486,8 @@ class StakeOriginalsController {
         this.rouletteAnimFrame = null;
         return;
       }
-      if (!this.isSpinningRoulette) {
-        if (!this.rouletteRestingAfterWin) {
-          this.rouletteWheelRotation = (this.rouletteWheelRotation + 0.18) % 360;
-        }
+      if (!this.isSpinningRoulette && !this.rouletteRestingAfterWin && !document.hidden) {
+        this.rouletteWheelRotation = (this.rouletteWheelRotation + 0.18) % 360;
 
         // If ball is resting in winning pocket, lock its coordinate solidary to the rotating pocket
         if (this.rouletteBall && this.rouletteBall.active && this.rouletteWinningIdx !== null) {

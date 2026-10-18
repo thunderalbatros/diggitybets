@@ -29,6 +29,15 @@ class BonusHuntController {
     this.verifierMode = 'keno'; // 'keno' or 'mines'
   }
 
+  escapeHTML(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   isDemoUser(u) {
     if (!u) return false;
     const clean = String(u).trim().toLowerCase().replace(/^@/, '');
@@ -345,8 +354,8 @@ class BonusHuntController {
         provider: s.provider || s.slotProvider || 'Provider',
         image: s.image || s.slotImage || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format'
       };
-      const imgSrc = canon.image || (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s) : s.image);
-      const esc = window.escapeHTML || (x => x);
+      const esc = (x) => this.escapeHTML(x);
+      const imgSrc = esc(canon.image || (window.SlotResolver ? window.SlotResolver.resolveSlotImageUrl(s) : s.image));
       const slotName = esc(canon.name || s.name || 'Slot');
       const slotProvider = esc(canon.provider || s.provider || 'Provider');
       const callerName = esc(s.caller || s.callerUsername || '—');
@@ -412,7 +421,7 @@ class BonusHuntController {
 
     listEl.innerHTML = '';
     const sorted = [...this.guesses].sort((a, b) => b.guess - a.guess);
-    const esc = window.escapeHTML || (x => x);
+    const esc = (x) => this.escapeHTML(x);
 
     sorted.forEach(g => {
       const item = document.createElement('div');
@@ -537,7 +546,7 @@ class BonusHuntController {
       card.innerHTML = `
         <div style="font-size: 24px; margin-bottom: 4px;">${cfg.medal}</div>
         <div style="font-family: var(--font-display); font-size: 11px; font-weight: 800; color: #ffd700;">${cfg.title}</div>
-        <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin: 4px 0;">${w.user}</div>
+        <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin: 4px 0;">${this.escapeHTML(w.user)}</div>
         <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">Guess: <strong>$${w.guess.toLocaleString()}</strong> (Diff: $${w.delta.toFixed(2)})</div>
         <div style="font-size: 12px; font-weight: 900; color: #00e676; background: rgba(0,230,118,0.15); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.3); display: inline-block;">
           +${cfg.pts} $DIG
@@ -605,7 +614,11 @@ class BonusHuntController {
     try {
       fetch('/api/sync/state', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
+          'x-admin-token': localStorage.getItem('hunthub_admin_token') || 'diggity_stream_deck_v1'
+        },
         body: JSON.stringify({
           overlayEvent: {
             target: 'overlay-slotrequests',
@@ -692,7 +705,7 @@ class BonusHuntController {
     }
 
     listEl.innerHTML = '';
-    const esc = window.escapeHTML || (x => x);
+    const esc = (x) => this.escapeHTML(x);
 
     this.slotRequests.forEach((req, idx) => {
       const userHandle = req.user || req.caller || '@Viewer';

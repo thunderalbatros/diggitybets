@@ -28,10 +28,10 @@ function copyRecursive(src, dest) {
   }
 }
 
-// 2. Copy core web assets & Agentic SEO / Governance manifests
-console.log('• Copying index.html, Agentic SEO manifests (llms.txt, robots.txt, CONSTRAINTS.md) and site assets...');
+// 2. Copy core web assets & public Agentic SEO manifests (exclude internal agent rules from public dist/)
+console.log('• Copying index.html, Agentic SEO manifests (llms.txt, robots.txt) and site assets...');
 fs.copyFileSync(path.join(root, 'index.html'), path.join(dist, 'index.html'));
-for (const rootDoc of ['favicon.ico', 'llms.txt', 'robots.txt', 'AGENTS.md', 'CONSTRAINTS.md']) {
+for (const rootDoc of ['favicon.ico', 'llms.txt', 'robots.txt']) {
   if (fs.existsSync(path.join(root, rootDoc))) {
     fs.copyFileSync(path.join(root, rootDoc), path.join(dist, rootDoc));
   }
@@ -67,13 +67,16 @@ const stakeDino = path.join(root, 'site', 'stake-games', 'dino-assets');
 if (fs.existsSync(stakeAssets)) copyRecursive(stakeAssets, path.join(dist, 'assets'));
 if (fs.existsSync(stakeDino)) copyRecursive(stakeDino, path.join(dist, 'dino-assets'));
 
-// 5. Generate Cloudflare _headers (Security, Brotli, Caching)
+// 5. Generate Cloudflare _headers (Security, CSP, HSTS, COOP, Brotli, Caching)
 console.log('• Generating Cloudflare _headers...');
 const headersContent = `/*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: object-src 'none'; base-uri 'self'; frame-ancestors 'self';
 
 /site/css/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400

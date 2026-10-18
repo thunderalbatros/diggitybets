@@ -362,17 +362,23 @@ class BattleOverlayApp {
 
   animateGhostImpactBar(ghostEl, meterEl, targetPct) {
     if (!meterEl) return;
-    const prevWidth = parseFloat(meterEl.style.width || '0') || 0;
-    meterEl.style.width = `${targetPct}%`;
+    const clampedTarget = Math.max(0, Math.min(100, Number(targetPct) || 0));
+    const prevPct = parseFloat(meterEl.dataset.pct || '0') || 0;
+    meterEl.dataset.pct = String(clampedTarget);
+    meterEl.style.width = '100%';
+    meterEl.style.transformOrigin = 'left center';
+    meterEl.style.transform = `scaleX(${clampedTarget / 100})`;
     if (!ghostEl) return;
-    const burstWidth = Math.min(100, Math.max(targetPct + 14, prevWidth));
-    ghostEl.style.width = `${burstWidth}%`;
+    const burstPct = Math.min(100, Math.max(clampedTarget + 14, prevPct));
+    ghostEl.style.width = '100%';
+    ghostEl.style.transformOrigin = 'left center';
+    ghostEl.style.transform = `scaleX(${burstPct / 100})`;
     if (typeof ghostEl.animate === 'function') {
       ghostEl.animate(
         [
-          { width: `${prevWidth}%`, opacity: 0.95 },
-          { width: `${burstWidth}%`, opacity: 0.85, offset: 0.35 },
-          { width: `${targetPct}%`, opacity: 0.25 }
+          { transform: `scaleX(${prevPct / 100})`, opacity: 0.95 },
+          { transform: `scaleX(${burstPct / 100})`, opacity: 0.85, offset: 0.35 },
+          { transform: `scaleX(${clampedTarget / 100})`, opacity: 0.25 }
         ],
         {
           duration: 820,
@@ -381,7 +387,7 @@ class BattleOverlayApp {
         }
       );
     } else {
-      ghostEl.style.width = `${targetPct}%`;
+      ghostEl.style.transform = `scaleX(${clampedTarget / 100})`;
     }
   }
 
@@ -565,6 +571,8 @@ class BattleOverlayApp {
 
   initWebSocket() {
     const urlParams = new URLSearchParams(window.location.search);
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
+    if (!isLocalHost && !urlParams.has('port')) return;
     const port = urlParams.get('port') || '3001';
     const wsUrl = `ws://127.0.0.1:${port}/`;
 
@@ -602,18 +610,19 @@ class BattleOverlayApp {
       };
 
       this.ws.onclose = () => {
-        const timeout = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 10000);
-        this.reconnectAttempts++;
+        this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+        const timeout = Math.min(30000, 1000 * Math.pow(1.6, this.reconnectAttempts));
         setTimeout(() => this.initWebSocket(), timeout);
       };
     } catch (e) {
-      setTimeout(() => this.initWebSocket(), 3000);
+      setTimeout(() => this.initWebSocket(), 5000);
     }
 
     // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
       setInterval(async () => {
+        if (document.hidden) return;
         try {
           const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
           if (!res.ok) return;

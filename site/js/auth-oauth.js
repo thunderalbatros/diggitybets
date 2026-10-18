@@ -39,6 +39,15 @@ class OAuthEngine {
     this.checkInitialAdmin();
   }
 
+  escapeAttr(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   isAuthorizedStreamer(username) {
     const clean = String(username || '').trim().toLowerCase().replace(/^@/, '');
     return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky';
@@ -47,11 +56,12 @@ class OAuthEngine {
   checkInitialAdmin() {
     const storedUser = localStorage.getItem('hunthub_kick_username') || '';
     if (storedUser.startsWith('@KickUser_') || storedUser.startsWith('KickUser_')) {
-      // Auto-migrate placeholder user to streamer channel @diggitybets with real avatar
-      this.syncKickProfile('diggitybets');
+      localStorage.removeItem('hunthub_kick_username');
+      localStorage.setItem('hunthub_is_admin', 'false');
+      this.updateAdminDeckUI(false);
       return;
     }
-    const isAdmin = this.isAuthorizedStreamer(storedUser);
+    const isAdmin = this.isAuthorizedStreamer(storedUser) && localStorage.getItem('hunthub_streamer_admin_unlocked') === 'true';
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     this.updateAdminDeckUI(isAdmin);
   }
@@ -90,15 +100,20 @@ class OAuthEngine {
     } catch (_) {}
   }
 
-  // --- CRYPTO UTILS FOR PKCE (RFC 7636) ---
+  // --- CRYPTO UTILS FOR PKCE (RFC 7636) WITH ZERO MODULO BIAS ---
 
   generateRandomString(length = 64) {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const maxUnbiased = 256 - (256 % charset.length); // 198
     let result = '';
-    const randomValues = new Uint8Array(length);
-    window.crypto.getRandomValues(randomValues);
-    for (let i = 0; i < length; i++) {
-      result += charset[randomValues[i] % charset.length];
+    while (result.length < length) {
+      const randomValues = new Uint8Array(length - result.length + 16);
+      window.crypto.getRandomValues(randomValues);
+      for (let i = 0; i < randomValues.length && result.length < length; i++) {
+        if (randomValues[i] < maxUnbiased) {
+          result += charset[randomValues[i] % charset.length];
+        }
+      }
     }
     return result;
   }
@@ -170,7 +185,7 @@ class OAuthEngine {
     modal.id = 'kick-instant-link-modal';
     modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(6,8,14,0.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;';
 
-    const currentVal = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '');
+    const currentVal = this.escapeAttr((localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, ''));
     modal.innerHTML = `
       <div style="width:100%;max-width:430px;background:#10141f;border:1px solid rgba(83,252,24,0.45);border-radius:16px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -185,7 +200,7 @@ class OAuthEngine {
         </p>
         <div style="margin-bottom:14px;">
           <label for="kick-modal-username-input" style="display:block;font-size:0.72rem;font-weight:800;color:#cbd5e1;letter-spacing:0.8px;margin-bottom:6px;text-transform:uppercase;">Kick Username</label>
-          <input type="text" id="kick-modal-username-input" value="${currentVal}" placeholder="e.g. diggitybets or tarkansky" autocomplete="off"
+          <input type="text" id="kick-modal-username-input" value="${currentVal}" placeholder="e.g. KickViewer" autocomplete="off"
             style="width:100%;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,0.55);border:1px solid rgba(83,252,24,0.4);color:#fff;font-size:0.95rem;font-weight:700;outline:none;box-sizing:border-box;" />
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
@@ -247,7 +262,8 @@ class OAuthEngine {
         }
       } catch (_) {}
 
-      const isAdmin = this.isAuthorizedStreamer(raw) || kickId === 88254585;
+      const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      const isAdmin = (isLocalDev || localStorage.getItem('hunthub_streamer_admin_unlocked') === 'true') && (this.isAuthorizedStreamer(raw) || kickId === 88254585);
       this.applyKickUserData({
         username: raw,
         avatarUrl,
@@ -325,7 +341,7 @@ class OAuthEngine {
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
     }
 
-    if (savedState && state && state !== savedState) {
+    if (!savedState || !state || state !== savedState) {
       if (window.sonner) {
         window.sonner.toast({
           title: 'Authentication Error ❌',
@@ -364,7 +380,7 @@ class OAuthEngine {
       }
 
       const effectiveRedirect = redirectUri || this.config.kick.redirectUri;
-      const usernameHint = (localStorage.getItem('hunthub_kick_username') || 'diggitybets').replace(/^@/, '');
+      const usernameHint = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '');
 
       let response = await fetch('/api/auth/callback', {
         method: 'POST',
@@ -396,19 +412,21 @@ class OAuthEngine {
       }
 
       const userData = await response.json();
-      if (!userData.avatarUrl || userData.username.startsWith('KickUser_')) {
-        await this.syncKickProfile(usernameHint || 'diggitybets');
-      } else {
-        this.applyKickUserData(userData);
-      }
+      this.applyKickUserData(userData);
 
       if (window.location.pathname.includes('/api/auth')) {
         window.location.replace('/#profile');
       }
 
     } catch (err) {
-      console.warn('[OAuthEngine] Edge token exchange fallback, syncing official profile:', err);
-      await this.syncKickProfile('diggitybets');
+      console.warn('[OAuthEngine] Edge token exchange failed:', err);
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'Kick Login Failed ❌',
+          message: 'Could not verify authorization code. Please try logging in again.',
+          type: 'danger'
+        });
+      }
       if (window.location.pathname.includes('/api/auth')) {
         window.location.replace('/#profile');
       }
@@ -463,15 +481,17 @@ class OAuthEngine {
     const kickIdNum = Number(user.kick_id || user.id || 0);
 
     // Streamer Admin Verification: username 'diggitybets' / 'tarkansky' or kick_id 88254585
-    const isAdmin = Boolean(user.isAdmin || this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585);
+    const isAdmin = Boolean(user.isAdmin || ((this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585) && user.verified));
 
     localStorage.setItem('hunthub_kick_username', formattedUsername);
     localStorage.setItem('hunthub_is_sub', user.isSub ? 'true' : 'false');
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     if (isAdmin) {
       localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+      localStorage.setItem('hunthub_admin_token', user.adminToken || 'diggity_stream_deck_v1');
     } else {
       localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_admin_token');
     }
 
     if (user.avatarUrl) {

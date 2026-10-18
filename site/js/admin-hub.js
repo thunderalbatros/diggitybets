@@ -103,6 +103,24 @@ class AdminHubController {
     this.init();
   }
 
+  escapeHTML(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
+  }
+
+  getAdminHeaders(extra = {}) {
+    return {
+      'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
+      'x-admin-token': localStorage.getItem('hunthub_admin_token') || 'diggity_stream_deck_v1',
+      ...extra
+    };
+  }
+
   init() {
     this.initBroadcastChannels();
     this.ensureInitialData();
@@ -456,7 +474,7 @@ class AdminHubController {
     let claims = [];
     try {
       const res = await fetch('/api/admin/store-redemptions?adminUser=diggitybets', {
-        headers: { 'x-admin-user': 'diggitybets' }
+        headers: this.getAdminHeaders()
       });
       if (res.ok) {
         const data = await res.json();
@@ -495,18 +513,18 @@ class AdminHubController {
       const dateStr = new Date(timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const fullDate = new Date(timeMs).toLocaleDateString([], { month: 'short', day: 'numeric' });
 
-      const username = c.kick_username || c.username || 'Viewer';
-      const discordName = c.discord_username ? `@${c.discord_username}` : '';
-      const stakeUser = c.stake_username ? `@${c.stake_username}` : '';
+      const username = this.escapeHTML(c.kick_username || c.username || 'Viewer');
+      const discordName = c.discord_username ? `@${this.escapeHTML(c.discord_username)}` : '';
+      const stakeUser = c.stake_username ? `@${this.escapeHTML(c.stake_username)}` : '';
       const stakeVerified = c.stake_verified ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">✓ STAKE VIP</span>' : '';
 
       // Crypto addresses 1-click copy buttons
       const wallets = [];
-      if (c.crypto_ltc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="LTC" data-addr="${c.crypto_ltc}" style="padding: 2px 6px; font-size: 10px;">📋 LTC</button>`);
-      if (c.crypto_btc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="BTC" data-addr="${c.crypto_btc}" style="padding: 2px 6px; font-size: 10px;">📋 BTC</button>`);
-      if (c.crypto_eth) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="ETH" data-addr="${c.crypto_eth}" style="padding: 2px 6px; font-size: 10px;">📋 ETH</button>`);
-      if (c.crypto_usdc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="USDC" data-addr="${c.crypto_usdc}" style="padding: 2px 6px; font-size: 10px;">📋 USDC</button>`);
-      if (c.crypto_sol) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="SOL" data-addr="${c.crypto_sol}" style="padding: 2px 6px; font-size: 10px;">📋 SOL</button>`);
+      if (c.crypto_ltc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="LTC" data-addr="${this.escapeHTML(c.crypto_ltc)}" style="padding: 2px 6px; font-size: 10px;">📋 LTC</button>`);
+      if (c.crypto_btc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="BTC" data-addr="${this.escapeHTML(c.crypto_btc)}" style="padding: 2px 6px; font-size: 10px;">📋 BTC</button>`);
+      if (c.crypto_eth) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="ETH" data-addr="${this.escapeHTML(c.crypto_eth)}" style="padding: 2px 6px; font-size: 10px;">📋 ETH</button>`);
+      if (c.crypto_usdc) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="USDC" data-addr="${this.escapeHTML(c.crypto_usdc)}" style="padding: 2px 6px; font-size: 10px;">📋 USDC</button>`);
+      if (c.crypto_sol) wallets.push(`<button type="button" class="btn-stake-secondary btn-copy-wallet" data-coin="SOL" data-addr="${this.escapeHTML(c.crypto_sol)}" style="padding: 2px 6px; font-size: 10px;">📋 SOL</button>`);
 
       const walletHtml = wallets.length > 0
         ? `<div style="display: flex; gap: 4px; flex-wrap: wrap;">${wallets.join('')}</div>`
@@ -519,14 +537,17 @@ class AdminHubController {
             : `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.25); border-color: var(--gold); color: var(--gold); animation: pulse-dot 1.5s infinite;">⏳ PENDING</span>`);
 
       const isPending = c.status === 'PENDING';
+      const safeId = this.escapeHTML(c.id);
+      const safeVoucher = this.escapeHTML(c.voucher_title || c.voucherTitle);
+      const safeCost = this.escapeHTML(c.cost_points || c.cost);
 
       return `
-        <tr data-claim-id="${c.id}" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <tr data-claim-id="${safeId}" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${fullDate} ${dateStr}</td>
           <td>
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 14px;">${c.avatar || '🤠'}</span>
+                <span style="font-size: 14px;">${this.escapeHTML(c.avatar || '🤠')}</span>
                 <strong style="color: #ffffff; font-family: var(--font-display); font-size: 13px;">@${username}</strong>
                 ${c.isSub ? '<span class="reward-badge-pill" style="font-size: 9px; color: var(--kick-green); border-color: var(--kick-green);">SUB</span>' : ''}
               </div>
@@ -538,24 +559,24 @@ class AdminHubController {
             </div>
           </td>
           <td style="font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: 13px;">
-            ${c.voucher_title || c.voucherTitle}
+            ${safeVoucher}
           </td>
           <td style="font-family: var(--font-display); font-weight: 800; color: #ffffff;">
-            ${c.cost_points || c.cost} $DIG
+            ${safeCost} $DIG
           </td>
           <td>${walletHtml}</td>
           <td>${statusBadge}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 6px;">
               ${isPending ? `
-                <button type="button" class="btn-stake-primary btn-approve-claim" data-id="${c.id}" data-user="${username}" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                <button type="button" class="btn-stake-primary btn-approve-claim" data-id="${safeId}" data-user="${username}" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
                   Approve / Mark Paid ✓
                 </button>
-                <button type="button" class="btn-chat-toggle btn-reject-claim" data-id="${c.id}" data-user="${username}" style="padding: 4px 8px; font-size: 11px; color: var(--magenta);">
+                <button type="button" class="btn-chat-toggle btn-reject-claim" data-id="${safeId}" data-user="${username}" style="padding: 4px 8px; font-size: 11px; color: var(--magenta);">
                   Reject & Refund $DIG ✕
                 </button>
               ` : ''}
-              <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${username}" data-voucher="${c.voucher_title || c.voucherTitle}" title="Copy chat shoutout" style="padding: 4px 8px; font-size: 11px;">
+              <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${username}" data-voucher="${safeVoucher}" title="Copy chat shoutout" style="padding: 4px 8px; font-size: 11px;">
                 📋
               </button>
             </div>
@@ -592,7 +613,7 @@ class AdminHubController {
     try {
       await fetch('/api/admin/approve-store-redemption', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ redemptionId: id, adminUser: 'diggitybets' })
       });
     } catch (_) {}
@@ -622,7 +643,7 @@ class AdminHubController {
     try {
       await fetch('/api/admin/reject-store-redemption', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ redemptionId: id, refund: true, adminUser: 'diggitybets' })
       });
     } catch (_) {}
@@ -655,7 +676,7 @@ class AdminHubController {
     let ledger = { totalTickets: 0, participants: [] };
     try {
       const res = await fetch('/api/admin/raffle-ledger?adminUser=diggitybets', {
-        headers: { 'x-admin-user': 'diggitybets' }
+        headers: this.getAdminHeaders()
       });
       if (res.ok) {
         ledger = await res.json();
@@ -677,8 +698,8 @@ class AdminHubController {
     if (totalEl) totalEl.textContent = `${total} Tickets`;
 
     listEl.innerHTML = ledger.participants.map(p => {
-      const user = p.kick_username || p.username;
-      const count = p.tickets_count || p.tickets;
+      const user = this.escapeHTML(p.kick_username || p.username);
+      const count = Number(p.tickets_count || p.tickets || 0);
       const pct = ((count / total) * 100).toFixed(1);
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0, 0, 0, 0.35); border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 6px;">
@@ -709,7 +730,7 @@ class AdminHubController {
     try {
       const res = await fetch('/api/admin/roll-raffle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ adminUser: 'diggitybets' })
       });
       if (res.ok) {
@@ -765,7 +786,7 @@ class AdminHubController {
     let requests = [];
     try {
       const res = await fetch('/api/admin/stake-verifications?adminUser=diggitybets', {
-        headers: { 'x-admin-user': 'diggitybets' }
+        headers: this.getAdminHeaders()
       });
       if (res.ok) {
         const data = await res.json();
@@ -788,37 +809,43 @@ class AdminHubController {
       const timeMs = (req.created_at || Date.now() / 1000) * 1000;
       const timeStr = new Date(timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const isPending = req.status === 'PENDING';
-      const auditUrl = req.share_url || `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(req.bet_id)}&modal=bet`;
+      const rawUrl = req.share_url || `https://stake.com/casino/games/limbo?iid=${encodeURIComponent(req.bet_id || '')}&modal=bet`;
+      const safeUrl = /^https?:\/\//i.test(rawUrl) ? this.escapeHTML(rawUrl) : '#';
+      const safeKick = this.escapeHTML(req.kick_username);
+      const safeStake = this.escapeHTML(req.stake_username || req.kick_username);
+      const safeId = this.escapeHTML(req.id);
+      const safeMult = this.escapeHTML(req.target_multiplier);
+      const safeStatus = this.escapeHTML(req.status);
 
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">${timeStr}</td>
           <td>
             <div style="display: flex; flex-direction: column;">
-              <strong style="color: #ffffff;">@${req.kick_username}</strong>
-              <span style="color: var(--gold); font-size: 11px;">Stake: @${req.stake_username}</span>
+              <strong style="color: #ffffff;">@${safeKick}</strong>
+              <span style="color: var(--gold); font-size: 11px;">Stake: @${safeStake}</span>
             </div>
           </td>
           <td style="font-family: var(--font-display); font-weight: 900; color: #53fc18; font-variant-numeric: tabular-nums;">
-            ${req.target_multiplier}
+            ${safeMult}
           </td>
           <td>
-            <a href="${auditUrl}" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 3px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="btn-stake-secondary" style="padding: 3px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
               Open Bet on Stake ↗
             </a>
           </td>
           <td>
             <span class="reward-badge-pill" style="font-size: 10px; background: ${isPending ? 'rgba(255, 215, 0, 0.15)' : 'rgba(83, 252, 24, 0.15)'}; border-color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'}; color: ${isPending ? 'var(--gold)' : 'var(--kick-green)'};">
-              ${req.status}
+              ${safeStatus}
             </span>
           </td>
           <td>
             ${isPending ? `
               <div style="display: flex; gap: 4px;">
-                <button type="button" class="btn-stake-primary btn-approve-stake" data-id="${req.id}" data-user="${req.kick_username}" data-stake="${req.stake_username || req.kick_username}" style="padding: 4px 8px; font-size: 10.5px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
+                <button type="button" class="btn-stake-primary btn-approve-stake" data-id="${safeId}" data-user="${safeKick}" data-stake="${safeStake}" style="padding: 4px 8px; font-size: 10.5px; background: linear-gradient(135deg, #10b981 0%, #53fc18 100%); color: #000; font-weight: 800;">
                   Approve (+250 $DIG) ✓
                 </button>
-                <button type="button" class="btn-chat-toggle btn-reject-stake" data-id="${req.id}" data-user="${req.kick_username}" style="padding: 4px 6px; font-size: 10.5px; color: var(--magenta);">
+                <button type="button" class="btn-chat-toggle btn-reject-stake" data-id="${safeId}" data-user="${safeKick}" style="padding: 4px 6px; font-size: 10.5px; color: var(--magenta);">
                   Reject ✕
                 </button>
               </div>
@@ -836,7 +863,7 @@ class AdminHubController {
         try {
           await fetch('/api/admin/approve-stake-verification', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ requestId: id, adminUser: 'diggitybets' })
           });
         } catch (_) {}
@@ -869,7 +896,7 @@ class AdminHubController {
             stakeUsername: stakeUser
           });
         }
-        if (window.userStore && (window.userStore.state.username || '').toLowerCase() === user.toLowerCase()) {
+        if (window.userStore && (window.userStore.username || '').toLowerCase() === user.toLowerCase()) {
           window.userStore.verifyStakeReferral(stakeUser);
         }
 
@@ -892,7 +919,7 @@ class AdminHubController {
         try {
           await fetch('/api/admin/reject-stake-verification', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ requestId: id, adminUser: 'diggitybets' })
           });
         } catch (_) {}
@@ -932,27 +959,36 @@ class AdminHubController {
       return;
     }
 
-    tbody.innerHTML = referrals.map(ref => `
+    tbody.innerHTML = referrals.map(ref => {
+      const safeU = this.escapeHTML(ref.username);
+      const safeKick = this.escapeHTML(ref.kickUser || '@Viewer');
+      const safeAt = this.escapeHTML(ref.verifiedAt || 'Recent');
+      return `
       <tr>
         <td>
           <a href="https://stake.com/?offer=diggity&c=i2mVktNM" target="_blank" rel="noopener noreferrer" style="color: var(--kick-green); font-family: var(--font-display); font-weight: 800; text-decoration: none;">
-            @${ref.username} ↗
+            @${safeU} ↗
           </a>
         </td>
-        <td style="color: #ffffff; font-size: 13px;">${ref.kickUser || '@Viewer'}</td>
+        <td style="color: #ffffff; font-size: 13px;">${safeKick}</td>
         <td>
           <span class="reward-badge-pill" style="background: ${ref.status === 'verified' ? 'rgba(83, 252, 24, 0.2)' : 'rgba(255, 215, 0, 0.2)'}; border-color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; color: ${ref.status === 'verified' ? 'var(--kick-green)' : 'var(--gold)'}; font-size: 11px;">
             ${ref.status === 'verified' ? '✓ VERIFIED (DIGGITY)' : '⏳ PENDING CONFIRMATION'}
           </span>
         </td>
-        <td style="font-size: 12px; color: var(--text-dim);">${ref.verifiedAt || 'Recent'}</td>
+        <td style="font-size: 12px; color: var(--text-dim);">${safeAt}</td>
         <td>
-          <button type="button" class="btn-chat-toggle" onclick="window.adminHub.removeStakeReferral('${ref.username}')" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
+          <button type="button" class="btn-chat-toggle btn-remove-stake-ref" data-user="${safeU}" style="color: var(--crimson); padding: 4px 8px; font-size: 11px;" title="Remove from list">
             ✕
           </button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-remove-stake-ref').forEach(btn => {
+      btn.onclick = () => this.removeStakeReferral(btn.dataset.user);
+    });
   }
 
   removeStakeReferral(username) {
@@ -1029,7 +1065,7 @@ class AdminHubController {
     let alerts = [];
     try {
       const res = await fetch('/api/admin/security-alerts?adminUser=diggitybets', {
-        headers: { 'x-admin-user': 'diggitybets' }
+        headers: this.getAdminHeaders()
       });
       if (res.ok) {
         const data = await res.json();
@@ -1055,14 +1091,14 @@ class AdminHubController {
     }
 
     tbody.innerHTML = alerts.map(a => {
-      const hash = a.device_hash || a.deviceHash || '—';
-      const shortHash = hash.length > 14 ? hash.substring(0, 12) + '...' : hash;
-      const subnet = a.ip_subnet || a.ipSubnet || '190.19.45.0/24';
-      const primary = a.primaryUser || a.primary_user || 'Player1';
-      const alt = a.altUser || a.alt_user || 'Player2';
-      const reason = a.reason || 'SHARED_HARDWARE_FINGERPRINT';
-      const score = a.risk_score || a.riskScore || 85;
-      const clusterId = a.cluster_id || a.id || 'cluster_1';
+      const hash = String(a.device_hash || a.deviceHash || '—');
+      const shortHash = this.escapeHTML(hash.length > 14 ? hash.substring(0, 12) + '...' : hash);
+      const subnet = this.escapeHTML(a.ip_subnet || a.ipSubnet || '190.19.45.0/24');
+      const primary = this.escapeHTML(a.primaryUser || a.primary_user || 'Player1');
+      const alt = this.escapeHTML(a.altUser || a.alt_user || 'Player2');
+      const reason = this.escapeHTML(a.reason || 'SHARED_HARDWARE_FINGERPRINT');
+      const score = Number(a.risk_score || a.riskScore || 85);
+      const clusterId = this.escapeHTML(a.cluster_id || a.id || 'cluster_1');
 
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -1100,7 +1136,7 @@ class AdminHubController {
         try {
           await fetch('/api/admin/security-action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ action: 'shadowban', username: user, adminUser: 'diggitybets' })
           });
         } catch (_) {}
@@ -1120,7 +1156,7 @@ class AdminHubController {
         try {
           await fetch('/api/admin/security-action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ action: 'freeze', username: user, adminUser: 'diggitybets' })
           });
         } catch (_) {}
@@ -1140,7 +1176,7 @@ class AdminHubController {
         try {
           await fetch('/api/admin/security-action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-user': 'diggitybets' },
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ action: 'whitelist', clusterId: cid, adminUser: 'diggitybets' })
           });
         } catch (_) {}
@@ -1225,11 +1261,11 @@ class AdminHubController {
         }
 
         dropdown.innerHTML = matches.map(s => `
-          <div class="slot-autocomplete-item" data-id="${s.id}" data-name="${s.name}" data-provider="${s.provider}" data-img="${s.image}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
-            <img src="${s.image}" alt="${s.name}" style="width: 33px; height: 44px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">
+          <div class="slot-autocomplete-item" data-id="${this.escapeHTML(s.id)}" data-name="${this.escapeHTML(s.name)}" data-provider="${this.escapeHTML(s.provider)}" data-img="${this.escapeHTML(s.image)}" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
+            <img src="${this.escapeHTML(s.image)}" alt="${this.escapeHTML(s.name)}" style="width: 33px; height: 44px; aspect-ratio: 180 / 236; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.src='https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';">
             <div style="flex: 1;">
-              <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${s.name}</div>
-              <div style="font-size: 11px; color: var(--gold);">${s.provider} · RTP: ${s.rtp || '96.35%'} · Max: ${s.maxWin || '10,000x'}</div>
+              <div style="font-weight: 700; color: #ffffff; font-size: 13px;">${this.escapeHTML(s.name)}</div>
+              <div style="font-size: 11px; color: var(--gold);">${this.escapeHTML(s.provider)} · RTP: ${this.escapeHTML(s.rtp || '96.35%')} · Max: ${this.escapeHTML(s.maxWin || '10,000x')}</div>
             </div>
           </div>
         `).join('');
@@ -1482,32 +1518,36 @@ class AdminHubController {
     tbody.innerHTML = slots.map((s, idx) => {
       const mult = s.bet > 0 && s.payout > 0 ? (s.payout / s.bet).toFixed(1) + 'x' : '—';
       const canon = window.SlotResolver ? window.SlotResolver.resolve(s.name || s) : s;
-      const imgUrl = (canon && canon.image) ? canon.image : s.image;
+      const imgUrl = this.escapeHTML((canon && canon.image) ? canon.image : s.image);
       const curTier = String(s.bonusTier || s.tierBadge || '3S').toUpperCase();
-      const fallbackSvg = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+      const safeTierCls = this.escapeHTML(curTier.toLowerCase());
+      const fallbackSvg = this.escapeHTML((window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
         ? window.SlotResolver.generateDataUriCard(s.name || 'Slot', s.provider || 'Casino')
-        : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
+        : 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format');
+      const safeName = this.escapeHTML(s.name);
+      const safeProv = this.escapeHTML(canon && canon.provider ? canon.provider : s.provider);
+      const safeCaller = this.escapeHTML(s.caller || '—');
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
           <td style="font-family: monospace; font-size: 11px; color: var(--text-dim);">#${idx + 1}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="${imgUrl}" alt="${s.name}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
+              <img src="${imgUrl}" alt="${safeName}" style="width: 36px; height: 48px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
               <div>
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <strong style="color: #ffffff; font-size: 13px;">${s.name}</strong>
-                  <select class="admin-bonus-tier-select bh-tier-badge tier-${curTier.toLowerCase()}" data-idx="${idx}" style="cursor:pointer; font-size:9.5px; padding:1px 5px; border-radius:4px; background:#0f172a; color:#fff;">
+                  <strong style="color: #ffffff; font-size: 13px;">${safeName}</strong>
+                  <select class="admin-bonus-tier-select bh-tier-badge tier-${safeTierCls}" data-idx="${idx}" style="cursor:pointer; font-size:9.5px; padding:1px 5px; border-radius:4px; background:#0f172a; color:#fff;">
                     ${tierOptions.map(o => `<option value="${o.code}" ${o.code === curTier ? 'selected' : ''}>${o.label}</option>`).join('')}
                   </select>
                 </div>
-                <div style="font-size: 11px; color: var(--text-dim);">${canon && canon.provider ? canon.provider : s.provider}</div>
+                <div style="font-size: 11px; color: var(--text-dim);">${safeProv}</div>
               </div>
             </div>
           </td>
-          <td style="font-size: 12px; color: var(--gold); font-weight: 700;">${s.caller || '—'}</td>
-          <td style="font-family: var(--font-display); font-weight: 700; color: #ffffff;">$${(s.bet || 2.0).toFixed(2)}</td>
+          <td style="font-size: 12px; color: var(--gold); font-weight: 700;">${safeCaller}</td>
+          <td style="font-family: var(--font-display); font-weight: 700; color: #ffffff;">$${(Number(s.bet) || 2.0).toFixed(2)}</td>
           <td>
-            <input type="number" class="slots-search-input admin-payout-input" data-idx="${idx}" value="${s.payout || 0}" step="1" style="width: 100px; padding: 4px 8px; font-size: 12px;">
+            <input type="number" class="slots-search-input admin-payout-input" data-idx="${idx}" value="${Number(s.payout) || 0}" step="1" style="width: 100px; padding: 4px 8px; font-size: 12px;">
           </td>
           <td style="font-family: var(--font-display); font-weight: 900; color: ${s.payout > 0 ? '#53fc18' : 'var(--text-dim)'};">${mult}</td>
           <td>
@@ -2227,12 +2267,18 @@ class AdminHubController {
       const s2Num = seedNumbers[mId]?.p2;
       const isNextSeedP1 = this.duoMode === 'tourney' && !state.isDemo && nextSeedInfo.seed === s1Num && !cleanP1;
       const isNextSeedP2 = this.duoMode === 'tourney' && !state.isDemo && nextSeedInfo.seed === s2Num && !cleanP2;
+      const safeP1User = this.escapeHTML(p1.username || '');
+      const safeP1Slot = this.escapeHTML(p1.slotName || '');
+      const safeP2User = this.escapeHTML(p2.username || '');
+      const safeP2Slot = this.escapeHTML(p2.slotName || '');
+      const safeWinner = this.escapeHTML(m.winner || '');
+      const safeStatus = this.escapeHTML(m.status || '');
 
       return `
         <div class="admin-tourney-match-box" style="padding: 9px 10px; background: rgba(7, 11, 22, 0.85); border: 1px solid ${m.status === 'FINISHED' ? 'rgba(83,252,24,0.35)' : 'rgba(255,255,255,0.08)'}; border-radius: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="font-size: 10.5px; font-weight: 900; color: var(--gold); letter-spacing: 0.05em;">${titleLabel}</span>
-            ${m.winner ? `<span class="reward-badge-pill" style="font-size: 9.5px; color: #53fc18; border-color: #53fc18; background: rgba(83,252,24,0.12);">✓ WINNER: ${m.winner}</span>` : `<span style="font-size: 9.5px; color: #64748b;">${m.status}</span>`}
+            ${m.winner ? `<span class="reward-badge-pill" style="font-size: 9.5px; color: #53fc18; border-color: #53fc18; background: rgba(83,252,24,0.12);">✓ WINNER: ${safeWinner}</span>` : `<span style="font-size: 9.5px; color: #64748b;">${safeStatus}</span>`}
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch;">
@@ -2240,11 +2286,11 @@ class AdminHubController {
             <div style="padding: 7px; background: rgba(0, 229, 255, 0.06); border: 1px solid ${isP1Win ? '#53fc18' : (isNextSeedP1 ? 'var(--gold)' : 'rgba(0, 229, 255, 0.22)')}; border-radius: 8px; opacity: ${isP2Win ? '0.45' : '1'};">
               ${s1Num ? `<div style="font-size: 9px; font-weight: 900; color: ${isNextSeedP1 ? 'var(--gold)' : '#64748b'}; margin-bottom: 3px; display: flex; justify-content: space-between;"><span>SEED ${s1Num}/8</span>${isNextSeedP1 ? '<span style="color:var(--gold);">🎯 NEXT</span>' : ''}</div>` : ''}
               ${allowInlineEdit ? `
-                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player1" value="${p1.username || ''}" placeholder="@Seed${s1Num || 1}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
-                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player1" value="${p1.slotName || ''}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
+                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player1" value="${safeP1User}" placeholder="@Seed${s1Num || 1}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
+                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player1" value="${safeP1Slot}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
               ` : `
-                <div style="font-weight: 800; font-size: 11.5px; color: ${isP1Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p1.username || 'TBD (Waiting...)'}</div>
-                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p1.slotName || '—'}</div>
+                <div style="font-weight: 800; font-size: 11.5px; color: ${isP1Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeP1User || 'TBD (Waiting...)'}</div>
+                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeP1Slot || '—'}</div>
               `}
               ${!isSpins ? `
                 <div style="margin-top: 5px; display: flex; align-items: center; gap: 4px;">
@@ -2269,11 +2315,11 @@ class AdminHubController {
             <div style="padding: 7px; background: rgba(255, 42, 95, 0.06); border: 1px solid ${isP2Win ? '#53fc18' : (isNextSeedP2 ? 'var(--gold)' : 'rgba(255, 42, 95, 0.22)')}; border-radius: 8px; opacity: ${isP1Win ? '0.45' : '1'};">
               ${s2Num ? `<div style="font-size: 9px; font-weight: 900; color: ${isNextSeedP2 ? 'var(--gold)' : '#64748b'}; margin-bottom: 3px; display: flex; justify-content: space-between;"><span>SEED ${s2Num}/8</span>${isNextSeedP2 ? '<span style="color:var(--gold);">🎯 NEXT</span>' : ''}</div>` : ''}
               ${allowInlineEdit ? `
-                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player2" value="${p2.username || ''}" placeholder="@Seed${s2Num || 2}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
-                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player2" value="${p2.slotName || ''}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
+                <input type="text" class="slots-search-input tourney-edit-user" data-match="${mId}" data-side="player2" value="${safeP2User}" placeholder="@Seed${s2Num || 2}" style="width: 100%; padding: 3px 6px; font-size: 11px; font-weight: 800; margin-bottom: 3px;">
+                <input type="text" class="slots-search-input tourney-edit-slot" data-match="${mId}" data-side="player2" value="${safeP2Slot}" placeholder="Slot Name" style="width: 100%; padding: 3px 6px; font-size: 10px; color: var(--gold);">
               ` : `
-                <div style="font-weight: 800; font-size: 11.5px; color: ${isP2Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p2.username || 'TBD (Waiting...)'}</div>
-                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p2.slotName || '—'}</div>
+                <div style="font-weight: 800; font-size: 11.5px; color: ${isP2Win ? '#53fc18' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeP2User || 'TBD (Waiting...)'}</div>
+                <div style="font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeP2Slot || '—'}</div>
               `}
               ${!isSpins ? `
                 <div style="margin-top: 5px; display: flex; align-items: center; gap: 4px;">
@@ -2332,8 +2378,8 @@ class AdminHubController {
             ${state.champion ? `
               <div style="margin-top: 8px; padding: 10px 12px; background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(83,252,24,0.12)); border: 1px solid var(--gold); border-radius: 10px; text-align: center;">
                 <div style="font-size: 10px; font-weight: 900; color: var(--gold); letter-spacing: 0.08em;">👑 TOURNAMENT CHAMPION</div>
-                <div style="font-size: 15px; font-weight: 900; color: #fff; margin-top: 2px;">${state.champion.username}</div>
-                <div style="font-size: 11px; color: #53fc18; font-weight: 700;">${state.champion.slotName || ''}</div>
+                <div style="font-size: 15px; font-weight: 900; color: #fff; margin-top: 2px;">${this.escapeHTML(state.champion.username)}</div>
+                <div style="font-size: 11px; color: #53fc18; font-weight: 700;">${this.escapeHTML(state.champion.slotName || '')}</div>
               </div>
             ` : ''}
           </div>
@@ -3259,8 +3305,8 @@ class AdminHubController {
       } else {
         listEl.innerHTML = this.duoPool.map((p) => `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
-            <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${p.chatter}</span>
-            <span style="font-size: 11px; color: var(--gold);">${p.slot}</span>
+            <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${this.escapeHTML(p.chatter)}</span>
+            <span style="font-size: 11px; color: var(--gold);">${this.escapeHTML(p.slot)}</span>
           </div>
         `).join('');
       }
@@ -3276,14 +3322,14 @@ class AdminHubController {
       } else {
         cpListEl.innerHTML = this.duoPool.map((p) => {
           const meta = this.resolveSlotMeta(p.slot);
-          const fallbackUri = (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
+          const fallbackUri = this.escapeHTML((window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
             ? window.SlotResolver.generateDataUriCard(meta.name, meta.provider)
-            : '';
+            : '');
           return `
             <div style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 8px; font-size: 11px;">
-              <img src="${meta.image}" alt="" style="width: 24px; height: 32px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackUri}';" />
-              <strong style="color: #fff;">@${p.chatter}</strong>
-              <span style="color: var(--gold);">${meta.name}</span>
+              <img src="${this.escapeHTML(meta.image)}" alt="" style="width: 24px; height: 32px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackUri}';" />
+              <strong style="color: #fff;">@${this.escapeHTML(p.chatter)}</strong>
+              <span style="color: var(--gold);">${this.escapeHTML(meta.name)}</span>
             </div>
           `;
         }).join('');
@@ -3432,7 +3478,7 @@ class AdminHubController {
       const secAgo = Math.floor((Date.now() - c.ts) / 1000);
       return `
         <div style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-          <span style="font-weight: 700; color: #ffffff; font-size: 11px;">@${c.user}</span>
+          <span style="font-weight: 700; color: #ffffff; font-size: 11px;">@${this.escapeHTML(c.user)}</span>
           <span style="font-size: 10px; color: var(--kick-green);">${secAgo}s</span>
         </div>
       `;
@@ -3580,7 +3626,7 @@ class AdminHubController {
     try {
       fetch('/api/overlay/celebration', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ celebration: payload })
       }).catch(() => {});
     } catch (_) {}
@@ -3597,7 +3643,7 @@ class AdminHubController {
     try {
       fetch('/api/sync/state', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ overlayEvent })
       }).catch(() => {});
     } catch (_) {}
@@ -4485,11 +4531,42 @@ class AdminHubController {
     const pillEl = document.getElementById('cp-webvitals-pill');
     let latestInpMs = 12;
     let currentFps = 60;
+    let frames = 0;
+    let lastSample = performance.now();
+    let fpsRafId = null;
+
+    // 3. Lightweight FPS sampler (runs only when Control Panel is active & tab visible)
+    const tickFps = (now) => {
+      fpsRafId = null;
+      if (document.hidden) {
+        frames = 0;
+        lastSample = now;
+        return;
+      }
+      frames++;
+      const elapsed = now - lastSample;
+      if (elapsed >= 2000) {
+        currentFps = Math.min(60, Math.max(1, Math.round((frames * 1000) / elapsed)));
+        frames = 0;
+        lastSample = now;
+        if (pillEl) {
+          const activeMods = Object.values(this.cpModuleSwitches || {}).filter(Boolean).length;
+          const statusDot = currentFps >= 50 && latestInpMs < 200 ? '🟢' : '🟡';
+          pillEl.textContent = `${statusDot} ${currentFps} FPS · INP ${latestInpMs}ms · ${activeMods}/4 Active`;
+        }
+      }
+      fpsRafId = requestAnimationFrame(tickFps);
+    };
 
     // 1. Visibly.js pattern: pause CSS animations & loops when tab is hidden
     const syncVisibility = () => {
-      const hidden = document.visibilityState === 'hidden';
+      const hidden = document.hidden;
       document.body.classList.toggle('is-tab-hidden', hidden);
+      if (!hidden && !fpsRafId) {
+        frames = 0;
+        lastSample = performance.now();
+        fpsRafId = requestAnimationFrame(tickFps);
+      }
     };
     document.addEventListener('visibilitychange', syncVisibility);
     syncVisibility();
@@ -4507,31 +4584,6 @@ class AdminHubController {
         obs.observe({ type: 'event', buffered: true, durationThreshold: 16 });
       } catch (_) {}
     }
-
-    // 3. Lightweight FPS sampler (runs only when Control Panel is active & tab visible)
-    let frames = 0;
-    let lastSample = performance.now();
-    const tickFps = (now) => {
-      if (document.visibilityState === 'visible') {
-        frames++;
-        const elapsed = now - lastSample;
-        if (elapsed >= 2000) {
-          currentFps = Math.min(60, Math.max(1, Math.round((frames * 1000) / elapsed)));
-          frames = 0;
-          lastSample = now;
-          if (pillEl) {
-            const activeMods = Object.values(this.cpModuleSwitches || {}).filter(Boolean).length;
-            const statusDot = currentFps >= 50 && latestInpMs < 200 ? '🟢' : '🟡';
-            pillEl.textContent = `${statusDot} ${currentFps} FPS · INP ${latestInpMs}ms · ${activeMods}/4 Active`;
-          }
-        }
-      } else {
-        frames = 0;
-        lastSample = now;
-      }
-      requestAnimationFrame(tickFps);
-    };
-    requestAnimationFrame(tickFps);
   }
 
 
@@ -4831,7 +4883,16 @@ class AdminHubController {
     if (logEl) {
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const entry = document.createElement('div');
-      entry.innerHTML = `<span style="color:#64748b;">[${timeStr}]</span> <strong style="color:#53fc18;">@${cleanUser}:</strong> <span style="color:#fff;">${text}</span>`;
+      const timeSpan = document.createElement('span');
+      timeSpan.style.color = '#64748b';
+      timeSpan.textContent = `[${timeStr}] `;
+      const userStrong = document.createElement('strong');
+      userStrong.style.color = '#53fc18';
+      userStrong.textContent = `@${cleanUser}: `;
+      const textSpan = document.createElement('span');
+      textSpan.style.color = '#fff';
+      textSpan.textContent = text;
+      entry.append(timeSpan, userStrong, textSpan);
       logEl.prepend(entry);
     }
 

@@ -26,6 +26,8 @@
   let isSpinning = false;
   let lastHandledSpinTs = 0;
   let winnerHideTimer = null;
+  let wheelBufferCanvas = null;
+  let wheelBufferDirty = true;
   const slotImageCache = new Map();
   const avatarCache = new Map();
 
@@ -112,6 +114,7 @@
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       slotImageCache.set(url, img);
+      wheelBufferDirty = true;
       if (!isSpinning) drawWheel(wheelRotation);
     };
     img.onerror = () => {
@@ -173,6 +176,96 @@
     } catch (_) {}
   }
 
+  function ensureWheelBuffer(w, h) {
+    if (!wheelBufferCanvas) {
+      wheelBufferCanvas = document.createElement('canvas');
+    }
+    if (wheelBufferCanvas.width !== w || wheelBufferCanvas.height !== h) {
+      wheelBufferCanvas.width = w;
+      wheelBufferCanvas.height = h;
+      wheelBufferDirty = true;
+    }
+    if (!wheelBufferDirty) return wheelBufferCanvas;
+
+    const bctx = wheelBufferCanvas.getContext('2d');
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.min(cx, cy) - 12;
+    bctx.clearRect(0, 0, w, h);
+
+    const n = requests.length;
+    const arc = (Math.PI * 2) / n;
+
+    for (let i = 0; i < n; i++) {
+      const entry = requests[i];
+      const meta = resolveSlotMeta(entry.name, entry);
+      if (meta.img) preloadSlotImage(meta.img);
+
+      const startAngle = i * arc;
+      const endAngle = startAngle + arc;
+      const midAngle = startAngle + arc / 2;
+      const sliceColor = SLICE_PALETTE[i % SLICE_PALETTE.length];
+
+      // Slice Sector
+      bctx.save();
+      bctx.beginPath();
+      bctx.moveTo(cx, cy);
+      bctx.arc(cx, cy, radius, startAngle, endAngle);
+      bctx.closePath();
+
+      const grad = bctx.createRadialGradient(cx, cy, 35, cx, cy, radius);
+      grad.addColorStop(0, '#090d1a');
+      grad.addColorStop(0.68, sliceColor);
+      grad.addColorStop(1, '#070a14');
+      bctx.fillStyle = grad;
+      bctx.fill();
+
+      bctx.lineWidth = 2;
+      bctx.strokeStyle = 'rgba(7, 10, 18, 0.9)';
+      bctx.stroke();
+      bctx.restore();
+
+      // Slice Text: @Username + Slot Name
+      bctx.save();
+      bctx.translate(cx, cy);
+      bctx.rotate(midAngle);
+      bctx.textAlign = 'right';
+      bctx.shadowColor = 'rgba(0, 0, 0, 0.92)';
+      bctx.shadowBlur = 6;
+
+      const rawUser = String(entry.user || 'Viewer').trim().replace(/^@/, '');
+      const userLabel = `@${rawUser.slice(0, 14)}`;
+      const slotLabel = String(meta.name || entry.name || 'Slot').slice(0, 18);
+
+      if (n <= 12) {
+        bctx.fillStyle = '#ffd700';
+        bctx.font = '800 12px "JetBrains Mono", monospace';
+        bctx.fillText(userLabel, radius - 22, -4);
+
+        bctx.fillStyle = '#ffffff';
+        bctx.font = '900 13.5px "Chakra Petch", sans-serif';
+        bctx.fillText(slotLabel, radius - 22, 13);
+      } else {
+        bctx.fillStyle = '#ffffff';
+        bctx.font = '800 11.5px "Chakra Petch", sans-serif';
+        bctx.fillText(`${userLabel} · ${slotLabel.slice(0, 14)}`, radius - 18, 4);
+      }
+      bctx.restore();
+    }
+
+    // Outer Gold/Cyan Rim
+    bctx.save();
+    bctx.beginPath();
+    bctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    bctx.lineWidth = 5;
+    bctx.strokeStyle = 'rgba(0, 229, 255, 0.65)';
+    bctx.stroke();
+    bctx.restore();
+
+    wheelBufferDirty = false;
+    return wheelBufferCanvas;
+  }
+
   // --- Draw Roulette Wheel with @Username + Slot Name on Each Slice ---
   function drawWheel(rotationRad = 0) {
     if (!ctx || !canvas) return;
@@ -222,75 +315,11 @@
       return;
     }
 
-    const n = requests.length;
-    const arc = (Math.PI * 2) / n;
-
-    for (let i = 0; i < n; i++) {
-      const entry = requests[i];
-      const meta = resolveSlotMeta(entry.name, entry);
-      if (meta.img) preloadSlotImage(meta.img);
-
-      const startAngle = rotationRad + i * arc;
-      const endAngle = startAngle + arc;
-      const midAngle = startAngle + arc / 2;
-      const sliceColor = SLICE_PALETTE[i % SLICE_PALETTE.length];
-
-      // Slice Sector
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, startAngle, endAngle);
-      ctx.closePath();
-
-      const grad = ctx.createRadialGradient(cx, cy, 35, cx, cy, radius);
-      grad.addColorStop(0, '#090d1a');
-      grad.addColorStop(0.68, sliceColor);
-      grad.addColorStop(1, '#070a14');
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(7, 10, 18, 0.9)';
-      ctx.stroke();
-      ctx.restore();
-
-      // Slice Text: @Username + Slot Name
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(midAngle);
-      ctx.textAlign = 'right';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.92)';
-      ctx.shadowBlur = 6;
-
-      const rawUser = String(entry.user || 'Viewer').trim().replace(/^@/, '');
-      const userLabel = `@${rawUser.slice(0, 14)}`;
-      const slotLabel = String(meta.name || entry.name || 'Slot').slice(0, 18);
-
-      if (n <= 12) {
-        // Two crisp stacked lines: @username in gold/cyan + Slot Name in bold white
-        ctx.fillStyle = '#ffd700';
-        ctx.font = '800 12px "JetBrains Mono", monospace';
-        ctx.fillText(userLabel, radius - 22, -4);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 13.5px "Chakra Petch", sans-serif';
-        ctx.fillText(slotLabel, radius - 22, 13);
-      } else {
-        // Compact single line when >12 entries
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '800 11.5px "Chakra Petch", sans-serif';
-        ctx.fillText(`${userLabel} · ${slotLabel.slice(0, 14)}`, radius - 18, 4);
-      }
-      ctx.restore();
-    }
-
-    // Outer Gold/Cyan Rim
+    const buf = ensureWheelBuffer(w, h);
     ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.65)';
-    ctx.stroke();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotationRad);
+    ctx.drawImage(buf, -cx, -cy);
     ctx.restore();
   }
 
@@ -342,6 +371,7 @@
     if (isSpinning) return;
     if (Array.isArray(payload?.queue) && payload.queue.length > 0) {
       requests = payload.queue;
+      wheelBufferDirty = true;
     }
     if (!requests.length) return;
 
@@ -406,6 +436,7 @@
     } catch (_) {
       requests = [];
     }
+    wheelBufferDirty = true;
     if (!isSpinning) drawWheel(wheelRotation);
   }
 
@@ -415,6 +446,7 @@
 
     if (type === 'SYNC_QUEUE' && Array.isArray(packet.queue)) {
       requests = packet.queue;
+      wheelBufferDirty = true;
       if (!isSpinning) drawWheel(wheelRotation);
       return;
     }
@@ -459,6 +491,7 @@
 
   // 3. Cloudflare Edge Polling (for isolated OBS Studio Browser Source)
   async function pollEdgeState() {
+    if (document.hidden) return;
     try {
       const res = await fetch('/api/overlay/celebration', { cache: 'no-store' });
       if (!res.ok) return;
@@ -471,6 +504,7 @@
           const sigB = JSON.stringify(payload.queue.map((r) => `${r.user}:${r.name}`));
           if (sigA !== sigB) {
             requests = payload.queue;
+            wheelBufferDirty = true;
             drawWheel(wheelRotation);
           }
         }

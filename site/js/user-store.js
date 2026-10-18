@@ -207,12 +207,18 @@ class UserStoreController {
   updateAvatarUI() {
     const avatarEls = document.querySelectorAll('.user-avatar-display');
     avatarEls.forEach(el => {
-      if (this.avatarType === 'img') {
-        el.innerHTML = `<img src="${this.avatar}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
+      if (this.avatarType === 'img' && this.avatar && (/^https?:\/\//i.test(this.avatar) || /^data:image\/svg\+xml/i.test(this.avatar))) {
+        el.textContent = '';
+        const img = document.createElement('img');
+        img.src = this.avatar;
+        img.alt = 'Avatar';
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: inherit;';
+        img.onerror = () => { el.textContent = (this.username || 'V').replace(/^@/, '').charAt(0).toUpperCase(); };
+        el.appendChild(img);
       } else if (typeof window.getDeterministicAvatarSvg === 'function' && this.username) {
         el.innerHTML = window.getDeterministicAvatarSvg(this.username, 32);
       } else {
-        el.textContent = this.avatar;
+        el.textContent = this.avatar || 'V';
       }
     });
   }

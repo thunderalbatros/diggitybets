@@ -25,7 +25,9 @@ class CelebrationOverlayApp {
     this.particles = [];
     this.particlePool = [];
     this.isRunning = false;
+    this.boundRenderLoop = this.renderLoop.bind(this);
     this.audioCtx = null;
+    this.masterLimiter = null;
     this.audioUnlocked = false;
     this.billboardTimer = null;
     this.waveTimers = [];
@@ -186,13 +188,34 @@ class CelebrationOverlayApp {
   /* =========================================================================
    * 3. PROCEDURAL WEB AUDIO — TRUMPET FANFARE FIRST, THEN METALLIC COINS
    * ========================================================================= */
-  initAudio() {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
+  ensureAudioBus() {
+    if (!this.audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        try {
+          this.audioCtx = new AudioContextClass();
+        } catch (_) {}
+      }
+    }
+    if (this.audioCtx && !this.masterLimiter) {
       try {
-        this.audioCtx = new AudioContextClass();
-        this.audioCtx.resume().catch(() => {});
+        const t = this.audioCtx.currentTime;
+        this.masterLimiter = this.audioCtx.createDynamicsCompressor();
+        this.masterLimiter.threshold.setValueAtTime(-4, t);
+        this.masterLimiter.knee.setValueAtTime(6, t);
+        this.masterLimiter.ratio.setValueAtTime(20, t);
+        this.masterLimiter.attack.setValueAtTime(0.001, t);
+        this.masterLimiter.release.setValueAtTime(0.12, t);
+        this.masterLimiter.connect(this.audioCtx.destination);
       } catch (_) {}
+    }
+    return this.masterLimiter || (this.audioCtx ? this.audioCtx.destination : null);
+  }
+
+  initAudio() {
+    this.ensureAudioBus();
+    if (this.audioCtx) {
+      this.audioCtx.resume().catch(() => {});
     }
 
     const unlockHandler = () => {
@@ -209,7 +232,8 @@ class CelebrationOverlayApp {
   }
 
   playSubBassBoom(volume = 0.42) {
-    if (!this.audioCtx) return;
+    const outBus = this.ensureAudioBus();
+    if (!this.audioCtx || !outBus) return;
     try {
       const now = this.audioCtx.currentTime;
       const osc = this.audioCtx.createOscillator();
@@ -223,7 +247,7 @@ class CelebrationOverlayApp {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
 
       osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
+      gain.connect(outBus);
 
       osc.start(now);
       osc.stop(now + 0.62);
@@ -231,7 +255,8 @@ class CelebrationOverlayApp {
   }
 
   playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
-    if (!this.audioCtx) return;
+    const outBus = this.ensureAudioBus();
+    if (!this.audioCtx || !outBus) return;
     try {
       const t = startTime;
       const masterGain = this.audioCtx.createGain();
@@ -285,7 +310,7 @@ class CelebrationOverlayApp {
       osc2.connect(filter);
       filter.connect(noteGain);
       noteGain.connect(masterGain);
-      masterGain.connect(this.audioCtx.destination);
+      masterGain.connect(outBus);
 
       const stopTime = t + duration + releaseTime + 0.05;
       osc1.start(t);
@@ -355,7 +380,8 @@ class CelebrationOverlayApp {
    * Metallic Gold Coins Shower Sound (Triggered after trumpet fanfare starts)
    */
   playCoinClatter(count = 24, delaySeconds = 0.48) {
-    if (!this.audioCtx) return;
+    const outBus = this.ensureAudioBus();
+    if (!this.audioCtx || !outBus) return;
     try {
       const now = this.audioCtx.currentTime + delaySeconds;
       for (let i = 0; i < count; i++) {
@@ -378,7 +404,7 @@ class CelebrationOverlayApp {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(this.audioCtx.destination);
+        gain.connect(outBus);
 
         osc.start(t);
         osc.stop(t + 0.048);
@@ -390,12 +416,7 @@ class CelebrationOverlayApp {
    * Plays Trumpet Fanfare first, followed by Falling Coins audio
    */
   playCelebrationSequenceAudio(isGrand = false) {
-    if (!this.audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        try { this.audioCtx = new AudioContextClass(); } catch (_) {}
-      }
-    }
+    this.ensureAudioBus();
     if (!this.audioCtx) return;
 
     const executeSequence = () => {
@@ -457,7 +478,7 @@ class CelebrationOverlayApp {
 
     if (!this.isRunning) {
       this.isRunning = true;
-      requestAnimationFrame(this.renderLoop.bind(this));
+      requestAnimationFrame(this.boundRenderLoop);
     }
   }
 
@@ -488,7 +509,7 @@ class CelebrationOverlayApp {
     this.particles = alive;
 
     if (this.particles.length > 0) {
-      requestAnimationFrame(this.renderLoop.bind(this));
+      requestAnimationFrame(this.boundRenderLoop);
     } else {
       this.isRunning = false;
       this.ctx.clearRect(0, 0, this.width, this.height);
@@ -874,19 +895,6 @@ class CelebrationOverlayApp {
       }
     } catch (_) {}
 
-    // LocalStorage fast poll
-    setInterval(() => {
-      try {
-        const raw = localStorage.getItem('hunthub_celebration_event');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        const ts = Number(data?.timestamp || data?.ts || 0);
-        if (ts > this.lastEventTimestamp && (Date.now() - ts) < 12000) {
-          this.triggerCelebration(data);
-        }
-      } catch (_) {}
-    }, 550);
-
     // 3. Cross-Process Edge Sync (Opera/Chrome Control Panel <-> OBS Studio Browser Source)
     this.initEdgeCelebrationPoll();
 
@@ -897,6 +905,7 @@ class CelebrationOverlayApp {
   initEdgeCelebrationPoll() {
     let initializedBaseline = false;
     const pollEdge = async () => {
+      if (document.hidden) return;
       try {
         const res = await fetch('/api/overlay/celebration', { cache: 'no-store' });
         if (!res.ok) return;
