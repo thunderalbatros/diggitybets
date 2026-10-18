@@ -78,6 +78,7 @@ class UserStoreController {
     });
     this.initStoreStockState();
     this.updateUserUI();
+    this.syncKickProfileAvatar(false);
     this.bindAuthButtons();
     this.bindProfileControls();
     this.bindStakeTotpVerification();
@@ -314,21 +315,99 @@ class UserStoreController {
 
   updateAvatarUI() {
     const avatarEls = document.querySelectorAll('.user-avatar-display');
+    const isImage = this.avatarType === 'img' && this.avatar && (/^https?:\/\//i.test(this.avatar) || /^data:image\//i.test(this.avatar));
+
     avatarEls.forEach(el => {
-      if (this.avatarType === 'img' && this.avatar && (/^https?:\/\//i.test(this.avatar) || /^data:image\/svg\+xml/i.test(this.avatar))) {
-        el.textContent = '';
+      if (isImage) {
+        el.innerHTML = '';
         const img = document.createElement('img');
         img.src = this.avatar;
         img.alt = 'Avatar';
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: inherit;';
-        img.onerror = () => { el.textContent = (this.username || 'V').replace(/^@/, '').charAt(0).toUpperCase(); };
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block;';
+        img.onerror = () => {
+          el.innerHTML = (typeof window.getDeterministicAvatarSvg === 'function' && this.username)
+            ? window.getDeterministicAvatarSvg(this.username, 36)
+            : `<span style="font-size: 20px;">👤</span>`;
+        };
         el.appendChild(img);
       } else if (typeof window.getDeterministicAvatarSvg === 'function' && this.username) {
-        el.innerHTML = window.getDeterministicAvatarSvg(this.username, 32);
+        el.innerHTML = window.getDeterministicAvatarSvg(this.username, 36);
       } else {
-        el.textContent = this.avatar || 'V';
+        el.innerHTML = `<span style="font-size: 20px;">👤</span>`;
       }
     });
+
+    // Update avatar source indicator in Profile
+    const srcEl = document.getElementById('prof-avatar-source');
+    if (srcEl) {
+      const isCustom = localStorage.getItem('hunthub_custom_uploaded_avatar') === 'true';
+      if (isCustom) {
+        srcEl.textContent = '📁 Foto personalizada (cargada desde tu PC)';
+        srcEl.style.color = '#38bdf8';
+      } else if (this.isLoggedIn && isImage) {
+        srcEl.textContent = '🟢 Sincronizado automáticamente con Kick.com';
+        srcEl.style.color = 'var(--kick-green)';
+      } else if (this.isLoggedIn) {
+        srcEl.textContent = '🟢 Cuenta de Kick conectada';
+        srcEl.style.color = 'var(--kick-green)';
+      } else {
+        srcEl.textContent = 'Conectá tu cuenta de Kick o subí un archivo de tu PC';
+        srcEl.style.color = 'var(--text-dim)';
+      }
+    }
+  }
+
+  async syncKickProfileAvatar(force = false) {
+    if (!this.username) return;
+    const clean = String(this.username).trim().toLowerCase().replace(/^@/, '');
+    if (!clean) return;
+
+    // Respect custom PC upload unless user specifically requested "Usar foto de Kick.com"
+    if (!force && localStorage.getItem('hunthub_custom_uploaded_avatar') === 'true') {
+      return;
+    }
+
+    let remotePic = '';
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch(`/api/kick/user/${encodeURIComponent(clean)}`, { signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        remotePic = data?.profile_pic || data?.user?.profile_pic || data?.avatarUrl || '';
+      }
+    } catch (_) {}
+
+    if (!remotePic) {
+      try {
+        const controller2 = new AbortController();
+        const t2 = setTimeout(() => controller2.abort(), 2500);
+        const res2 = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(clean)}`, { signal: controller2.signal });
+        clearTimeout(t2);
+        if (res2.ok) {
+          const data2 = await res2.json();
+          remotePic = data2?.user?.profile_pic || data2?.profile_pic || '';
+        }
+      } catch (_) {}
+    }
+
+    if (remotePic && typeof remotePic === 'string') {
+      localStorage.setItem('hunthub_kick_avatar', remotePic);
+      localStorage.removeItem('hunthub_custom_uploaded_avatar');
+      this.avatar = remotePic;
+      this.avatarType = 'img';
+      localStorage.setItem('hunthub_avatar', remotePic);
+      localStorage.setItem('hunthub_avatar_type', 'img');
+      this.updateAvatarUI();
+      if (force && window.sonner) {
+        window.sonner.toast({
+          title: 'Foto de Kick Sincronizada 🟢',
+          message: 'Se cargó tu foto de perfil oficial de Kick.com con éxito.',
+          type: 'green'
+        });
+      }
+    }
   }
 
   bindAuthButtons() {
@@ -410,23 +489,10 @@ class UserStoreController {
   }
 
   bindProfileControls() {
-    // 1. Avatar Preset Buttons
-    const presetBtns = document.querySelectorAll('.avatar-preset-btn');
-    presetBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const emoji = btn.getAttribute('data-avatar') || '🤠';
-        this.avatar = emoji;
-        this.avatarType = 'emoji';
-        localStorage.setItem('hunthub_avatar', this.avatar);
-        localStorage.setItem('hunthub_avatar_type', 'emoji');
-        this.updateAvatarUI();
-        if (window.soundEngine) window.soundEngine.playTick();
-      });
-    });
-
-    // 2. Custom Avatar File Upload from PC
+    // 1. Custom Avatar File Upload from PC
     const fileInput = document.getElementById('prof-avatar-file-input');
     const uploadBtn = document.getElementById('btn-upload-avatar-file');
+    const restoreKickBtn = document.getElementById('btn-restore-kick-avatar');
     const fileNameDisplay = document.getElementById('prof-file-name-display');
 
     if (uploadBtn && fileInput) {
@@ -438,7 +504,15 @@ class UserStoreController {
 
         // Max 2MB limit validation
         if (file.size > 2 * 1024 * 1024) {
-          alert('⚠️ The selected file exceeds the 2MB limit. Please upload an image under 2MB.');
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Archivo demasiado grande ⚠️',
+              message: 'El archivo supera el límite de 2MB. Seleccioná una imagen menor a 2MB.',
+              type: 'error'
+            });
+          } else {
+            alert('⚠️ El archivo supera el límite de 2MB. Por favor seleccioná una imagen menor a 2MB.');
+          }
           return;
         }
 
@@ -451,29 +525,37 @@ class UserStoreController {
           this.avatarType = 'img';
           localStorage.setItem('hunthub_avatar', base64Data);
           localStorage.setItem('hunthub_avatar_type', 'img');
+          localStorage.setItem('hunthub_custom_uploaded_avatar', 'true');
           this.updateAvatarUI();
           if (window.soundEngine) window.soundEngine.playWin();
-          alert('✅ Profile image uploaded and saved successfully!');
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Foto de perfil actualizada 📁',
+              message: 'Tu foto personalizada desde PC fue guardada con éxito.',
+              type: 'green'
+            });
+          }
         };
         reader.readAsDataURL(file);
       });
     }
 
-    // 3. Custom Avatar URL
-    const customAvatarInput = document.getElementById('prof-avatar-url');
-    const customAvatarBtn = document.getElementById('btn-apply-avatar-url');
-    if (customAvatarBtn && customAvatarInput) {
-      customAvatarBtn.addEventListener('click', () => {
-        const url = customAvatarInput.value.trim();
-        if (url) {
-          this.avatar = url;
-          this.avatarType = 'img';
-          localStorage.setItem('hunthub_avatar', url);
-          localStorage.setItem('hunthub_avatar_type', 'img');
-          this.updateAvatarUI();
-          if (window.soundEngine) window.soundEngine.playWin();
-          alert('Custom avatar image updated successfully!');
+    // 2. Restore / Sync Kick.com Photo
+    if (restoreKickBtn) {
+      restoreKickBtn.addEventListener('click', () => {
+        if (!this.username) {
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Kick No Vinculado ℹ️',
+              message: 'Vinculá primero tu cuenta de Kick.com para sincronizar tu foto oficial.',
+              type: 'gold'
+            });
+          }
+          return;
         }
+        localStorage.removeItem('hunthub_custom_uploaded_avatar');
+        if (fileNameDisplay) fileNameDisplay.textContent = 'Ningún archivo seleccionado';
+        this.syncKickProfileAvatar(true);
       });
     }
 

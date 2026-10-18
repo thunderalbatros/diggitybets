@@ -8,7 +8,7 @@
 (function(global) {
   'use strict';
 
-  var DEFAULT_FALLBACK_IMAGE = 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
+  var DEFAULT_FALLBACK_IMAGE = '';
 
   var LEGACY_BROKEN_HASHES = [
     '8ce2d9f493cb2fc54425260193237a726715ffea2bfb19b8849b38466e3fa299',
@@ -39,12 +39,7 @@
     'f6f6ef43d3b7623910c69d8b18a3a2c5ce9c222956cf5723f5b2bdfadfe7f780',
     '3d97f2621ad76d337f7a3efd85c186835a589cf8fafe4ee506b1076bfeee3e56',
     '2e8c25785f7a0dcbb0591f855d0a6bb2aa36733ecce26b6b3e945c8c6a25c6fa',
-    '285d85217833a697ce7f74bf0ef2df8be7fce203a94aaee190477cfbdfda735e',
-    '9974a4ae80c70a5d29be4a1e6a645a55169ff82722b5a50694db86f25b4f2f0f',
-    '28b9f1d33ddddb3b365ed5c1ad5a815f02db8a16d6849f436a63fbfafe3dba75',
-    '9aaa1942df920ad474e703a0ce36b119f51e6b3342b96e848a7c2bbe9078c75a',
-    'ea636c66bc3e7b6b21f9de954645a460e7a630ec0631177f741316561fb8853e',
-    '7a055396f5b97a601ea6837472c4201d87ebd481f4a27a6e3a044f9502ab0768'
+    '285d85217833a697ce7f74bf0ef2df8be7fce203a94aaee190477cfbdfda735e'
   ];
 
   function isLegacyBrokenUrl(url) {
@@ -500,6 +495,7 @@
     'bonanza': 'sweet-bonanza-1000',
     'sweet 1000': 'sweet-bonanza-1000',
     'sweet bonanza 1000': 'sweet-bonanza-1000',
+    'sweet fiesta': 'sweet-fiesta',
     'sugar': 'sugar-rush-1000',
     'sugar rush': 'sugar-rush-1000',
     'sugar 1000': 'sugar-rush-1000',
@@ -517,8 +513,9 @@
     'san quentin': 'san-quentin-xways',
     'san quentin xways': 'san-quentin-xways',
     'quentin': 'san-quentin-xways',
-    'death row': 'san-quentin-xways',
-    'san quentin 2': 'san-quentin-xways',
+    'death row': 'san-quentin-2-death-row',
+    'san quentin 2': 'san-quentin-2-death-row',
+    'san quentin 2 death row': 'san-quentin-2-death-row',
     'mental': 'mental',
     'manicomio': 'mental',
     'tombstone': 'tombstone-r-i-p',
@@ -529,8 +526,11 @@
     'bass': 'big-bass-splash',
     'big bass': 'big-bass-splash',
     'splash': 'big-bass-splash',
+    'big bass boom': 'big-bass-boom',
     'dog house': 'the-dog-house-megaways',
     'the dog house': 'the-dog-house-megaways',
+    'dog mansion': 'the-dog-mansion-megaways',
+    'the dog mansion megaways': 'the-dog-mansion-megaways',
     'starlight': 'starlight-princess-1000',
     'starlight princess': 'starlight-princess-1000',
     'anubis': 'hand-of-anubis',
@@ -550,7 +550,8 @@
     'big bamboo': 'big-bamboo',
     '666': 'sixsixsix',
     'sixsixsix': 'sixsixsix',
-    'spicy 666': 'sixsixsix'
+    'spicy 666': 'spicy-sixsixsix',
+    'spicy sixsixsix': 'spicy-sixsixsix'
   };
 
   function normalizeKey(str) {
@@ -628,31 +629,48 @@
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
+  DEFAULT_FALLBACK_IMAGE = generateDataUriCard('Casino Slot', 'CASINO', '#ffd700');
+
+  function optimizeImgixUrl(u) {
+    if (!u || typeof u !== 'string') return u;
+    if (u.indexOf('mediumrare.imgix.net/') !== -1) {
+      return u.split('?')[0] + '?w=180&auto=format,compress&q=75';
+    }
+    return u;
+  }
+
   function resolveSlotImageUrl(slotOrUrl, baseContext) {
     if (!slotOrUrl) return DEFAULT_FALLBACK_IMAGE;
 
+    var slotName = typeof slotOrUrl === 'object' ? (slotOrUrl.name || '') : '';
+    var slotProv = typeof slotOrUrl === 'object' ? (slotOrUrl.provider || '') : '';
+    var slotColor = typeof slotOrUrl === 'object' ? (slotOrUrl.color || '') : '';
     var url = typeof slotOrUrl === 'string' ? slotOrUrl : (slotOrUrl.image || '');
+
     if (!url || typeof url !== 'string' || url.trim() === '') {
-      return DEFAULT_FALLBACK_IMAGE;
+      return slotName ? generateDataUriCard(slotName, slotProv, slotColor) : DEFAULT_FALLBACK_IMAGE;
     }
 
     url = url.trim();
 
     if (isLegacyBrokenUrl(url)) {
-      if (typeof slotOrUrl === 'object' && slotOrUrl.name) {
-        var healed = fuzzyMatch(slotOrUrl.name);
-        if (healed && !isLegacyBrokenUrl(healed.image)) return healed.image;
-        return generateDataUriCard(slotOrUrl.name, slotOrUrl.provider, slotOrUrl.color);
+      if (slotName) {
+        ensureCatalogCache();
+        var healed = _cachedByKey && _cachedByKey[normalizeKey(slotName)];
+        if (healed && healed.image && !isLegacyBrokenUrl(healed.image)) {
+          return optimizeImgixUrl(healed.image);
+        }
+        return generateDataUriCard(slotName, slotProv, slotColor);
       }
       return DEFAULT_FALLBACK_IMAGE;
     }
 
     if (/^(https?:|\/\/|data:|blob:)/i.test(url)) {
-      return url;
+      return optimizeImgixUrl(url);
     }
 
     if (url.indexOf('page_') !== -1) {
-      return DEFAULT_FALLBACK_IMAGE;
+      return slotName ? generateDataUriCard(slotName, slotProv, slotColor) : DEFAULT_FALLBACK_IMAGE;
     }
 
     var clean = url.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
@@ -669,7 +687,7 @@
       return '/' + clean.replace(/^\//, '');
     }
 
-    return url;
+    return optimizeImgixUrl(url);
   }
 
   var NUMBER_WORD_TO_DIGIT = {
@@ -1056,43 +1074,136 @@
 
     ensureCatalogCache();
 
-    // 0. Direct O(1) catalog hash lookup
-    if (_cachedByKey && _cachedByKey[clean]) {
-      return _cachedByKey[clean];
+    // 0. Direct O(1) catalog hash lookup by normalized name or slug
+    if (_cachedByKey) {
+      if (_cachedByKey[clean]) return _cachedByKey[clean];
+      var rawSlug = slugify(raw);
+      if (rawSlug && _cachedByKey[rawSlug]) return _cachedByKey[rawSlug];
     }
 
-    // 1. Number-word normalized alias ("six six six" -> "666")
-    var expandedRaw = expandNumberWords(raw);
-    if (expandedRaw.indexOf('666') !== -1 || expandedRaw.indexOf('sixsixsix') !== -1) {
-      var sixMatch = CURATED_SLOTS.find(function(s) { return s.id === 'sixsixsix'; });
-      if (sixMatch) return sixMatch;
-    }
-
-    // 2. Alias direct
-    if (ALIAS_MAP[clean] || ALIAS_MAP[raw.toLowerCase()]) {
-      var targetId = ALIAS_MAP[clean] || ALIAS_MAP[raw.toLowerCase()];
+    // 1. Direct alias lookup (exact normalized or exact lowercase query only)
+    var lowerRaw = raw.toLowerCase();
+    if (ALIAS_MAP[clean] || ALIAS_MAP[lowerRaw]) {
+      var targetId = ALIAS_MAP[clean] || ALIAS_MAP[lowerRaw];
       if (_cachedByKey && _cachedByKey[targetId]) return _cachedByKey[targetId];
       var match = CURATED_SLOTS.find(function(s) { return s.id === targetId; });
       if (match) return match;
     }
 
-    // 3. Alias substring
-    for (var alias in ALIAS_MAP) {
-      if (alias.length >= 4 && (clean === alias || clean.indexOf(alias) !== -1 || (clean.length >= 4 && alias.indexOf(clean) !== -1))) {
-        var tId = ALIAS_MAP[alias];
-        if (_cachedByKey && _cachedByKey[tId]) return _cachedByKey[tId];
-        var m = CURATED_SLOTS.find(function(s) { return s.id === tId; });
-        if (m) return m;
+    // 2. Number-word normalized exact lookup ("six six six" -> "sixsixsix")
+    var expandedRaw = expandNumberWords(raw);
+    var expandedClean = normalizeKey(expandedRaw);
+    if (expandedClean && _cachedByKey && _cachedByKey[expandedClean]) {
+      return _cachedByKey[expandedClean];
+    }
+    if (expandedClean === '666' || expandedClean === 'sixsixsix' || expandedClean === '666sixsixsix') {
+      if (_cachedByKey && _cachedByKey['sixsixsix']) return _cachedByKey['sixsixsix'];
+      var sixMatch = CURATED_SLOTS.find(function(s) { return s.id === 'sixsixsix'; });
+      if (sixMatch) return sixMatch;
+    }
+
+    // 3. High-confidence token match (requires all query tokens to match and score >= 600)
+    var tokens = tokenizeSmart(raw);
+    if (tokens.length > 0) {
+      var all = getAllCatalogSlots();
+      var bestSlot = null;
+      var bestScore = 0;
+      for (var i = 0; i < all.length; i++) {
+        var s = all[i];
+        var sc = scoreSlotAgainstQuery(s, raw, clean, tokens);
+        // Only accept if exact/prefix match (>= 720) OR all tokens match with tight length similarity (>= 625)
+        if (sc >= 625 && sc > bestScore) {
+          bestScore = sc;
+          bestSlot = s;
+          if (sc >= 980) break;
+        }
+      }
+      if (bestSlot) {
+        return formatCatalogSlot(bestSlot);
       }
     }
 
-    // 4. Smart token-order & number-word search across full catalog
-    var smartMatches = smartSearch(raw, 1);
-    if (smartMatches && smartMatches.length > 0) {
-      return smartMatches[0];
+    return null;
+  }
+
+  /**
+   * O(1) Fast Slot Resolver for large grids (Slot Radar & Lab, Bonus Hunt tables).
+   * Avoids scanning 11,282 slots when a foreign casino title is not in the catalog.
+   */
+  function resolveFast(query, baseContext) {
+    ensureCatalogCache();
+    var objName = '';
+    var objProv = '';
+    var objImg = '';
+    var objSlug = '';
+    if (typeof query === 'object' && query !== null) {
+      if (query.id && query.name && query.image && !isLegacyBrokenUrl(query.image) && query.image.indexOf('mediumrare.imgix.net/') !== -1) {
+        return {
+          id: query.id,
+          name: query.name,
+          slug: query.slug || query.id,
+          provider: query.provider || 'Casino',
+          image: optimizeImgixUrl(query.image),
+          maxWin: query.maxWin || '10,000x',
+          rtp: query.rtp || '96.35%',
+          tier: query.tier || '2',
+          category: query.category,
+          badge: query.badge,
+          color: query.color
+        };
+      }
+      objName = String(query.name || query.slotName || query.slot || query.title || '').trim();
+      objProv = String(query.provider || query.slotProvider || '').trim();
+      objImg = String(query.image || query.thumbnailUrl || query.slotImage || query.imageUrl || query.img || '').trim();
+      objSlug = String(query.slug || query.id || '').trim().toLowerCase();
+    } else {
+      objName = String(query || '').trim();
     }
 
-    return null;
+    var clean = normalizeKey(objName);
+    var slugKey = objSlug || slugify(objName);
+    var hit = (_cachedByKey && (
+      (clean && _cachedByKey[clean]) ||
+      (slugKey && _cachedByKey[slugKey]) ||
+      (ALIAS_MAP[clean] && _cachedByKey[ALIAS_MAP[clean]])
+    )) || null;
+
+    if (hit) {
+      return {
+        id: hit.id || hit.slug || slugify(hit.name),
+        name: hit.name,
+        slug: hit.slug || hit.id || slugify(hit.name),
+        provider: hit.provider || objProv || 'Casino',
+        image: resolveSlotImageUrl(hit, baseContext),
+        maxWin: hit.maxWin || '10,000x',
+        rtp: hit.rtp || '96.35%',
+        tier: hit.tier || '2',
+        category: hit.category,
+        badge: hit.badge,
+        color: hit.color
+      };
+    }
+
+    var fallbackTitle = objName || objSlug || 'Casino Slot';
+    var fallbackSlug = slugKey || slugify(fallbackTitle);
+    var fallbackProv = objProv || 'Casino Slot';
+    var validThumb = objImg && !isLegacyBrokenUrl(objImg)
+      ? resolveSlotImageUrl({ name: fallbackTitle, provider: fallbackProv, image: objImg }, baseContext)
+      : generateDataUriCard(fallbackTitle, fallbackProv, '#ffd700');
+
+    return {
+      id: fallbackSlug,
+      name: fallbackTitle,
+      slug: fallbackSlug,
+      provider: fallbackProv,
+      image: validThumb,
+      maxWin: (typeof query === 'object' && query && query.maxWin) || '10,000x',
+      rtp: (typeof query === 'object' && query && (query.theoreticalRtp || query.rtp)) || '96.35%',
+      tier: '2',
+      category: 'casino',
+      badge: 'CASINO',
+      color: '#ffd700'
+    };
   }
 
   function resolve(query, baseContext) {
@@ -1102,17 +1213,17 @@
     if (typeof query === 'object' && query !== null) {
       objName = String(query.name || query.slotName || query.slot || query.title || '').trim();
       objProv = String(query.provider || query.slotProvider || '').trim();
-      objImg = String(query.image || query.slotImage || query.imageUrl || query.img || '').trim();
+      objImg = String(query.image || query.thumbnailUrl || query.slotImage || query.imageUrl || query.img || '').trim();
 
       if (objName) {
         var mObj = fuzzyMatch(objName);
         if (mObj && mObj.image && !isLegacyBrokenUrl(mObj.image)) {
           return {
-            id: mObj.id,
+            id: mObj.id || mObj.slug || slugify(mObj.name),
             name: mObj.name,
-            slug: mObj.slug,
+            slug: mObj.slug || mObj.id || slugify(mObj.name),
             provider: mObj.provider || objProv || 'Casino',
-            image: resolveSlotImageUrl(mObj.image, baseContext),
+            image: resolveSlotImageUrl(mObj, baseContext),
             maxWin: mObj.maxWin,
             rtp: mObj.rtp,
             tier: mObj.tier,
@@ -1129,7 +1240,7 @@
           name: objName,
           slug: query.slug || slugify(objName),
           provider: objProv || 'Casino',
-          image: resolveSlotImageUrl(objImg, baseContext),
+          image: resolveSlotImageUrl({ name: objName, provider: objProv, image: objImg, color: query.color }, baseContext),
           maxWin: query.maxWin || '10,000x',
           rtp: query.rtp || '96.50%',
           tier: query.tier || '2',
@@ -1144,11 +1255,11 @@
     var match = fuzzyMatch(str);
     if (match) {
       return {
-        id: match.id,
+        id: match.id || match.slug || slugify(match.name),
         name: match.name,
-        slug: match.slug,
+        slug: match.slug || match.id || slugify(match.name),
         provider: match.provider,
-        image: resolveSlotImageUrl(match.image, baseContext),
+        image: resolveSlotImageUrl(match, baseContext),
         maxWin: match.maxWin,
         rtp: match.rtp,
         tier: match.tier,
@@ -1231,6 +1342,7 @@
   // Expose as global singleton
   global.SlotResolver = {
     resolve: resolve,
+    resolveFast: resolveFast,
     fuzzyMatch: fuzzyMatch,
     smartSearch: smartSearch,
     findMathTwins: findMathTwins,
