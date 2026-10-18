@@ -117,4 +117,17 @@ When rendering provider telemetry, "Only on Stake" metrics, or sponsor media kit
 - **Studio Attribution:** Always display the actual development studio (e.g., *Titan Gaming*, *Twist Gaming*, *Massive Studios*, *Paperclip Gaming*, *AvatarUX*) underneath the title in 10px tabular uppercase typography.
 - **Real-Time Impression Counters:** Tabular metric counters with instantaneous tooltip breakdowns showing battle selections, bonus hunt inclusions, and live player engagements.
 
+---
 
+## 10. Symmetric Topbar HUD, Minimalist Sidebar & Clean `#watch` Stage Architecture
+- **Symmetric Topbar with 200% (2x) Centered `$DIG` Balance:**
+  - `.site-topbar` uses a symmetric 3-column grid (`grid-template-columns: 1fr auto 1fr`) with `.topbar-center` locked at the exact mathematical horizontal midpoint (`position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%)`).
+  - `#topbar-dig-balance-pill` renders at **200% (2x) visual scale** (`min-height: 58px`, `padding: 12px 32px`, `38x38px` coin SVG, `28px` tabular numeric balance, `21px` `$DIG` label) as the centerpiece of the top HUD.
+- **Unified Right Profile Trigger:**
+  - The top-right corner exclusively hosts the unified profile component (`#auth-user-panel` / `#topbar-profile-link` with avatar + `@username`, centered role badge `#auth-role-status-badge` underneath, and right-hand disconnect `✕` `#btn-kick-logout`), with zero separate `[ Profile ]` button.
+- **Minimalist `PORTAL` Sidebar (`248px` Expanded / `72px` Collapsed):**
+  - Expanded width (`248px`) guarantees zero text truncation (`...`) on `Leaderboard [ALL-TIME]`, `Streamer Admin [MASTER]`, and `Control Panel [LIVE]`.
+  - Inactive navigation items remain borderless and transparent (`background: transparent; border: 1px solid transparent; box-shadow: none;`), reserving luminous borders and accent glows exclusively for the active view (`.nav-link-btn.active`).
+- **Clean Single-Stage `#watch` & Original Socials Grid:**
+  - `#watch` presents a clean, full-width `16:9` cinema stage (`.hero-stream-grid.cinema-mode`) without duplicate side-column navigation buttons or redundant telemetry strips.
+  - Directly below the stream player sits `#links.stream-fused-section` with the 4 original horizontal `.module-card` cards (`.socials-horizontal-grid`: Kick Official, Discord VIP Community, Instagram Official, and `USE CODE: DIGGITY` Stake card).
