@@ -156,15 +156,16 @@ body {
   position: relative;
 }
 
-/* Fixed Top-Left Corner Diggity Bets Logo (White Backlight Glow, +100% top margin, +230% left margin) */
+/* Fixed Top-Left Corner Diggity Bets Logo (Centered over 284px sidebar, White Backlight Glow) */
 .fixed-corner-brand {
   position: fixed;
-  top: 22px;
-  left: 48px;
+  top: 10px;
+  left: 0;
+  width: 284px;
   z-index: 1200;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
   pointer-events: auto;
 }
 
@@ -575,19 +576,49 @@ body {
 }
 
 .site-header-logo {
-  height: 82px;
-  max-height: 84px;
-  max-width: 190px;
+  height: 132px;
+  max-height: 135px;
+  max-width: 260px;
   width: auto;
   object-fit: contain;
   margin-top: 0;
-  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.42));
+  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 42px rgba(255, 255, 255, 0.52));
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease;
 }
 
 .topbar-logo-link:hover .site-header-logo {
   transform: scale(1.03);
-  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 1)) drop-shadow(0 0 36px rgba(255, 255, 255, 0.65));
+  filter: drop-shadow(0 0 24px rgba(255, 255, 255, 1)) drop-shadow(0 0 50px rgba(255, 255, 255, 0.75));
+}
+
+/* Official Kick Wordmark Branding in Navigation & Section Titles */
+.nav-kick-logo {
+  height: 16px;
+  width: auto;
+  vertical-align: -2px;
+  margin-right: 5px;
+  display: inline-block;
+  filter: drop-shadow(0 0 6px rgba(83, 252, 24, 0.7));
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-link-btn:hover .nav-kick-logo,
+.nav-link-btn.active .nav-kick-logo {
+  filter: drop-shadow(0 0 10px rgba(83, 252, 24, 0.95));
+  transform: scale(1.05);
+}
+
+.header-kick-logo {
+  height: 30px;
+  width: auto;
+  vertical-align: -4px;
+  margin: 0 6px 0 4px;
+  display: inline-block;
+  filter: drop-shadow(0 0 12px rgba(83, 252, 24, 0.85));
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .topbar-center-logo {
@@ -1090,9 +1121,9 @@ body {
     min-height: 92px;
   }
   .site-header-logo {
-    height: 76px;
-    max-height: 78px;
-    max-width: 170px;
+    height: 120px;
+    max-height: 124px;
+    max-width: 240px;
   }
   .topbar-center .user-balance-pill,
   #topbar-dig-balance-pill {
@@ -1121,6 +1152,8 @@ body {
   .fixed-corner-brand {
     top: 14px;
     left: 16px;
+    width: auto;
+    justify-content: flex-start;
   }
   .sidebar-mobile-toggle {
     display: flex;
@@ -8322,18 +8355,12 @@ html.lenis, html.lenis body {
   gap: 20px;
   align-items: end;
   margin: 22px 0 24px;
-  padding: 30px 20px 0;
+  padding: 20px 10px 0;
   position: relative;
-  border-radius: 20px;
-  background:
-    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(83, 252, 24, 0.26) 0%, rgba(0, 230, 118, 0.08) 48%, transparent 80%),
-    linear-gradient(180deg, rgba(10, 20, 14, 0.92) 0%, rgba(5, 12, 8, 0.99) 100%);
-  border: 1.5px solid rgba(83, 252, 24, 0.45);
-  box-shadow: 
-    0 16px 48px rgba(0, 0, 0, 0.8),
-    0 0 42px rgba(83, 252, 24, 0.22),
-    inset 0 1px 0 rgba(83, 252, 24, 0.45);
-  overflow: hidden;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible;
 }
 
 @media (max-width: 860px) {
@@ -8348,38 +8375,39 @@ html.lenis, html.lenis body {
 /* Kick Official Pixel Wordmark Translucent Backdrop Behind Podium */
 .kick-podium-watermark {
   position: absolute;
-  top: 42%;
+  top: 44%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(940px, 94%);
-  max-width: 960px;
+  width: min(960px, 96%);
+  max-width: 980px;
   height: auto;
-  opacity: 0.22;
+  opacity: 0.46;
   pointer-events: none;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 45px rgba(83, 252, 24, 0.7));
+  filter: drop-shadow(0 0 10px rgba(83, 252, 24, 0.85)) drop-shadow(0 0 28px rgba(83, 252, 24, 0.48)) contrast(1.2);
   animation: kickWatermarkBreathe 6s ease-in-out infinite;
 }
 
 .kick-watermark-img {
   width: 100%;
   height: auto;
-  max-height: 280px;
+  max-height: 290px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 @keyframes kickWatermarkBreathe {
   0%, 100% {
-    opacity: 0.18;
-    transform: translate(-50%, -50%) scale(0.98);
+    opacity: 0.42;
+    transform: translate(-50%, -50%) scale(0.99);
   }
   50% {
-    opacity: 0.28;
-    transform: translate(-50%, -50%) scale(1.02);
+    opacity: 0.54;
+    transform: translate(-50%, -50%) scale(1.01);
   }
 }
 
@@ -8392,29 +8420,7 @@ html.lenis, html.lenis body {
 }
 
 .kick-podium-spotlight {
-  position: absolute;
-  top: -36px;
-  left: 8%;
-  right: 8%;
-  height: 250px;
-  pointer-events: none;
-  z-index: 0;
-  clip-path: polygon(24% 0%, 76% 0%, 100% 100%, 0% 100%);
-  animation: podiumBeamPulse 3.6s ease-in-out infinite;
-}
-
-.kick-podium-spotlight.champion-beam {
-  background: linear-gradient(180deg, rgba(83, 252, 24, 0.44) 0%, rgba(83, 252, 24, 0.12) 65%, transparent 100%);
-}
-
-.kick-podium-spotlight.second-beam {
-  background: linear-gradient(180deg, rgba(0, 230, 118, 0.32) 0%, rgba(56, 189, 248, 0.08) 65%, transparent 100%);
-  animation-delay: 0.5s;
-}
-
-.kick-podium-spotlight.third-beam {
-  background: linear-gradient(180deg, rgba(83, 252, 24, 0.28) 0%, rgba(245, 158, 11, 0.08) 65%, transparent 100%);
-  animation-delay: 1.0s;
+  display: none !important;
 }
 
 .kick-podium-halo {
@@ -8448,14 +8454,14 @@ html.lenis, html.lenis body {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(6, 14, 9, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(6, 14, 9, 0.42);
   border: 2px solid #53fc18;
   box-shadow: 
-    0 0 30px rgba(83, 252, 24, 0.45),
-    0 0 14px rgba(83, 252, 24, 0.3),
-    inset 0 0 20px rgba(83, 252, 24, 0.14);
+    0 0 30px rgba(83, 252, 24, 0.35),
+    0 0 14px rgba(83, 252, 24, 0.25),
+    inset 0 0 20px rgba(83, 252, 24, 0.10);
   animation: podiumFloat 4.4s ease-in-out infinite;
   will-change: transform;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -8485,11 +8491,11 @@ html.lenis, html.lenis body {
 /* Champion Card (1st Place): Rayo Láser Verde Flúor Intenso */
 .kick-podium-card.champion-laser {
   border: 2.5px solid #53fc18;
-  background: linear-gradient(180deg, rgba(83, 252, 24, 0.24) 0%, rgba(6, 14, 9, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(83, 252, 24, 0.20) 0%, rgba(6, 14, 9, 0.48) 100%);
   box-shadow:
-    0 0 54px rgba(83, 252, 24, 0.85),
-    0 0 26px rgba(83, 252, 24, 0.95),
-    inset 0 0 36px rgba(83, 252, 24, 0.3);
+    0 0 46px rgba(83, 252, 24, 0.65),
+    0 0 22px rgba(83, 252, 24, 0.75),
+    inset 0 0 28px rgba(83, 252, 24, 0.2);
 }
 
 .kick-rank-crest {
@@ -8568,7 +8574,9 @@ html.lenis, html.lenis body {
   letter-spacing: 1.2px;
   padding: 6px 16px !important;
   border-radius: 20px !important;
-  background: rgba(4, 12, 7, 0.92) !important;
+  background: rgba(4, 12, 7, 0.58) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
   border: 1.5px solid rgba(83, 252, 24, 0.6) !important;
   color: #ffffff !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
@@ -8588,8 +8596,10 @@ html.lenis, html.lenis body {
   margin: 16px auto 14px;
   padding: 14px 20px;
   border-radius: 14px;
-  background: rgba(4, 12, 7, 0.94);
-  border: 2px solid rgba(83, 252, 24, 0.55);
+  background: rgba(4, 12, 7, 0.52);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(83, 252, 24, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -8598,13 +8608,13 @@ html.lenis, html.lenis body {
   max-width: 280px;
   position: relative;
   z-index: 2;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), inset 0 0 14px rgba(83, 252, 24, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(83, 252, 24, 0.1);
 }
 
 .kick-podium-points-box.champion-points-box {
   border-color: #53fc18;
-  box-shadow: 0 0 28px rgba(83, 252, 24, 0.5), 0 8px 24px rgba(0, 0, 0, 0.85);
-  background: rgba(4, 12, 7, 0.96);
+  box-shadow: 0 0 24px rgba(83, 252, 24, 0.45), 0 8px 24px rgba(0, 0, 0, 0.65);
+  background: rgba(4, 12, 7, 0.58);
 }
 
 .kick-podium-points-box .points-label {
@@ -8699,10 +8709,12 @@ html.lenis, html.lenis body {
 }
 
 .kick-podium-prize-pill.silver-prize {
-  background: rgba(4, 12, 7, 0.96);
+  background: rgba(4, 12, 7, 0.60);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 2.5px solid #00e676;
   color: #ffffff;
-  box-shadow: 0 0 30px rgba(0, 230, 118, 0.5);
+  box-shadow: 0 0 30px rgba(0, 230, 118, 0.4);
 }
 
 .kick-podium-prize-pill.silver-prize .kick-prize-main {
@@ -8717,10 +8729,12 @@ html.lenis, html.lenis body {
 }
 
 .kick-podium-prize-pill.bronze-prize {
-  background: rgba(4, 12, 7, 0.96);
+  background: rgba(4, 12, 7, 0.60);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 2.5px solid rgba(83, 252, 24, 0.9);
   color: #ffffff;
-  box-shadow: 0 0 28px rgba(83, 252, 24, 0.45);
+  box-shadow: 0 0 28px rgba(83, 252, 24, 0.35);
 }
 
 .kick-podium-prize-pill.bronze-prize .kick-prize-main {

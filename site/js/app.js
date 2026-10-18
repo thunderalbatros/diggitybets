@@ -103,7 +103,7 @@ window.switchView = function(targetId) {
     '#slot-intel': '🔥 SLOT RADAR, ENGINE DNA & VAULT',
     '#store': '🎁 REWARDS STORE & RAFFLES',
     '#stake-leaderboard': '⚡ STAKE WAGER LEADERBOARD ($1,500)',
-    '#leaderboard': '🏆 CHANNEL POINTS LEADERBOARD',
+    '#leaderboard': '🏆 KICK LEADERBOARD',
     '#profile': '👤 USER PROFILE & VERIFICATION',
     '#admin-hub': '👑 STREAMER ADMIN & MODERATION HUB',
     '#control-panel': '🎛️ STREAMER LIVE CONTROL PANEL'
