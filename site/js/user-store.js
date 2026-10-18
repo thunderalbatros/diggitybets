@@ -1167,7 +1167,7 @@ class UserStoreController {
       pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
       pts3.style.color = p3 ? '#cbd5e1' : '#64748b';
     }
-    if (prize3) prize3.textContent = p3 ? `🎰 ${p3.huntHits || 0} HUNT HITS` : 'HONORARY VIP PODIUM';
+    if (prize3) prize3.textContent = '💎 VIP BADGE KICK ROLE';
     if (tier3) {
       tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
@@ -1201,7 +1201,7 @@ class UserStoreController {
           <td colspan="7" style="text-align: center; padding: 40px 16px; color: #64748b;">
             <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
             <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #cbd5e1;">ESPACIO VACÍO · ESPERANDO ACTIVIDAD DE CHAT</div>
-            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores más activos de Kick ganan <strong style="color: var(--gold);">$20 USD (#1)</strong> y <strong style="color: #e2e8f0;">$10 USD (#2)</strong> — <strong style="color: var(--kick-green);">¡2X el premio ($40 / $20) bajo el código diggity!</strong></div>
+            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores más activos de Kick ganan <strong style="color: var(--gold);">$20 USD (#1)</strong>, <strong style="color: #e2e8f0;">$10 USD (#2)</strong> (<strong style="color: var(--kick-green);">2X bajo código diggity</strong>) y <strong style="color: #fde68a;">VIP Badge Kick Role (#3)</strong>.</div>
           </td>
         </tr>
       `;
@@ -1231,6 +1231,8 @@ class UserStoreController {
         activityPrizeHtml = `<span class="stake-table-prize-pill gold">🏆 $20 USD <span style="color: var(--kick-green); margin-left: 4px;">($40 2X diggity)</span></span>`;
       } else if (rank === 2) {
         activityPrizeHtml = `<span class="stake-table-prize-pill silver">🥈 $10 USD <span style="color: var(--kick-green); margin-left: 4px;">($20 2X diggity)</span></span>`;
+      } else if (rank === 3) {
+        activityPrizeHtml = `<span class="stake-table-prize-pill bronze">💎 VIP Badge Kick Role</span>`;
       }
 
       return `

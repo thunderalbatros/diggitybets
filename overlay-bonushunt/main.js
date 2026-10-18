@@ -207,6 +207,8 @@ class BonusHuntOverlayApp {
       this.bc.onmessage = (event) => {
         if (event.data && event.data.state) {
           this.handleStateUpdate(event.data.state);
+        } else if (event.data && Array.isArray(event.data.slots)) {
+          this.handleStateUpdate(this.buildStateFromHuntSlots(event.data.slots));
         }
       };
     } catch {}
@@ -294,8 +296,36 @@ class BonusHuntOverlayApp {
   initWebSocket() {
     const urlParams = new URLSearchParams(window.location.search);
     const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
-    if (!isLocalHost && !urlParams.has('port')) return;
     const port = urlParams.get('port') || '3001';
+
+    // Always start cross-process HTTP /api/sync/state polling for OBS Browser Sources (both production & localhost)
+    if (!this._syncIntervalStarted) {
+      this._syncIntervalStarted = true;
+      this._lastEdgeTs = 0;
+      setInterval(async () => {
+        if (document.hidden) return;
+        try {
+          const syncUrl = isLocalHost && urlParams.has('port')
+            ? `http://127.0.0.1:${port}/api/sync/state`
+            : '/api/sync/state';
+          const res = await fetch(syncUrl, { cache: 'no-store' });
+          if (!res.ok) return;
+          const data = await res.json();
+          const bhEvt = data?.overlayEvents?.['overlay-bonushunt'];
+          if (bhEvt && Array.isArray(bhEvt.slots) && Number(bhEvt.ts || 0) > this._lastEdgeTs) {
+            this._lastEdgeTs = Number(bhEvt.ts || Date.now());
+            this.handleStateUpdate(this.buildStateFromHuntSlots(bhEvt.slots));
+            return;
+          }
+          const huntState = data?.overlays?.bonushunt;
+          if (huntState && JSON.stringify(huntState) !== JSON.stringify(this.currentState)) {
+            this.handleStateUpdate(huntState);
+          }
+        } catch {}
+      }, 2500);
+    }
+
+    if (!isLocalHost && !urlParams.has('port')) return;
     const wsUrl = `ws://127.0.0.1:${port}/`;
 
     try {
@@ -330,23 +360,6 @@ class BonusHuntOverlayApp {
         setTimeout(() => this.initWebSocket(), delay);
       };
     } catch {}
-
-    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
-    if (!this._syncIntervalStarted) {
-      this._syncIntervalStarted = true;
-      setInterval(async () => {
-        if (document.hidden) return;
-        try {
-          const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
-          if (!res.ok) return;
-          const data = await res.json();
-          const huntState = data?.overlays?.bonushunt;
-          if (huntState && JSON.stringify(huntState) !== JSON.stringify(this.currentState)) {
-            this.handleStateUpdate(huntState);
-          }
-        } catch {}
-      }, 1500);
-    }
   }
 
   animateNumberFlow(el, targetVal, prefix = '', suffix = '', decimals = 2) {
