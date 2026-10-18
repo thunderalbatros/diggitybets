@@ -4,96 +4,125 @@
  * Zero secrets exposed in git. Environment variables managed in Cloudflare Dashboard or .dev.vars.
  */
 
+let d1Initialized = false;
+let lastRetentionPruneAt = 0;
+
 async function initD1(db) {
   if (!db) return;
   try {
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        kick_id INTEGER UNIQUE NOT NULL,
-        username TEXT NOT NULL,
-        display_name TEXT NOT NULL,
-        avatar TEXT DEFAULT '',
-        stake_username TEXT UNIQUE,
-        stake_verified INTEGER NOT NULL DEFAULT 0,
-        points_balance INTEGER NOT NULL DEFAULT 0,
-        risk_score INTEGER NOT NULL DEFAULT 0,
-        is_shadowbanned INTEGER NOT NULL DEFAULT 0,
-        kick_created_at INTEGER,
-        first_seen_at INTEGER NOT NULL,
-        last_seen_at INTEGER NOT NULL,
-        discord_id TEXT,
-        discord_username TEXT,
-        discord_avatar TEXT,
-        crypto_ltc TEXT,
-        crypto_btc TEXT,
-        crypto_eth TEXT,
-        crypto_usdc TEXT,
-        crypto_sol TEXT,
-        x_handle TEXT,
-        ig_handle TEXT
-      );
+    if (!d1Initialized) {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          kick_id INTEGER UNIQUE NOT NULL,
+          username TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          avatar TEXT DEFAULT '',
+          stake_username TEXT UNIQUE,
+          stake_verified INTEGER NOT NULL DEFAULT 0,
+          points_balance INTEGER NOT NULL DEFAULT 0,
+          risk_score INTEGER NOT NULL DEFAULT 0,
+          is_shadowbanned INTEGER NOT NULL DEFAULT 0,
+          kick_created_at INTEGER,
+          first_seen_at INTEGER NOT NULL,
+          last_seen_at INTEGER NOT NULL,
+          discord_id TEXT,
+          discord_username TEXT,
+          discord_avatar TEXT,
+          crypto_ltc TEXT,
+          crypto_btc TEXT,
+          crypto_eth TEXT,
+          crypto_usdc TEXT,
+          crypto_sol TEXT,
+          x_handle TEXT,
+          ig_handle TEXT
+        );
 
-      CREATE TABLE IF NOT EXISTS user_devices (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        device_hash TEXT NOT NULL,
-        ip_subnet TEXT,
-        first_seen_at INTEGER NOT NULL,
-        last_seen_at INTEGER NOT NULL,
-        UNIQUE(user_id, device_hash)
-      );
+        CREATE TABLE IF NOT EXISTS user_devices (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          device_hash TEXT NOT NULL,
+          ip_subnet TEXT,
+          first_seen_at INTEGER NOT NULL,
+          last_seen_at INTEGER NOT NULL,
+          UNIQUE(user_id, device_hash)
+        );
 
-      CREATE TABLE IF NOT EXISTS alt_clusters (
-        cluster_id TEXT PRIMARY KEY,
-        primary_user_id TEXT NOT NULL,
-        associated_user_id TEXT NOT NULL,
-        reason TEXT NOT NULL,
-        detected_at INTEGER NOT NULL
-      );
+        CREATE TABLE IF NOT EXISTS alt_clusters (
+          cluster_id TEXT PRIMARY KEY,
+          primary_user_id TEXT NOT NULL,
+          associated_user_id TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          detected_at INTEGER NOT NULL
+        );
 
-      CREATE TABLE IF NOT EXISTS point_transactions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        amount INTEGER NOT NULL,
-        balance_after INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        reference_id TEXT,
-        metadata_json TEXT,
-        created_at INTEGER NOT NULL
-      );
+        CREATE TABLE IF NOT EXISTS point_transactions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          balance_after INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          reference_id TEXT,
+          metadata_json TEXT,
+          created_at INTEGER NOT NULL
+        );
 
-      CREATE TABLE IF NOT EXISTS stake_verification_requests (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        kick_username TEXT NOT NULL,
-        stake_username TEXT NOT NULL,
-        target_multiplier INTEGER NOT NULL,
-        bet_id TEXT UNIQUE NOT NULL,
-        share_url TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'PENDING',
-        created_at INTEGER NOT NULL
-      );
+        CREATE TABLE IF NOT EXISTS stake_verification_requests (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          kick_username TEXT NOT NULL,
+          stake_username TEXT NOT NULL,
+          target_multiplier INTEGER NOT NULL,
+          bet_id TEXT UNIQUE NOT NULL,
+          share_url TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'PENDING',
+          created_at INTEGER NOT NULL
+        );
 
-      CREATE TABLE IF NOT EXISTS store_redemptions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        kick_username TEXT NOT NULL,
-        voucher_title TEXT NOT NULL,
-        cost_points INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'PENDING',
-        created_at INTEGER NOT NULL
-      );
+        CREATE TABLE IF NOT EXISTS store_redemptions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          kick_username TEXT NOT NULL,
+          voucher_title TEXT NOT NULL,
+          cost_points INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'PENDING',
+          created_at INTEGER NOT NULL
+        );
 
-      CREATE TABLE IF NOT EXISTS raffle_tickets (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        kick_username TEXT NOT NULL,
-        ticket_count INTEGER NOT NULL,
-        week_number INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
-      );
-    `);
+        CREATE TABLE IF NOT EXISTS raffle_tickets (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          kick_username TEXT NOT NULL,
+          ticket_count INTEGER NOT NULL,
+          week_number INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS kv_store (
+          key TEXT PRIMARY KEY,
+          value_json TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));
+        CREATE INDEX IF NOT EXISTS idx_users_points_desc ON users(points_balance DESC);
+        CREATE INDEX IF NOT EXISTS idx_user_devices_hash ON user_devices(device_hash, last_seen_at);
+        CREATE INDEX IF NOT EXISTS idx_point_tx_user_created ON point_transactions(user_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_stake_req_created ON stake_verification_requests(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_store_redemptions_created ON store_redemptions(created_at DESC);
+      `);
+      d1Initialized = true;
+    }
+
+    // Automatic 90-day data retention pruning (runs at most once every 6 hours per isolate)
+    const nowMs = Date.now();
+    if (nowMs - lastRetentionPruneAt > 6 * 3600 * 1000) {
+      lastRetentionPruneAt = nowMs;
+      const ninetyDaysAgoSec = Math.floor(nowMs / 1000) - (90 * 86400);
+      const ninetyDaysAgoMs = nowMs - (90 * 86400 * 1000);
+      await db.prepare('DELETE FROM user_devices WHERE last_seen_at < ?1').bind(ninetyDaysAgoSec).run();
+      await db.prepare('DELETE FROM point_transactions WHERE created_at < ?1').bind(ninetyDaysAgoMs).run();
+    }
   } catch (e) {
     console.warn('[D1] Schema initialization note:', e.message);
   }
@@ -289,7 +318,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': allowedOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, Kick-Event-Signature',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, x-device-fingerprint, Kick-Event-Signature',
           'Vary': 'Origin'
         }
       });
@@ -301,8 +330,8 @@ export default {
       'Content-Type': 'application/json'
     };
 
-    // Auto-init D1 schema on first database request if binding exists
-    if (env.DB) {
+    // Auto-init D1 schema and 90-day retention pruning on API requests
+    if (env.DB && url.pathname.startsWith('/api/')) {
       ctx.waitUntil(initD1(env.DB));
     }
 
@@ -1322,10 +1351,23 @@ export default {
           }
         }
       } catch (_) {}
+
+      // Hydrate durable bounties & claims from D1 kv_store if memory cache was evicted
+      if (env.DB && (!Array.isArray(mem.bounties) && !Array.isArray(mem.bountyClaims))) {
+        try {
+          const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'bounties_state_v1'").first();
+          if (row && row.value_json) {
+            const parsed = JSON.parse(row.value_json);
+            if (Array.isArray(parsed.bounties)) mem.bounties = parsed.bounties;
+            if (Array.isArray(parsed.bountyClaims)) mem.bountyClaims = parsed.bountyClaims;
+            if (!mem.updatedAt) mem.updatedAt = Number(row.updated_at) || Date.now();
+          }
+        } catch (_) {}
+      }
       return mem;
     };
 
-    const writeOverlaySyncState = async (nextState) => {
+    const writeOverlaySyncState = async (nextState, persistBountiesD1 = false) => {
       nextState.updatedAt = Date.now();
       globalThis.__HUNTHUB_OVERLAY_SYNC__ = nextState;
       try {
@@ -1339,6 +1381,20 @@ export default {
           await caches.default.put(edgeCacheKey, cacheRes);
         }
       } catch (_) {}
+
+      if (persistBountiesD1 && env.DB) {
+        try {
+          const payloadJson = JSON.stringify({
+            bounties: Array.isArray(nextState.bounties) ? nextState.bounties : null,
+            bountyClaims: Array.isArray(nextState.bountyClaims) ? nextState.bountyClaims.slice(-200) : []
+          });
+          await env.DB.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES ('bounties_state_v1', ?1, ?2)
+            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+          `).bind(payloadJson, nextState.updatedAt).run();
+        } catch (_) {}
+      }
     };
 
     if (url.pathname === '/api/overlay/celebration') {
@@ -1353,8 +1409,8 @@ export default {
         }), { headers: noCacheHeaders });
       }
       if (request.method === 'POST') {
-        if (!isAuthorizedAdmin(request, env) && !isSameOrTrustedOrigin(request)) {
-          return new Response(JSON.stringify({ error: 'Forbidden: Unauthorized overlay broadcast' }), { status: 403, headers: noCacheHeaders });
+        if (!isAuthorizedAdmin(request, env)) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required for overlay broadcast' }), { status: 403, headers: noCacheHeaders });
         }
         try {
           const body = await request.json();
@@ -1374,10 +1430,18 @@ export default {
     // 13b. Diggity Stake Companion Cross-Origin Auto-Capture Bridge (POST JSON + GET Image Beacon)
     if (url.pathname === '/api/companion/capture') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'companion_capture', 30, 60_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ ok: false, error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+      }
       try {
         let payload = {};
         if (request.method === 'POST') {
           const rawText = await request.text();
+          if (rawText.length > 16384) {
+            return new Response(JSON.stringify({ ok: false, error: 'Payload too large' }), { status: 413, headers: noCacheHeaders });
+          }
           try { payload = JSON.parse(rawText); } catch (_) {}
         } else {
           payload = {
@@ -1397,13 +1461,16 @@ export default {
           if (rawBetId) {
             const current = await readOverlaySyncState();
             current.companionVerifiedBets = Array.isArray(current.companionVerifiedBets) ? current.companionVerifiedBets : [];
+            const rawBet = Math.max(0, Math.min(1_000_000, parseFloat(payload.betSize || payload.amount || url.searchParams.get('bet') || '0') || 0));
+            const rawPayout = Math.max(0, Math.min(100_000_000, parseFloat(payload.payout || url.searchParams.get('payout') || '0') || 0));
+            const rawMult = Math.max(0, Math.min(1_000_000, parseFloat(payload.multiplier || url.searchParams.get('mult') || '0') || 0));
             const verifiedEntry = {
               action: 'AUTO_VERIFY_BOUNTY_BET',
               betId: rawBetId,
               slotName: slotName || String(payload.game || '').trim().slice(0, 120),
-              betSize: parseFloat(payload.betSize || payload.amount || url.searchParams.get('bet') || '0') || 0,
-              payout: parseFloat(payload.payout || url.searchParams.get('payout') || '0') || 0,
-              multiplier: parseFloat(payload.multiplier || url.searchParams.get('mult') || '0') || 0,
+              betSize: rawBet,
+              payout: rawPayout,
+              multiplier: rawMult,
               stakeUser: String(payload.stakeUser || url.searchParams.get('user') || '').trim().slice(0, 64),
               ts: Number(payload.ts || Date.now())
             };
@@ -1412,7 +1479,6 @@ export default {
             if (current.companionVerifiedBets.length > 50) {
               current.companionVerifiedBets = current.companionVerifiedBets.slice(-50);
             }
-            // Automatically upgrade any matching pending claim in current.bountyClaims
             if (Array.isArray(current.bountyClaims)) {
               for (const claim of current.bountyClaims) {
                 if (claim.canonicalBetId === rawBetId || claim.rawBetId === rawBetId) {
@@ -1421,7 +1487,7 @@ export default {
                 }
               }
             }
-            await writeOverlaySyncState(current);
+            await writeOverlaySyncState(current, true);
           }
         } else if (slotName) {
           const current = await readOverlaySyncState();
@@ -1429,7 +1495,7 @@ export default {
           const captureItem = {
             action: 'AUTO_CAPTURE_BONUS',
             slotName,
-            betSize: parseFloat(payload.betSize || 2.0) || 2.0,
+            betSize: Math.max(0.01, Math.min(100_000, parseFloat(payload.betSize || 2.0) || 2.0)),
             bonusTier: String(payload.bonusTier || '3S').toUpperCase().slice(0, 16),
             caller: String(payload.caller || '@tarkansky').trim().slice(0, 64),
             ts: Number(payload.ts || Date.now())
@@ -1444,7 +1510,6 @@ export default {
         }
 
         if (url.searchParams.get('beacon') === '1') {
-          // 1x1 transparent GIF so <img src="..."> beacons bypass strict connect-src CSP on Stake mirrors
           const gifBytes = new Uint8Array([
             71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
           ]);
@@ -1480,20 +1545,49 @@ export default {
         if (!isSameOrTrustedOrigin(request)) {
           return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
         }
+        const adminAuthed = isAuthorizedAdmin(request, env);
+        const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+        if (!adminAuthed) {
+          const rl = checkEdgeRateLimit(clientIp, 'bounty_claim_post', 10, 60_000);
+          if (!rl.allowed) {
+            return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+          }
+        }
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
-        if (Array.isArray(body.bounties)) current.bounties = body.bounties;
-        if (Array.isArray(body.claims)) current.bountyClaims = body.claims;
-        await writeOverlaySyncState(current);
+        current.bountyClaims = Array.isArray(current.bountyClaims) ? current.bountyClaims : [];
+
+        if (adminAuthed) {
+          if (Array.isArray(body.bounties)) current.bounties = body.bounties.slice(0, 100);
+          if (Array.isArray(body.claims)) current.bountyClaims = body.claims.slice(0, 200);
+        } else if (Array.isArray(body.claims)) {
+          // Non-admin spectators can only append new PENDING claims; they cannot overwrite bounties or approve claims
+          const existingIds = new Set(current.bountyClaims.map(c => c.id));
+          for (const incoming of body.claims) {
+            if (incoming && incoming.id && !existingIds.has(incoming.id) && current.bountyClaims.length < 200) {
+              current.bountyClaims.unshift({
+                ...incoming,
+                status: 'PENDING'
+              });
+              existingIds.add(incoming.id);
+            }
+          }
+        }
+        await writeOverlaySyncState(current, true);
         return new Response(JSON.stringify({ ok: true, updatedAt: current.updatedAt }), { headers: noCacheHeaders });
       }
     }
 
     if (url.pathname === '/api/bounties/verify-bet' && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'bounty_verify_bet', 20, 60_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ ok: false, error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+      }
       try {
         const body = await request.json().catch(() => ({}));
-        const rawInput = String(body.betIdOrUrl || body.betId || '').trim();
+        const rawInput = String(body.betIdOrUrl || body.betId || '').trim().slice(0, 300);
         let canonicalBetId = rawInput;
         try {
           if (rawInput.includes('iid=')) {
@@ -1518,17 +1612,17 @@ export default {
           b => b.betId === canonicalBetId || b.betId === rawInput
         ) || null;
 
-        const minBetUsd = parseFloat(body.minBetUsd || 0.10) || 0.10;
-        const targetMultiplier = parseFloat(body.targetMultiplier || 100) || 100;
+        const minBetUsd = Math.max(0.01, Math.min(100_000, parseFloat(body.minBetUsd || 0.10) || 0.10));
+        const targetMultiplier = Math.max(1, Math.min(1_000_000, parseFloat(body.targetMultiplier || 100) || 100));
         const claimedBetUsd = companionMatch && companionMatch.betSize > 0
           ? companionMatch.betSize
-          : (parseFloat(body.claimedBetUsd || 0) || 0);
+          : Math.max(0, Math.min(1_000_000, parseFloat(body.claimedBetUsd || 0) || 0));
         const claimedPayoutUsd = companionMatch && companionMatch.payout > 0
           ? companionMatch.payout
-          : (parseFloat(body.claimedPayoutUsd || 0) || 0);
+          : Math.max(0, Math.min(100_000_000, parseFloat(body.claimedPayoutUsd || 0) || 0));
         const rawClaimedMulti = companionMatch && companionMatch.multiplier > 0
           ? companionMatch.multiplier
-          : (parseFloat(body.claimedMultiplier || 0) || 0);
+          : Math.max(0, Math.min(1_000_000, parseFloat(body.claimedMultiplier || 0) || 0));
         const effectiveMultiplier = (claimedBetUsd > 0 && claimedPayoutUsd > 0)
           ? Number((claimedPayoutUsd / claimedBetUsd).toFixed(2))
           : Number(rawClaimedMulti.toFixed(2));
@@ -1573,6 +1667,44 @@ export default {
       }
     }
 
+    // 13d. User Data Purge Endpoint (AGENTS.md §2.2 GDPR/CCPA Privacy Compliance)
+    if (url.pathname === '/api/privacy/purge' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!isSameOrTrustedOrigin(request)) {
+        return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+      }
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rl = checkEdgeRateLimit(clientIp, 'privacy_purge', 3, 300_000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+      }
+      try {
+        const body = await request.json().catch(() => ({}));
+        const targetUsername = String(body.username || '').trim().toLowerCase().replace(/^@+/, '');
+        if (!targetUsername || targetUsername.length > 64) {
+          return new Response(JSON.stringify({ error: 'Valid username required' }), { status: 400, headers: noCacheHeaders });
+        }
+        const adminAuthed = isAuthorizedAdmin(request, env);
+        const callerHeader = String(request.headers.get('x-admin-user') || '').trim().toLowerCase().replace(/^@+/, '');
+        if (!adminAuthed && callerHeader !== targetUsername) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Can only purge own account data or as admin' }), { status: 403, headers: noCacheHeaders });
+        }
+        if (env.DB) {
+          const u = await env.DB.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?1)').bind(targetUsername).first();
+          const userId = u?.id || targetUsername;
+          await env.DB.prepare('DELETE FROM user_devices WHERE LOWER(user_id) = LOWER(?1) OR LOWER(user_id) = LOWER(?2)').bind(userId, targetUsername).run();
+          await env.DB.prepare('DELETE FROM point_transactions WHERE LOWER(user_id) = LOWER(?1) OR LOWER(user_id) = LOWER(?2)').bind(userId, targetUsername).run();
+          await env.DB.prepare('DELETE FROM stake_verification_requests WHERE LOWER(kick_username) = LOWER(?1)').bind(targetUsername).run();
+          await env.DB.prepare('DELETE FROM store_redemptions WHERE LOWER(kick_username) = LOWER(?1)').bind(targetUsername).run();
+          await env.DB.prepare('DELETE FROM raffle_tickets WHERE LOWER(kick_username) = LOWER(?1)').bind(targetUsername).run();
+          await env.DB.prepare('DELETE FROM users WHERE LOWER(username) = LOWER(?1)').bind(targetUsername).run();
+        }
+        return new Response(JSON.stringify({ ok: true, purgedUser: targetUsername }), { headers: noCacheHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
+      }
+    }
+
     if (url.pathname === '/api/sync/state') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
@@ -1593,7 +1725,6 @@ export default {
         };
         if (env.DB) {
           try {
-            // Never expose private crypto wallet addresses on public GET /api/sync/state unless authenticated admin
             const userQuery = adminAuthed
               ? 'SELECT * FROM users ORDER BY points_balance DESC LIMIT 250'
               : 'SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified, points_balance, first_seen_at, last_seen_at FROM users ORDER BY points_balance DESC LIMIT 250';
@@ -1615,7 +1746,7 @@ export default {
         }
         const adminAuthed = isAuthorizedAdmin(request, env);
         const body = await request.json();
-        if ((body.overlayEvent || body.celebrationEvent) && (adminAuthed || isSameOrTrustedOrigin(request))) {
+        if ((body.overlayEvent || body.celebrationEvent) && adminAuthed) {
           const current = await readOverlaySyncState();
           current.overlayEvents = current.overlayEvents || {};
           if (body.overlayEvent) {

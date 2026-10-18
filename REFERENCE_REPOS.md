@@ -174,6 +174,12 @@ Clonados en `references/audit-sota/` e integrados en `tools/audit/` (`code_clean
 | **dequelabs/axe-core** | Motor de reglas de accesibilidad WCAG 2.1/2.2 sin falsos positivos usado por Lighthouse, Playwright y Pa11y. | MPL-2.0 | V | **DEP dev / TOOL** (`tools/audit/`) |
 | **Myndex/apca-w3** | Algoritmo perceptual de contraste APCA (WCAG 3.0 $L_c$) para UI dark-mode casino y textos sobre vidrio oscuro. | MIT / W3C | V | **DEP dev / TOOL** (`tools/audit/`) |
 | **mapbox/pixelmatch** | Comparación visual pixel-a-pixel ultrarrápida y sin dependencias para regresiones de UI/Overlays. | ISC | V | **DEP dev / TOOL** (`tools/audit/`) |
+| **cure53/DOMPurify** | Sanitizador DOM XSS zero-dependency de grado industrial + política W3C `TrustedTypes` en `site/js/vendor/purify.min.js`. | Apache-2.0 / MPL-2.0 | V | **DEP prod / REF** (`references/audit-sota/DOMPurify`) |
+| **evanw/esbuild** | Minificador ultrarrápido de CSS y JS + generador de Source Maps (`.map`) integrado en `tools/build_dist.mjs` (`<150ms`). | MIT | V | **DEP dev / TOOL** (`tools/build_dist.mjs`) |
+| **fabian-hiller/valibot** | Librería modular de validación de esquemas (`~1.2 KB`) para payloads de Edge Workers y auditoría de contratos. | MIT | V | **DEP dev / REF** (`references/audit-sota/valibot`) |
+| **evanw/thumbhash** | Hash binario ultracompacto (`~28 bytes`) para placeholders instantáneos zero-CLS con canal alfa y relación de aspecto. | MIT | V | **DEP dev / REF** (`references/audit-sota/thumbhash`) |
+| **webpro-nl/knip** | Detector de código muerto, exportaciones huérfanas y dependencias no utilizadas. | ISC | V | **REF / TOOL** (`references/audit-sota/knip`) |
+| **svg/svgo** | Optimizador AST de vectores SVG para eliminar metadatos redundantes y reducir peso en logos e insignias. | MIT | V | **REF / TOOL** (`references/audit-sota/svgo`) |
 
 ---
 

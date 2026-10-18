@@ -285,5 +285,92 @@ class AntiFraudEngine {
   }
 }
 
+// ============================================================================
+// DOMPurify + W3C TrustedTypes Default Policy & StorageQuotaGuard (SOTA 2026)
+// ============================================================================
+(function initSecurityAndStorageShield() {
+  // 1. Universal HTML Sanitizer backed by cure53/DOMPurify
+  window.sanitizeHTML = function(dirtyHtml) {
+    const str = String(dirtyHtml ?? '');
+    if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+      return window.DOMPurify.sanitize(str, {
+        USE_PROFILES: { html: true, svg: true, svgFilters: true },
+        ADD_ATTR: ['target', 'rel', 'loading', 'decoding', 'fetchpriority', 'aria-hidden', 'aria-label', 'role', 'data-target', 'data-bounty-id', 'data-tier', 'data-studio'],
+        FORBID_TAGS: ['script', 'object', 'embed', 'applet', 'base', 'meta'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onmouseenter']
+      });
+    }
+    return str
+      .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+      .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/javascript\s*:/gi, 'blocked:');
+  };
+
+  // 2. Register W3C TrustedTypes 'default' policy if supported by browser
+  try {
+    if (window.trustedTypes && window.trustedTypes.createPolicy && !window.trustedTypes.defaultPolicy) {
+      window.trustedTypes.createPolicy('default', {
+        createHTML: (input) => window.sanitizeHTML(input),
+        createScriptURL: (input) => {
+          const s = String(input || '');
+          if (
+            s.startsWith('/') ||
+            s.startsWith('site/') ||
+            s.startsWith('data/') ||
+            s.startsWith(window.location.origin) ||
+            s.startsWith('https://challenges.cloudflare.com/')
+          ) {
+            return s;
+          }
+          throw new TypeError('[TrustedTypes] Blocked untrusted script URL: ' + s);
+        },
+        createScript: (input) => String(input || '')
+      });
+    }
+  } catch (_) {}
+
+  // 3. StorageQuotaGuard: prevents QuotaExceededError during multi-hour streams
+  const PRUNABLE_ARRAY_KEYS = [
+    'hunthub_bounty_claims_v1',
+    'hunthub_point_transactions',
+    'hunthub_alt_clusters',
+    'hunthub_stake_verifications',
+    'hunthub_store_claims',
+    'hunthub_sunday_raffle_ledger'
+  ];
+
+  function pruneLocalStorageArrays() {
+    for (const key of PRUNABLE_ARRAY_KEYS) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw || raw.length < 4096) continue;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 50) {
+          localStorage.setItem(key, JSON.stringify(parsed.slice(-50)));
+        }
+      } catch (_) {}
+    }
+  }
+
+  try {
+    const rawSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      try {
+        return rawSetItem.call(this, key, value);
+      } catch (err) {
+        if (this === window.localStorage) {
+          pruneLocalStorageArrays();
+          try {
+            return rawSetItem.call(this, key, value);
+          } catch (_) {}
+        }
+      }
+    };
+  } catch (_) {}
+
+  window.StorageQuotaGuard = { pruneLocalStorageArrays };
+})();
+
 // Global initialization
 window.antiFraud = new AntiFraudEngine();
+
