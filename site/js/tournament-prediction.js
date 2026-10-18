@@ -8,20 +8,30 @@
  * 100% English, vector slot cards, zero external dependencies.
  */
 
+const PEPE_EZ_URL = 'https://i.pinimg.com/1200x/07/a3/b5/07a3b592ab0b733e6eb87e0767b1feeb.jpg';
+const PEPE_EZ_FALLBACK = '/site/images/emotes/pepe-ez.jpg';
+const PEPE_SAD_URL = 'https://spng.pngfind.com/pngs/s/427-4276796_post-pepe-sad-hd-png-download.png';
+const PEPE_SAD_FALLBACK = '/site/images/emotes/pepe-sad.png';
+const PEPE_CHAMP_URL = 'https://asset-metadata-service-production.s3.amazonaws.com/asset_icons/44e2af7dc08142ae0846bd8ef01b99eee53bf5564d161fd19e2ac75fad0fa99d.png';
+const PEPE_CHAMP_FALLBACK = '/site/images/emotes/pepe-champ.png';
+
 class TournamentPredictionController {
   constructor() {
     this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
 
-    this.slots = [
-      { id: 'wanted-dead-or-a-wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
-      { id: 'gates-of-olympus-1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
-      { id: 'le-bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
-      { id: 'san-quentin-xways', name: 'San Quentin xWays', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
-      { id: 'sweet-bonanza-1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
-      { id: 'ghost-rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', img: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' },
-      { id: 'tombstone-r-i-p', name: 'Tombstone R.I.P.', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/40f3f2cfeadebaa5169a9636218f289a34209bd6e91d44de733ecdf69b4b93fe?w=360&auto=format' },
-      { id: 'sugar-rush-1000', name: 'Sugar Rush 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format' }
+    this.defaultSlots = [
+      { id: 'seed_1', username: '@Seed1', slotName: 'Wanted Dead or a Wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
+      { id: 'seed_2', username: '@Seed2', slotName: 'Gates of Olympus 1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
+      { id: 'seed_3', username: '@Seed3', slotName: 'Le Bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
+      { id: 'seed_4', username: '@Seed4', slotName: 'San Quentin xWays', name: 'San Quentin xWays', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
+      { id: 'seed_5', username: '@Seed5', slotName: 'Sweet Bonanza 1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
+      { id: 'seed_6', username: '@Seed6', slotName: 'Ghost Rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', img: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' },
+      { id: 'seed_7', username: '@Seed7', slotName: 'Tombstone R.I.P.', name: 'Tombstone R.I.P.', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/40f3f2cfeadebaa5169a9636218f289a34209bd6e91d44de733ecdf69b4b93fe?w=360&auto=format' },
+      { id: 'seed_8', username: '@Seed8', slotName: 'Sugar Rush 1000', name: 'Sugar Rush 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format' }
     ];
+    this.slots = [...this.defaultSlots];
+    this.entryById = new Map();
+    this.liveTourneyState = null;
 
     this.predictions = {
       semi1_a: null,
@@ -44,6 +54,7 @@ class TournamentPredictionController {
     if (this._initialized) return;
     this._initialized = true;
     this.loadSavedPrediction();
+    this.loadLiveTourneyState();
     this.initViewTabs();
     this.renderBracket();
     this.renderStandings();
@@ -51,6 +62,202 @@ class TournamentPredictionController {
     this.bindSubmitButton();
     this.bindKothActions();
     this.listenToEvents();
+  }
+
+  resolvePlayerEntry(rawPlayer, seedIndex) {
+    const seedId = `seed_${seedIndex}`;
+    const fallback = this.defaultSlots[seedIndex - 1] || this.defaultSlots[0];
+    if (!rawPlayer || typeof rawPlayer !== 'object') {
+      return {
+        id: seedId,
+        seed: seedIndex,
+        username: '',
+        displayName: 'TBD',
+        slotName: 'Awaiting Player',
+        name: 'Awaiting Player',
+        provider: 'Kick !tourney',
+        img: fallback.img,
+        isTbd: true
+      };
+    }
+    const rawUser = String(rawPlayer.username || rawPlayer.displayName || rawPlayer.name || '').trim().replace(/^@/, '');
+    const rawSlot = String(rawPlayer.slotName || rawPlayer.slot || '').trim();
+    if (!rawUser && !rawSlot) {
+      return {
+        id: seedId,
+        seed: seedIndex,
+        username: '',
+        displayName: 'TBD',
+        slotName: 'Awaiting Player',
+        name: 'Awaiting Player',
+        provider: 'Kick !tourney',
+        img: fallback.img,
+        isTbd: true
+      };
+    }
+
+    let resolvedSlot = { name: rawSlot || fallback.slotName, provider: rawPlayer.slotProvider || 'Casino', image: rawPlayer.slotImage || fallback.img };
+    if (window.SlotResolver) {
+      if (typeof window.SlotResolver.smartSearch === 'function' && rawSlot) {
+        const found = window.SlotResolver.smartSearch(rawSlot, 1);
+        if (Array.isArray(found) && found.length > 0) resolvedSlot = found[0];
+      }
+      if ((!resolvedSlot || !resolvedSlot.image) && typeof window.SlotResolver.resolve === 'function') {
+        resolvedSlot = window.SlotResolver.resolve(rawSlot || fallback.slotName);
+      }
+    }
+
+    const cleanUser = rawUser ? `@${rawUser}` : `@Seed${seedIndex}`;
+    const slotTitle = resolvedSlot?.name || rawSlot || fallback.slotName;
+    const entryId = `${cleanUser.toLowerCase()}__${slotTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+    return {
+      id: entryId,
+      seed: seedIndex,
+      username: cleanUser,
+      displayName: rawUser || `Seed ${seedIndex}`,
+      slotName: slotTitle,
+      name: slotTitle,
+      provider: resolvedSlot?.provider || rawPlayer.slotProvider || 'Casino',
+      img: rawPlayer.slotImage || resolvedSlot?.image || fallback.img,
+      isTbd: false
+    };
+  }
+
+  normalizeTourneyStateObject(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const state = { ...raw };
+    const matchIds = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'];
+    const normalizedMatches = {};
+
+    if (Array.isArray(state.matches)) {
+      matchIds.forEach((id, idx) => {
+        const found = state.matches.find(m => m && m.id === id) || {
+          id,
+          round: idx < 4 ? 1 : (idx < 6 ? 2 : 3),
+          player1: null,
+          player2: null,
+          score1: 0,
+          score2: 0,
+          winner: null,
+          status: 'PENDING'
+        };
+        normalizedMatches[id] = { ...found };
+      });
+    } else if (state.matches && typeof state.matches === 'object') {
+      matchIds.forEach((id, idx) => {
+        const found = state.matches[id] || {
+          id,
+          round: idx < 4 ? 1 : (idx < 6 ? 2 : 3),
+          player1: null,
+          player2: null,
+          score1: 0,
+          score2: 0,
+          winner: null,
+          status: 'PENDING'
+        };
+        normalizedMatches[id] = { ...found };
+      });
+    } else {
+      return null;
+    }
+
+    state.matches = normalizedMatches;
+    return state;
+  }
+
+  loadLiveTourneyState(externalState = null) {
+    let parsed = externalState;
+    if (!parsed) {
+      try {
+        const raw = localStorage.getItem('hunthub_tourney_state');
+        if (raw) parsed = JSON.parse(raw);
+      } catch (_) {}
+    }
+
+    const state = this.normalizeTourneyStateObject(parsed);
+    if (!state) {
+      this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
+      return;
+    }
+
+    this.liveTourneyState = state;
+    const seedPairs = [
+      { mId: 'm1', side: 'player1', seed: 1 },
+      { mId: 'm1', side: 'player2', seed: 2 },
+      { mId: 'm2', side: 'player1', seed: 3 },
+      { mId: 'm2', side: 'player2', seed: 4 },
+      { mId: 'm3', side: 'player1', seed: 5 },
+      { mId: 'm3', side: 'player2', seed: 6 },
+      { mId: 'm4', side: 'player1', seed: 7 },
+      { mId: 'm4', side: 'player2', seed: 8 }
+    ];
+
+    this.entryById.clear();
+    let filledPlayers = 0;
+    const nextSlots = seedPairs.map(({ mId, side, seed }) => {
+      const rawP = state.matches[mId]?.[side] || null;
+      const entry = this.resolvePlayerEntry(rawP, seed);
+      if (!entry.isTbd) filledPlayers++;
+      this.entryById.set(entry.id, entry);
+      return entry;
+    });
+
+    // Also index any players already in m5, m6, m7 or champion
+    ['m5', 'm6', 'm7'].forEach((mId, idx) => {
+      const m = state.matches[mId];
+      if (!m) return;
+      ['player1', 'player2'].forEach((side, sIdx) => {
+        if (m[side] && (m[side].username || m[side].slotName)) {
+          const e = this.resolvePlayerEntry(m[side], 10 + idx * 2 + sIdx);
+          if (!this.entryById.has(e.id)) this.entryById.set(e.id, e);
+        }
+      });
+    });
+
+    this.slots = nextSlots;
+
+    if (filledPlayers > 0 || state.status === 'IN_PROGRESS' || state.status === 'FINISHED') {
+      this.isActive = true;
+    } else {
+      this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true' && state.status !== 'LOBBY';
+    }
+
+    // Check if tournament roster changed so stale predictions from an old tournament are cleared
+    const validIds = new Set(this.slots.filter(s => !s.isTbd).map(s => s.id));
+    const rosterKey = this.slots.map(s => s.id).join('|');
+    const prevRosterKey = localStorage.getItem('hunthub_tourney_roster_key') || '';
+
+    const hasInvalidPrediction = Object.values(this.predictions).some(val => val && !validIds.has(val));
+    if ((filledPlayers > 0 && prevRosterKey && prevRosterKey !== rosterKey && hasInvalidPrediction) || (filledPlayers > 0 && hasInvalidPrediction)) {
+      this.predictions = {
+        semi1_a: null,
+        semi1_b: null,
+        semi2_a: null,
+        semi2_b: null,
+        final_a: null,
+        final_b: null,
+        champion: null
+      };
+      this.isLocked = false;
+      try {
+        localStorage.removeItem('hunthub_tourney_pred');
+        localStorage.setItem('hunthub_tourney_pred_locked', 'false');
+      } catch (_) {}
+    }
+    if (filledPlayers > 0) {
+      try {
+        localStorage.setItem('hunthub_tourney_roster_key', rosterKey);
+      } catch (_) {}
+    }
+  }
+
+  syncWithTourneyState(state) {
+    this.loadLiveTourneyState(state);
+    this.renderBracket();
+    if (this.activeView === 'standings') {
+      this.renderStandings();
+    }
   }
 
   loadSavedPrediction() {
@@ -94,9 +301,127 @@ class TournamentPredictionController {
     }
   }
 
+  findEntryByRawPlayer(rawPlayer) {
+    if (!rawPlayer) return null;
+    const rawU = String(rawPlayer.username || rawPlayer.displayName || '').trim().toLowerCase().replace(/^@/, '');
+    const rawS = String(rawPlayer.slotName || rawPlayer.slot || '').trim().toLowerCase();
+    for (const entry of this.slots) {
+      if (entry.isTbd) continue;
+      const eU = String(entry.username || '').trim().toLowerCase().replace(/^@/, '');
+      const eS = String(entry.slotName || '').trim().toLowerCase();
+      if (rawU && eU === rawU) return entry;
+      if (rawS && eS === rawS) return entry;
+    }
+    return this.resolvePlayerEntry(rawPlayer, 99);
+  }
+
+  isEntryLiveMatchWinner(matchId, entry) {
+    if (!entry || entry.isTbd || !this.liveTourneyState?.matches?.[matchId]) return false;
+    const m = this.liveTourneyState.matches[matchId];
+    if (!m.winner) return false;
+    const wName = typeof m.winner === 'string'
+      ? m.winner
+      : (m.winner.username || m.winner.displayName || '');
+    const cleanW = String(wName).trim().toLowerCase().replace(/^@/, '');
+    const cleanE = String(entry.username || '').trim().toLowerCase().replace(/^@/, '');
+    return Boolean(cleanW && cleanE && cleanW === cleanE);
+  }
+
+  getLiveMatchScoreLabel(matchId, sideIndex) {
+    const m = this.liveTourneyState?.matches?.[matchId];
+    if (!m) return '';
+    const rawScore = sideIndex === 1 ? m.score1 : m.score2;
+    if (rawScore === 'WIN' || rawScore === 'LOSE') return rawScore;
+    const num = Number(rawScore);
+    if (Number.isFinite(num) && num > 0) return `${num.toFixed(1)}x`;
+    return '';
+  }
+
+  renderPepeReactionHtml(reactionType) {
+    if (reactionType === 'champ') {
+      return `
+        <span class="pepe-reaction-badge champ" title="Grand Champion Pick!">
+          <img class="pepe-reaction-img" src="${PEPE_CHAMP_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_CHAMP_FALLBACK}';" alt="Champ Pepe">
+          <span>👑 CHAMP</span>
+        </span>
+      `;
+    }
+    if (reactionType === 'ez') {
+      return `
+        <span class="pepe-reaction-badge ez" title="Predicted Winner — FLEX EZ!">
+          <img class="pepe-reaction-img" src="${PEPE_EZ_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_EZ_FALLBACK}';" alt="Pepe EZ">
+          <span>FLEX EZ</span>
+        </span>
+      `;
+    }
+    if (reactionType === 'sad') {
+      return `
+        <span class="pepe-reaction-badge sad" title="Predicted Loser — Sadge">
+          <img class="pepe-reaction-img" src="${PEPE_SAD_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_SAD_FALLBACK}';" alt="Sad Pepe">
+          <span>SADGE</span>
+        </span>
+      `;
+    }
+    return '';
+  }
+
+  renderCompetitorItem(entry, opponentEntry, targetKey, matchId, sideIndex, placeholderLabel) {
+    const esc = this.escapeHTML.bind(this);
+    const pickedId = this.predictions[targetKey];
+
+    if (!entry || entry.isTbd) {
+      return `
+        <div class="match-slot-item" style="cursor: default; opacity: 0.68;" data-slot-id="" data-target="${esc(targetKey)}">
+          <div class="slot-mini-thumb-empty">?</div>
+          <div class="slot-mini-meta">
+            <span class="slot-mini-user" style="color: var(--text-dim);">${esc(placeholderLabel)}</span>
+            <span class="slot-mini-title" style="color: #64748b;">Awaiting Qualifier</span>
+          </div>
+        </div>
+      `;
+    }
+
+    const isSelected = Boolean(pickedId && pickedId === entry.id);
+    const isLoser = Boolean(pickedId && opponentEntry && !opponentEntry.isTbd && pickedId === opponentEntry.id && pickedId !== entry.id);
+    const isChampTarget = targetKey === 'champion';
+    const isLiveWin = this.isEntryLiveMatchWinner(matchId, entry);
+    const scoreText = this.getLiveMatchScoreLabel(matchId, sideIndex);
+
+    let reactionType = '';
+    if (isSelected) {
+      reactionType = isChampTarget ? 'champ' : 'ez';
+    } else if (isLoser) {
+      reactionType = 'sad';
+    }
+
+    const rowClasses = [
+      'match-slot-item',
+      isSelected ? (isChampTarget ? 'champion-selected' : 'selected') : '',
+      isLoser ? 'loser-unpicked' : '',
+      isLiveWin ? 'live-winner-row' : ''
+    ].filter(Boolean).join(' ');
+
+    return `
+      <div class="${rowClasses}" data-slot-id="${esc(entry.id)}" data-target="${esc(targetKey)}" data-match-id="${esc(matchId)}">
+        <img class="slot-mini-thumb" src="${esc(entry.img)}" alt="${esc(entry.slotName)}" style="width: 38px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0;">
+        <div class="slot-mini-meta">
+          <div class="slot-mini-user">
+            <span style="color: ${isSelected ? '#53fc18' : '#ffffff'};">${esc(entry.username)}</span>
+            ${isLiveWin ? `<span style="font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(83,252,24,0.18); border: 1px solid #53fc18; color: #53fc18; font-weight: 900;">✓ LIVE WIN</span>` : ''}
+            ${scoreText ? `<span style="font-size: 9.5px; color: var(--cyan); font-weight: 800;">${esc(scoreText)}</span>` : ''}
+          </div>
+          <div class="slot-mini-title">${esc(entry.slotName)}</div>
+        </div>
+        ${this.renderPepeReactionHtml(reactionType)}
+      </div>
+    `;
+  }
+
   renderBracket() {
     const container = document.getElementById('tourney-interactive-bracket');
     if (!container) return;
+
+    this.loadLiveTourneyState(this.liveTourneyState);
 
     // EMPTY STATE IF NO ACTIVE TOURNAMENT
     if (!this.isActive) {
@@ -106,7 +431,6 @@ class TournamentPredictionController {
           <strong style="font-family: var(--font-display); font-size: 13.5px; color: var(--gold); letter-spacing: 1px;">NO ACTIVE TOURNAMENT IN PROGRESS</strong>
         </div>
         <div class="bracket-viewer-grid">
-          <!-- QUARTERFINALS EMPTY -->
           <div class="bracket-round-col">
             <div class="bracket-col-header">QUARTERFINALS</div>
             ${[1, 2, 3, 4].map(num => `
@@ -123,8 +447,6 @@ class TournamentPredictionController {
               </div>
             `).join('')}
           </div>
-
-          <!-- SEMIFINALS EMPTY -->
           <div class="bracket-round-col">
             <div class="bracket-col-header">SEMIFINALS</div>
             <div class="bracket-match-card semi-card">
@@ -150,8 +472,6 @@ class TournamentPredictionController {
               </div>
             </div>
           </div>
-
-          <!-- GRAND FINAL EMPTY -->
           <div class="bracket-round-col">
             <div class="bracket-col-header">GRAND FINAL</div>
             <div class="bracket-match-card final-card">
@@ -182,62 +502,52 @@ class TournamentPredictionController {
       return;
     }
 
+    const s = this.slots;
+    const m = this.liveTourneyState?.matches || {};
+
+    // Resolve Semifinal contenders (Viewer's pick first, or real advancing tournament player if viewer hasn't picked yet)
+    const sf1A = this.getEntry(this.predictions.semi1_a) || this.findEntryByRawPlayer(m.m5?.player1);
+    const sf1B = this.getEntry(this.predictions.semi1_b) || this.findEntryByRawPlayer(m.m5?.player2);
+    const sf2A = this.getEntry(this.predictions.semi2_a) || this.findEntryByRawPlayer(m.m6?.player1);
+    const sf2B = this.getEntry(this.predictions.semi2_b) || this.findEntryByRawPlayer(m.m6?.player2);
+
+    // Resolve Grand Final contenders
+    const gfA = this.getEntry(this.predictions.final_a) || this.findEntryByRawPlayer(m.m7?.player1);
+    const gfB = this.getEntry(this.predictions.final_b) || this.findEntryByRawPlayer(m.m7?.player2);
+
+    // Resolve Predicted Champion & Live Official Champion
+    const predictedChamp = this.getEntry(this.predictions.champion);
+    const liveChamp = this.liveTourneyState?.champion ? this.findEntryByRawPlayer(this.liveTourneyState.champion) : null;
+    const esc = this.escapeHTML.bind(this);
+
     container.innerHTML = `
       <div class="bracket-viewer-grid">
         <!-- QUARTERFINALS -->
         <div class="bracket-round-col">
           <div class="bracket-col-header">QUARTERFINALS</div>
           
-          <!-- Match 1 -->
           <div class="bracket-match-card" data-match="qf1">
-            <div class="match-slot-item ${this.predictions.semi1_a === this.slots[0].id ? 'selected' : ''}" data-slot-id="${this.slots[0].id}" data-target="semi1_a">
-              <img class="slot-mini-thumb" src="${this.slots[0].img}" alt="${this.slots[0].name}">
-              <span class="slot-mini-title">${this.slots[0].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[0], s[1], 'semi1_a', 'm1', 1, 'Seed #1')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.semi1_a === this.slots[1].id ? 'selected' : ''}" data-slot-id="${this.slots[1].id}" data-target="semi1_a">
-              <img class="slot-mini-thumb" src="${this.slots[1].img}" alt="${this.slots[1].name}">
-              <span class="slot-mini-title">${this.slots[1].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[1], s[0], 'semi1_a', 'm1', 2, 'Seed #2')}
           </div>
 
-          <!-- Match 2 -->
           <div class="bracket-match-card" data-match="qf2">
-            <div class="match-slot-item ${this.predictions.semi1_b === this.slots[2].id ? 'selected' : ''}" data-slot-id="${this.slots[2].id}" data-target="semi1_b">
-              <img class="slot-mini-thumb" src="${this.slots[2].img}" alt="${this.slots[2].name}">
-              <span class="slot-mini-title">${this.slots[2].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[2], s[3], 'semi1_b', 'm2', 1, 'Seed #3')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.semi1_b === this.slots[3].id ? 'selected' : ''}" data-slot-id="${this.slots[3].id}" data-target="semi1_b">
-              <img class="slot-mini-thumb" src="${this.slots[3].img}" alt="${this.slots[3].name}">
-              <span class="slot-mini-title">${this.slots[3].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[3], s[2], 'semi1_b', 'm2', 2, 'Seed #4')}
           </div>
 
-          <!-- Match 3 -->
           <div class="bracket-match-card" data-match="qf3">
-            <div class="match-slot-item ${this.predictions.semi2_a === this.slots[4].id ? 'selected' : ''}" data-slot-id="${this.slots[4].id}" data-target="semi2_a">
-              <img class="slot-mini-thumb" src="${this.slots[4].img}" alt="${this.slots[4].name}">
-              <span class="slot-mini-title">${this.slots[4].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[4], s[5], 'semi2_a', 'm3', 1, 'Seed #5')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.semi2_a === this.slots[5].id ? 'selected' : ''}" data-slot-id="${this.slots[5].id}" data-target="semi2_a">
-              <img class="slot-mini-thumb" src="${this.slots[5].img}" alt="${this.slots[5].name}">
-              <span class="slot-mini-title">${this.slots[5].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[5], s[4], 'semi2_a', 'm3', 2, 'Seed #6')}
           </div>
 
-          <!-- Match 4 -->
           <div class="bracket-match-card" data-match="qf4">
-            <div class="match-slot-item ${this.predictions.semi2_b === this.slots[6].id ? 'selected' : ''}" data-slot-id="${this.slots[6].id}" data-target="semi2_b">
-              <img class="slot-mini-thumb" src="${this.slots[6].img}" alt="${this.slots[6].name}">
-              <span class="slot-mini-title">${this.slots[6].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[6], s[7], 'semi2_b', 'm4', 1, 'Seed #7')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.semi2_b === this.slots[7].id ? 'selected' : ''}" data-slot-id="${this.slots[7].id}" data-target="semi2_b">
-              <img class="slot-mini-thumb" src="${this.slots[7].img}" alt="${this.slots[7].name}">
-              <span class="slot-mini-title">${this.slots[7].name}</span>
-            </div>
+            ${this.renderCompetitorItem(s[7], s[6], 'semi2_b', 'm4', 2, 'Seed #8')}
           </div>
         </div>
 
@@ -245,48 +555,56 @@ class TournamentPredictionController {
         <div class="bracket-round-col">
           <div class="bracket-col-header">SEMIFINALS</div>
 
-          <!-- Semifinal 1 -->
           <div class="bracket-match-card semi-card" data-match="sf1">
-            <div class="match-slot-item ${this.predictions.final_a && this.predictions.final_a === this.predictions.semi1_a ? 'selected' : ''}" data-slot-id="${this.predictions.semi1_a}" data-target="final_a">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.semi1_a) || 'QF1 Winner Pick'}</span>
-            </div>
+            ${this.renderCompetitorItem(sf1A, sf1B, 'final_a', 'm5', 1, 'QF1 Winner Pick')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.final_a && this.predictions.final_a === this.predictions.semi1_b ? 'selected' : ''}" data-slot-id="${this.predictions.semi1_b}" data-target="final_a">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.semi1_b) || 'QF2 Winner Pick'}</span>
-            </div>
+            ${this.renderCompetitorItem(sf1B, sf1A, 'final_a', 'm5', 2, 'QF2 Winner Pick')}
           </div>
 
-          <!-- Semifinal 2 -->
           <div class="bracket-match-card semi-card" data-match="sf2">
-            <div class="match-slot-item ${this.predictions.final_b && this.predictions.final_b === this.predictions.semi2_a ? 'selected' : ''}" data-slot-id="${this.predictions.semi2_a}" data-target="final_b">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.semi2_a) || 'QF3 Winner Pick'}</span>
-            </div>
+            ${this.renderCompetitorItem(sf2A, sf2B, 'final_b', 'm6', 1, 'QF3 Winner Pick')}
             <div class="match-vs-divider">VS</div>
-            <div class="match-slot-item ${this.predictions.final_b && this.predictions.final_b === this.predictions.semi2_b ? 'selected' : ''}" data-slot-id="${this.predictions.semi2_b}" data-target="final_b">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.semi2_b) || 'QF4 Winner Pick'}</span>
-            </div>
+            ${this.renderCompetitorItem(sf2B, sf2A, 'final_b', 'm6', 2, 'QF4 Winner Pick')}
           </div>
         </div>
 
         <!-- GRAND FINAL -->
         <div class="bracket-round-col">
-          <div class="bracket-col-header">GRAND FINAL</div>
+          <div class="bracket-col-header">GRAND FINAL 🏆</div>
 
-          <div class="bracket-match-card final-card">
-            <div class="match-slot-item ${this.predictions.champion && this.predictions.champion === this.predictions.final_a ? 'champion-selected' : ''}" data-slot-id="${this.predictions.final_a}" data-target="champion">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.final_a) || 'SF1 Winner Pick'}</span>
-            </div>
-            <div class="match-vs-divider">🏆</div>
-            <div class="match-slot-item ${this.predictions.champion && this.predictions.champion === this.predictions.final_b ? 'champion-selected' : ''}" data-slot-id="${this.predictions.final_b}" data-target="champion">
-              <span class="slot-mini-title">${this.getSlotName(this.predictions.final_b) || 'SF2 Winner Pick'}</span>
-            </div>
+          <div class="bracket-match-card final-card" data-match="gf">
+            ${this.renderCompetitorItem(gfA, gfB, 'champion', 'm7', 1, 'SF1 Winner Pick')}
+            <div class="match-vs-divider">👑</div>
+            ${this.renderCompetitorItem(gfB, gfA, 'champion', 'm7', 2, 'SF2 Winner Pick')}
           </div>
 
-          <div style="padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-gold); border-radius: 10px; text-align: center; margin-top: 10px;">
-            <div style="font-size: 11px; font-family: var(--font-display); color: var(--gold); font-weight: 800;">PREDICTED GRAND CHAMPION</div>
-            <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: #ffffff; margin-top: 4px;">
-              ${this.getSlotName(this.predictions.champion) || 'Select winning slot above'}
+          <div style="padding: 14px 16px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(255, 215, 0, 0.12)); border: 1.5px solid var(--border-gold); border-radius: 12px; margin-top: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.45);">
+            <div style="font-size: 10.5px; font-family: var(--font-display); color: var(--gold); font-weight: 900; letter-spacing: 0.08em; text-align: center; margin-bottom: 8px;">
+              👑 PREDICTED GRAND CHAMPION
             </div>
+            ${predictedChamp ? `
+              <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                <img class="champ-pepe-hero-img" src="${PEPE_CHAMP_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_CHAMP_FALLBACK}';" alt="Champion Pepe">
+                <div style="text-align: left; min-width: 0;">
+                  <div style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #53fc18; display: flex; align-items: center; gap: 6px;">
+                    <span>${esc(predictedChamp.username)}</span>
+                    <img src="${PEPE_EZ_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_EZ_FALLBACK}';" alt="EZ" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
+                  </div>
+                  <div style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${esc(predictedChamp.slotName)}
+                  </div>
+                </div>
+              </div>
+            ` : `
+              <div style="font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--text-dim); text-align: center; padding: 6px 0;">
+                Click each matchup winner above to crown your Champion!
+              </div>
+            `}
+            ${liveChamp ? `
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,215,0,0.3); font-size: 11px; text-align: center; color: #fff;">
+                🏆 <strong style="color: var(--gold);">OFFICIAL STREAM CHAMPION:</strong> <span style="color: #53fc18; font-weight: 800;">${esc(liveChamp.username)}</span> (${esc(liveChamp.slotName)})
+              </div>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -296,35 +614,35 @@ class TournamentPredictionController {
     this.updateStatusBanner();
   }
 
+  getEntry(entryId) {
+    if (!entryId) return null;
+    if (this.entryById.has(entryId)) return this.entryById.get(entryId);
+    const found = this.slots.find(x => x.id === entryId || x.slotName === entryId || x.username === entryId);
+    return found || null;
+  }
+
   getSlotName(slotId) {
     if (!slotId) return null;
-    let name = slotId;
+    const entry = this.getEntry(slotId);
+    const esc = window.escapeHTML || (x => x);
+    if (entry && !entry.isTbd) {
+      return esc(`${entry.username} (${entry.slotName})`);
+    }
     if (window.SlotResolver) {
       const res = window.SlotResolver.resolve(slotId);
-      name = res.name;
-    } else {
-      const s = this.slots.find(x => x.id === slotId);
-      name = s ? s.name : slotId;
+      return esc(res.name);
     }
-    const esc = window.escapeHTML || (x => x);
-    return esc(name);
+    return esc(slotId);
   }
 
   getSlotImage(slotId) {
+    const entry = this.getEntry(slotId);
+    if (entry && entry.img) return entry.img;
     if (window.SlotResolver) {
       const res = window.SlotResolver.resolve(slotId);
-      return res.image;
+      if (res && res.image) return res.image;
     }
-    if (!slotId) return 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
-    const s = this.slots.find(x => x.id === slotId);
-    let img = s ? s.img : null;
-    if ((!img || img.includes('.svg')) && window.HUNTHUB_CURATED_SLOTS) {
-      const found = window.HUNTHUB_CURATED_SLOTS.find(
-        cs => cs.id === slotId || cs.name.toLowerCase() === (s?.name || slotId).toLowerCase()
-      );
-      if (found) img = found.image;
-    }
-    return img || 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
+    return 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format';
   }
 
   bindClickHandlers() {
@@ -336,6 +654,16 @@ class TournamentPredictionController {
         const slotId = el.getAttribute('data-slot-id');
         const target = el.getAttribute('data-target');
         if (!slotId || slotId === 'null') return;
+
+        // If user clicked directly on a Semifinal or Grand Final competitor that was populated from live state, also backfill upstream pick
+        if (target === 'final_a' && !this.predictions.semi1_a && !this.predictions.semi1_b) {
+          if (slotId === this.slots[0]?.id || slotId === this.slots[1]?.id) this.predictions.semi1_a = slotId;
+          if (slotId === this.slots[2]?.id || slotId === this.slots[3]?.id) this.predictions.semi1_b = slotId;
+        }
+        if (target === 'final_b' && !this.predictions.semi2_a && !this.predictions.semi2_b) {
+          if (slotId === this.slots[4]?.id || slotId === this.slots[5]?.id) this.predictions.semi2_a = slotId;
+          if (slotId === this.slots[6]?.id || slotId === this.slots[7]?.id) this.predictions.semi2_b = slotId;
+        }
 
         this.predictions[target] = slotId;
 
@@ -351,10 +679,22 @@ class TournamentPredictionController {
           }
         }
         if (this.predictions.champion !== this.predictions.final_a && this.predictions.champion !== this.predictions.final_b) {
-          this.predictions.champion = null;
+          if (target !== 'champion') {
+            this.predictions.champion = null;
+          }
         }
 
-        if (window.soundEngine) window.soundEngine.playChip();
+        if (window.soundEngine) {
+          if (target === 'champion' && typeof window.soundEngine.playWin === 'function') {
+            window.soundEngine.playWin();
+          } else if (typeof window.soundEngine.playChip === 'function') {
+            window.soundEngine.playChip();
+          }
+        }
+        if (target === 'champion' && typeof window.fireCasinoConfetti === 'function') {
+          window.fireCasinoConfetti({ particleCount: 35 });
+        }
+
         this.savePrediction();
         this.renderBracket();
       });
@@ -387,17 +727,49 @@ class TournamentPredictionController {
     }
   }
 
+  computeCorrectHitsForPredictions(preds) {
+    if (!preds || !this.liveTourneyState?.matches) return { hits: 0, resolved: 0 };
+    const map = [
+      { key: 'semi1_a', matchId: 'm1' },
+      { key: 'semi1_b', matchId: 'm2' },
+      { key: 'semi2_a', matchId: 'm3' },
+      { key: 'semi2_b', matchId: 'm4' },
+      { key: 'final_a', matchId: 'm5' },
+      { key: 'final_b', matchId: 'm6' },
+      { key: 'champion', matchId: 'm7' }
+    ];
+    let hits = 0;
+    let resolved = 0;
+    for (const item of map) {
+      const m = this.liveTourneyState.matches[item.matchId];
+      if (m && m.winner) {
+        resolved++;
+        const pickedEntry = this.getEntry(preds[item.key]);
+        if (pickedEntry && this.isEntryLiveMatchWinner(item.matchId, pickedEntry)) {
+          hits++;
+        }
+      }
+    }
+    return { hits, resolved };
+  }
+
   bindSubmitButton() {
     const btn = document.getElementById('btn-lock-tourney-pred');
     if (!btn) return;
 
     btn.addEventListener('click', () => {
       if (!this.predictions.champion) {
-        alert('Please complete all 7 matchup picks up to the Grand Final champion before locking.');
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Complete Your Bracket Picks',
+            message: 'Select the winner of each matchup up to the Grand Final Champion before locking.',
+            type: 'danger'
+          });
+        }
         return;
       }
 
-      const currentUser = localStorage.getItem('hunthub_kick_username') || '@Viewer';
+      const currentUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
       this.isLocked = true;
       localStorage.setItem('hunthub_tourney_pred_locked', 'true');
       this.savePrediction();
@@ -414,16 +786,15 @@ class TournamentPredictionController {
       }
 
       this.updateStatusBanner();
+      this.renderBracket();
       this.renderStandings();
 
       if (window.sonner) {
         window.sonner.toast({
           title: '🏆 Bracket Locked!',
-          message: `${currentUser} selected ${this.getSlotName(this.predictions.champion)} to win!`,
+          message: `${currentUser} picked ${this.getSlotName(this.predictions.champion)} as Grand Champion!`,
           type: 'gold'
         });
-      } else {
-        alert(`Bracket locked! ${currentUser} selected ${this.getSlotName(this.predictions.champion)} to win the championship!`);
       }
     });
   }
@@ -435,24 +806,24 @@ class TournamentPredictionController {
     const panel = document.getElementById('tourney-standings-panel');
     if (!panel) return;
 
-    // Build participants list (including current user)
-    const currentUser = localStorage.getItem('hunthub_kick_username') || '@You';
+    const currentUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@You';
     const isUserSub = localStorage.getItem('hunthub_is_sub') === 'true';
 
     let list = [...this.communityStandings];
 
     if (this.isLocked && this.predictions.champion) {
-      // Calculate viewer score
+      const { hits, resolved } = this.computeCorrectHitsForPredictions(this.predictions);
+      const score = resolved > 0 ? hits : 0;
+      const accuracy = resolved > 0 ? Number(((hits / resolved) * 100).toFixed(1)) : 100.0;
       const userEntry = {
-        username: currentUser,
+        username: currentUser.startsWith('@') ? currentUser : `@${currentUser}`,
         isSub: isUserSub,
         championPick: this.predictions.champion,
-        score: 5, // Active picks
-        accuracy: 71.4,
-        status: 'Active ⭐'
+        score,
+        accuracy,
+        status: resolved > 0 ? `${hits}/${resolved} Live Hits 🔥` : 'Locked & Ready ⭐'
       };
-      // Check if already in list
-      const existing = list.findIndex(x => x.username === currentUser);
+      const existing = list.findIndex(x => x.username === userEntry.username);
       if (existing >= 0) list[existing] = userEntry;
       else list.push(userEntry);
     }
@@ -757,11 +1128,6 @@ class TournamentPredictionController {
     }
 
     const currentUser = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@/, '').toLowerCase();
-    const isStreamer = currentUser === 'diggitybets' || currentUser === 'diggity_bets' || currentUser === 'tarkansky';
-    const adminLink = document.getElementById('pub-battle-admin-link');
-    if (adminLink) {
-      adminLink.style.display = isStreamer ? 'inline-flex' : 'none';
-    }
 
     // Pre-fill Join User input if logged in and currently empty
     const joinUserEl = document.getElementById('pub-battle-join-user');
@@ -1265,6 +1631,29 @@ class TournamentPredictionController {
       this.bcDuo.onmessage = () => this.renderPublicBattleQueue();
     } catch (_) {}
 
+    try {
+      this.bcTourney = new BroadcastChannel('hunthub_tourney');
+      this.bcTourney.onmessage = (e) => {
+        if (!e.data) return;
+        const st = e.data.state || e.data;
+        if (st && st.matches) {
+          try {
+            localStorage.setItem('hunthub_tourney_state', JSON.stringify(st));
+          } catch (_) {}
+          this.syncWithTourneyState(st);
+          this.checkTourneyAccessState();
+        }
+      };
+    } catch (_) {}
+
+    window.addEventListener('hunthub:tourney-sync', (e) => {
+      const st = e.detail?.state || e.detail;
+      if (st && st.matches) {
+        this.syncWithTourneyState(st);
+        this.checkTourneyAccessState();
+      }
+    });
+
     window.addEventListener('hunthub:battle-sync', (e) => handleEvent(e.detail));
     window.addEventListener('hunthub:battle-celebration', (e) => handleEvent(e.detail));
     window.addEventListener('hunthub:auth-updated', () => this.renderKoth());
@@ -1274,8 +1663,53 @@ class TournamentPredictionController {
         this.renderKoth();
       } else if (e.key === 'hunthub_koth_event' && e.newValue) {
         try { handleEvent(JSON.parse(e.newValue)); } catch (_) {}
+      } else if (e.key === 'hunthub_tourney_state' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          this.syncWithTourneyState(parsed);
+          this.checkTourneyAccessState();
+        } catch (_) {}
+      } else if (e.key === 'hunthub_tourney_active') {
+        this.checkTourneyAccessState();
       }
     });
+
+    // Edge sync polling for remote spectators on diggitybets.vip/#tournament
+    this._lastEdgeTourneyHash = '';
+    const pollRemoteTourneyState = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/sync/state', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const remoteTourney =
+          data?.overlayEvents?.['overlay-tourney']?.state ||
+          data?.overlayEvents?.['overlay-tourney'] ||
+          data?.overlays?.tourney?.state ||
+          data?.overlays?.tourney ||
+          null;
+        if (remoteTourney && remoteTourney.matches) {
+          const hash = JSON.stringify(remoteTourney.matches) + '|' + (remoteTourney.champion || '') + '|' + (remoteTourney.status || '');
+          if (hash !== this._lastEdgeTourneyHash) {
+            this._lastEdgeTourneyHash = hash;
+            try {
+              localStorage.setItem('hunthub_tourney_state', JSON.stringify(remoteTourney));
+              const hasSeeds = ['m1', 'm2', 'm3', 'm4'].some(k => {
+                const m = remoteTourney.matches[k];
+                return m && ((m.p1 && m.p1.name && m.p1.name !== 'TBD') || (m.p2 && m.p2.name && m.p2.name !== 'TBD'));
+              });
+              if (hasSeeds || remoteTourney.status === 'IN_PROGRESS' || remoteTourney.status === 'FINISHED') {
+                localStorage.setItem('hunthub_tourney_active', 'true');
+              }
+            } catch (_) {}
+            this.syncWithTourneyState(remoteTourney);
+            this.checkTourneyAccessState();
+          }
+        }
+      } catch (_) {}
+    };
+    setTimeout(pollRemoteTourneyState, 1200);
+    setInterval(pollRemoteTourneyState, 4000);
   }
 }
 
