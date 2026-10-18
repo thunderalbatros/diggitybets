@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-17T22:47:58.460Z",
+  "last_updated": "2026-10-18T00:20:02.935Z",
   "rules": [
     {
       "id": "stack-vanilla-web-obs",
@@ -82,6 +82,46 @@
       "superseded_by": "stack-vanilla-web-obs",
       "rationale": "Belongs exclusively to Yendo Mobile. HuntHub / DiggityBets is strictly a Web Application and OBS Streaming Suite.",
       "evidence": "Purge commit 1ba5dc1"
+    },
+    {
+      "id": "linear-ast-scanning-no-redos",
+      "type": "performance_invariable",
+      "title": "Linear Line-by-Line AST Scanning (Zero ReDoS)",
+      "valid_from": "2026-10-18T00:20:02.922Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "Nested regular expression quantifiers (e.g. `([^()]*|\\([^()]*\\))*`) cause catastrophic backtracking and terminal freezes on large files (>2,000 lines). Parse class methods linearly with line splitting.",
+      "evidence": "tools/intelligence/ast_guard.mjs scanClassMethods"
+    },
+    {
+      "id": "mock-server-api-catchall",
+      "type": "architectural_decision",
+      "title": "Catch-All 200 OK JSON Fallback for Local API Testing",
+      "valid_from": "2026-10-18T00:20:02.927Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "Headless Playwright audits capture all 404 network failures as console errors. Local simulation servers must implement a catch-all 200 OK JSON fallback for `/api/*` to guarantee a clean 0-error report.",
+      "evidence": "tools/serve_site.mjs, tools/audit/visual_audit.mjs"
+    },
+    {
+      "id": "network-fetch-abort-timeout-guard",
+      "type": "resilience_pattern",
+      "title": "Mandatory AbortSignal.timeout on External API Calls",
+      "valid_from": "2026-10-18T00:20:02.931Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "External API services (Serper, Qdrant Cloud, Vertex AI) can hang indefinitely when connection pools saturate or sockets drop. Every remote fetch must have an explicit timeout between 2,500ms and 3,500ms.",
+      "evidence": "tools/intelligence/serper_researcher.mjs, tools/intelligence/rag_pipeline.mjs"
+    },
+    {
+      "id": "symbolic-method-aliasing",
+      "type": "bug_fix",
+      "title": "Method Renaming Aliases on Class Prototypes",
+      "valid_from": "2026-10-18T00:20:02.935Z",
+      "valid_until": null,
+      "status": "ACTIVE",
+      "rationale": "When refactoring methods in public client controllers, provide a prototype alias to prevent runtime PAGEERROR exceptions when older modules or event handlers invoke the previous symbol name.",
+      "evidence": "site/js/admin-hub.js renderHuntAdmin -> renderBonusHuntAdmin"
     }
   ]
 }

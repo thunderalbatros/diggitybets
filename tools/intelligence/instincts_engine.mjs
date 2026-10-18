@@ -261,6 +261,8 @@ export function runPreFlightCheck() {
   return true;
 }
 
+export const runPreFlightChecks = runPreFlightCheck;
+
 /**
  * Judge Harness: Mandatory verification after phase completion
  */
