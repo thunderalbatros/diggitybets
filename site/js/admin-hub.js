@@ -96,8 +96,9 @@ class AdminHubController {
       }
     } catch (_) {}
 
-    // CS:GO 90s Window Active Chatters
+    // CS:GO 90s Window Active Chatters & Live Subscriber Set
     this.recentChatters = new Map();
+    this.subscriberUsers = new Set();
     this.selectedSlot = null;
 
     this.init();
@@ -390,6 +391,10 @@ class AdminHubController {
         } else if (targetSubtab === 'wheels-ctrl') {
           this.renderDuoQueue();
           this.renderActiveChatters();
+        } else if (targetSubtab === 'session-pnl') {
+          if (window.diggityIntelSuite && typeof window.diggityIntelSuite.renderPnlCalendar === 'function') {
+            window.diggityIntelSuite.renderPnlCalendar();
+          }
         }
       });
     });
@@ -4916,6 +4921,14 @@ class AdminHubController {
                 const cleanSender = sender.trim().replace(/^@/, '').toLowerCase();
                 if (!this.demoUsernames.has(cleanSender)) {
                   this.purgeDemoUsersForLiveStream('live_kick_chat_message');
+                }
+                const badges = Array.isArray(msgData?.sender?.identity?.badges) ? msgData.sender.identity.badges : [];
+                const isSubBadge = badges.some(b => {
+                  const t = String(b?.type || '').toLowerCase();
+                  return t === 'subscriber' || t === 'founder' || t === 'sub_gifter' || t === 'vip';
+                });
+                if (isSubBadge) {
+                  this.subscriberUsers.add(cleanSender);
                 }
                 this.recentChatters.set(sender, { user: sender, ts: Date.now() });
                 if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
