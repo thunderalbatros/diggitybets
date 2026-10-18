@@ -633,10 +633,10 @@
       - `🧹 Nueva Ronda`: Limpia la bandeja para iniciar una nueva tanda de hasta 10 cartas.
     - Persistencia en `localStorage` (`hunthub_vault_round_deck`).
 - **Stage 28 (Kick Points Podium: Marca de Agua de Kick con Transparencia, Fuentes Agrandadas y Contraste Óptimo):** COMPLETED & TESTED.
-  - **1. Marca de Agua Oficial de Kick con Transparencia:**
-    - Se incorporó el emblema vectorial oficial de Kick con silueta "K" escalada y respiración suave (`@keyframes kickWatermarkBreathe`) en dos capas clave:
-      - **En el escenario global (`.kick-podium-watermark`):** Marca de agua de gran formato (580x580px, opacidad 0.18-0.28 con resplandor neón `filter: drop-shadow(0 0 54px rgba(83, 252, 24, 0.75))`) ubicada centralmente detrás de las tres columnas del podio.
-      - **En el fondo de cada tarjeta individual (`.kick-card-center-watermark`):** Logo de Kick de 220px (260px en el campeón) con transparencia calibrada (0.14 - 0.20) ubicado directamente detrás del avatar y textos para que sea claramente visible sin importar el ancho o posición.
+  - **1. Palabra Completa "KICK" en Estilo Pixel Oficial con Transparencia:**
+    - Se reemplazó el isotipo de la letra "K" solitaria por el logotipo/wordmark oficial completo **"KICK"** en tipografía pixel art verde flúor (`#53FC18`), vectorizado en SVG puro (`site/images/kick-wordmark.svg`).
+    - **Ubicación en el escenario global (`.kick-podium-watermark`):** Se extiende panorámicamente a lo ancho de las tres columnas del podio (hasta 940px, opacidad calibrada 0.18-0.28 con respiración sutil y halo perimetral neón flúor `drop-shadow: 0 0 45px rgba(83, 252, 24, 0.7)`).
+    - **Cristal limpio en las tarjetas:** Se removieron los isotipos "K" internos de las tarjetas para que la palabra completa "KICK" del fondo se lea sin interferencias a través del cristal translúcido de las columnas (`background: rgba(6, 14, 9, 0.76)` con `backdrop-filter: blur(8px)`). De este modo, la primera "K" corona el 2° puesto, la "I" y "C" el centro del campeón, y la segunda "K" el 3° puesto.
   - **2. Agrandamiento y Alta Definición Tipográfica:**
     - Nombres de usuario (`.kick-podium-user`): Agrandados a 28px (36px en el campeón #1) con text-shadow multicapa de alta legibilidad (`0 2px 10px rgba(0,0,0,0.95)` y halo flúor).
     - Pastillas de Rol / Nivel (`.kick-podium-tier-pill`): Se erradicó el texto tenue y diminuto de 10px gris (`#64748b`); ahora luce una tipografía nítida de 13.5px bold en blanco ultra brillante (`#ffffff`) sobre cristal oscuro con borde verde flúor (`border: 1.5px solid rgba(83, 252, 24, 0.6)`).
