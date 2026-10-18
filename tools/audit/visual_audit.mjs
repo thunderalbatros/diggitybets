@@ -1,16 +1,69 @@
 // Visual Auditor (Playwright + system Chrome). Zero download, zero cost.
-// Usage:  node tools/audit/visual_audit.mjs [baseUrl]    (default http://127.0.0.1:3000)
+// Usage:  node tools/audit/visual_audit.mjs [baseUrl]    (default http://127.0.0.1:3000, auto-starts local server if needed)
 // Output: tools/audit/out/<view>-<width>.png  +  tools/audit/out/report.json  (exit 1 if any BLOCKER)
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(here, '..', '..');
 const out = path.join(here, 'out');
 fs.mkdirSync(out, { recursive: true });
 
-const BASE = process.argv[2] || 'http://127.0.0.1:3000';
+let BASE = process.argv[2] || 'http://127.0.0.1:3000';
+let embeddedServer = null;
+
+async function ensureServer() {
+  if (process.argv[2]) return;
+  try {
+    const res = await fetch(BASE + '/index.html', { method: 'HEAD' });
+    if (res.ok) return;
+  } catch (_) {}
+
+  const mimeMap = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.mjs': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.txt': 'text/plain; charset=utf-8'
+  };
+
+  embeddedServer = http.createServer((req, res) => {
+    const cleanUrl = decodeURIComponent((req.url || '/').split('?')[0]);
+    if (cleanUrl.startsWith('/api/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    const relPath = cleanUrl === '/' ? '/index.html' : cleanUrl;
+    const filePath = path.join(rootDir, relPath);
+    if (!filePath.startsWith(rootDir) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, { 'Content-Type': mimeMap[ext] || 'application/octet-stream' });
+    fs.createReadStream(filePath).pipe(res);
+  });
+
+  await new Promise((resolve) => {
+    embeddedServer.listen(0, '127.0.0.1', () => {
+      const addr = embeddedServer.address();
+      BASE = `http://127.0.0.1:${addr.port}`;
+      resolve();
+    });
+  });
+}
+
 const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 768, h: 1024 }, { w: 390, h: 844 }];
 const VIEWS = ['watch', 'bonushunt', 'tournament', 'house-games', 'store', 'leaderboard', 'profile', 'admin'];
 const CHROME = [
@@ -44,7 +97,9 @@ function pageChecks() {
   const seen = new Set();
   for (const el of document.body.querySelectorAll('*')) {
     if (!visible(el)) continue;
-    if (el.closest('[style*="display: none"], [hidden], .oculto, .site-sidebar')) continue; // sidebar = intentional off-canvas drawer on small screens
+    if (el.closest('[style*="display: none"], [hidden], .oculto')) continue;
+    // On mobile/tablet (< 1080px), .site-sidebar is an intentional off-canvas drawer; on desktop (>= 1080px), audit it!
+    if (vw <= 1080 && el.closest('.site-sidebar')) continue;
     const s = getComputedStyle(el);
     const r = el.getBoundingClientRect();
     const key = sel(el);
@@ -109,6 +164,7 @@ function pageChecks() {
   return findings;
 }
 
+await ensureServer();
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const report = { base: BASE, generated: new Date().toISOString(), runs: [], console: [], failedRequests: [] };
 let blockers = 0;
@@ -133,6 +189,12 @@ for (const vp of VIEWPORTS) {
       if (id === 'admin') {
         localStorage.setItem('hunthub_is_admin', 'true');
         localStorage.setItem('hunthub_kick_username', 'diggitybets');
+        localStorage.setItem('hunthub_kick_logged_in', 'true');
+        if (window.userStore) {
+          window.userStore.username = 'diggitybets';
+          window.userStore.isLoggedIn = true;
+          if (typeof window.userStore.syncUI === 'function') window.userStore.syncUI();
+        }
         if (window.adminHub && typeof window.adminHub.checkAdminAccess === 'function') {
           window.adminHub.checkAdminAccess();
         }
@@ -148,6 +210,9 @@ for (const vp of VIEWPORTS) {
   await ctx.close();
 }
 await browser.close();
+if (embeddedServer) {
+  await new Promise(resolve => embeddedServer.close(resolve));
+}
 fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
 
 // Console summary
