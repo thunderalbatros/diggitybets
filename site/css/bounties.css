@@ -16,6 +16,15 @@
   }
 }
 
+@keyframes bountyCardLevitate {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
 @keyframes bountyPulseDot {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.35); opacity: 0.55; }
@@ -227,108 +236,116 @@
 .bounty-tier-filter-btn[data-tier="5"].active { border-color: #f43f5e; color: #fb7185; background: rgba(244, 63, 94, 0.18); }
 .bounty-tier-filter-btn[data-tier="6"].active { border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.18); }
 
-/* 4. 3D Holographic Bounty Cards Grid */
+/* 4. Levitating Bounty Cards Grid (Green & White Laser Beam Perimeter — Zero 3D Deformation) */
 .bounties-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
   gap: 18px;
-  perspective: 1100px;
 }
 
 .bounty-card-3d {
-  --pointer-x: 50%;
-  --pointer-y: 50%;
-  --rotate-x: 0deg;
-  --rotate-y: 0deg;
-  --card-glare-opacity: 0;
   --tier-color: #53fc18;
-  --tier-glow: rgba(83, 252, 24, 0.26);
+  --tier-glow: rgba(83, 252, 24, 0.35);
 
   position: relative;
   border-radius: 16px;
-  background: linear-gradient(165deg, rgba(13, 19, 33, 0.96) 0%, rgba(7, 10, 18, 0.99) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(165deg, rgba(10, 16, 26, 0.97) 0%, rgba(5, 9, 15, 0.99) 100%) padding-box,
+    conic-gradient(
+      from var(--bounty-angle),
+      rgba(83, 252, 24, 0.32) 0deg,
+      #53fc18 52deg,
+      #ffffff 90deg,
+      #53fc18 128deg,
+      rgba(83, 252, 24, 0.25) 180deg,
+      #53fc18 232deg,
+      #ffffff 270deg,
+      #53fc18 308deg,
+      rgba(83, 252, 24, 0.32) 360deg
+    ) border-box;
+  border: 2px solid transparent;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transform-style: preserve-3d;
-  transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease, box-shadow 0.22s ease;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+  animation:
+    bountyRotateBorder 4.6s linear infinite,
+    bountyCardLevitate 4.2s ease-in-out infinite;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s ease;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.75),
+    0 0 20px rgba(83, 252, 24, 0.32),
+    0 0 6px rgba(255, 255, 255, 0.28),
+    inset 0 0 18px rgba(83, 252, 24, 0.08);
   content-visibility: auto;
   contain-intrinsic-size: 0 385px;
   overflow: hidden;
 }
 
-.bounty-card-3d:hover {
-  border-color: var(--tier-color);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.78), 0 0 24px var(--tier-glow);
-  --card-glare-opacity: 1;
+.bounty-card-3d:nth-child(3n+2) {
+  animation-delay: 0s, 0.6s;
 }
 
-/* Rarity Tier Color Tokens */
+.bounty-card-3d:nth-child(3n+3) {
+  animation-delay: 0s, 1.2s;
+}
+
+.bounty-card-3d:hover {
+  animation: bountyRotateBorder 2.4s linear infinite;
+  transform: translateY(-7px);
+  box-shadow:
+    0 20px 38px rgba(0, 0, 0, 0.88),
+    0 0 34px rgba(83, 252, 24, 0.65),
+    0 0 14px rgba(255, 255, 255, 0.72),
+    inset 0 0 24px rgba(83, 252, 24, 0.16);
+}
+
+/* Rarity Tier Color Tokens (For Prize Badge & Accents — Card Perimeter Keeps Green/White Laser) */
 .bounty-card-3d[data-bounty-tier="1"] {
-  --tier-color: #00e701;
-  --tier-glow: rgba(0, 231, 1, 0.25);
-  border-color: rgba(0, 231, 1, 0.32);
+  --tier-color: #53fc18;
+  --tier-glow: rgba(83, 252, 24, 0.35);
 }
 .bounty-card-3d[data-bounty-tier="2"] {
   --tier-color: #00f2fe;
-  --tier-glow: rgba(0, 242, 254, 0.25);
-  border-color: rgba(0, 242, 254, 0.32);
+  --tier-glow: rgba(0, 242, 254, 0.32);
 }
 .bounty-card-3d[data-bounty-tier="3"] {
-  --tier-color: #3b82f6;
-  --tier-glow: rgba(59, 130, 246, 0.28);
-  border-color: rgba(59, 130, 246, 0.36);
+  --tier-color: #60a5fa;
+  --tier-glow: rgba(96, 165, 250, 0.35);
 }
 .bounty-card-3d[data-bounty-tier="4"] {
-  --tier-color: #a855f7;
-  --tier-glow: rgba(168, 85, 247, 0.32);
-  border-color: rgba(168, 85, 247, 0.42);
+  --tier-color: #c084fc;
+  --tier-glow: rgba(192, 132, 252, 0.38);
 }
 .bounty-card-3d[data-bounty-tier="5"] {
-  --tier-color: #f43f5e;
-  --tier-glow: rgba(244, 63, 94, 0.36);
-  background:
-    linear-gradient(165deg, rgba(16, 12, 26, 0.97), rgba(8, 9, 16, 0.99)) padding-box,
-    conic-gradient(from var(--bounty-angle), #f43f5e, #a855f7, #ff2a5f, #fbbf24, #f43f5e) border-box;
-  border: 1.5px solid transparent;
-  animation: bountyRotateBorder 7s linear infinite;
+  --tier-color: #fb7185;
+  --tier-glow: rgba(251, 113, 133, 0.42);
 }
 .bounty-card-3d[data-bounty-tier="6"] {
   --tier-color: #ffd700;
-  --tier-glow: rgba(255, 215, 0, 0.42);
-  background:
-    linear-gradient(165deg, rgba(24, 18, 8, 0.96), rgba(9, 11, 18, 0.99)) padding-box,
-    conic-gradient(from var(--bounty-angle), #ffd700, #fffbeb, #f59e0b, #53fc18, #ffd700) border-box;
-  border: 2px solid transparent;
-  animation: bountyRotateBorder 5.5s linear infinite;
+  --tier-glow: rgba(255, 215, 0, 0.48);
 }
 
-/* Holographic Foil Glare Layer (pokemon-cards-css inspired) */
+/* Subtle Static Top Laser Aura (Never distorts or covers slot artwork) */
 .bounty-card-holo-glare {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: var(--card-glare-opacity, 0);
+  opacity: 0.75;
   transition: opacity 0.25s ease;
   background:
     radial-gradient(
-      farthest-corner circle at var(--pointer-x) var(--pointer-y),
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.04) 42%,
-      transparent 75%
-    ),
-    repeating-linear-gradient(
-      125deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.035) 6%,
-      rgba(255, 255, 255, 0) 12%
+      ellipse at 50% 0%,
+      rgba(83, 252, 24, 0.12) 0%,
+      rgba(255, 255, 255, 0.05) 35%,
+      transparent 70%
     );
-  mix-blend-mode: screen;
-  z-index: 2;
+  z-index: 1;
+}
+
+.bounty-card-3d:hover .bounty-card-holo-glare {
+  opacity: 1;
 }
 
 /* Card Header: Status + 2x Prominent USD Bounty Prize Pill */
@@ -407,8 +424,8 @@
   align-items: center;
   padding: 10px;
   border-radius: 12px;
-  background: rgba(5, 8, 15, 0.76);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(5, 8, 15, 0.82);
+  border: 1px solid rgba(83, 252, 24, 0.18);
 }
 
 .bounty-slot-thumb-wrap {
@@ -418,8 +435,15 @@
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
-  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.22), rgba(7, 10, 18, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: radial-gradient(circle at 50% 35%, rgba(83, 252, 24, 0.2), rgba(7, 10, 18, 0.98));
+  border: 1.5px solid rgba(83, 252, 24, 0.45);
+  box-shadow: 0 0 10px rgba(83, 252, 24, 0.22);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.bounty-card-3d:hover .bounty-slot-thumb-wrap {
+  border-color: #ffffff;
+  box-shadow: 0 0 14px rgba(83, 252, 24, 0.55), 0 0 5px rgba(255, 255, 255, 0.65);
 }
 
 .bounty-slot-thumb-img {
@@ -427,11 +451,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.28s ease, opacity 0.22s ease;
-}
-
-.bounty-card-3d:hover .bounty-slot-thumb-img {
-  transform: scale(1.06);
 }
 
 .bounty-slot-info-col {
