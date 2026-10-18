@@ -39,24 +39,26 @@ class UserStoreController {
     this.totpExpiresAt = 0;
     this.totpInterval = null;
 
-    // Stake Leaderboard Participants Data (Top 15 under code: diggity — $1,500 USD Pool)
-    this.leaderboardData = [
-      { rank: 1, casinoUser: 'GS8***', kickUser: '@GamerStake88', wager: 68450.00, prize: 750, avatar: '👑', verified: true },
-      { rank: 2, casinoUser: 'StakeNacho', kickUser: '@NachoGamer', wager: 34120.50, prize: 500, avatar: '🦝', verified: true },
-      { rank: 3, casinoUser: 'ZeusMax', kickUser: '@SlotKing21', wager: 22890.00, prize: 200, avatar: '⚡', verified: true },
-      { rank: 4, casinoUser: 'StakeValen', kickUser: '@Valen99', wager: 14750.25, prize: 10, avatar: '🍭', verified: true },
-      { rank: 5, casinoUser: 'HunterPro', kickUser: '@StakeHunter', wager: 9810.00, prize: 10, avatar: '🤠', verified: true },
-      { rank: 6, casinoUser: 'CryptoAce', kickUser: '@CryptoSpin', wager: 6420.00, prize: 10, avatar: '💀', verified: true },
-      { rank: 7, casinoUser: 'StakeAgus', kickUser: '@AgusKick', wager: 4100.00, prize: 10, avatar: '🪙', verified: true },
-      { rank: 8, casinoUser: 'DiggityFan01', kickUser: '@DiggityFan', wager: 2550.00, prize: 10, avatar: '🤠', verified: true },
-      { rank: 9, casinoUser: 'LuckyMati', kickUser: '@MatiSlots', wager: 2180.00, prize: 0, avatar: '🎰', verified: true },
-      { rank: 10, casinoUser: 'PlinkoKing', kickUser: '@PlinkoMaster', wager: 1840.50, prize: 0, avatar: '🔥', verified: true },
-      { rank: 11, casinoUser: 'SweetBonanza', kickUser: '@BonanzaArg', wager: 1520.00, prize: 0, avatar: '🍬', verified: true },
-      { rank: 12, casinoUser: 'gatesOfX', kickUser: '@Olympus99', wager: 1290.75, prize: 0, avatar: '⚡', verified: true },
-      { rank: 13, casinoUser: 'WantedDead', kickUser: '@DuelSpins', wager: 1050.00, prize: 0, avatar: '🔫', verified: true },
-      { rank: 14, casinoUser: 'SugarRush77', kickUser: '@RushWinner', wager: 880.00, prize: 0, avatar: '🐻', verified: true },
-      { rank: 15, casinoUser: 'KickHighRoll', kickUser: '@HighRollKick', wager: 640.00, prize: 0, avatar: '💎', verified: true }
-    ];
+    // Stake Leaderboard Participants Data (Starts 100% empty — populated only by real verified referrals under code: diggity)
+    this.leaderboardData = [];
+    try {
+      const savedLb = JSON.parse(localStorage.getItem('hunthub_stake_leaderboard') || '[]');
+      const demoNames = new Set([
+        'gs8***', 'stakenacho', 'zeusmax', 'stakevalen', 'hunterpro', 'cryptoace',
+        'stakeagus', 'diggityfan01', 'luckymati', 'plinkoking', 'sweetbonanza',
+        'gatesofx', 'wanteddead', 'sugarrush77', 'kickhighroll', 'gamerstake88',
+        'nachogamer', 'slotking21'
+      ]);
+      if (Array.isArray(savedLb)) {
+        this.leaderboardData = savedLb.filter(u => {
+          const cu = String(u.casinoUser || u.stakeUser || '').toLowerCase().trim();
+          const ku = String(u.kickUser || '').toLowerCase().replace(/^@/, '').trim();
+          return cu && !demoNames.has(cu) && !demoNames.has(ku);
+        });
+      }
+    } catch (_) {
+      this.leaderboardData = [];
+    }
     this.lastUserInteractionTs = Date.now();
     this.lastVerifiedKickChatTs = Number(localStorage.getItem('hunthub_last_kick_chat_ts') || '0');
   }
@@ -64,6 +66,12 @@ class UserStoreController {
   init() {
     if (this._initialized) return;
     this._initialized = true;
+    if (!localStorage.getItem('hunthub_leaderboards_clean_v1')) {
+      this.leaderboardData = [];
+      localStorage.removeItem('hunthub_stake_leaderboard');
+      localStorage.removeItem('hunthub_historical_leaderboard');
+      localStorage.setItem('hunthub_leaderboards_clean_v1', 'true');
+    }
     if (!localStorage.getItem('hunthub_offline_points_purged_v1')) {
       localStorage.setItem('hunthub_balance', '0');
       localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
@@ -954,24 +962,18 @@ class UserStoreController {
     const tbody = document.getElementById('leaderboard-tbody');
     if (!tbody) return;
 
-    // If user is verified on Stake, ensure their entry is present in table
-    const activeCasinoUser = this.stakeUsername;
-    const isCasinoVerified = this.stakeVerified;
-    if (isCasinoVerified && activeCasinoUser) {
-      const exists = this.leaderboardData.some(p => (p.casinoUser || p.stakeUser || '').toLowerCase() === activeCasinoUser.toLowerCase());
-      if (!exists) {
-        this.leaderboardData.push({
-          rank: this.leaderboardData.length + 1,
-          casinoUser: activeCasinoUser,
-          stakeUser: activeCasinoUser,
-          kickUser: this.username || '@You',
-          wager: 1250.00,
-          prize: 0,
-          avatar: this.avatar,
-          verified: true
-        });
-      }
-    }
+    const demoNames = new Set([
+      'gs8***', 'stakenacho', 'zeusmax', 'stakevalen', 'hunterpro', 'cryptoace',
+      'stakeagus', 'diggityfan01', 'luckymati', 'plinkoking', 'sweetbonanza',
+      'gatesofx', 'wanteddead', 'sugarrush77', 'kickhighroll', 'gamerstake88',
+      'nachogamer', 'slotking21'
+    ]);
+
+    this.leaderboardData = (Array.isArray(this.leaderboardData) ? this.leaderboardData : []).filter(u => {
+      const cu = String(u.casinoUser || u.stakeUser || '').toLowerCase().trim();
+      const ku = String(u.kickUser || '').toLowerCase().replace(/^@/, '').trim();
+      return cu && !demoNames.has(cu) && !demoNames.has(ku);
+    });
 
     // Sort by wager descending and assign ranks + prizes for Top 15
     this.leaderboardData.sort((a, b) => (Number(b.wager) || 0) - (Number(a.wager) || 0));
@@ -986,21 +988,35 @@ class UserStoreController {
 
     const esc = (s) => (window.escapeHTML ? window.escapeHTML(s || '') : (s || ''));
 
-    // Populate Top 3 Illuminated Stake Podium
+    // Populate Top 3 Illuminated Stake Podium (or clean empty state when no referrals yet)
     [1, 2, 3].forEach((r) => {
       const entry = top15[r - 1];
-      if (!entry) return;
       const userEl = document.getElementById(`stake-podium-${r}-user`);
       const kickEl = document.getElementById(`stake-podium-${r}-kick`);
       const wagerEl = document.getElementById(`stake-podium-${r}-wager`);
       const prizeEl = document.getElementById(`stake-podium-${r}-prize`);
       const avatarEl = document.getElementById(`stake-podium-${r}-avatar`);
+      const prizeAmt = this.getStakePrizeForRank(r);
+      const icon = r === 1 ? '🏆' : (r === 2 ? '💰' : '🥉');
+
+      if (!entry) {
+        if (userEl) userEl.textContent = '—';
+        if (kickEl) kickEl.textContent = 'ESPACIO VACÍO';
+        if (wagerEl) wagerEl.textContent = '$0.00';
+        if (prizeEl) prizeEl.textContent = `${icon} $${prizeAmt.toLocaleString()} USD`;
+        if (avatarEl) {
+          const strokeCol = r === 1 ? '#ffd700' : (r === 2 ? '#e2e8f0' : '#cd7f32');
+          const bgCol = r === 1 ? '#261b05' : (r === 2 ? '#0f172a' : '#231208');
+          const sz = r === 1 ? 72 : 60;
+          avatarEl.innerHTML = `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}"><circle cx="32" cy="32" r="30" fill="${bgCol}" stroke="${strokeCol}" stroke-width="2"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="${strokeCol}" text-anchor="middle">#${r}</text></svg>`;
+        }
+        return;
+      }
 
       if (userEl) userEl.textContent = entry.casinoUser || entry.stakeUser || '—';
       if (kickEl) kickEl.textContent = entry.kickUser || '';
       if (wagerEl) wagerEl.textContent = `$${Number(entry.wager || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
       if (prizeEl) {
-        const icon = r === 1 ? '🏆' : (r === 2 ? '💰' : '🥉');
         prizeEl.textContent = `${icon} $${entry.prize.toLocaleString()} USD`;
       }
       if (avatarEl && typeof window.getDeterministicAvatarSvg === 'function') {
@@ -1008,7 +1024,20 @@ class UserStoreController {
       }
     });
 
-    tbody.innerHTML = top15.map(item => {
+    // Build all 15 slots (showing real verified referrals first, and clean empty positions for remaining slots up to #15)
+    const full15Slots = Array.from({ length: 15 }, (_, idx) => {
+      const rank = idx + 1;
+      return top15[idx] || {
+        rank,
+        isEmpty: true,
+        casinoUser: '—',
+        kickUser: 'ESPACIO VACÍO · ESPERANDO REFERIDO',
+        wager: 0,
+        prize: this.getStakePrizeForRank(rank)
+      };
+    });
+
+    tbody.innerHTML = full15Slots.map(item => {
       const isPodium = item.rank <= 3;
       const isRunnerUpPrize = item.rank >= 4 && item.rank <= 8;
       const rankColor = item.rank === 1
@@ -1029,6 +1058,36 @@ class UserStoreController {
         prizeHtml = '<span class="stake-table-prize-pill runnerup">🎁 $10 USD</span>';
       }
 
+      if (item.isEmpty) {
+        return `
+        <tr class="leaderboard-row ${isPodium ? `top-${item.rank}` : (isRunnerUpPrize ? 'runnerup-prize-row' : '')}" style="opacity: 0.85;">
+          <td style="font-family: var(--font-display); font-weight: 800; font-size: 15px; color: ${rankColor};">
+            ${rankLabel}
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.22); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 11px; font-weight: 800; color: #cbd5e1;">#${item.rank}</span>
+              <div>
+                <strong style="color: #e2e8f0; font-size: 13.5px;">—</strong>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">ESPACIO VACÍO · ESPERANDO REFERIDO</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.16); color: #cbd5e1; font-size: 10px;">
+              ⏳ DISPONIBLE (CODE: DIGGITY)
+            </span>
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 800; color: #94a3b8;">
+            $0.00
+          </td>
+          <td style="font-family: var(--font-display); font-weight: 800;">
+            ${prizeHtml}
+          </td>
+        </tr>
+      `;
+      }
+
       return `
       <tr class="leaderboard-row ${isPodium ? `top-${item.rank}` : (isRunnerUpPrize ? 'runnerup-prize-row' : '')}">
         <td style="font-family: var(--font-display); font-weight: 800; font-size: 15px; color: ${rankColor};">
@@ -1038,8 +1097,8 @@ class UserStoreController {
           <div style="display: flex; align-items: center; gap: 8px;">
             ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.casinoUser || item.kickUser, 28) : `<span style="font-size: 18px;">${esc(item.avatar)}</span>`}
             <div>
-              <strong style="color: #ffffff; font-size: 13px;">${esc(item.casinoUser || item.stakeUser)}</strong>
-              <div style="font-size: 11px; color: var(--text-dim);">${esc(item.kickUser)}</div>
+              <strong style="color: #ffffff; font-size: 13.5px;">${esc(item.casinoUser || item.stakeUser)}</strong>
+              <div style="font-size: 11.5px; color: var(--text-muted);">${esc(item.kickUser)}</div>
             </div>
           </div>
         </td>

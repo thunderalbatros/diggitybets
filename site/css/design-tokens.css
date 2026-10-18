@@ -40,12 +40,12 @@
      Pure high/med/low hierarchy for crisp reading contrast
      ======================================================== */
   --text-high: #ffffff;
-  --text-med: rgba(255, 255, 255, 0.62);
-  --text-low: rgba(255, 255, 255, 0.38);
+  --text-med: rgba(248, 250, 252, 0.90);
+  --text-low: rgba(226, 232, 240, 0.76);
 
   --text-main: var(--text-high);
-  --text-muted: #9aa1b1;
-  --text-dim: #7a869e;
+  --text-muted: #cbd5e1;
+  --text-dim: #a8b5c9;
 
   /* ========================================================
      4. BRAND ACCENTS (Restrained, purposeful)

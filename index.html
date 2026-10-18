@@ -1840,6 +1840,40 @@
             </div>
           </div>
         </div>
+
+        <!-- 10-CARD ROUND VAULT TRAY (Viewer Picks, Community Draws & Random Bonus Hunt Deck) -->
+        <div class="vault-round-tray-container" id="vault-round-tray-container">
+          <div class="vault-tray-header">
+            <div class="vault-tray-title-block">
+              <div class="vault-tray-badge">
+                <span class="vault-tray-badge-dot"></span>
+                <span>RONDA DE CARTAS EN VIVO</span>
+              </div>
+              <h3 class="vault-tray-title">
+                🃏 CARTAS DE LA RONDA (<span id="vault-deck-count">0</span>/10)
+              </h3>
+              <p class="vault-tray-subtitle">
+                Guarda hasta 10 slots por ronda para selecciones de viewers, sorteos o armado dinámico de Bonus Hunt en lugar de ruleta
+              </p>
+            </div>
+            <div class="vault-tray-actions">
+              <button type="button" id="btn-vault-deck-add-hunt" class="btn-chat-toggle vault-btn-green" title="Añadir todas las cartas acumuladas al Bonus Hunt activo">
+                💎 + Añadir Todas al Hunt (<span id="vault-deck-btn-hunt-count">0</span>)
+              </button>
+              <button type="button" id="btn-vault-deck-queue-wheel" class="btn-chat-toggle vault-btn-gold" title="Enviar todas las cartas a la Ruleta !sr Wheel">
+                🎡 Cargar a Ruleta !sr (<span id="vault-deck-btn-wheel-count">0</span>)
+              </button>
+              <button type="button" id="btn-vault-deck-clear" class="btn-chat-toggle vault-btn-danger" title="Limpiar todas las cartas para iniciar una nueva ronda">
+                🧹 Nueva Ronda
+              </button>
+            </div>
+          </div>
+
+          <!-- 10 Slots Grid -->
+          <div class="vault-tray-grid" id="vault-tray-grid">
+            <!-- Rendered dynamically by diggity-intel-suite.js -->
+          </div>
+        </div>
       </div>
 
       <!-- TAB 4: FRESH SLOT DROPS (27 CASINOS) -->
@@ -2126,11 +2160,11 @@
             <div class="podium-avatar stake-podium-avatar" id="stake-podium-2-avatar">
               <svg viewBox="0 0 64 64" width="60" height="60"><circle cx="32" cy="32" r="30" fill="#0f172a" stroke="#e2e8f0" stroke-width="2"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#e2e8f0" text-anchor="middle">#2</text></svg>
             </div>
-            <div class="podium-user" id="stake-podium-2-user">StakeNacho</div>
-            <div class="podium-kick" id="stake-podium-2-kick">@NachoGamer</div>
+            <div class="podium-user" id="stake-podium-2-user">—</div>
+            <div class="podium-kick" id="stake-podium-2-kick">ESPACIO VACÍO</div>
             <div class="stake-podium-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
-              <span class="wager-val" id="stake-podium-2-wager">$34,120.50</span>
+              <span class="wager-val" id="stake-podium-2-wager">$0.00</span>
             </div>
             <div class="stake-podium-prize-pill silver-prize" id="stake-podium-2-prize">
               💰 $500 USD
@@ -2154,11 +2188,11 @@
             <div class="podium-avatar stake-podium-avatar champion-avatar" id="stake-podium-1-avatar">
               <svg viewBox="0 0 64 64" width="72" height="72"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="#ffd700" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="#ffd700" text-anchor="middle">#1</text></svg>
             </div>
-            <div class="podium-user" id="stake-podium-1-user" style="font-size: 20px; color: var(--gold);">GS8***</div>
-            <div class="podium-kick" id="stake-podium-1-kick">@GamerStake88</div>
+            <div class="podium-user" id="stake-podium-1-user" style="font-size: 20px; color: var(--gold);">—</div>
+            <div class="podium-kick" id="stake-podium-1-kick">ESPACIO VACÍO</div>
             <div class="stake-podium-wager-box gold-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
-              <span class="wager-val" id="stake-podium-1-wager" style="color: var(--gold);">$68,450.00</span>
+              <span class="wager-val" id="stake-podium-1-wager" style="color: var(--gold);">$0.00</span>
             </div>
             <div class="stake-podium-prize-pill gold-prize" id="stake-podium-1-prize">
               🏆 $750 USD
@@ -2179,11 +2213,11 @@
             <div class="podium-avatar stake-podium-avatar" id="stake-podium-3-avatar">
               <svg viewBox="0 0 64 64" width="60" height="60"><circle cx="32" cy="32" r="30" fill="#231208" stroke="#cd7f32" stroke-width="2"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#cd7f32" text-anchor="middle">#3</text></svg>
             </div>
-            <div class="podium-user" id="stake-podium-3-user">ZeusMax</div>
-            <div class="podium-kick" id="stake-podium-3-kick">@SlotKing21</div>
+            <div class="podium-user" id="stake-podium-3-user">—</div>
+            <div class="podium-kick" id="stake-podium-3-kick">ESPACIO VACÍO</div>
             <div class="stake-podium-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
-              <span class="wager-val" id="stake-podium-3-wager">$22,890.00</span>
+              <span class="wager-val" id="stake-podium-3-wager">$0.00</span>
             </div>
             <div class="stake-podium-prize-pill bronze-prize" id="stake-podium-3-prize">
               🥉 $200 USD
