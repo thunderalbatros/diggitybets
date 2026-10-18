@@ -657,11 +657,73 @@ class BonusHuntController {
     } catch (_) {}
   }
 
+  getMaxSlotRequestsForUser(username) {
+    const clean = String(username || '').trim().replace(/^@+/, '').toLowerCase();
+    if (!clean) return 1;
+
+    // Streamer / Master Admin accounts have unlimited slot requests
+    if (
+      clean === 'diggitybets' ||
+      clean === 'diggity_bets' ||
+      clean === 'tomas' ||
+      clean === 'tarkansky' ||
+      clean === 'diggitystreamer' ||
+      clean === 'vaultpack'
+    ) {
+      return Infinity;
+    }
+
+    // Check if the request belongs to the currently active browser user
+    const activeBrowserUser = String(
+      (window.userStore && window.userStore.username) ||
+      localStorage.getItem('hunthub_kick_username') ||
+      ''
+    ).trim().replace(/^@+/, '').toLowerCase();
+
+    const isCurrentBrowserUser =
+      (activeBrowserUser && clean === activeBrowserUser) ||
+      clean === 'viewer' ||
+      clean === 'guest' ||
+      clean === 'kickviewer' ||
+      clean === 'diggityviewer';
+
+    if (isCurrentBrowserUser) {
+      const isStakeVer =
+        Boolean(window.userStore && window.userStore.stakeVerified) ||
+        localStorage.getItem('hunthub_stake_verified') === 'true';
+      const isKickSub =
+        Boolean(window.userStore && window.userStore.isSub) ||
+        localStorage.getItem('hunthub_is_sub') === 'true' ||
+        localStorage.getItem('hunthub_kick_is_sub') === 'true';
+      if (isStakeVer || isKickSub) return 3;
+    }
+
+    // Also check verified Stake referrals list & Kick chat subscriber cache
+    try {
+      const referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
+      if (Array.isArray(referrals)) {
+        const foundStake = referrals.some((r) => {
+          const rUser = String(r.username || '').trim().replace(/^@+/, '').toLowerCase();
+          const rKick = String(r.kickUser || '').trim().replace(/^@+/, '').toLowerCase();
+          return (rUser === clean || rKick === clean) && String(r.status || 'verified').toLowerCase() === 'verified';
+        });
+        if (foundStake) return 3;
+      }
+    } catch (_) {}
+
+    if (window.adminHub && window.adminHub.subscriberUsers instanceof Set && window.adminHub.subscriberUsers.has(clean)) {
+      return 3;
+    }
+
+    // Default for Non-Stake Verified & Non-Subscriber spectators: Max 1 request
+    return 1;
+  }
+
   addSlotRequest(username, slotQuery, silentToast = false) {
     const rawSlot = String(slotQuery || '').trim();
     if (!rawSlot) return null;
 
-    const cleanUser = String(username || 'Viewer').trim().replace(/^@/, '') || 'Viewer';
+    const cleanUser = String(username || 'Viewer').trim().replace(/^@+/, '') || 'Viewer';
     const handle = `@${cleanUser}`;
     const canon = window.SlotResolver
       ? window.SlotResolver.resolve(rawSlot)
@@ -678,26 +740,60 @@ class BonusHuntController {
       ts: Date.now()
     };
 
-    // Update existing request from same user or push new entry
-    const existingIdx = this.slotRequests.findIndex(
+    const maxAllowed = this.getMaxSlotRequestsForUser(cleanUser);
+    const userRequests = this.slotRequests.filter(
       (r) => String(r.user || r.caller || '').toLowerCase() === handle.toLowerCase()
     );
-    if (existingIdx >= 0) {
-      this.slotRequests[existingIdx] = entry;
-    } else {
-      this.slotRequests.push(entry);
+
+    // Prevent queuing the exact same slot twice by the same user
+    const alreadyHasSameSlot = userRequests.some(
+      (r) => String(r.name || '').trim().toLowerCase() === String(entry.name || '').trim().toLowerCase()
+    );
+    if (alreadyHasSameSlot) {
+      if (!silentToast && window.sonner) {
+        window.sonner.toast({
+          title: `⚠️ Slot Already in Queue (${handle})`,
+          message: `You already have "${entry.name}" active in the !sr Roulette (${userRequests.length}/${maxAllowed === Infinity ? '∞' : maxAllowed}).`,
+          type: 'gold'
+        });
+      }
+      return null;
     }
+
+    // Enforce 1 request (Non-Stake Verified) vs 3 requests (Stake Verified or Kick Subscriber)
+    if (userRequests.length >= maxAllowed) {
+      if (!silentToast && window.sonner) {
+        if (maxAllowed === 1) {
+          window.sonner.toast({
+            title: `🔒 !sr Limit Reached (1/1 Request · ${handle})`,
+            message: `Non-Stake verified viewers get max 1 Slot Request. Verify your Stake account (code DIGGITY) or subscribe on Kick to unlock 3 Slot Requests!`,
+            type: 'gold'
+          });
+        } else {
+          window.sonner.toast({
+            title: `🔒 VIP !sr Limit Reached (${maxAllowed}/${maxAllowed} Requests · ${handle})`,
+            message: `You already have ${userRequests.length} active VIP Slot Requests in the queue.`,
+            type: 'gold'
+          });
+        }
+      }
+      return null;
+    }
+
+    this.slotRequests.push(entry);
 
     this.save();
     this.renderSlotRequests();
     this.drawSlotWheel(this.wheelAngle);
     this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
 
+    const newCount = userRequests.length + 1;
+    const quotaLabel = maxAllowed === Infinity ? `${newCount}/∞` : `${newCount}/${maxAllowed}`;
     if (!silentToast && window.sonner) {
       window.sonner.toast({
-        title: `🎰 !sr Queued (${handle})`,
-        message: `${entry.name} added to the Slot Requests Roulette!`,
-        type: 'cyan'
+        title: `🎰 !sr Queued (${quotaLabel} · ${handle})`,
+        message: `${entry.name} added to the Slot Requests Roulette!${maxAllowed === 1 ? ' (Verify Stake or Sub for 3 requests!)' : ''}`,
+        type: maxAllowed >= 3 ? 'gold' : 'cyan'
       });
     }
     return entry;

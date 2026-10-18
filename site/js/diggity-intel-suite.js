@@ -871,7 +871,7 @@
       container.querySelectorAll('.btn-intel-queue-sr').forEach(btn => {
         btn.onclick = () => {
           const slotName = btn.getAttribute('data-slot-name') || 'Wanted Dead or a Wild';
-          const user = localStorage.getItem('hunthub_kick_username') || '@DiggityViewer';
+          const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
           if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
             window.bonusHunt.addSlotRequest(user, slotName, false);
           } else if (window.sonner) {
@@ -1167,13 +1167,34 @@
     }
 
     // =========================================================================
+    // =========================================================================
     // 5. 3D CYBER-VAULT FOIL BOOSTER PACK SLOT PICKER (/random-slot EVOLVED)
     // =========================================================================
     initHoloVaultPack() {
       const packEl = document.getElementById('diggity-booster-pack-3d');
       const btnRip = document.getElementById('btn-rip-vault-pack');
+      const btnSeal = document.getElementById('btn-seal-vault-pack');
       const btnAddHunt = document.getElementById('btn-vault-add-hunt');
       const btnQueueSr = document.getElementById('btn-vault-queue-sr');
+      const provSelect = document.getElementById('vault-filter-provider');
+
+      // Start pack in sealed mystery state
+      this.lastRevealedVaultSlot = null;
+      this.sealHoloVaultPack(true);
+
+      if (provSelect) {
+        provSelect.addEventListener('change', () => {
+          const studioTagEl = document.getElementById('vault-sealed-studio-tag');
+          if (studioTagEl) {
+            const label = provSelect.options[provSelect.selectedIndex]?.text || '11,351 VERIFIED SLOTS POOL';
+            studioTagEl.textContent = label.toUpperCase();
+          }
+          // When changing studio filter after opening a pack, re-seal a fresh booster pack for that studio
+          if (packEl && packEl.classList.contains('is-opened') && !this.isVaultRipping) {
+            this.sealHoloVaultPack(true);
+          }
+        });
+      }
 
       if (packEl) {
         let cachedRect = null;
@@ -1209,6 +1230,7 @@
       }
 
       if (btnRip) btnRip.onclick = () => this.ripHoloVaultPack();
+      if (btnSeal) btnSeal.onclick = () => this.sealHoloVaultPack(false);
 
       if (btnAddHunt) {
         btnAddHunt.onclick = () => {
@@ -1225,7 +1247,7 @@
       if (btnQueueSr) {
         btnQueueSr.onclick = () => {
           if (!this.lastRevealedVaultSlot) return;
-          const user = localStorage.getItem('hunthub_kick_username') || '@DiggityStreamer';
+          const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
           if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
             window.bonusHunt.addSlotRequest(user, this.lastRevealedVaultSlot.name, false);
           } else if (window.sonner) {
@@ -1242,11 +1264,105 @@
       }
     }
 
+    sealHoloVaultPack(silent = true) {
+      if (this.isVaultRipping) return;
+      const packEl = document.getElementById('diggity-booster-pack-3d');
+      const statsEl = document.getElementById('vault-revealed-stats');
+      const actionsRow = document.getElementById('vault-actions-row');
+      const btnSeal = document.getElementById('btn-seal-vault-pack');
+      const btnRip = document.getElementById('btn-rip-vault-pack');
+
+      this.lastRevealedVaultSlot = null;
+
+      if (packEl) {
+        packEl.classList.remove('is-ripping', 'is-ripping-stage-1', 'is-ripping-stage-2', 'is-ripping-stage-3', 'is-opened');
+        packEl.classList.add('is-sealed');
+        packEl.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1)';
+      }
+
+      if (statsEl) {
+        statsEl.style.color = 'var(--gold)';
+        statsEl.style.borderColor = 'rgba(255, 215, 0, 0.28)';
+        statsEl.textContent = '🔒 PACK SEALED — Click "⚡ RIP HOLO-VAULT PACK" or click the booster pack to tear the foil seal & reveal your slot!';
+      }
+
+      if (actionsRow) {
+        actionsRow.style.opacity = '0.42';
+        actionsRow.style.pointerEvents = 'none';
+      }
+
+      if (btnSeal) {
+        btnSeal.style.display = 'none';
+      }
+
+      if (btnRip) {
+        btnRip.innerHTML = '⚡ RIP HOLO-VAULT PACK';
+      }
+
+      if (!silent && window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+        window.soundEngine.playChip();
+      }
+    }
+
+    playVaultRipSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = (window.soundEngine && window.soundEngine.ctx) ? window.soundEngine.ctx : new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+        const now = ctx.currentTime;
+        // High-frequency metallic foil tear sweep
+        const bufferSize = Math.floor(ctx.sampleRate * 0.34);
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 0.45);
+        }
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1100, now);
+        filter.frequency.exponentialRampToValueAtTime(5200, now + 0.32);
+        filter.Q.value = 3.2;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.24, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.33);
+
+        whiteNoise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        whiteNoise.start(now);
+        whiteNoise.stop(now + 0.34);
+      } catch (_) {}
+    }
+
     ripHoloVaultPack() {
+      if (this.isVaultRipping) return;
+      const packEl = document.getElementById('diggity-booster-pack-3d');
+
+      // If pack is already open, quickly re-seal a fresh pack first and then rip it open
+      if (packEl && packEl.classList.contains('is-opened')) {
+        this.sealHoloVaultPack(true);
+        setTimeout(() => this._executeVaultPackRipSequence(), 160);
+        return;
+      }
+
+      this._executeVaultPackRipSequence();
+    }
+
+    _executeVaultPackRipSequence() {
       if (this.isVaultRipping) return;
       this.isVaultRipping = true;
 
       const packEl = document.getElementById('diggity-booster-pack-3d');
+      const btnRip = document.getElementById('btn-rip-vault-pack');
+      const btnSeal = document.getElementById('btn-seal-vault-pack');
+      const actionsRow = document.getElementById('vault-actions-row');
       const provSelect = document.getElementById('vault-filter-provider');
       const provFilter = (provSelect?.value || 'ALL').toLowerCase();
 
@@ -1255,7 +1371,7 @@
         : (window.SlotResolver ? window.SlotResolver.getCuratedCatalog() : []);
 
       let pool = all.filter(s => {
-        if (provFilter === 'all') return String(s.tier || '3') !== '3'; // Prioritize Tier 1 & Tier 2 when rolling All Studios
+        if (provFilter === 'all') return String(s.tier || '3') !== '3';
         return (s.provider && s.provider.toLowerCase().includes(provFilter)) || (s.category && s.category.toLowerCase().includes(provFilter));
       });
       if (pool.length === 0) pool = all;
@@ -1267,34 +1383,107 @@
         : { label: '⚡ High-Volatility Slot' };
       this.lastRevealedVaultSlot = chosen;
 
+      // Pre-populate inner card DOM while it is still hidden behind the sealed foil wrapper
+      const imgEl = document.getElementById('vault-revealed-img');
+      const nameEl = document.getElementById('vault-revealed-name');
+      const provEl = document.getElementById('vault-revealed-provider');
+      const rtpPillEl = document.getElementById('vault-revealed-rtp-pill');
+      const rarityEl = document.getElementById('vault-revealed-rarity');
+      const statsEl = document.getElementById('vault-revealed-stats');
+      const playLink = document.getElementById('btn-vault-play-stake');
+
+      const rtpFormatted = parseFloat(String(chosen.rtp || '96.40').replace(/[^0-9.]/g, '')) || 96.40;
+      if (imgEl) imgEl.src = chosen.image;
+      if (nameEl) nameEl.textContent = chosen.name;
+      if (provEl) provEl.textContent = chosen.provider || 'CASINO VIP';
+      if (rtpPillEl) rtpPillEl.textContent = `${rtpFormatted.toFixed(2)}% RTP`;
+      if (rarityEl) {
+        rarityEl.textContent = rtpFormatted >= 97.0 ? '🔥 MYTHIC 98% FOIL' : '🌈 HOLO-FOIL HIT';
+      }
+      if (playLink) {
+        playLink.href = `https://stake.com/casino/games/${encodeURIComponent(chosen.slug || chosen.id || '')}`;
+      }
+
+      if (btnRip) {
+        btnRip.disabled = true;
+        btnRip.textContent = '✂️ TEARING FOIL SEAL...';
+      }
+      if (statsEl) {
+        statsEl.style.color = 'var(--cyan)';
+        statsEl.textContent = '⚡ Slicing top foil crimp seal & unlocking Holo-Vault chamber...';
+      }
+
+      // STAGE 1 (0ms - 320ms): Tension Shake & Laser Cut across top crimp seal
       if (packEl) {
-        packEl.classList.add('is-ripping');
-        packEl.style.transform = 'rotateY(18deg) rotateX(6deg) scale(1.04)';
+        packEl.classList.remove('is-sealed', 'is-opened', 'is-ripping-stage-2', 'is-ripping-stage-3');
+        packEl.classList.add('is-ripping-stage-1');
       }
+      this.playVaultRipSound();
 
-      if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') {
-        window.soundEngine.playCoin();
-      }
-
+      // STAGE 2 (320ms - 680ms): Top Metallic Foil Seal Physically Tears Off & Flies Away
       setTimeout(() => {
-        const imgEl = document.getElementById('vault-revealed-img');
-        const nameEl = document.getElementById('vault-revealed-name');
-        const provEl = document.getElementById('vault-revealed-provider');
-        const statsEl = document.getElementById('vault-revealed-stats');
-        const playLink = document.getElementById('btn-vault-play-stake');
-
-        const rtpFormatted = parseFloat(String(chosen.rtp || '96.40').replace(/[^0-9.]/g, '')) || 96.40;
-        if (imgEl) imgEl.src = chosen.image;
-        if (nameEl) nameEl.textContent = chosen.name;
-        if (provEl) provEl.textContent = chosen.provider || 'CASINO VIP';
-        if (statsEl) statsEl.textContent = `RTP: ${rtpFormatted.toFixed(2)}% · Max Win: ${chosen.maxWin || '15,000x'} · ${mech.label}`;
-        if (playLink) playLink.href = `https://stake.com/casino/games/${encodeURIComponent(chosen.slug || chosen.id || '')}`;
-
         if (packEl) {
-          packEl.classList.remove('is-ripping');
+          packEl.classList.remove('is-ripping-stage-1');
+          packEl.classList.add('is-ripping-stage-2');
+        }
+        if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+          window.soundEngine.playChip();
+        }
+      }, 320);
+
+      // STAGE 3 (680ms - 1040ms): Outer Wrapper Splits Open & Radiant Core Burst
+      setTimeout(() => {
+        if (packEl) {
+          packEl.classList.remove('is-ripping-stage-2');
+          packEl.classList.add('is-ripping-stage-3');
+        }
+        if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') {
+          window.soundEngine.playCoin();
+        }
+      }, 680);
+
+      // STAGE 4 (1040ms): Inner 3D Slot Card Emerges & Flips Face-Up!
+      setTimeout(() => {
+        if (packEl) {
+          packEl.classList.remove('is-ripping-stage-1', 'is-ripping-stage-2', 'is-ripping-stage-3', 'is-sealed');
+          packEl.classList.add('is-opened');
           packEl.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1)';
         }
+
+        if (statsEl) {
+          statsEl.style.color = '#53fc18';
+          statsEl.style.borderColor = 'rgba(83, 252, 24, 0.45)';
+          statsEl.textContent = `✨ REVEALED: ${chosen.name} (${chosen.provider}) · RTP: ${rtpFormatted.toFixed(2)}% · Max Win: ${chosen.maxWin || '15,000x'} · ${mech.label}`;
+        }
+
+        if (actionsRow) {
+          actionsRow.style.opacity = '1';
+          actionsRow.style.pointerEvents = 'auto';
+        }
+        if (btnSeal) {
+          btnSeal.style.display = 'inline-flex';
+        }
+        if (btnRip) {
+          btnRip.disabled = false;
+          btnRip.textContent = '⚡ RIP ANOTHER PACK';
+        }
+
         this.isVaultRipping = false;
+
+        if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
+          window.soundEngine.playVictoryFanfare();
+        }
+
+        if (typeof window.confetti === 'function') {
+          try {
+            window.confetti({
+              particleCount: 55,
+              spread: 68,
+              origin: { x: 0.35, y: 0.58 },
+              colors: ['#ffd700', '#00e5ff', '#53fc18', '#ff2a5f']
+            });
+          } catch (_) {}
+        }
 
         if (window.sonner) {
           window.sonner.toast({
@@ -1303,7 +1492,7 @@
             type: 'gold'
           });
         }
-      }, 520);
+      }, 1040);
     }
 
     // =========================================================================
