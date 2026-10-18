@@ -83,89 +83,215 @@
   updateTimerUI();
 
   // =========================================================================
-  // 4. LIVE WIDGETS DATA SYNC
+  // 4. LIVE WIDGETS DATA SYNC (Empty Slots by Default — Fills with Real Chat)
   // =========================================================================
+
+  // Purge any legacy example/demo names from localStorage
+  try {
+    const rawSplits = localStorage.getItem('hunthub_pending_splits');
+    if (rawSplits && (rawSplits.includes('LuckyRoller') || rawSplits.includes('DiggityVIP') || rawSplits.includes('CryptoChad'))) {
+      localStorage.removeItem('hunthub_pending_splits');
+    }
+    const rawLb = localStorage.getItem('hunthub_historical_leaderboard');
+    if (rawLb && (rawLb.includes('DiggityVIP') || rawLb.includes('LuckyRoller') || rawLb.includes('StakeHighRoller'))) {
+      localStorage.removeItem('hunthub_historical_leaderboard');
+    }
+  } catch (_) {}
 
   // A. Pending Bonus Buy Splits Queue ($20 & $40 Vouchers)
   function syncPendingSplits() {
     if (!splitsListContainer) return;
     let splits = [];
     try {
-      splits = JSON.parse(localStorage.getItem('hunthub_pending_splits') || 'null');
+      splits = JSON.parse(localStorage.getItem('hunthub_pending_splits') || '[]');
     } catch (_) {}
 
-    // Initial realistic queue if no redemptions yet
-    if (!Array.isArray(splits) || splits.length === 0) {
-      splits = [
-        { id: 'split_1', type: '$40 Split', amountUsd: 40, username: '@LuckyRoller', slot: 'Wanted Dead or a Wild', status: 'PENDING BUY' },
-        { id: 'split_2', type: '$20 Split', amountUsd: 20, username: '@DiggityVIP', slot: 'Gates of Olympus 1000', status: 'PENDING BUY' },
-        { id: 'split_3', type: '$20 Split', amountUsd: 20, username: '@CryptoChad', slot: 'Sweet Bonanza 1000', status: 'PENDING BUY' }
-      ];
-      try {
-        localStorage.setItem('hunthub_pending_splits', JSON.stringify(splits));
-      } catch (_) {}
+    // Clean any legacy mock users if present
+    if (Array.isArray(splits)) {
+      splits = splits.filter(s => {
+        const u = (s.username || '').toLowerCase();
+        return !u.includes('luckyroller') && !u.includes('diggityvip') && !u.includes('cryptochad');
+      });
+    } else {
+      splits = [];
     }
 
     if (splitsQueueBadge) {
       splitsQueueBadge.textContent = `${splits.length} IN QUEUE`;
     }
 
-    splitsListContainer.innerHTML = splits.slice(0, 3).map(item => {
-      const is40 = item.amountUsd === 40 || (item.type && item.type.includes('40'));
-      const badgeClass = is40 ? 'split-badge-40' : 'split-badge-20';
-      const badgeText = is40 ? '👑 $40 SPLIT' : '💎 $20 SPLIT';
-      return `
-        <div class="split-queue-item">
-          <span class="split-badge-tag ${badgeClass}">${badgeText}</span>
+    if (splits.length === 0) {
+      // 3 clean empty slot placeholders waiting for real redemptions
+      splitsListContainer.innerHTML = `
+        <div class="split-queue-item empty-slot" style="opacity: 0.45; border-style: dashed; border-color: rgba(255,255,255,0.12);">
+          <span class="split-badge-tag" style="background: rgba(255,255,255,0.05); color: #64748b; border: 1px dashed rgba(255,255,255,0.2);">SLOT #1</span>
           <div class="split-caller-col">
-            <span class="split-caller-name">${escapeHTML(item.username)}</span>
-            <span class="split-slot-title">${escapeHTML(item.slot || 'Viewer Choice')}</span>
+            <span class="split-caller-name" style="color: #64748b; font-weight: 500;">—</span>
+            <span class="split-slot-title" style="color: #475569;">Esperando canje de voucher...</span>
           </div>
           <div class="split-status-col">
-            <span class="split-profit-label">50/50 PROFIT</span>
-            <span class="split-status-pill">${escapeHTML(item.status || 'PENDING BUY')}</span>
+            <span class="split-profit-label" style="color: #64748b;">50/50</span>
+            <span class="split-status-pill" style="color: #64748b; border-color: rgba(255,255,255,0.1);">VACÍO</span>
+          </div>
+        </div>
+        <div class="split-queue-item empty-slot" style="opacity: 0.35; border-style: dashed; border-color: rgba(255,255,255,0.10);">
+          <span class="split-badge-tag" style="background: rgba(255,255,255,0.05); color: #64748b; border: 1px dashed rgba(255,255,255,0.2);">SLOT #2</span>
+          <div class="split-caller-col">
+            <span class="split-caller-name" style="color: #64748b; font-weight: 500;">—</span>
+            <span class="split-slot-title" style="color: #475569;">Esperando canje de voucher...</span>
+          </div>
+          <div class="split-status-col">
+            <span class="split-profit-label" style="color: #64748b;">50/50</span>
+            <span class="split-status-pill" style="color: #64748b; border-color: rgba(255,255,255,0.1);">VACÍO</span>
+          </div>
+        </div>
+        <div class="split-queue-item empty-slot" style="opacity: 0.25; border-style: dashed; border-color: rgba(255,255,255,0.08);">
+          <span class="split-badge-tag" style="background: rgba(255,255,255,0.05); color: #64748b; border: 1px dashed rgba(255,255,255,0.2);">SLOT #3</span>
+          <div class="split-caller-col">
+            <span class="split-caller-name" style="color: #64748b; font-weight: 500;">—</span>
+            <span class="split-slot-title" style="color: #475569;">Esperando canje de voucher...</span>
+          </div>
+          <div class="split-status-col">
+            <span class="split-profit-label" style="color: #64748b;">50/50</span>
+            <span class="split-status-pill" style="color: #64748b; border-color: rgba(255,255,255,0.1);">VACÍO</span>
           </div>
         </div>
       `;
-    }).join('');
+      return;
+    }
+
+    const itemsHtml = [];
+    for (let i = 0; i < 3; i++) {
+      const item = splits[i];
+      if (item) {
+        const is40 = item.amountUsd === 40 || (item.type && item.type.includes('40'));
+        const badgeClass = is40 ? 'split-badge-40' : 'split-badge-20';
+        const badgeText = is40 ? '👑 $40 SPLIT' : '💎 $20 SPLIT';
+        itemsHtml.push(`
+          <div class="split-queue-item">
+            <span class="split-badge-tag ${badgeClass}">${badgeText}</span>
+            <div class="split-caller-col">
+              <span class="split-caller-name">${escapeHTML(item.username)}</span>
+              <span class="split-slot-title">${escapeHTML(item.slot || 'Viewer Choice')}</span>
+            </div>
+            <div class="split-status-col">
+              <span class="split-profit-label">50/50 PROFIT</span>
+              <span class="split-status-pill">${escapeHTML(item.status || 'PENDING BUY')}</span>
+            </div>
+          </div>
+        `);
+      } else {
+        itemsHtml.push(`
+          <div class="split-queue-item empty-slot" style="opacity: 0.3; border-style: dashed;">
+            <span class="split-badge-tag" style="background: rgba(255,255,255,0.05); color: #64748b;">SLOT #${i + 1}</span>
+            <div class="split-caller-col">
+              <span class="split-caller-name" style="color: #64748b; font-weight: 500;">—</span>
+              <span class="split-slot-title" style="color: #475569;">Esperando canje...</span>
+            </div>
+            <div class="split-status-col">
+              <span class="split-profit-label" style="color: #64748b;">50/50</span>
+              <span class="split-status-pill" style="color: #64748b;">VACÍO</span>
+            </div>
+          </div>
+        `);
+      }
+    }
+    splitsListContainer.innerHTML = itemsHtml.join('');
   }
   syncPendingSplits();
 
-  // B. Historical All-Time $DIG Leaderboard Sync (Reads from real site registry)
+  // B. Historical All-Time $DIG Leaderboard Sync (Empty slots until real chat activity)
   function syncHistoricalLeaderboard() {
     if (!introLeaderboardList) return;
     let leaders = [];
     try {
-      leaders = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || 'null');
+      leaders = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || '[]');
     } catch (_) {}
 
-    if (!Array.isArray(leaders) || leaders.length === 0) {
-      leaders = [
-        { rank: 1, kickUser: '@DiggityVIP', totalDig: 14850, tourneysWon: 5, huntHits: 12, tier: 'DIAMOND' },
-        { rank: 2, kickUser: '@LuckyRoller', totalDig: 11420, tourneysWon: 4, huntHits: 9, tier: 'GOLD' },
-        { rank: 3, kickUser: '@StakeHighRoller', totalDig: 9900, tourneysWon: 3, huntHits: 8, tier: 'EMERALD' }
-      ];
-      try {
-        localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(leaders));
-      } catch (_) {}
+    // Clean any legacy mock users if present
+    if (Array.isArray(leaders)) {
+      leaders = leaders.filter(u => {
+        const name = (u.kickUser || u.username || '').toLowerCase();
+        return !name.includes('diggityvip') && !name.includes('luckyroller') && !name.includes('stakehighroller');
+      });
+    } else {
+      leaders = [];
     }
 
-    introLeaderboardList.innerHTML = leaders.slice(0, 3).map((u, i) => {
+    const slotsHtml = [];
+    for (let i = 0; i < 3; i++) {
       const rank = i + 1;
       const rankClass = rank === 1 ? 'lb-rank-1' : (rank === 2 ? 'lb-rank-2' : 'lb-rank-3');
-      const points = Number(u.totalDig || u.points || 0);
-      return `
-        <div class="leaderboard-item">
-          <div class="lb-user-info">
-            <span class="lb-rank ${rankClass}">#${rank}</span>
-            <span class="lb-name">${escapeHTML(u.kickUser || u.username)}</span>
+      const u = leaders[i];
+
+      if (u) {
+        const points = Number(u.totalDig || u.points || 0);
+        slotsHtml.push(`
+          <div class="leaderboard-item">
+            <div class="lb-user-info">
+              <span class="lb-rank ${rankClass}">#${rank}</span>
+              <span class="lb-name">${escapeHTML(u.kickUser || u.username)}</span>
+            </div>
+            <span class="lb-points">${points.toLocaleString()} $DIG</span>
           </div>
-          <span class="lb-points">${points.toLocaleString()} $DIG</span>
-        </div>
-      `;
-    }).join('');
+        `);
+      } else {
+        slotsHtml.push(`
+          <div class="leaderboard-item empty-lb-slot" style="opacity: ${0.65 - i * 0.15};">
+            <div class="lb-user-info">
+              <span class="lb-rank ${rankClass}">#${rank}</span>
+              <span class="lb-name" style="color: #64748b; font-weight: 500;">—</span>
+            </div>
+            <span class="lb-points" style="color: #64748b;">0 $DIG</span>
+          </div>
+        `);
+      }
+    }
+    introLeaderboardList.innerHTML = slotsHtml.join('');
   }
   syncHistoricalLeaderboard();
+
+  // Helper: Live Kick chat activity awards points & fills the leaderboard in real time!
+  function awardChatterActivity(username, pts = 10) {
+    if (!username) return;
+    const cleanUser = username.startsWith('@') ? username : `@${username}`;
+    let list = [];
+    try {
+      list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || '[]');
+    } catch (_) {}
+    if (!Array.isArray(list)) list = [];
+
+    // Filter legacy mock names
+    list = list.filter(u => {
+      const n = (u.kickUser || u.username || '').toLowerCase();
+      return !n.includes('diggityvip') && !n.includes('luckyroller') && !n.includes('stakehighroller');
+    });
+
+    let found = list.find(u => (u.kickUser || u.username || '').toLowerCase() === cleanUser.toLowerCase());
+    if (!found) {
+      found = {
+        rank: list.length + 1,
+        kickUser: cleanUser,
+        totalDig: pts,
+        tourneysWon: 0,
+        huntHits: 0,
+        tier: 'SILVER',
+        status: 'ACTIVE'
+      };
+      list.push(found);
+    } else {
+      found.totalDig = (Number(found.totalDig) || 0) + pts;
+    }
+
+    list.sort((a, b) => b.totalDig - a.totalDig);
+    list.forEach((item, idx) => { item.rank = idx + 1; });
+
+    try {
+      localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
+    } catch (_) {}
+
+    syncHistoricalLeaderboard();
+  }
 
   // C. "Only on Stake" Spotlight Rotation
   const EXCLUSIVE_SLOTS = [
@@ -214,17 +340,19 @@
   updateSpotlight();
   setInterval(updateSpotlight, 6000);
 
-  // D. Live Kick Pusher Chat Ticker
-  const chatMessages = [
-    { user: 'diggity_fan', text: 'Ready for the Bonus Hunt! 🎰' },
-    { user: 'stake_sniper', text: 'Code DIGGITY for VIP status 🔥' },
-    { user: 'lucky_roller', text: 'Ready for the 8-bracket tournament!' },
-    { user: 'crypto_chad', text: 'Let’s hit 10,000x on Wanted!' },
-    { user: 'spins_queen', text: 'Vouchers queued up for bonus buys today!' }
-  ];
+  // D. Live Kick Pusher Chat Ticker (Zero mock chatters — fills with real stream chat)
+  const chatMessages = [];
 
   function renderTicker() {
     if (!tickerTrackEl) return;
+    if (chatMessages.length === 0) {
+      tickerTrackEl.innerHTML = `
+        <div class="ticker-item">
+          <span style="color: #64748b; font-style: italic;">Esperando mensajes en vivo de kick.com/diggitybets... ¡Comentá en el chat para aparecer aquí!</span>
+        </div>
+      `;
+      return;
+    }
     const itemsHtml = chatMessages.map(m => `
       <div class="ticker-item">
         <strong>@${escapeHTML(m.user)}</strong>: <span>${escapeHTML(m.text)}</span>
@@ -235,34 +363,55 @@
   renderTicker();
 
   // Try live Pusher connection to Kick channel diggitybets
-  try {
-    const PUSHER_KEY = '34bf7a0ff419a2a775b9';
-    const KICK_CHANNEL_ID = 'diggitybets';
-    const ws = new WebSocket(`wss://ws-us2.pusher.com/app/${PUSHER_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`);
+  (async function connectLiveKickChat() {
+    let chatroomId = 2672891; // Verified diggitybets Kick chatroom ID
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch('https://kick.com/api/v2/channels/diggitybets', { signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.chatroom?.id) chatroomId = Number(data.chatroom.id);
+      }
+    } catch (_) {}
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        event: 'pusher:subscribe',
-        data: { channel: `chatrooms.${KICK_CHANNEL_ID}.v2` }
-      }));
-    };
+    try {
+      const PUSHER_KEY = '32cbd69e4b950bf97679';
+      const wsUrl = `wss://ws-us2.pusher.app/app/${PUSHER_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
+      const ws = new WebSocket(wsUrl);
 
-    ws.onmessage = (msg) => {
-      try {
-        const payload = JSON.parse(msg.data);
-        if (payload.event === 'App\\Events\\ChatMessageEvent') {
-          const chatData = JSON.parse(payload.data);
-          const username = chatData.sender?.username || 'Viewer';
-          const content = chatData.content || '';
-          if (content && !content.startsWith('!')) {
-            chatMessages.unshift({ user: username, text: content.slice(0, 60) });
-            if (chatMessages.length > 20) chatMessages.pop();
-            renderTicker();
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          event: 'pusher:subscribe',
+          data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
+        }));
+      };
+
+      ws.onmessage = (msg) => {
+        try {
+          const payload = JSON.parse(msg.data);
+          if (payload.event === 'App\\Events\\ChatMessageEvent' && payload.data) {
+            const chatData = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
+            const username = chatData.sender?.username || '';
+            const content = String(chatData.content || '').trim();
+            if (username && content && !content.startsWith('!')) {
+              chatMessages.unshift({ user: username, text: content.slice(0, 60) });
+              if (chatMessages.length > 20) chatMessages.pop();
+              renderTicker();
+
+              // Real chat activity fills the leaderboard live on screen!
+              awardChatterActivity(username, 10);
+            }
           }
-        }
-      } catch (_) {}
-    };
-  } catch (_) {}
+        } catch (_) {}
+      };
+
+      ws.onclose = () => {
+        setTimeout(connectLiveKickChat, 6000);
+      };
+    } catch (_) {}
+  })();
 
   // BroadcastChannel & Storage Event Listeners
   if (typeof BroadcastChannel !== 'undefined') {
