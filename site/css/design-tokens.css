@@ -1,0 +1,96 @@
+/**
+ * HuntHub / DiggityBets — Design Tokens (Elite Dark Minimalist DNA)
+ * Extracted from Linear, Raycast, Vercel, Stripe, Kraken, 1win & Emil Kowalski / Apple motion standards.
+ */
+
+:root {
+  /* ========================================================
+     1. SURFACE LUMINANCE LADDER
+     Separation by luminance delta rather than arbitrary heavy borders
+     ======================================================== */
+  --canvas: #06080d;           /* Deep dark void / viewport background */
+  --surface-1: #0b0f19;         /* Section primary canvas */
+  --surface-2: #111624;         /* Cards, topbar, side panels */
+  --surface-3: #171d2e;         /* Elevated popovers, dropdowns, modal dialogs */
+  --surface-hover: #1e263a;     /* Soft hover surface */
+  --surface-active: rgba(83, 252, 24, 0.12); /* Clean active tint */
+
+  /* Legacy surface aliases */
+  --bg-dark: var(--canvas);
+  --bg-surface: var(--surface-1);
+  --bg-card: rgba(17, 22, 36, 0.76);
+  --bg-card-hover: rgba(30, 38, 58, 0.88);
+
+  /* ========================================================
+     2. SPECULAR HAIRLINE BORDERS
+     Subtle 1px specular reflections (0.06 to 0.08 alpha)
+     Never thick opaque borders, never blurry oversaturated neon
+     ======================================================== */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-specular: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-active: #53fc18;
+  --border-gold: rgba(255, 215, 0, 0.28);
+  --border-kick: rgba(83, 252, 24, 0.28);
+  --border-cyan: rgba(0, 229, 255, 0.25);
+
+  /* ========================================================
+     3. TEXT OPACITY & EMPHASIS HIERARCHY
+     Pure high/med/low hierarchy for crisp reading contrast
+     ======================================================== */
+  --text-high: #ffffff;
+  --text-med: rgba(255, 255, 255, 0.62);
+  --text-low: rgba(255, 255, 255, 0.38);
+
+  --text-main: var(--text-high);
+  --text-muted: #9aa1b1;
+  --text-dim: #7a869e;
+
+  /* ========================================================
+     4. BRAND ACCENTS (Restrained, purposeful)
+     ======================================================== */
+  --kick-green: #53fc18;
+  --kick-glow: rgba(83, 252, 24, 0.22);
+  --gold: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.20);
+  --cyan: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.20);
+  --magenta: #ff2a5f;
+  --magenta-glow: rgba(255, 42, 95, 0.25);
+
+  /* ========================================================
+     5. TYPOGRAPHY & LETTER-SPACING
+     Display negative tracking for crisp luxury headlines
+     ======================================================== */
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-sans: 'Outfit', sans-serif;
+  --tracking-display-xl: -0.035em;
+  --tracking-display-lg: -0.025em;
+  --tracking-heading: -0.02em;
+  --tracking-title: -0.01em;
+  --tracking-body: 0;
+
+  /* ========================================================
+     6. MOTION & SPRINGS (Emil Kowalski / Apple Fluid)
+     Snappy deceleration with momentum carry
+     ======================================================== */
+  --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 200ms;
+  --transition-fast: 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-smooth: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ========================================================
+     7. RADII & SHADOWS
+     Whisper-level physical elevation
+     ======================================================== */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 16px 48px -4px rgba(0, 0, 0, 0.75);
+}
