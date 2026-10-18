@@ -38,7 +38,7 @@ window.switchView = function(targetId) {
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
+  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -86,6 +86,7 @@ window.switchView = function(targetId) {
     '#battle': '⚔️ 1v1 BATTLE & KING OF THE HILL',
     '#tournament': '🏆 8-BRACKET TOURNAMENT',
     '#bonushunt': '💎 BONUS HUNT TRACKER',
+    '#slot-intel': '🔥 SLOT RADAR, ENGINE DNA & VAULT',
     '#store': '🎁 REWARDS STORE & RAFFLES',
     '#leaderboard': '📊 WAGER LEADERBOARD',
     '#profile': '👤 USER PROFILE & VERIFICATION',
@@ -136,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('houseGames', () => window.houseGames && window.houseGames.init());
   safeInit('tournamentPrediction', () => window.tournamentPrediction && window.tournamentPrediction.init());
   safeInit('bonusHunt', () => window.bonusHunt && window.bonusHunt.init());
+  safeInit('diggityIntelSuite', () => window.diggityIntelSuite && window.diggityIntelSuite.init());
   safeInit('stakeGamesSwitcher', initStakeGamesSwitcher);
   safeInit('chatCommandHelpers', initChatCommandHelpers);
   safeInit('provablyFairAuditHub', initProvablyFairAuditHub);

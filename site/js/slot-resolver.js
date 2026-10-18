@@ -672,14 +672,215 @@
     return url;
   }
 
+  var NUMBER_WORD_TO_DIGIT = {
+    'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+    'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+    'ten': '10', 'hundred': '100', 'thousand': '1000',
+    'uno': '1', 'dos': '2', 'tres': '3', 'cuatro': '4', 'cinco': '5',
+    'seis': '6', 'siete': '7', 'ocho': '8', 'nueve': '9', 'diez': '10', 'mil': '1000',
+    'ii': '2', 'iii': '3', 'iv': '4'
+  };
+
+  var DIGIT_TO_WORD = {
+    '666': 'sixsixsix',
+    '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
+    '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten'
+  };
+
+  function expandNumberWords(str) {
+    if (!str || typeof str !== 'string') return '';
+    var s = str.toLowerCase().trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Special compound patterns ("six six six" -> "666" and "sixsixsix")
+    s = s.replace(/\b(six|seis)\s*(six|seis)\s*(six|seis)\b/g, '666 sixsixsix');
+    s = s.replace(/\b666\b/g, '666 sixsixsix');
+    s = s.replace(/\b(one|un)\s+thousand\b/g, '1000');
+    var tokens = s.split(/[^a-z0-9]+/).filter(Boolean);
+    var expanded = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var t = tokens[i];
+      expanded.push(t);
+      if (NUMBER_WORD_TO_DIGIT[t] && expanded.indexOf(NUMBER_WORD_TO_DIGIT[t]) === -1) {
+        expanded.push(NUMBER_WORD_TO_DIGIT[t]);
+      }
+      if (DIGIT_TO_WORD[t] && expanded.indexOf(DIGIT_TO_WORD[t]) === -1) {
+        expanded.push(DIGIT_TO_WORD[t]);
+      }
+    }
+    return expanded.join(' ');
+  }
+
+  function tokenizeSmart(str) {
+    var exp = expandNumberWords(str);
+    var stopWords = { 'the': 1, 'of': 1, 'a': 1, 'and': 1, 'in': 1, 'to': 1, 'el': 1, 'de': 1, 'la': 1 };
+    return exp.split(/\s+/).filter(function(w) {
+      return w.length > 0 && !stopWords[w];
+    });
+  }
+
+  function getAllCatalogSlots() {
+    var ext = (global.HUNTHUB_CURATED_SLOTS && Array.isArray(global.HUNTHUB_CURATED_SLOTS))
+      ? global.HUNTHUB_CURATED_SLOTS
+      : (global.CasinoSlotsCatalog && Array.isArray(global.CasinoSlotsCatalog) ? global.CasinoSlotsCatalog : []);
+    if (ext.length === 0) return CURATED_SLOTS.slice();
+    var seen = {};
+    var combined = [];
+    for (var i = 0; i < CURATED_SLOTS.length; i++) {
+      var c = CURATED_SLOTS[i];
+      seen[normalizeKey(c.name)] = true;
+      combined.push(c);
+    }
+    for (var j = 0; j < ext.length; j++) {
+      var e = ext[j];
+      if (!e || !e.name) continue;
+      var k = normalizeKey(e.name);
+      if (!seen[k]) {
+        seen[k] = true;
+        combined.push(e);
+      }
+    }
+    return combined;
+  }
+
+  function scoreSlotAgainstQuery(slot, rawQuery, queryClean, queryTokens) {
+    if (!slot || !slot.name) return 0;
+    var nameKey = normalizeKey(slot.name);
+    var provKey = normalizeKey(slot.provider || '');
+    if (nameKey === queryClean) return 1000;
+    if (slot.id === queryClean || slot.slug === queryClean) return 980;
+    if (nameKey.indexOf(queryClean) === 0) return 850;
+    if (nameKey.indexOf(queryClean) !== -1) return 720;
+
+    // Number-word & token-order-independent scoring
+    var slotExpanded = expandNumberWords(slot.name + ' ' + (slot.provider || ''));
+    var slotKeyExpanded = normalizeKey(slotExpanded);
+    if (slotKeyExpanded.indexOf(queryClean) !== -1) return 680;
+
+    if (queryTokens.length > 0) {
+      var matchedTokens = 0;
+      for (var i = 0; i < queryTokens.length; i++) {
+        var qt = queryTokens[i];
+        if (slotExpanded.indexOf(qt) !== -1 || nameKey.indexOf(qt) !== -1 || provKey.indexOf(qt) !== -1) {
+          matchedTokens++;
+        }
+      }
+      if (matchedTokens === queryTokens.length) {
+        return 600 + (matchedTokens * 25) - Math.min(40, Math.abs(nameKey.length - queryClean.length));
+      }
+      if (queryTokens.length >= 2 && matchedTokens >= queryTokens.length - 1) {
+        return 320 + (matchedTokens * 20);
+      }
+    }
+    return 0;
+  }
+
+  function smartSearch(query, limit) {
+    var maxResults = limit || 12;
+    var all = getAllCatalogSlots();
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return all.slice(0, maxResults);
+    }
+    var raw = query.trim();
+    var clean = normalizeKey(expandNumberWords(raw)) || normalizeKey(raw);
+    var tokens = tokenizeSmart(raw);
+
+    // Check direct alias first
+    var aliasTarget = ALIAS_MAP[normalizeKey(raw)] || ALIAS_MAP[raw.toLowerCase().trim()];
+    var scored = [];
+    for (var i = 0; i < all.length; i++) {
+      var s = all[i];
+      var sc = scoreSlotAgainstQuery(s, raw, clean, tokens);
+      if (aliasTarget && (s.id === aliasTarget || s.slug === aliasTarget)) {
+        sc = Math.max(sc, 1100);
+      }
+      if (sc > 0) {
+        scored.push({ slot: s, score: sc });
+      }
+    }
+    scored.sort(function(a, b) { return b.score - a.score; });
+    return scored.slice(0, maxResults).map(function(item) {
+      var es = item.slot;
+      var resolvedImg = (!es.image || isLegacyBrokenUrl(es.image))
+        ? generateDataUriCard(es.name, es.provider, es.color)
+        : es.image;
+      return {
+        id: es.id || es.slug || slugify(es.name),
+        name: es.name,
+        slug: es.slug || slugify(es.name),
+        provider: es.provider || 'Casino',
+        image: resolvedImg,
+        maxWin: es.maxWin || '10,000x',
+        rtp: es.rtp || '96.35%',
+        tier: es.tier || '1',
+        category: es.category,
+        badge: es.badge,
+        color: es.color
+      };
+    });
+  }
+
+  function parseMaxWinNum(str) {
+    if (!str) return 10000;
+    var n = parseFloat(String(str).replace(/[^0-9.]/g, ''));
+    return isNaN(n) || n <= 0 ? 10000 : n;
+  }
+
+  function parseRtpNum(str) {
+    if (!str) return 96.30;
+    var n = parseFloat(String(str).replace(/[^0-9.]/g, ''));
+    return isNaN(n) || n < 80 || n > 99.9 ? 96.30 : n;
+  }
+
+  function findMathTwins(slotOrName, limit) {
+    var base = resolve(slotOrName);
+    var baseRtp = parseRtpNum(base.rtp);
+    var baseMax = parseMaxWinNum(base.maxWin);
+    var baseKey = normalizeKey(base.name);
+    var all = getAllCatalogSlots();
+    var candidates = [];
+
+    for (var i = 0; i < all.length; i++) {
+      var c = all[i];
+      if (!c || !c.name || normalizeKey(c.name) === baseKey) continue;
+      var cRtp = parseRtpNum(c.rtp);
+      var cMax = parseMaxWinNum(c.maxWin);
+      var rtpDiff = Math.abs(baseRtp - cRtp);
+      var maxRatio = Math.max(baseMax, cMax) / Math.max(1, Math.min(baseMax, cMax));
+
+      // Compute mathematical DNA similarity (0 - 99.8%)
+      var sim = 100 - (rtpDiff * 14) - (Math.log10(maxRatio) * 28);
+      if (c.provider && base.provider && c.provider.toLowerCase() !== base.provider.toLowerCase()) {
+        sim += 3.5; // Cross-studio mathematical clone bonus
+      }
+      sim = Math.max(55, Math.min(99.6, sim));
+      candidates.push({
+        slot: resolve(c),
+        similarity: Number(sim.toFixed(1)),
+        rtpDelta: Number((cRtp - baseRtp).toFixed(2)),
+        sharedCap: cMax === baseMax
+      });
+    }
+
+    candidates.sort(function(a, b) { return b.similarity - a.similarity; });
+    return candidates.slice(0, limit || 6);
+  }
+
   function fuzzyMatch(query) {
     if (!query || typeof query !== 'string') return null;
-    var clean = normalizeKey(query);
+    var raw = query.trim();
+    var clean = normalizeKey(raw);
     if (!clean) return null;
 
+    // 0. Number-word normalized alias ("six six six" -> "666")
+    var expandedRaw = expandNumberWords(raw);
+    if (expandedRaw.indexOf('666') !== -1 || expandedRaw.indexOf('sixsixsix') !== -1) {
+      var sixMatch = CURATED_SLOTS.find(function(s) { return s.id === 'sixsixsix'; });
+      if (sixMatch) return sixMatch;
+    }
+
     // 1. Alias direct
-    if (ALIAS_MAP[clean]) {
-      var targetId = ALIAS_MAP[clean];
+    if (ALIAS_MAP[clean] || ALIAS_MAP[raw.toLowerCase()]) {
+      var targetId = ALIAS_MAP[clean] || ALIAS_MAP[raw.toLowerCase()];
       var match = CURATED_SLOTS.find(function(s) { return s.id === targetId; });
       if (match) return match;
     }
@@ -701,44 +902,10 @@
       }
     }
 
-    var minContainedLen = Math.max(5, Math.floor(clean.length * 0.6));
-
-    // 4. Substring match in curated slots
-    for (var j = 0; j < CURATED_SLOTS.length; j++) {
-      var cs = CURATED_SLOTS[j];
-      var k = normalizeKey(cs.name);
-      if (k.indexOf(clean) !== -1 || (k.length >= minContainedLen && clean.indexOf(k) !== -1)) {
-        return cs;
-      }
-    }
-
-    // 5. Extended search in window.HUNTHUB_CURATED_SLOTS or window.CasinoSlotsCatalog if loaded
-    var ext = (global.HUNTHUB_CURATED_SLOTS && Array.isArray(global.HUNTHUB_CURATED_SLOTS))
-      ? global.HUNTHUB_CURATED_SLOTS
-      : (global.CasinoSlotsCatalog && Array.isArray(global.CasinoSlotsCatalog) ? global.CasinoSlotsCatalog : []);
-
-    for (var e = 0; e < ext.length; e++) {
-      var es = ext[e];
-      if (!es || !es.name) continue;
-      var ek = normalizeKey(es.name);
-      if (ek === clean || ek.indexOf(clean) !== -1 || (ek.length >= minContainedLen && clean.indexOf(ek) !== -1)) {
-        var resolvedImg = (!es.image || isLegacyBrokenUrl(es.image))
-          ? generateDataUriCard(es.name, es.provider, es.color)
-          : es.image;
-        return {
-          id: es.id || es.slug || slugify(es.name),
-          name: es.name,
-          slug: es.slug || slugify(es.name),
-          provider: es.provider || 'Casino',
-          image: resolvedImg,
-          maxWin: es.maxWin || '10,000x',
-          rtp: es.rtp || '96.50%',
-          tier: es.tier || '2',
-          category: es.category,
-          badge: es.badge,
-          color: es.color
-        };
-      }
+    // 4. Smart token-order & number-word search across full catalog
+    var smartMatches = smartSearch(raw, 1);
+    if (smartMatches && smartMatches.length > 0) {
+      return smartMatches[0];
     }
 
     return null;
@@ -829,6 +996,10 @@
   global.SlotResolver = {
     resolve: resolve,
     fuzzyMatch: fuzzyMatch,
+    smartSearch: smartSearch,
+    findMathTwins: findMathTwins,
+    expandNumberWords: expandNumberWords,
+    getAllCatalogSlots: getAllCatalogSlots,
     resolveSlotImageUrl: resolveSlotImageUrl,
     generateDataUriCard: generateDataUriCard,
     getCuratedCatalog: function() { return CURATED_SLOTS.slice(); },
