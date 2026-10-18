@@ -1662,7 +1662,8 @@ class UserStoreController {
                 username: this.username,
                 voucherTitle: itemName,
                 costPoints: cost,
-                stakeVerified: this.stakeVerified
+                stakeVerified: this.stakeVerified,
+                deviceHash: (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '')
               })
             });
             if (!res.ok) {

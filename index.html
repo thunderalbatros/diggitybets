@@ -48,8 +48,44 @@
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "USD"
-    }
-  }
+  <!-- Global Security & XSS Sanitization Shield (Zero-Trust) -->
+  <script>
+    window.escapeHTML = function(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        try {
+          const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+          if (urlStr.startsWith('/api/') || urlStr.includes('/api/')) {
+            options = options || {};
+            options.headers = options.headers || {};
+            const devHash = localStorage.getItem('hunthub_device_hash') || (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '');
+            if (devHash) {
+              if (options.headers instanceof Headers) {
+                if (!options.headers.has('x-device-fingerprint')) options.headers.set('x-device-fingerprint', devHash);
+              } else if (Array.isArray(options.headers)) {
+                if (!options.headers.some(([k]) => k.toLowerCase() === 'x-device-fingerprint')) {
+                  options.headers.push(['x-device-fingerprint', devHash]);
+                }
+              } else if (typeof options.headers === 'object') {
+                if (!options.headers['x-device-fingerprint'] && !options.headers['X-Device-Fingerprint']) {
+                  options.headers['x-device-fingerprint'] = devHash;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+        return originalFetch.call(this, url, options);
+      };
+    })();
   </script>
 </head>
 <body>
