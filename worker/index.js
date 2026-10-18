@@ -110,9 +110,24 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 
+function isStakeCompanionHost(host) {
+  return (
+    host === 'stake.com' || host.endsWith('.stake.com') ||
+    host === 'stake.krd' || host.endsWith('.stake.krd') ||
+    host === 'stake.us' || host.endsWith('.stake.us') ||
+    host === 'stake.bet' || host.endsWith('.stake.bet') ||
+    host === 'stake.bz' || host.endsWith('.stake.bz') ||
+    host === 'stake.ac' || host.endsWith('.stake.ac') ||
+    host === 'stake.games' || host.endsWith('.stake.games') ||
+    host === 'stake.pet' || host.endsWith('.stake.pet') ||
+    /^stake\d*\.[a-z]+$/i.test(host)
+  );
+}
+
 function resolveTrustedOrigin(request) {
   const origin = request.headers.get('origin') || '';
   if (!origin) return 'https://diggitybets.vip';
+  if (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://')) return origin;
   try {
     const u = new URL(origin);
     const host = u.hostname.toLowerCase();
@@ -123,7 +138,8 @@ function resolveTrustedOrigin(request) {
       host === 'diggitybets.pages.dev' ||
       host.endsWith('.workers.dev') ||
       host === 'localhost' ||
-      host === '127.0.0.1'
+      host === '127.0.0.1' ||
+      isStakeCompanionHost(host)
     ) {
       return origin;
     }
@@ -136,6 +152,7 @@ function isSameOrTrustedOrigin(request) {
   const referer = request.headers.get('referer') || '';
   const checkUrl = origin || referer;
   if (!checkUrl) return true; // Same-origin or direct server/OBS request without cross-site Origin
+  if (checkUrl.startsWith('chrome-extension://') || checkUrl.startsWith('moz-extension://')) return true;
   try {
     const u = new URL(checkUrl);
     const host = u.hostname.toLowerCase();
@@ -146,7 +163,8 @@ function isSameOrTrustedOrigin(request) {
       host === 'diggitybets.pages.dev' ||
       host.endsWith('.workers.dev') ||
       host === 'localhost' ||
-      host === '127.0.0.1'
+      host === '127.0.0.1' ||
+      isStakeCompanionHost(host)
     );
   } catch (_) {
     return false;
@@ -1152,6 +1170,65 @@ export default {
       }
     }
 
+    // 13b. Diggity Stake Companion Cross-Origin Auto-Capture Bridge (POST JSON + GET Image Beacon)
+    if (url.pathname === '/api/companion/capture') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      try {
+        let payload = {};
+        if (request.method === 'POST') {
+          const rawText = await request.text();
+          try { payload = JSON.parse(rawText); } catch (_) {}
+        } else {
+          payload = {
+            slotName: url.searchParams.get('slot') || url.searchParams.get('slotName') || '',
+            betSize: parseFloat(url.searchParams.get('bet') || url.searchParams.get('betSize') || '2') || 2.0,
+            bonusTier: url.searchParams.get('tier') || url.searchParams.get('bonusTier') || '3S',
+            caller: url.searchParams.get('caller') || '@tarkansky',
+            ts: Number(url.searchParams.get('ts') || Date.now())
+          };
+        }
+
+        const slotName = String(payload.slotName || '').trim().slice(0, 120);
+        if (slotName) {
+          const current = await readOverlaySyncState();
+          current.companionCaptures = Array.isArray(current.companionCaptures) ? current.companionCaptures : [];
+          const captureItem = {
+            action: 'AUTO_CAPTURE_BONUS',
+            slotName,
+            betSize: parseFloat(payload.betSize || 2.0) || 2.0,
+            bonusTier: String(payload.bonusTier || '3S').toUpperCase().slice(0, 16),
+            caller: String(payload.caller || '@tarkansky').trim().slice(0, 64),
+            ts: Number(payload.ts || Date.now())
+          };
+          if (!current.companionCaptures.some(c => c.ts === captureItem.ts)) {
+            current.companionCaptures.push(captureItem);
+            if (current.companionCaptures.length > 20) {
+              current.companionCaptures = current.companionCaptures.slice(-20);
+            }
+            await writeOverlaySyncState(current);
+          }
+        }
+
+        if (url.searchParams.get('beacon') === '1') {
+          // 1x1 transparent GIF so <img src="..."> beacons bypass strict connect-src CSP on Stake mirrors
+          const gifBytes = new Uint8Array([
+            71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
+          ]);
+          return new Response(gifBytes, {
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'image/gif',
+              'Cache-Control': 'no-store, no-cache, must-revalidate'
+            }
+          });
+        }
+
+        return new Response(JSON.stringify({ ok: true, captured: Boolean(slotName) }), { headers: noCacheHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
+      }
+    }
+
     if (url.pathname === '/api/sync/state') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
@@ -1164,7 +1241,8 @@ export default {
           raffle_tickets: [],
           alt_clusters: [],
           celebrationEvent: syncState.celebrationEvent || null,
-          overlayEvents: syncState.overlayEvents || {}
+          overlayEvents: syncState.overlayEvents || {},
+          companionCaptures: Array.isArray(syncState.companionCaptures) ? syncState.companionCaptures : []
         };
         if (env.DB) {
           try {

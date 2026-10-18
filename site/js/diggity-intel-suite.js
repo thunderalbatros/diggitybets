@@ -2391,13 +2391,189 @@
       }
     }
 
+    _parseStakeSlotInput(rawVal) {
+      const raw = String(rawVal || '').trim();
+      if (!raw) return 'Six Six Six';
+      if (/stake\.[a-z]+/i.test(raw) || raw.includes('/casino/games/') || raw.includes('/games/')) {
+        const m = raw.match(/\/(?:casino\/)?games\/([a-z0-9-_]+)/i);
+        if (m && m[1]) {
+          const clean = m[1]
+            .replace(/^(pragmatic-play|pragmatic|hacksaw-gaming|hacksaw|nolimit-city|nolimit|push-gaming|push|relax-gaming|relax|play-n-go|playngo|bgaming|avatarux|elk-studios|elk|thunderkick|print-studios|backseat-gaming|bullshark-games|slotmill|octoplay|peter-sons|red-tiger|netent|big-time-gaming|btg|spinomenal|evoplay|wazdan|gamomat|endorphina|kalamba|booming-games|rubyplay|quickspin|yggdrasil|blueprint| Playson|playson|3-oaks|3oaks|stake-originals)-/i, '')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, (l) => l.toUpperCase());
+          if (clean) return clean;
+        }
+      }
+      return raw;
+    }
+
+    getStakeCompanionConsoleScript() {
+      const originUrl = window.location.origin.includes('localhost') ? 'https://diggitybets.vip' : window.location.origin;
+      const callerDefault = (document.getElementById('cp-autohunt-caller-input')?.value || (window.userStore && window.userStore.username) || '@tarkansky').trim();
+      const betDefault = parseFloat(document.getElementById('cp-autohunt-bet-input')?.value || '2.00') || 2.0;
+
+      return `(function(){
+  var old=document.getElementById('diggity-stake-companion-hud');if(old)old.remove();
+  function detectSlot(){
+    var m=location.pathname.match(/\\/(?:casino\\/)?games\\/([a-z0-9-_]+)/i);
+    if(m&&m[1]){
+      return m[1].replace(/^(pragmatic-play|pragmatic|hacksaw-gaming|hacksaw|nolimit-city|nolimit|push-gaming|push|relax-gaming|relax|play-n-go|playngo|bgaming|avatarux|elk-studios|elk|thunderkick|print-studios|backseat-gaming|bullshark-games|slotmill|octoplay|red-tiger|netent|big-time-gaming|btg|wazdan|endorphina|quickspin|yggdrasil|stake-originals)-/i,'').replace(/-/g,' ').replace(/\\b\\w/g,function(l){return l.toUpperCase();});
+    }
+    var h=document.querySelector('h1,[data-testid="game-name"]');
+    return h&&h.textContent.trim()?h.textContent.trim():'Six Six Six';
+  }
+  var hud=document.createElement('div');
+  hud.id='diggity-stake-companion-hud';
+  hud.style.cssText='position:fixed;bottom:18px;left:18px;z-index:2147483647;background:rgba(10,15,26,0.96);border:1.5px solid #53fc18;border-radius:12px;padding:10px 14px;color:#fff;font-family:system-ui,sans-serif;font-size:11.5px;box-shadow:0 12px 32px rgba(0,0,0,0.85);backdrop-filter:blur(10px);min-width:270px;';
+  hud.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-weight:900;color:#53fc18;letter-spacing:0.5px;">⚡ DIGGITY AUTO-HUNT HUD</span><span style="font-size:9.5px;color:#94a3b8;">Alt+B = 3S · Alt+S = SUPER</span></div>'
+    +'<div style="margin-bottom:6px;"><input id="diggity-ext-slot" type="text" value="'+detectSlot().replace(/"/g,'&quot;')+'" style="width:100%;background:#0f172a;border:1px solid rgba(83,252,24,0.45);border-radius:6px;color:#fff;padding:5px 8px;font-size:11.5px;font-weight:800;box-sizing:border-box;"></div>'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;">'
+    +'<input id="diggity-ext-caller" type="text" value="${callerDefault.replace(/"/g, '')}" placeholder="@tarkansky" style="width:96px;background:#0f172a;border:1px solid rgba(255,255,255,0.16);border-radius:6px;color:#38bdf8;padding:4px 6px;font-size:11px;font-weight:700;">'
+    +'<span style="color:#94a3b8;font-size:10px;">Bet $:</span>'
+    +'<input id="diggity-ext-bet" type="number" step="0.2" min="0.1" value="${betDefault.toFixed(2)}" style="width:66px;background:#0f172a;border:1px solid rgba(255,255,255,0.16);border-radius:6px;color:#ffd700;padding:4px 6px;font-size:11px;font-weight:800;">'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">'
+    +'<button type="button" data-tier="3S" style="background:rgba(83,252,24,0.18);border:1px solid #53fc18;color:#53fc18;border-radius:6px;padding:5px 4px;font-size:10.5px;font-weight:900;cursor:pointer;">+3S</button>'
+    +'<button type="button" data-tier="4S" style="background:rgba(56,189,248,0.18);border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;padding:5px 4px;font-size:10.5px;font-weight:900;cursor:pointer;">+4S</button>'
+    +'<button type="button" data-tier="5S" style="background:rgba(250,204,21,0.18);border:1px solid #facc15;color:#fde047;border-radius:6px;padding:5px 4px;font-size:10.5px;font-weight:900;cursor:pointer;">+5S</button>'
+    +'<button type="button" data-tier="SUPER" style="background:rgba(244,63,94,0.2);border:1px solid #f43f5e;color:#fda4af;border-radius:6px;padding:5px 4px;font-size:10.5px;font-weight:900;cursor:pointer;">+SUPER</button>'
+    +'</div>'
+    +'<div id="diggity-ext-status" style="margin-top:6px;font-size:10px;color:#53fc18;">✓ Conectado a DiggityBets Control Panel (Alt+B / Alt+S activos)</div>';
+  document.body.appendChild(hud);
+  var lastPath=location.pathname;
+  setInterval(function(){
+    if(location.pathname!==lastPath){
+      lastPath=location.pathname;
+      var s=document.getElementById('diggity-ext-slot');
+      if(s)s.value=detectSlot();
+    }
+  },1200);
+  function sendCapture(tier){
+    var sEl=document.getElementById('diggity-ext-slot');
+    var bEl=document.getElementById('diggity-ext-bet');
+    var cEl=document.getElementById('diggity-ext-caller');
+    var slot=(sEl&&sEl.value.trim())||detectSlot();
+    var bet=bEl?(parseFloat(bEl.value)||2.0):2.0;
+    var caller=(cEl&&cEl.value.trim())||'${callerDefault.replace(/"/g, '')}';
+    var p={source:'DIGGITY_STAKE_COMPANION',action:'AUTO_CAPTURE_BONUS',slotName:slot,betSize:bet,bonusTier:tier||'3S',caller:caller,ts:Date.now()};
+    try{if(window.opener&&!window.opener.closed)window.opener.postMessage(p,'*');}catch(e){}
+    try{var img=new Image();img.src='${originUrl}/api/companion/capture?beacon=1&slot='+encodeURIComponent(slot)+'&bet='+encodeURIComponent(bet)+'&tier='+encodeURIComponent(p.bonusTier)+'&caller='+encodeURIComponent(caller)+'&ts='+p.ts;}catch(e){}
+    try{fetch('${originUrl}/api/companion/capture',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(p)}).catch(function(){});}catch(e){}
+    var st=document.getElementById('diggity-ext-status');
+    if(st){st.textContent='⚡ Enviado a Control Panel: '+slot+' ('+p.bonusTier+' @ $'+bet.toFixed(2)+')';st.style.color='#53fc18';}
+  }
+  hud.querySelectorAll('button[data-tier]').forEach(function(btn){
+    btn.onclick=function(){sendCapture(btn.getAttribute('data-tier'));};
+  });
+  if(window._diggityKeyHandler)window.removeEventListener('keydown',window._diggityKeyHandler,true);
+  window._diggityKeyHandler=function(e){
+    if(e.altKey&&(e.code==='KeyB'||e.key==='b'||e.key==='B')){e.preventDefault();sendCapture('3S');}
+    else if(e.altKey&&(e.code==='Digit4'||e.key==='4')){e.preventDefault();sendCapture('4S');}
+    else if(e.altKey&&(e.code==='Digit5'||e.key==='5')){e.preventDefault();sendCapture('5S');}
+    else if(e.altKey&&(e.code==='KeyS'||e.key==='s'||e.key==='S')){e.preventDefault();sendCapture('SUPER');}
+  };
+  window.addEventListener('keydown',window._diggityKeyHandler,true);
+})();`;
+    }
+
+    toggleSiteFloatingAutoHuntHud(forceState) {
+      let floatHud = document.getElementById('diggity-site-floating-autohunt-hud');
+      if (!floatHud) {
+        floatHud = document.createElement('div');
+        floatHud.id = 'diggity-site-floating-autohunt-hud';
+        floatHud.style.cssText = 'position:fixed;bottom:18px;left:18px;z-index:9990;background:rgba(9,13,22,0.97);border:1.5px solid #53fc18;border-radius:14px;padding:12px 15px;color:#fff;font-family:var(--font-sans,system-ui,sans-serif);font-size:11.5px;box-shadow:0 16px 40px rgba(0,0,0,0.88),0 0 22px rgba(83,252,24,0.2);backdrop-filter:blur(12px);width:310px;display:none;';
+        floatHud.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#53fc18;box-shadow:0 0 8px #53fc18;display:inline-block;"></span>
+              <strong style="font-family:var(--font-display);font-size:12px;font-weight:900;color:#53fc18;letter-spacing:0.5px;">⚡ DIGGITY AUTO-HUNT HUD</strong>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:9.5px;color:#94a3b8;font-weight:700;">Alt+B / Alt+S</span>
+              <button type="button" id="diggity-float-hud-close" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:#cbd5e1;border-radius:5px;padding:1px 6px;font-size:10px;cursor:pointer;" title="Ocultar HUD Flotante">✕</button>
+            </div>
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="font-size:9.5px;color:#94a3b8;font-weight:800;display:block;margin-bottom:2px;">🎰 SLOT O LINK DE STAKE.KRD:</label>
+            <input type="text" id="diggity-float-hud-slot" class="form-input-dark" value="Six Six Six" placeholder="Ej: Six Six Six o URL de Stake..." style="width:100%;padding:6px 8px;font-size:11.5px;font-weight:800;color:#fff;border-color:rgba(83,252,24,0.45);box-sizing:border-box;">
+          </div>
+          <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:6px;margin-bottom:8px;">
+            <div>
+              <label style="font-size:9.5px;color:#94a3b8;font-weight:800;display:block;margin-bottom:2px;">👤 CALLER:</label>
+              <input type="text" id="diggity-float-hud-caller" class="form-input-dark" value="@tarkansky" style="width:100%;padding:5px 7px;font-size:11px;font-weight:800;color:#00e5ff;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:9.5px;color:#94a3b8;font-weight:800;display:block;margin-bottom:2px;">💵 BET ($):</label>
+              <input type="number" id="diggity-float-hud-bet" class="form-input-dark" value="2.00" step="0.20" min="0.10" style="width:100%;padding:5px 7px;font-size:11px;font-weight:900;color:var(--gold);box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:7px;">
+            <button type="button" class="diggity-float-tier-btn" data-tier="3S" style="background:rgba(83,252,24,0.18);border:1px solid #53fc18;color:#53fc18;border-radius:6px;padding:6px 2px;font-family:var(--font-display);font-size:10.5px;font-weight:900;cursor:pointer;">+3S</button>
+            <button type="button" class="diggity-float-tier-btn" data-tier="4S" style="background:rgba(56,189,248,0.18);border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;padding:6px 2px;font-family:var(--font-display);font-size:10.5px;font-weight:900;cursor:pointer;">+4S</button>
+            <button type="button" class="diggity-float-tier-btn" data-tier="5S" style="background:rgba(250,204,21,0.18);border:1px solid #facc15;color:#fde047;border-radius:6px;padding:6px 2px;font-family:var(--font-display);font-size:10.5px;font-weight:900;cursor:pointer;">+5S</button>
+            <button type="button" class="diggity-float-tier-btn" data-tier="SUPER" style="background:rgba(244,63,94,0.22);border:1px solid #f43f5e;color:#fda4af;border-radius:6px;padding:6px 2px;font-family:var(--font-display);font-size:10.5px;font-weight:900;cursor:pointer;">+SUPER</button>
+          </div>
+          <div id="diggity-float-hud-status" style="font-family:var(--font-mono);font-size:10px;color:#53fc18;background:rgba(0,0,0,0.45);border-radius:5px;padding:4px 7px;">
+            ✓ Alt+B (3S) / Alt+S (SUPER) activos
+          </div>
+        `;
+        document.body.appendChild(floatHud);
+
+        const closeBtn = floatHud.querySelector('#diggity-float-hud-close');
+        if (closeBtn) closeBtn.onclick = () => this.toggleSiteFloatingAutoHuntHud(false);
+
+        const fSlot = floatHud.querySelector('#diggity-float-hud-slot');
+        const fCaller = floatHud.querySelector('#diggity-float-hud-caller');
+        const fBet = floatHud.querySelector('#diggity-float-hud-bet');
+
+        if (fSlot) {
+          fSlot.addEventListener('input', () => {
+            const cpSlot = document.getElementById('cp-autohunt-slot-input');
+            if (cpSlot) cpSlot.value = fSlot.value;
+          });
+        }
+        if (fCaller) {
+          fCaller.addEventListener('input', () => {
+            const cpCaller = document.getElementById('cp-autohunt-caller-input');
+            if (cpCaller) cpCaller.value = fCaller.value;
+          });
+        }
+        if (fBet) {
+          fBet.addEventListener('input', () => {
+            const cpBet = document.getElementById('cp-autohunt-bet-input');
+            if (cpBet) cpBet.value = fBet.value;
+          });
+        }
+
+        floatHud.querySelectorAll('.diggity-float-tier-btn').forEach(btn => {
+          btn.onclick = () => {
+            const tier = btn.getAttribute('data-tier') || '3S';
+            const slotName = this._parseStakeSlotInput(fSlot ? fSlot.value : 'Six Six Six');
+            const caller = (fCaller && fCaller.value.trim()) || '@tarkansky';
+            const betSize = fBet ? (parseFloat(fBet.value) || 2.0) : 2.0;
+            this.autoCaptureBonusToHunt({ slotName, betSize, bonusTier: tier, caller });
+          };
+        });
+      }
+
+      const nextVisible = typeof forceState === 'boolean' ? forceState : (floatHud.style.display === 'none');
+      floatHud.style.display = nextVisible ? 'block' : 'none';
+      const toggleBtn = document.getElementById('cp-btn-toggle-floating-hud');
+      if (toggleBtn) {
+        toggleBtn.textContent = nextVisible ? '📌 Ocultar HUD Flotante en Pantalla' : '📌 Mostrar HUD Flotante en Pantalla';
+      }
+    }
+
     initCompanionExtensionBridge() {
-      this._lastCapturedBonusTs = 0;
+      this._lastCapturedBonusTs = Number(localStorage.getItem('hunthub_last_companion_ts') || 0);
       const handleIncoming = (data) => {
         if (!data || data.action !== 'AUTO_CAPTURE_BONUS') return;
         const ts = Number(data.ts || 0);
-        if (ts > 0 && ts === this._lastCapturedBonusTs) return;
-        if (ts > 0) this._lastCapturedBonusTs = ts;
+        if (ts > 0 && ts <= this._lastCapturedBonusTs) return;
+        if (ts > 0) {
+          this._lastCapturedBonusTs = ts;
+          try { localStorage.setItem('hunthub_last_companion_ts', String(ts)); } catch (_) {}
+        }
         this.autoCaptureBonusToHunt(data);
       };
 
@@ -2406,27 +2582,231 @@
         this.companionChannel.onmessage = (e) => handleIncoming(e.data);
       } catch (_) {}
 
+      // Accept postMessage from same origin OR any Stake mirror (stake.krd, stake.com, etc.)
       window.addEventListener('message', (e) => {
-        if (e.origin !== window.location.origin || e.source !== window) return;
-        if (e.data && e.data.source === 'DIGGITY_STAKE_COMPANION') {
-          handleIncoming(e.data);
+        if (!e.data || e.data.source !== 'DIGGITY_STAKE_COMPANION') return;
+        let trusted = (e.origin === window.location.origin);
+        if (!trusted && e.origin) {
+          try {
+            const host = new URL(e.origin).hostname.toLowerCase();
+            trusted = host.includes('stake.') || host === 'diggitybets.vip' || host.endsWith('.diggitybets.pages.dev');
+          } catch (_) {}
         }
+        if (!trusted) return;
+        handleIncoming(e.data);
       });
 
       window.addEventListener('diggity:companion-capture', (e) => {
         if (e && e.detail) handleIncoming(e.detail);
       });
+
+      // Poll Cloud Edge companionCaptures queue every 3.5s when tab is visible so captures from stake.krd console/bookmarklet arrive automatically
+      if (!navigator.webdriver) {
+        setInterval(async () => {
+          if (document.hidden) return;
+          try {
+            const res = await fetch('/api/sync/state', { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (Array.isArray(data.companionCaptures) && data.companionCaptures.length > 0) {
+              for (const item of data.companionCaptures) {
+                handleIncoming(item);
+              }
+            }
+          } catch (_) {}
+        }, 3500);
+      }
+
+      // Bind Control Panel Embedded Auto-Hunt HUD & Buttons
+      const cpSlotInput = document.getElementById('cp-autohunt-slot-input');
+      const cpSlotDropdown = document.getElementById('cp-autohunt-slot-dropdown');
+      const cpCallerInput = document.getElementById('cp-autohunt-caller-input');
+      const cpBetInput = document.getElementById('cp-autohunt-bet-input');
+
+      const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '';
+      if (cpCallerInput && activeUser && cpCallerInput.value === '@tarkansky') {
+        cpCallerInput.value = activeUser.startsWith('@') ? activeUser : '@' + activeUser;
+      }
+
+      if (cpSlotInput) {
+        cpSlotInput.addEventListener('input', () => {
+          const rawVal = cpSlotInput.value;
+          const parsed = this._parseStakeSlotInput(rawVal);
+          if (parsed !== rawVal && (rawVal.includes('/games/') || /stake\.[a-z]+/i.test(rawVal))) {
+            cpSlotInput.value = parsed;
+          }
+          const bhSearch = document.getElementById('admin-hunt-slot-search');
+          if (bhSearch) bhSearch.value = cpSlotInput.value;
+          const fSlot = document.getElementById('diggity-float-hud-slot');
+          if (fSlot) fSlot.value = cpSlotInput.value;
+
+          if (cpSlotDropdown && window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function') {
+            const q = cpSlotInput.value.trim();
+            if (q.length < 2) {
+              cpSlotDropdown.style.display = 'none';
+              return;
+            }
+            const results = window.SlotResolver.smartSearch(q, 8) || [];
+            if (!results.length) {
+              cpSlotDropdown.style.display = 'none';
+              return;
+            }
+            cpSlotDropdown.innerHTML = results.map(s => `
+              <div class="cp-autohunt-opt" data-name="${this.escapeHTML(s.name)}" style="padding:7px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.06);">
+                <img src="${this.escapeHTML(s.image || '')}" alt="" style="width:28px;height:28px;border-radius:5px;object-fit:cover;">
+                <div style="min-width:0;flex:1;">
+                  <div style="font-size:11.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this.escapeHTML(s.name)}</div>
+                  <div style="font-size:10px;color:#94a3b8;">${this.escapeHTML(s.provider || 'Slot')}</div>
+                </div>
+              </div>
+            `).join('');
+            cpSlotDropdown.style.display = 'block';
+            cpSlotDropdown.querySelectorAll('.cp-autohunt-opt').forEach(opt => {
+              opt.onclick = () => {
+                const chosen = opt.getAttribute('data-name') || 'Six Six Six';
+                cpSlotInput.value = chosen;
+                if (bhSearch) bhSearch.value = chosen;
+                if (fSlot) fSlot.value = chosen;
+                cpSlotDropdown.style.display = 'none';
+              };
+            });
+          }
+        });
+
+        document.addEventListener('click', (ev) => {
+          if (cpSlotDropdown && !cpSlotInput.contains(ev.target) && !cpSlotDropdown.contains(ev.target)) {
+            cpSlotDropdown.style.display = 'none';
+          }
+        });
+      }
+
+      const triggerFromControlPanel = (tier, useBhInputs = false) => {
+        const bhSearch = document.getElementById('admin-hunt-slot-search');
+        const bhCaller = document.getElementById('admin-hunt-caller-input');
+        const bhBet = document.getElementById('admin-hunt-bet-input');
+
+        let rawSlot = '';
+        if (useBhInputs && bhSearch && bhSearch.value.trim()) {
+          rawSlot = bhSearch.value.trim();
+        } else if (cpSlotInput && cpSlotInput.value.trim()) {
+          rawSlot = cpSlotInput.value.trim();
+        } else if (bhSearch && bhSearch.value.trim()) {
+          rawSlot = bhSearch.value.trim();
+        } else {
+          rawSlot = 'Six Six Six';
+        }
+
+        const slotName = this._parseStakeSlotInput(rawSlot);
+        const caller = (useBhInputs && bhCaller && bhCaller.value.trim())
+          ? bhCaller.value.trim()
+          : ((cpCallerInput && cpCallerInput.value.trim()) || (bhCaller && bhCaller.value.trim()) || '@tarkansky');
+        const betSize = (useBhInputs && bhBet && parseFloat(bhBet.value))
+          ? parseFloat(bhBet.value)
+          : (parseFloat(cpBetInput?.value || bhBet?.value || '2.00') || 2.0);
+
+        this.autoCaptureBonusToHunt({
+          slotName,
+          betSize,
+          bonusTier: tier || '3S',
+          caller
+        });
+      };
+
+      document.querySelectorAll('.cp-autohunt-trigger-btn').forEach(btn => {
+        btn.onclick = () => {
+          const tier = btn.getAttribute('data-autohunt-tier') || '3S';
+          const useBh = btn.getAttribute('data-use-bh-inputs') === '1';
+          triggerFromControlPanel(tier, useBh);
+        };
+      });
+
+      const btnOpenStakeLinked = document.getElementById('cp-btn-open-stake-linked');
+      if (btnOpenStakeLinked) {
+        btnOpenStakeLinked.onclick = () => {
+          window.stakeCompanionWin = window.open('https://stake.krd/casino/home', 'diggity_stake_companion');
+          if (window.sonner) {
+            window.sonner.toast({
+              title: '🚀 Stake.krd Abierto y Vinculado',
+              message: 'Podés pegar el Script de Consola (F12) en Stake.krd o usar Alt+B / Alt+S directamente acá.',
+              type: 'green'
+            });
+          }
+        };
+      }
+
+      const copyConsoleAction = () => {
+        const scriptCode = this.getStakeCompanionConsoleScript();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(scriptCode).catch(() => {});
+        }
+        const statusEl = document.getElementById('cp-autohunt-status');
+        if (statusEl) {
+          statusEl.textContent = '📋 ¡Script copiado! Abrí stake.krd → presioná F12 (Consola) → pegalo y dale Enter.';
+          statusEl.style.color = '#00e5ff';
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: '📋 Script DIGGITY AUTO-HUNT Copiado',
+            message: 'Pegalo en la consola (F12) de stake.krd y presioná Enter para ver el HUD flotante en Stake.',
+            type: 'gold'
+          });
+        }
+      };
+
+      const btnCopyConsole = document.getElementById('cp-btn-copy-stake-console');
+      if (btnCopyConsole) btnCopyConsole.onclick = copyConsoleAction;
+      document.querySelectorAll('.cp-btn-copy-stake-console-alias').forEach(b => { b.onclick = copyConsoleAction; });
+
+      const btnToggleFloat = document.getElementById('cp-btn-toggle-floating-hud');
+      if (btnToggleFloat) btnToggleFloat.onclick = () => this.toggleSiteFloatingAutoHuntHud();
+      document.querySelectorAll('.cp-btn-open-floating-hud-alias').forEach(b => {
+        b.onclick = () => this.toggleSiteFloatingAutoHuntHud();
+      });
+
+      const bookmarkletEl = document.getElementById('cp-bookmarklet-autohunt');
+      if (bookmarkletEl) {
+        const updateBookmarkletHref = () => {
+          const oneLine = this.getStakeCompanionConsoleScript().replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ');
+          bookmarkletEl.setAttribute('href', 'javascript:' + encodeURIComponent(oneLine));
+        };
+        updateBookmarkletHref();
+        bookmarkletEl.addEventListener('mouseenter', updateBookmarkletHref);
+        bookmarkletEl.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          this.toggleSiteFloatingAutoHuntHud(true);
+          copyConsoleAction();
+        });
+      }
+
+      // Global Keyboard Shortcuts on diggitybets.vip (Alt+B = 3S, Alt+4 = 4S, Alt+5 = 5S, Alt+S = SUPER)
+      window.addEventListener('keydown', (e) => {
+        if (!e.altKey) return;
+        if (e.code === 'KeyB' || e.key === 'b' || e.key === 'B') {
+          e.preventDefault();
+          triggerFromControlPanel('3S');
+        } else if (e.code === 'Digit4' || e.key === '4') {
+          e.preventDefault();
+          triggerFromControlPanel('4S');
+        } else if (e.code === 'Digit5' || e.key === '5') {
+          e.preventDefault();
+          triggerFromControlPanel('5S');
+        } else if (e.code === 'KeyS' || e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          triggerFromControlPanel('SUPER');
+        }
+      });
     }
 
     autoCaptureBonusToHunt(payload = {}) {
-      const slotName = String(payload.slotName || 'Wanted Dead or a Wild').trim();
+      const rawName = String(payload.slotName || 'Six Six Six').trim();
+      const slotName = this._parseStakeSlotInput(rawName);
       const bet = parseFloat(payload.betSize || 2.0) || 2.0;
       const tier = String(payload.bonusTier || '3S').toUpperCase();
       const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '';
       const rawCaller = String(payload.caller || '').trim();
       const caller = (!rawCaller || rawCaller === '@StakeAutoCapture') && activeUser
         ? activeUser
-        : (rawCaller || activeUser || '@DiggityBets');
+        : (rawCaller || activeUser || '@tarkansky');
       const payout = parseFloat(payload.payout || 0) || 0;
 
       let resolved = null;
@@ -2444,6 +2824,7 @@
       let slots = [];
       try { slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]'); } catch (_) {}
 
+      const cleanCaller = caller.startsWith('@') ? caller : '@' + caller;
       slots.push({
         id: resolved.id || slotName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         name: resolved.name || slotName,
@@ -2451,7 +2832,7 @@
         bet,
         payout,
         bonusTier: tier,
-        caller: caller.startsWith('@') ? caller : '@' + caller,
+        caller: cleanCaller,
         image: resolved.image || ''
       });
 
@@ -2469,14 +2850,35 @@
         window.bonusHunt.renderMetrics();
         window.bonusHunt.renderSlotTable();
       }
-      if (window.adminHub && typeof window.adminHub.renderBonusHuntAdmin === 'function') {
-        window.adminHub.renderBonusHuntAdmin();
+      if (window.adminHub) {
+        if (typeof window.adminHub.renderBonusHuntAdmin === 'function') {
+          window.adminHub.renderBonusHuntAdmin();
+        }
+        if (typeof window.adminHub.syncAllStateToEdge === 'function') {
+          window.adminHub.syncAllStateToEdge();
+        }
       }
+      if (window.ProAudioFX && typeof window.ProAudioFX.playWinArpeggio === 'function') {
+        try { window.ProAudioFX.playWinArpeggio(); } catch (_) {}
+      }
+
+      const statusMsg = `✓ Capturada: ${resolved.name || slotName} (${tier} @ $${bet.toFixed(2)}) por ${cleanCaller} · Total: ${slots.length} bonos`;
+      const cpStatus = document.getElementById('cp-autohunt-status');
+      if (cpStatus) {
+        cpStatus.textContent = statusMsg;
+        cpStatus.style.color = '#53fc18';
+      }
+      const floatStatus = document.getElementById('diggity-float-hud-status');
+      if (floatStatus) {
+        floatStatus.textContent = statusMsg;
+        floatStatus.style.color = '#53fc18';
+      }
+
       this.renderRtpRadar();
       if (window.sonner) {
         window.sonner.toast({
           title: `⚡ Auto-Captured: ${resolved.name || slotName} (${tier})`,
-          message: `Bet $${bet.toFixed(2)} logged hands-free by ${caller.startsWith('@') ? caller : '@' + caller}!`,
+          message: `Bet $${bet.toFixed(2)} cargado al Bonus Hunt por ${cleanCaller}!`,
           type: 'green'
         });
       }

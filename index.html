@@ -3241,6 +3241,106 @@
         </div>
       </div>
 
+      <!-- 1D. DIGGITYBETS STAKE COMPANION & DIGGITY AUTO-HUNT HUD (ACTIVE IN CONTROL PANEL) -->
+      <div class="glass-panel" id="cp-stake-companion-deck" style="padding: 18px 22px; margin-bottom: 20px; border: 1.5px solid rgba(83, 252, 24, 0.55); background: linear-gradient(135deg, rgba(83, 252, 24, 0.09) 0%, rgba(10, 15, 28, 0.96) 55%, rgba(0, 229, 255, 0.07) 100%); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; align-items: stretch;">
+          <!-- Left: DiggityBets Stake Companion Setup & 1-Click Launchers -->
+          <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.18); border-color: #53fc18; color: #53fc18; font-size: 10px; font-weight: 900;">
+                  🟢 HERRAMIENTA ACTIVA · ANTI-CSP STAKE.KRD / STAKE.COM
+                </span>
+                <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.16); border-color: var(--gold); color: var(--gold); font-size: 10px; font-weight: 900;">
+                  ⌨️ ATAJOS GLOBALES: Alt+B (3S) · Alt+4 (4S) · Alt+5 (5S) · Alt+S (SUPER)
+                </span>
+              </div>
+              <h3 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
+                <span>⚡</span> DiggityBets Stake Companion — Auto-Capture Bridge
+              </h3>
+              <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin: 0;">
+                Capturá bonos manos libres apretando <strong style="color:#53fc18;">Alt+B</strong> (3S) o <strong style="color:var(--gold);">Alt+S</strong> (Super) directamente acá en el <strong>Control Panel</strong> o dentro de <strong style="color:#00e5ff;">stake.krd / stake.com</strong>. Incluye puente Cloud + PostMessage que evita cualquier bloqueo de consola de Stake.
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" id="cp-btn-open-stake-linked" class="btn-stake-primary" style="padding: 9px 14px; font-size: 12px; font-weight: 900; background: linear-gradient(135deg, #53fc18 0%, #10b981 100%); color: #050811;">
+                🚀 1. Abrir Stake.krd Vinculado
+              </button>
+              <button type="button" id="cp-btn-copy-stake-console" class="btn-stake-secondary" style="padding: 9px 14px; font-size: 12px; font-weight: 900; border-color: #00e5ff; color: #00e5ff;">
+                📋 2. Copiar Script Consola (Stake.krd)
+              </button>
+              <button type="button" id="cp-btn-toggle-floating-hud" class="btn-chat-toggle" style="padding: 9px 13px; font-size: 11.5px; font-weight: 800; border-color: var(--gold); color: var(--gold);">
+                📌 Mostrar HUD Flotante en Pantalla
+              </button>
+              <a id="cp-bookmarklet-autohunt" href="#control-panel" title="Arrastrá este botón a tu barra de marcadores de Opera GX y hacé clic cuando estés en stake.krd" style="display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; border-radius: 8px; background: rgba(168, 85, 247, 0.16); border: 1px dashed #c084fc; color: #e9d5ff; font-family: var(--font-display); font-size: 11px; font-weight: 800; text-decoration: none; cursor: grab;">
+                🔖 Arrastrar a Marcadores: ⚡ DIGGITY AUTO-HUNT HUD
+              </a>
+            </div>
+
+            <div style="font-size: 11px; color: #94a3b8; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; padding: 8px 12px;">
+              💡 <strong style="color:#fff;">¿Cómo usarlo en Stake.krd sin extensión?</strong> Hacé clic en <strong style="color:#00e5ff;">📋 2. Copiar Script Consola</strong>, abrí <code style="color:#53fc18;">stake.krd</code>, presioná <code style="color:var(--gold);">F12 → Console</code>, pegalo y dale Enter (o arrastrá el botón violeta <strong style="color:#e9d5ff;">🔖 Arrastrar a Marcadores</strong> a tu barra de favoritos para activarlo con 1 clic sin abrir consola).
+            </div>
+          </div>
+
+          <!-- Right: Live Interactive DIGGITY AUTO-HUNT HUD Embedded in Control Panel -->
+          <div id="cp-embedded-autohunt-hud" style="background: rgba(9, 13, 22, 0.96); border: 1.5px solid rgba(83, 252, 24, 0.55); border-radius: 14px; padding: 14px 16px; box-shadow: inset 0 0 24px rgba(83, 252, 24, 0.06); display: flex; flex-direction: column; justify-content: space-between; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="width: 9px; height: 9px; border-radius: 50%; background: #53fc18; box-shadow: 0 0 10px #53fc18; display: inline-block;"></span>
+                <strong style="font-family: var(--font-display); font-size: 13px; font-weight: 900; color: #53fc18; letter-spacing: 0.6px;">
+                  ⚡ DIGGITY AUTO-HUNT HUD
+                </strong>
+              </div>
+              <span style="font-size: 10.5px; font-weight: 800; color: #cbd5e1; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 6px;">
+                Alt+B = +3S · Alt+4 = +4S · Alt+5 = +5S · Alt+S = +SUPER
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.8fr 1fr 0.8fr; gap: 8px; align-items: end;">
+              <div style="position: relative;">
+                <label style="font-size: 10px; font-family: var(--font-display); color: #94a3b8; font-weight: 800; display: block; margin-bottom: 3px;">
+                  🎰 SLOT O URL DE STAKE.KRD:
+                </label>
+                <input type="text" id="cp-autohunt-slot-input" class="form-input-dark" value="Six Six Six" placeholder="Nombre de slot o link de stake.krd..." autocomplete="off" style="width: 100%; padding: 7px 9px; font-size: 12px; font-weight: 800; color: #fff; border-color: rgba(83, 252, 24, 0.4);">
+                <div id="cp-autohunt-slot-dropdown" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 120; background: #0f172a; border: 1px solid rgba(83,252,24,0.45); border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 12px 28px rgba(0,0,0,0.85);"></div>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-family: var(--font-display); color: #94a3b8; font-weight: 800; display: block; margin-bottom: 3px;">
+                  👤 CALLER:
+                </label>
+                <input type="text" id="cp-autohunt-caller-input" class="form-input-dark" value="@tarkansky" placeholder="@tarkansky" style="width: 100%; padding: 7px 9px; font-size: 12px; font-weight: 800; color: #00e5ff;">
+              </div>
+              <div>
+                <label style="font-size: 10px; font-family: var(--font-display); color: #94a3b8; font-weight: 800; display: block; margin-bottom: 3px;">
+                  💵 BET ($):
+                </label>
+                <input type="number" id="cp-autohunt-bet-input" class="form-input-dark" value="2.00" step="0.20" min="0.10" style="width: 100%; padding: 7px 8px; font-size: 12px; font-weight: 900; color: var(--gold);">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px;">
+              <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="3S" style="background: rgba(83,252,24,0.16); border: 1px solid #53fc18; color: #53fc18; border-radius: 8px; padding: 8px 4px; font-family: var(--font-display); font-size: 11.5px; font-weight: 900; cursor: pointer;">
+                +3S (Alt+B)
+              </button>
+              <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="4S" style="background: rgba(56,189,248,0.16); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 8px; padding: 8px 4px; font-family: var(--font-display); font-size: 11.5px; font-weight: 900; cursor: pointer;">
+                +4S (Alt+4)
+              </button>
+              <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="5S" style="background: rgba(250,204,21,0.16); border: 1px solid #facc15; color: #fde047; border-radius: 8px; padding: 8px 4px; font-family: var(--font-display); font-size: 11.5px; font-weight: 900; cursor: pointer;">
+                +5S (Alt+5)
+              </button>
+              <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="SUPER" style="background: rgba(244,63,94,0.2); border: 1px solid #f43f5e; color: #fda4af; border-radius: 8px; padding: 8px 4px; font-family: var(--font-display); font-size: 11.5px; font-weight: 900; cursor: pointer;">
+                🔥 +SUPER (Alt+S)
+              </button>
+            </div>
+
+            <div id="cp-autohunt-status" style="font-family: var(--font-mono); font-size: 11px; color: #53fc18; background: rgba(0,0,0,0.45); border: 1px solid rgba(83,252,24,0.22); border-radius: 7px; padding: 6px 10px;">
+              ✓ DIGGITY AUTO-HUNT HUD listo · Presioná Alt+B (3S) o Alt+S (SUPER) para cargar la slot al Bonus Hunt.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 2. MAIN 2-COLUMN STREAMER OPERATIONS GRID: 1v1 BATTLE (KOTH) + WHEELS -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px; margin-bottom: 20px;">
 
@@ -3747,6 +3847,19 @@
                 <button type="button" class="btn-stake-primary" id="btn-admin-add-bonus" style="padding: 8px 14px; font-size: 12px; font-weight: 900;">
                   + Add Bonus
                 </button>
+              </div>
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <span style="font-family: var(--font-display); font-size: 10.5px; font-weight: 900; color: #53fc18;">⚡ DIGGITY AUTO-HUNT HOTKEYS:</span>
+                  <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="3S" data-use-bh-inputs="1" style="background: rgba(83,252,24,0.14); border: 1px solid #53fc18; color: #53fc18; border-radius: 6px; padding: 4px 9px; font-family: var(--font-display); font-size: 10.5px; font-weight: 900; cursor: pointer;">+3S (Alt+B)</button>
+                  <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="4S" data-use-bh-inputs="1" style="background: rgba(56,189,248,0.14); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 6px; padding: 4px 9px; font-family: var(--font-display); font-size: 10.5px; font-weight: 900; cursor: pointer;">+4S (Alt+4)</button>
+                  <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="5S" data-use-bh-inputs="1" style="background: rgba(250,204,21,0.14); border: 1px solid #facc15; color: #fde047; border-radius: 6px; padding: 4px 9px; font-family: var(--font-display); font-size: 10.5px; font-weight: 900; cursor: pointer;">+5S (Alt+5)</button>
+                  <button type="button" class="cp-autohunt-trigger-btn" data-autohunt-tier="SUPER" data-use-bh-inputs="1" style="background: rgba(244,63,94,0.18); border: 1px solid #f43f5e; color: #fda4af; border-radius: 6px; padding: 4px 9px; font-family: var(--font-display); font-size: 10.5px; font-weight: 900; cursor: pointer;">🔥 +SUPER (Alt+S)</button>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-chat-toggle cp-btn-open-floating-hud-alias" style="padding: 4px 9px; font-size: 10.5px; border-color: var(--gold); color: var(--gold); font-weight: 800;">📌 Toggle Floating Auto-Hunt HUD</button>
+                  <button type="button" class="btn-chat-toggle cp-btn-copy-stake-console-alias" style="padding: 4px 9px; font-size: 10.5px; border-color: #00e5ff; color: #00e5ff; font-weight: 800;">📋 Copy Stake.krd Console Script</button>
+                </div>
               </div>
             </div>
 
