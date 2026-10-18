@@ -1,0 +1,89 @@
+{
+  "$schema": "https://openrig.dev/schema/v0.2/rigspec.json",
+  "version": "0.2",
+  "name": "hunthub-diggitybets-rig",
+  "summary": "Modular RigSpec for HuntHub & DiggityBets Casino Streaming Suite",
+  "default_rig": "rig:overlays-intro",
+  "rigs": {
+    "rig:marketing-b2b": {
+      "label": "Marketing, CRO & B2B Sponsorship Telemetry",
+      "description": "Stake Affiliate CRO, Media Kit for 'Only on Stake' providers, pricing psychology and referral loops.",
+      "scoped_paths": [
+        "references/sota-2026/growth-and-hitl/marketingskills",
+        "site/js/user-store.js",
+        "site/js/slot-resolver.js",
+        "data/curated_slots.js"
+      ],
+      "active_skills": [
+        "cro",
+        "copywriting",
+        "pricing",
+        "marketing-psychology",
+        "marketing-loops"
+      ]
+    },
+    "rig:overlays-intro": {
+      "label": "OBS Overlays & Casino Intro Studio",
+      "description": "OBS Browser Sources (1920x1080 60 FPS), WebGL/Canvas shaders, procedural Web Audio and real-time state synchronization.",
+      "scoped_paths": [
+        "overlay-intro/",
+        "overlay-battle/",
+        "overlay-tourney/",
+        "overlay-bonushunt/",
+        "wheel-duo/",
+        "site/js/audio.js"
+      ],
+      "active_skills": [
+        "obs-overlays",
+        "animate",
+        "animation-performance",
+        "motion-engineer"
+      ]
+    },
+    "rig:video-studio": {
+      "label": "Programmatic Video & Showcase Studio",
+      "description": "Automated trailer rendering, launch showcases with /brag, frame-by-frame timecut and viral social cards.",
+      "scoped_paths": [
+        "references/sota-2026/video-intro-studio/brag",
+        "references/sota-2026/video-intro-studio/motion-canvas",
+        "references/sota-2026/video-intro-studio/timecut",
+        "references/sota-2026/growth-and-hitl/satori",
+        "tools/lib/viral_card_generator.mjs"
+      ],
+      "active_skills": [
+        "brag",
+        "frontend-design"
+      ]
+    },
+    "rig:backend-core": {
+      "label": "Backend, Worker & Real-time Hub",
+      "description": "Cloudflare Workers, Durable Objects, D1 synchronization, Pusher WebSocket bridge and OAuth 2.1 PKCE.",
+      "scoped_paths": [
+        "core/",
+        "worker/",
+        "data/"
+      ],
+      "active_skills": [
+        "cloudflare-durable-objects",
+        "kick-api",
+        "channel-points-bridge",
+        "provably-fair-games"
+      ]
+    },
+    "rig:bench-qa": {
+      "label": "Benchmark, Evals & Anti-Slop Audit",
+      "description": "Agent-Reach scoring, judge_harness.mjs, visual audit with WCAG contrast and anti-slop guidelines.",
+      "scoped_paths": [
+        "tools/intelligence/",
+        "tools/audit/",
+        "core/test/"
+      ],
+      "active_skills": [
+        "agent-reach",
+        "eval-harness",
+        "visual-auditor",
+        "verify-before-claim"
+      ]
+    }
+  }
+}

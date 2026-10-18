@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiggityBets — VIP Casino Stream Intro Scene</title>
+  <link rel="stylesheet" href="style.css?v=1.0">
+</head>
+<body>
+  <!-- Ambient Cones -->
+  <div class="ambient-cone-left"></div>
+  <div class="ambient-cone-right"></div>
+
+  <!-- Background Particle & 3D Chip Canvas (60 FPS) -->
+  <canvas id="bg-canvas"></canvas>
+
+  <div id="intro-stage">
+    <!-- 1. Topbar -->
+    <header class="intro-topbar">
+      <div class="brand-block">
+        <img src="../site/images/diggitybets-logo.png" alt="DiggityBets" class="brand-logo-img" onerror="this.src='../site/images/kick-og-badge.png'">
+        <div class="brand-text-col">
+          <h1 class="brand-title">DIGGITY<span>BETS</span></h1>
+          <span class="brand-sub">VIP Casino &amp; Stream Engagement Suite</span>
+        </div>
+      </div>
+
+      <div class="topbar-pills">
+        <div class="pill-broadcast">
+          <span class="pulse-dot"></span>
+          BROADCAST STARTING SOON
+        </div>
+        <div class="pill-stake">
+          ⚡ STAKE VIP CODE: <strong>DIGGITY</strong>
+        </div>
+        <button type="button" class="pill-audio-toggle" id="btn-audio-toggle">
+          🔊 Audio Active
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Hero Countdown Centerpiece -->
+    <main class="intro-centerpiece">
+      <div class="countdown-eyebrow">
+        👑 VIP CASINO STREAM OPENING IN
+      </div>
+      <div class="countdown-digits" id="countdown-digits">05:00</div>
+      <div class="countdown-progress-track">
+        <div class="countdown-progress-bar" id="countdown-progress-bar"></div>
+      </div>
+      <div class="countdown-status-note" id="countdown-status-note">
+        GRAB YOUR DRINK &amp; CHIPS · COMMUNITY VAULT, 1V1 BATTLES &amp; BONUSES READY
+      </div>
+    </main>
+
+    <!-- 3. Dynamic Live Widgets Bento Grid -->
+    <section class="intro-bento-grid">
+      <!-- Card 1: King of the Hill Current Throne -->
+      <article class="bento-card">
+        <div class="card-header-row">
+          <span class="card-tag tag-koth">👑 REIGNING KING OF THE HILL</span>
+          <span class="badge-live-pulse">LIVE THRONE</span>
+        </div>
+        <div class="koth-content">
+          <div class="koth-avatar-box">👑</div>
+          <div class="koth-details">
+            <h3 id="koth-king-name">@IronKing</h3>
+            <div class="koth-streak-row">
+              <span class="koth-streak-pill" id="koth-streak-badge">STREAK 3/4</span>
+              <span class="koth-prize-tag" id="koth-prize-val">$20 USD PRIZE</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2: Weekly $DIG Leaderboard Top 3 -->
+      <article class="bento-card">
+        <div class="card-header-row">
+          <span class="card-tag tag-leaderboard">💎 WEEKLY $DIG LEADERS</span>
+          <span class="badge-live-pulse">TOP COMMUNITY</span>
+        </div>
+        <div class="leaderboard-list">
+          <div class="leaderboard-item">
+            <div class="lb-user-info">
+              <span class="lb-rank lb-rank-1">#1</span>
+              <span class="lb-name">@DiggityVIP</span>
+            </div>
+            <span class="lb-points">4,850 $DIG</span>
+          </div>
+          <div class="leaderboard-item">
+            <div class="lb-user-info">
+              <span class="lb-rank lb-rank-2">#2</span>
+              <span class="lb-name">@LuckyRoller</span>
+            </div>
+            <span class="lb-points">3,420 $DIG</span>
+          </div>
+          <div class="leaderboard-item">
+            <div class="lb-user-info">
+              <span class="lb-rank lb-rank-3">#3</span>
+              <span class="lb-name">@StakeHighRoller</span>
+            </div>
+            <span class="lb-points">2,900 $DIG</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 3: Only on Stake Daily Showcase -->
+      <article class="bento-card">
+        <div class="card-header-row">
+          <span class="card-tag tag-spotlight">⚡ ONLY ON STAKE SPOTLIGHT</span>
+          <span class="badge-live-pulse">EXCLUSIVE</span>
+        </div>
+        <div class="spotlight-content">
+          <img id="spotlight-slot-img" class="spotlight-cover-img" src="https://mediumrare.imgix.net/a2d2071ee81ac02ad2aee13ef7efc6a52dc90bc49e324e3eaace6b6a46faffbb?w=360&auto=format" alt="Slot Spotlight">
+          <div class="spotlight-info">
+            <h4 id="spotlight-slot-title">Reactorgames Haunted Hollow</h4>
+            <div class="spotlight-studio" id="spotlight-slot-studio">Reactor Games · Stake Exclusive</div>
+            <span class="spotlight-badge">⚡ 25,000x MAX WIN</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 4. Bottom Live Kick Chatters Ticker -->
+    <footer class="intro-bottombar">
+      <div class="ticker-label">
+        💬 LIVE KICK CHAT
+      </div>
+      <div class="ticker-viewport">
+        <div class="ticker-track" id="ticker-track">
+          <!-- Marquee populated dynamically via main.js & Kick Pusher WebSocket -->
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="audio-synth.js?v=1.0"></script>
+  <script src="main.js?v=1.0"></script>
+</body>
+</html>

@@ -56,7 +56,7 @@ if (fs.existsSync(path.join(root, 'data', 'live_casino_intel.json'))) {
 
 // 3.5 Copy overlays and casino suite for OBS Browser Sources
 console.log('• Copying overlays & casino suite...');
-const overlayDirs = ['casino-suite', 'overlay-battle', 'overlay-tourney', 'overlay-bonushunt', 'overlay-celebration', 'overlay-slotrequests', 'wheel-duo', 'wheel-slots', 'wheel-csgo'];
+const overlayDirs = ['casino-suite', 'overlay-intro', 'overlay-battle', 'overlay-tourney', 'overlay-bonushunt', 'overlay-celebration', 'overlay-slotrequests', 'wheel-duo', 'wheel-slots', 'wheel-csgo'];
 for (const d of overlayDirs) {
   if (fs.existsSync(path.join(root, d))) {
     copyRecursive(path.join(root, d), path.join(dist, d));

@@ -1,0 +1,556 @@
+@charset "UTF-8";
+/**
+ * overlay-intro/style.css
+ * =============================================================================
+ * DiggityBets VIP Casino Stream Intro Scene (1920x1080 @ 60 FPS)
+ * SOTA Glassmorphism, Tabular Typography, Border-Beams and Compositor Efficiency.
+ * =============================================================================
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;0,800;0,900;1,700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-deep: #06080d;
+  --surface-glass: rgba(14, 21, 32, 0.78);
+  --surface-card: rgba(18, 26, 40, 0.85);
+  --hairline-border: rgba(255, 255, 255, 0.09);
+  --hairline-border-hover: rgba(255, 255, 255, 0.22);
+  --kick-green: #53fc18;
+  --kick-green-glow: rgba(83, 252, 24, 0.35);
+  --gold: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.38);
+  --cyan: #00e5ff;
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: #ffffff;
+  font-family: var(--font-body);
+  user-select: none;
+}
+
+#intro-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 56px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Background Canvas (Particles, Volumetric Lighting & Chips) */
+#bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Background Atmospheric Gradient Cones */
+.ambient-cone-left {
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, rgba(83, 252, 24, 0.12) 0%, transparent 70%);
+  filter: blur(80px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ambient-cone-right {
+  position: absolute;
+  top: -100px;
+  right: -80px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.11) 0%, transparent 70%);
+  filter: blur(90px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* =========================================================================
+ * 1. TOP HEADER BAR
+ * ========================================================================= */
+.intro-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 20;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-logo-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(83, 252, 24, 0.25);
+  border: 1px solid rgba(83, 252, 24, 0.4);
+}
+
+.brand-text-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-title span {
+  color: var(--kick-green);
+  text-shadow: 0 0 16px var(--kick-green-glow);
+}
+
+.brand-sub {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.topbar-pills {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pill-broadcast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(83, 252, 24, 0.10);
+  border: 1px solid rgba(83, 252, 24, 0.35);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--kick-green);
+  letter-spacing: 1px;
+}
+
+.pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--kick-green);
+  box-shadow: 0 0 10px var(--kick-green);
+  animation: pulse-glow 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.pill-stake {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.pill-audio-toggle {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline-border);
+  color: #cbd5e1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pill-audio-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: var(--hairline-border-hover);
+}
+
+/* =========================================================================
+ * 2. HERO COUNTDOWN CENTERPIECE
+ * ========================================================================= */
+.intro-centerpiece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  z-index: 20;
+  margin: 10px 0;
+}
+
+.countdown-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.countdown-digits {
+  font-family: var(--font-display);
+  font-size: 124px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 3px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 35px rgba(255, 215, 0, 0.40), 0 0 80px rgba(83, 252, 24, 0.25);
+}
+
+.countdown-progress-track {
+  width: 580px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.countdown-progress-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #53fc18 0%, #ffd700 100%);
+  box-shadow: 0 0 12px var(--kick-green);
+  transition: width 1s linear;
+}
+
+.countdown-status-note {
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================================
+ * 3. BENTO GRID OF LIVE WIDGETS
+ * ========================================================================= */
+.intro-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 1808px;
+  position: relative;
+  z-index: 20;
+}
+
+.bento-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline-border);
+  border-radius: 16px;
+  padding: 22px 26px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.bento-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-tag {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.tag-koth { color: #ffd700; }
+.tag-leaderboard { color: #00e5ff; }
+.tag-spotlight { color: #53fc18; }
+
+.badge-live-pulse {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline-border);
+  color: #94a3b8;
+}
+
+/* Card 1: King of the Hill */
+.koth-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.koth-avatar-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(0, 0, 0, 0.6) 100%);
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 18px var(--gold-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.koth-details h3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.koth-streak-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.koth-streak-pill {
+  padding: 3px 9px;
+  background: rgba(255, 215, 0, 0.14);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.koth-prize-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kick-green);
+}
+
+/* Card 2: Leaderboard Top 3 */
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.lb-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lb-rank {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 900;
+  width: 22px;
+}
+
+.lb-rank-1 { color: #ffd700; }
+.lb-rank-2 { color: #cbd5e1; }
+.lb-rank-3 { color: #cd7f32; }
+
+.lb-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lb-points {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--kick-green);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Card 3: Only on Stake Spotlight */
+.spotlight-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.spotlight-cover-img {
+  width: 60px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1.5px solid var(--gold);
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+.spotlight-info h4 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.spotlight-studio {
+  font-size: 12px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.spotlight-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+/* =========================================================================
+ * 4. BOTTOM TICKER (KICK CHATTERS LIVE)
+ * ========================================================================= */
+.intro-bottombar {
+  display: flex;
+  align-items: center;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--hairline-border);
+  border-radius: 12px;
+  padding: 10px 18px;
+  overflow: hidden;
+  position: relative;
+  z-index: 20;
+}
+
+.ticker-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 18px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--kick-green);
+  white-space: nowrap;
+}
+
+.ticker-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  margin-left: 18px;
+}
+
+.ticker-track {
+  display: flex;
+  gap: 36px;
+  white-space: nowrap;
+  animation: ticker-slide 28s linear infinite;
+}
+
+@keyframes ticker-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.ticker-item strong {
+  color: #fff;
+  font-weight: 800;
+}
+
+.ticker-item span {
+  color: var(--kick-green);
+}

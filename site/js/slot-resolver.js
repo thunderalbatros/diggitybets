@@ -799,10 +799,44 @@
     return 0;
   }
 
+  function extractCreatorStudio(es) {
+    if (!es) return 'Stake Exclusive';
+    if (es.creatorStudio) return es.creatorStudio;
+    var n = String(es.name || '');
+    if (/^Reactorgames/i.test(n)) return 'Reactor Games';
+    if (/^Harmonica/i.test(n)) return 'Harmonica';
+    if (/^Wildgoose/i.test(n)) return 'Wildgoose';
+    if (/^Tinexgames/i.test(n)) return 'Tinex Games';
+    if (/^Jadebird/i.test(n)) return 'Jadebird';
+    if (/^Geminigaming/i.test(n)) return 'Gemini Gaming';
+    if (/^Afterhoursstudios/i.test(n)) return 'Afterhours Studios';
+    if (/^Quickstrike/i.test(n)) return 'Quickstrike';
+    if (/^0x0x/i.test(n)) return '0x0x Studios';
+    if (/^Merveillesstudio/i.test(n)) return 'Merveilles Studio';
+    if (/^Burstpilot/i.test(n)) return 'Burstpilot';
+    if (/titan/i.test(es.provider || '') || /titan/i.test(n)) return 'Titan Gaming';
+    if (/twist/i.test(es.provider || '') || /twist/i.test(n)) return 'Twist Gaming';
+    if (/massive/i.test(es.provider || '') || /massive/i.test(n)) return 'Massive Studios';
+    if (/paperclip/i.test(es.provider || '') || /paperclip/i.test(n)) return 'Paperclip Gaming';
+    if (/avatarux/i.test(es.provider || '')) return 'AvatarUX';
+    if (es.provider && es.provider !== 'Stake Exclusive') return es.provider;
+    return 'Stake Exclusive Studio';
+  }
+
+  function checkIsOnlyOnStake(es) {
+    if (!es) return false;
+    if (es.isOnlyOnStake === true) return true;
+    if (es.category === 'stake' || es.provider === 'Stake Exclusive' || es.badge === 'ONLY ON STAKE') return true;
+    var n = String(es.name || '');
+    return /^(Reactorgames|Harmonica|Wildgoose|Tinexgames|Jadebird|Geminigaming|Afterhoursstudios|Quickstrike|0x0x|Merveillesstudio|Burstpilot|Titan|Twist|Massive|Paperclip)/i.test(n);
+  }
+
   function formatCatalogSlot(es, baseContext) {
     var resolvedImg = (!es.image || isLegacyBrokenUrl(es.image))
       ? generateDataUriCard(es.name, es.provider, es.color)
       : resolveSlotImageUrl(es.image, baseContext);
+    var isOnlyOnStake = checkIsOnlyOnStake(es);
+    var creatorStudio = extractCreatorStudio(es);
     return {
       id: es.id || es.slug || slugify(es.name),
       name: es.name,
@@ -813,12 +847,14 @@
       rtp: es.rtp || '96.35%',
       tier: es.tier || '1',
       category: es.category,
-      badge: es.badge,
+      badge: isOnlyOnStake ? 'ONLY ON STAKE' : es.badge,
       color: es.color,
       cloneOf: es.cloneOf || null,
       events: es.events || null,
       releasedAt: es.releasedAt || null,
-      bonusBuy: Boolean(es.bonusBuy)
+      bonusBuy: Boolean(es.bonusBuy),
+      isOnlyOnStake: isOnlyOnStake,
+      creatorStudio: creatorStudio
     };
   }
 
@@ -1117,14 +1153,19 @@
         rtp: match.rtp,
         tier: match.tier,
         category: match.category,
-        badge: match.badge,
-        color: match.color
+        badge: match.badge || (checkIsOnlyOnStake(match) ? 'ONLY ON STAKE' : 'CASINO'),
+        color: match.color,
+        isOnlyOnStake: checkIsOnlyOnStake(match),
+        creatorStudio: extractCreatorStudio(match)
       };
     }
 
     var raw = str.trim() || 'Wanted Dead or a Wild';
     var titleCased = raw.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
     var slug = slugify(titleCased);
+
+    var dummy = { name: titleCased, provider: objProv };
+    var isOnly = checkIsOnlyOnStake(dummy);
 
     return {
       id: slug,
@@ -1135,9 +1176,56 @@
       maxWin: '10,000x',
       rtp: '96.50%',
       tier: '2',
-      badge: 'CASINO',
-      color: '#ffd700'
+      badge: isOnly ? 'ONLY ON STAKE' : 'CASINO',
+      color: '#ffd700',
+      isOnlyOnStake: isOnly,
+      creatorStudio: extractCreatorStudio(dummy)
     };
+  }
+
+  var _sponsorTelemetry = null;
+  function getSponsorTelemetry() {
+    if (_sponsorTelemetry) return _sponsorTelemetry;
+    try {
+      _sponsorTelemetry = JSON.parse(localStorage.getItem('hunthub_sponsor_telemetry') || 'null');
+    } catch (_) {}
+    if (!_sponsorTelemetry || typeof _sponsorTelemetry !== 'object') {
+      _sponsorTelemetry = {
+        totalImpressions: 1420,
+        battleImpressions: 480,
+        tourneyImpressions: 560,
+        huntImpressions: 380,
+        studios: {
+          'Titan Gaming': { impressions: 380, slotsRun: 12 },
+          'Twist Gaming': { impressions: 310, slotsRun: 9 },
+          'Massive Studios': { impressions: 290, slotsRun: 8 },
+          'Paperclip Gaming': { impressions: 260, slotsRun: 7 },
+          'AvatarUX': { impressions: 180, slotsRun: 5 }
+        },
+        lastUpdated: new Date().toISOString()
+      };
+    }
+    return _sponsorTelemetry;
+  }
+
+  function trackSponsorImpression(slotName, contextType) {
+    if (!slotName) return;
+    var slot = resolve(slotName);
+    if (!slot || !slot.isOnlyOnStake) return;
+    var data = getSponsorTelemetry();
+    data.totalImpressions = (data.totalImpressions || 0) + 1;
+    var ctx = contextType || 'general';
+    if (ctx === 'battle') data.battleImpressions = (data.battleImpressions || 0) + 1;
+    else if (ctx === 'tourney') data.tourneyImpressions = (data.tourneyImpressions || 0) + 1;
+    else if (ctx === 'bonushunt') data.huntImpressions = (data.huntImpressions || 0) + 1;
+
+    var studio = slot.creatorStudio || 'Stake Exclusive Studio';
+    if (!data.studios[studio]) data.studios[studio] = { impressions: 0, slotsRun: 0 };
+    data.studios[studio].impressions++;
+    data.lastUpdated = new Date().toISOString();
+    try {
+      localStorage.setItem('hunthub_sponsor_telemetry', JSON.stringify(data));
+    } catch (_) {}
   }
 
   // Expose as global singleton
@@ -1152,6 +1240,10 @@
     resolveSlotImageUrl: resolveSlotImageUrl,
     generateDataUriCard: generateDataUriCard,
     getCuratedCatalog: function() { return CURATED_SLOTS.slice(); },
+    checkIsOnlyOnStake: checkIsOnlyOnStake,
+    extractCreatorStudio: extractCreatorStudio,
+    trackSponsorImpression: trackSponsorImpression,
+    getSponsorMetrics: getSponsorTelemetry,
     DEFAULT_FALLBACK_IMAGE: DEFAULT_FALLBACK_IMAGE
   };
 

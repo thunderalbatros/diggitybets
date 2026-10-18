@@ -13,6 +13,40 @@ export interface CanonicalSlot {
   category?: string;
   badge?: string;
   color?: string;
+  isOnlyOnStake?: boolean;
+  creatorStudio?: string;
+}
+
+export function extractCreatorStudio(slot: Partial<CanonicalSlot>): string {
+  if (!slot) return 'Stake Exclusive';
+  if (slot.creatorStudio) return slot.creatorStudio;
+  const n = String(slot.name || '');
+  if (/^Reactorgames/i.test(n)) return 'Reactor Games';
+  if (/^Harmonica/i.test(n)) return 'Harmonica';
+  if (/^Wildgoose/i.test(n)) return 'Wildgoose';
+  if (/^Tinexgames/i.test(n)) return 'Tinex Games';
+  if (/^Jadebird/i.test(n)) return 'Jadebird';
+  if (/^Geminigaming/i.test(n)) return 'Gemini Gaming';
+  if (/^Afterhoursstudios/i.test(n)) return 'Afterhours Studios';
+  if (/^Quickstrike/i.test(n)) return 'Quickstrike';
+  if (/^0x0x/i.test(n)) return '0x0x Studios';
+  if (/^Merveillesstudio/i.test(n)) return 'Merveilles Studio';
+  if (/^Burstpilot/i.test(n)) return 'Burstpilot';
+  if (/titan/i.test(slot.provider || '') || /titan/i.test(n)) return 'Titan Gaming';
+  if (/twist/i.test(slot.provider || '') || /twist/i.test(n)) return 'Twist Gaming';
+  if (/massive/i.test(slot.provider || '') || /massive/i.test(n)) return 'Massive Studios';
+  if (/paperclip/i.test(slot.provider || '') || /paperclip/i.test(n)) return 'Paperclip Gaming';
+  if (/avatarux/i.test(slot.provider || '')) return 'AvatarUX';
+  if (slot.provider && slot.provider !== 'Stake Exclusive') return slot.provider;
+  return 'Stake Exclusive Studio';
+}
+
+export function checkIsOnlyOnStake(slot: Partial<CanonicalSlot>): boolean {
+  if (!slot) return false;
+  if (slot.isOnlyOnStake === true) return true;
+  if (slot.category === 'stake' || slot.provider === 'Stake Exclusive' || slot.badge === 'ONLY ON STAKE') return true;
+  const n = String(slot.name || '');
+  return /^(Reactorgames|Harmonica|Wildgoose|Tinexgames|Jadebird|Geminigaming|Afterhoursstudios|Quickstrike|0x0x|Merveillesstudio|Burstpilot|Titan|Twist|Massive|Paperclip)/i.test(n);
 }
 
 // Fallback image (Wanted Dead or a Wild verified Official Hacksaw CDN)
@@ -784,8 +818,12 @@ export class SlotResolver {
     const strQuery = typeof query === 'string' ? query : (query?.name || '');
     const match = this.fuzzyMatch(strQuery);
     if (match) {
+      const isOnly = checkIsOnlyOnStake(match);
       return {
         ...match,
+        badge: isOnly ? 'ONLY ON STAKE' : (match.badge || 'CASINO'),
+        isOnlyOnStake: isOnly,
+        creatorStudio: extractCreatorStudio(match),
         image: this.resolveSlotImageUrl(match.image, baseContext)
       };
     }
@@ -794,6 +832,8 @@ export class SlotResolver {
     const rawName = strQuery.trim() || 'Wanted Dead or a Wild';
     const titleCased = rawName.replace(/\b\w/g, (c) => c.toUpperCase());
     const slug = this.slugify(titleCased);
+    const dummy = { name: titleCased, provider: 'Casino Slot' };
+    const isOnly = checkIsOnlyOnStake(dummy);
 
     return {
       id: slug,
@@ -804,8 +844,10 @@ export class SlotResolver {
       maxWin: '10,000x',
       rtp: '96.50%',
       tier: '2',
-      badge: 'CASINO',
-      color: '#ffd700'
+      badge: isOnly ? 'ONLY ON STAKE' : 'CASINO',
+      color: '#ffd700',
+      isOnlyOnStake: isOnly,
+      creatorStudio: extractCreatorStudio(dummy)
     };
   }
 
