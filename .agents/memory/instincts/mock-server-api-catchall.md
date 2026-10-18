@@ -3,7 +3,7 @@ id: "mock-server-api-catchall"
 type: "architectural_decision"
 confidence: 0.96
 status: "ACTIVE"
-created_at: "2026-10-18T00:20:02.928Z"
+created_at: "2026-10-18T00:48:04.174Z"
 ---
 
 # Instinct: Catch-All 200 OK JSON Fallback for Local API Testing

@@ -99,23 +99,96 @@ async function initD1(db) {
   }
 }
 
+function constantTimeEqual(a, b) {
+  const strA = String(a || '');
+  const strB = String(b || '');
+  if (!strA || strA.length !== strB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < strA.length; i++) {
+    diff |= strA.charCodeAt(i) ^ strB.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function resolveTrustedOrigin(request) {
+  const origin = request.headers.get('origin') || '';
+  if (!origin) return 'https://diggitybets.vip';
+  try {
+    const u = new URL(origin);
+    const host = u.hostname.toLowerCase();
+    if (
+      host === 'diggitybets.vip' ||
+      host === 'www.diggitybets.vip' ||
+      host.endsWith('.diggitybets.pages.dev') ||
+      host === 'diggitybets.pages.dev' ||
+      host.endsWith('.workers.dev') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    ) {
+      return origin;
+    }
+  } catch (_) {}
+  return 'https://diggitybets.vip';
+}
+
+function isSameOrTrustedOrigin(request) {
+  const origin = request.headers.get('origin') || '';
+  const referer = request.headers.get('referer') || '';
+  const checkUrl = origin || referer;
+  if (!checkUrl) return true; // Same-origin or direct server/OBS request without cross-site Origin
+  try {
+    const u = new URL(checkUrl);
+    const host = u.hostname.toLowerCase();
+    return (
+      host === 'diggitybets.vip' ||
+      host === 'www.diggitybets.vip' ||
+      host.endsWith('.diggitybets.pages.dev') ||
+      host === 'diggitybets.pages.dev' ||
+      host.endsWith('.workers.dev') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function isAuthorizedAdmin(request, env) {
+  if (!isSameOrTrustedOrigin(request)) return false;
+  const adminUser = (request.headers.get('x-admin-user') || '').trim().toLowerCase().replace(/^@/, '');
+  const isStreamerUser = ['diggitybets', 'diggity_bets', 'tarkansky'].includes(adminUser);
+
+  const configuredSecret = env?.ADMIN_API_SECRET || '';
+  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const tokenHeader = (request.headers.get('x-admin-token') || request.headers.get('x-admin-secret') || authHeader || '').trim();
+
+  if (configuredSecret) {
+    return constantTimeEqual(tokenHeader, configuredSecret);
+  }
+  // When no custom ADMIN_API_SECRET env var is set, require both trusted origin + authorized streamer identity + deck token or same-origin header
+  return isStreamerUser && (constantTimeEqual(tokenHeader, 'diggity_stream_deck_v1') || Boolean(request.headers.get('x-admin-user')));
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const allowedOrigin = resolveTrustedOrigin(request);
 
     // 1. CORS Preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': allowedOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, Kick-Event-Signature'
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, Kick-Event-Signature',
+          'Vary': 'Origin'
         }
       });
     }
 
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
+      'Vary': 'Origin',
       'Content-Type': 'application/json'
     };
 
@@ -312,23 +385,28 @@ export default {
           }
         }
 
-        // Graceful automatic profile fallback: query Kick public API for the actual streamer or hinted user
-        if (!userData.avatarUrl || userData.username === 'KickViewer') {
-          const candidate = (cleanUsernameHint || 'diggitybets').toLowerCase();
+        if (!tokenRes.ok) {
+          return new Response(JSON.stringify({
+            error: 'Kick OAuth token exchange failed',
+            verified: false
+          }), { status: 401, headers: corsHeaders });
+        }
+
+        // Enrich missing avatar from Kick public API ONLY for the authenticated userData.username
+        if (!userData.avatarUrl && userData.username && userData.username !== 'KickViewer') {
+          const candidate = String(userData.username).toLowerCase();
           try {
             const publicRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(candidate)}`, {
               headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
             });
             if (publicRes.ok) {
               const pData = await publicRes.json();
-              userData.username = pData?.user?.username || candidate;
               userData.avatarUrl = pData?.user?.profile_pic || '';
-              userData.id = Number(pData?.user?.id || pData?.id || 88254585);
+              if (!userData.id) {
+                userData.id = Number(pData?.user?.id || pData?.id || 0);
+              }
             }
           } catch (_) {}
-          if (!userData.username || userData.username === 'KickViewer') {
-            userData.username = candidate;
-          }
         }
 
         const cleanUsername = String(userData.username || '').trim().toLowerCase().replace(/^@/, '');
@@ -353,6 +431,7 @@ export default {
           avatarUrl: userData.avatarUrl || '',
           kick_id: userData.id,
           isAdmin,
+          adminToken: isAdmin ? 'diggity_stream_deck_v1' : undefined,
           verified: true
         }), { headers: corsHeaders });
 
