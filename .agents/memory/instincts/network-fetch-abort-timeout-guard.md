@@ -3,7 +3,7 @@ id: "network-fetch-abort-timeout-guard"
 type: "resilience_pattern"
 confidence: 0.99
 status: "ACTIVE"
-created_at: "2026-10-18T00:20:02.932Z"
+created_at: "2026-10-18T00:48:04.177Z"
 ---
 
 # Instinct: Mandatory AbortSignal.timeout on External API Calls

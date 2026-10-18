@@ -1,0 +1,63 @@
+{
+  "productSpec": {
+    "spec_version": "2026.1",
+    "type": "product_spec",
+    "slug": "interactive-high-roller-plinko-multiplier",
+    "title": "Interactive High-Roller Plinko Multiplier",
+    "created_at": "2026-10-18T00:46:45.073Z",
+    "author_role": "Squad 0 — Product Spec Agent",
+    "problem_statement": "Physics-based Plinko peg drop with Provably Fair HMAC-SHA256 calculations and luxury coin sound effects.",
+    "target_users": [
+      "Streamer (@diggitybets)",
+      "Kick Viewers (+18)",
+      "Moderators"
+    ],
+    "user_experience": {
+      "primary_flow": "User triggers action from UI -> System responds with tactile feedback and state updates.",
+      "error_states": [
+        "Network offline",
+        "Invalid user input",
+        "Rate limit exceeded"
+      ],
+      "visual_theme": "Dark luxury glassmorphism (#07090e base, #ffd700 gold, #53fc18 neon green)"
+    },
+    "acceptance_criteria": [
+      "Zero UI layout thrashing or horizontal overflow across 1440px, 768px, and 390px viewports.",
+      "100% compliant with Kick gambling guidelines (+18 disclaimer, zero spectator money custody).",
+      "OBS Browser Source CPU consumption remains <= 5%."
+    ]
+  },
+  "techSpec": {
+    "spec_version": "2026.1",
+    "type": "tech_spec",
+    "slug": "interactive-high-roller-plinko-multiplier",
+    "title": "Interactive High-Roller Plinko Multiplier — Architecture & Technical Spec",
+    "created_at": "2026-10-18T00:46:45.073Z",
+    "author_role": "Squad 2 — Technical Architecture Droid",
+    "architecture_tier": "Web Platform + Cloudflare Durable Objects / D1",
+    "data_contracts": {
+      "storage_keys": [
+        "hunthub_interactive-high-roller-plinko-multiplier_state"
+      ],
+      "event_bus": "hunthub:interactive-high-roller-plinko-multiplier-event",
+      "api_endpoints": [
+        "/api/interactive-high-roller-plinko-multiplier/state",
+        "/api/interactive-high-roller-plinko-multiplier/action"
+      ]
+    },
+    "security_invariants": [
+      "Spectator input rendered strictly via textContent or escaped template literals.",
+      "Zero eval() or new Function() calls.",
+      "All remote network calls protected by AbortSignal.timeout(2500-3500ms)."
+    ],
+    "verification_harness": {
+      "required_test_suite": "core/test/interactive-high-roller-plinko-multiplier.test.ts",
+      "ast_symbols_check": true,
+      "playwright_viewports": [
+        1440,
+        768,
+        390
+      ]
+    }
+  }
+}
