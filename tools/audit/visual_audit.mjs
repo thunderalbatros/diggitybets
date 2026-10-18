@@ -161,6 +161,75 @@ function pageChecks() {
       }
     }
   }
+
+  // 10. Protagonist Centered $DIG Balance (HUD Symmetrical Balance at 2x Scale: Math.abs(centerDiff) <= 3px)
+  const digPill = document.querySelector('#topbar-dig-balance-pill');
+  if (digPill && visible(digPill)) {
+    const pr = digPill.getBoundingClientRect();
+    const pillCenter = pr.left + pr.width / 2;
+    const vpCenter = vw / 2;
+    const centerDiff = Math.abs(pillCenter - vpCenter);
+    if (centerDiff > 3) {
+      findings.push({
+        sev: 'MAJOR',
+        rule: 'dig-balance-center',
+        msg: `#topbar-dig-balance-pill center (${pillCenter.toFixed(1)}px) is off from viewport center (${vpCenter.toFixed(1)}px) by ${centerDiff.toFixed(1)}px (> 3px)`
+      });
+    }
+    const ps = getComputedStyle(digPill);
+    const pillHeight = parseFloat(ps.height) || pr.height;
+    const valEl = digPill.querySelector('.user-balance-val');
+    const valFontSize = valEl ? parseFloat(getComputedStyle(valEl).fontSize) : 0;
+    // 2x scale requirement: height >= 45px and value font >= 20px on all viewports
+    if (pillHeight < 45 || valFontSize < 20) {
+      findings.push({
+        sev: 'MAJOR',
+        rule: 'dig-balance-scale',
+        msg: `#topbar-dig-balance-pill not at 2x scale: height=${pillHeight.toFixed(1)}px (expected >= 45px), fontSize=${valFontSize.toFixed(1)}px (expected >= 20px)`
+      });
+    }
+  }
+
+  // 11. De-boxing del Sidebar PORTAL (Inactive buttons must not have visible box/border)
+  if (vw >= 1080) {
+    const inactiveNavBtns = document.querySelectorAll('.sidebar-nav-menu .nav-link-btn:not(.active)');
+    for (const btn of inactiveNavBtns) {
+      if (!visible(btn)) continue;
+      const bs = getComputedStyle(btn);
+      const bWidth = parseFloat(bs.borderWidth) || 0;
+      const bColor = bs.borderColor;
+      const isTransparentBorder = bWidth === 0 || bColor === 'transparent' || bColor === 'rgba(0, 0, 0, 0)' || bs.borderStyle === 'none';
+      if (!isTransparentBorder) {
+        findings.push({
+          sev: 'MAJOR',
+          rule: 'sidebar-deboxing',
+          msg: `${sel(btn)} inactive item has visible box border (${bs.borderWidth} ${bs.borderColor})`
+        });
+      }
+    }
+  }
+
+  // 12. Watch Section Purity (Kick live player + original Socials/Stake only, no duplicate command sidebars)
+  const watchSec = document.querySelector('#watch');
+  if (watchSec && visible(watchSec)) {
+    const forbiddenPanels = watchSec.querySelectorAll('.stream-chat-commands, .chat-commands-panel, .command-side-panel, .extra-commands');
+    if (forbiddenPanels.length > 0) {
+      findings.push({
+        sev: 'MAJOR',
+        rule: 'watch-section-purity',
+        msg: `#watch contains ${forbiddenPanels.length} duplicate/extra command side panels`
+      });
+    }
+    const playerCard = watchSec.querySelector('.stream-player-card');
+    const socialsGrid = watchSec.querySelector('.socials-horizontal-grid');
+    if (!playerCard) {
+      findings.push({ sev: 'MAJOR', rule: 'watch-player-missing', msg: '#watch missing .stream-player-card' });
+    }
+    if (!socialsGrid) {
+      findings.push({ sev: 'MAJOR', rule: 'watch-socials-missing', msg: '#watch missing .socials-horizontal-grid' });
+    }
+  }
+
   return findings;
 }
 
