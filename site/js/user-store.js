@@ -1654,6 +1654,12 @@ class UserStoreController {
         }
 
         if (confirm(`Redeem "${itemName}" for ${cost.toLocaleString()} $DIG points?`)) {
+          let turnstileToken = '';
+          if (typeof window.getTurnstileToken === 'function') {
+            try {
+              turnstileToken = await window.getTurnstileToken('redeem');
+            } catch (_) {}
+          }
           try {
             const res = await fetch('/api/store/redeem', {
               method: 'POST',
@@ -1663,6 +1669,7 @@ class UserStoreController {
                 voucherTitle: itemName,
                 costPoints: cost,
                 stakeVerified: this.stakeVerified,
+                turnstileToken: turnstileToken,
                 deviceHash: (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '')
               })
             });

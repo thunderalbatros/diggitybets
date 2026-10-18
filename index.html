@@ -87,6 +87,51 @@
       };
     })();
   </script>
+  <!-- Cloudflare Turnstile Anti-Bot Shield (Explicit & Invisible Mode) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <script>
+    window.CLOUDFLARE_TURNSTILE_SITEKEY = '0x4AAAAAAFaW8Lu0S2WC3Pa8';
+    window.getTurnstileToken = function(action = 'general') {
+      return new Promise((resolve) => {
+        if (!window.turnstile || !window.CLOUDFLARE_TURNSTILE_SITEKEY) {
+          resolve('');
+          return;
+        }
+        let container = document.getElementById('cf-turnstile-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'cf-turnstile-container';
+          container.style.position = 'fixed';
+          container.style.bottom = '-9999px';
+          container.style.left = '-9999px';
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          document.body.appendChild(container);
+        }
+        try {
+          const widgetId = window.turnstile.render(container, {
+            sitekey: window.CLOUDFLARE_TURNSTILE_SITEKEY,
+            action: action,
+            size: 'invisible',
+            callback: function(token) {
+              try { window.turnstile.remove(widgetId); } catch (_) {}
+              resolve(token || '');
+            },
+            'error-callback': function() {
+              try { window.turnstile.remove(widgetId); } catch (_) {}
+              resolve('');
+            },
+            'expired-callback': function() {
+              try { window.turnstile.remove(widgetId); } catch (_) {}
+              resolve('');
+            }
+          });
+        } catch (_) {
+          resolve('');
+        }
+      });
+    };
+  </script>
 </head>
 <body>
 
