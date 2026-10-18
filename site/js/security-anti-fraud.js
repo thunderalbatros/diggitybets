@@ -17,6 +17,8 @@ class AntiFraudEngine {
   }
 
   async init() {
+    if (this._initialized) return;
+    this._initialized = true;
     this.deviceHash = localStorage.getItem(this.storageKeyDevice) || '';
     if (!this.deviceHash) {
       this.deviceHash = await this.computeHardwareFingerprint();

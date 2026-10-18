@@ -26,17 +26,21 @@
     }
 
     init() {
+      if (this._initialized) return;
+      this._initialized = true;
       this.initSessionBankroll();
       this.initIntelTabs();
-      this.renderRtpRadar();
-      this.initEngineExplorer();
       this.initHoloVaultPack();
-      this.renderPnlCalendar();
       this.initStakeStatsAnalyzer();
-      this.renderFreshDrops();
       this.initDailyStreakVault();
       this.initGiveawayTicketVerifier();
       this.initCompanionExtensionBridge();
+      setTimeout(() => {
+        this.renderRtpRadar();
+        this.initEngineExplorer();
+        this.renderPnlCalendar();
+        this.renderFreshDrops();
+      }, 60);
     }
 
     // =========================================================================

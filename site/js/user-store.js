@@ -55,6 +55,8 @@ class UserStoreController {
   }
 
   init() {
+    if (this._initialized) return;
+    this._initialized = true;
     if (!localStorage.getItem('hunthub_offline_points_purged_v1')) {
       localStorage.setItem('hunthub_balance', '0');
       localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
