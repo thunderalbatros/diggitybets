@@ -241,7 +241,7 @@ function initStakeGamesSwitcher() {
 }
 
 /**
- * Click-to-copy chat command helper badges
+ * Click-to-copy chat command helper badges & #watch Golden Ratio Telemetry Strip
  */
 function initChatCommandHelpers() {
   const cmdPills = document.querySelectorAll('.cmd-pill-row');
@@ -257,7 +257,7 @@ function initChatCommandHelpers() {
         const desc = pill.querySelector('.cmd-pill-desc');
         if (desc) {
           const original = desc.textContent;
-          desc.textContent = 'Copied to clipboard! Paste directly in Kick.com chat.';
+          desc.textContent = '✓ Copied! Paste in Kick Chat';
           desc.style.color = 'var(--kick-green)';
           setTimeout(() => {
             desc.textContent = original;
@@ -267,6 +267,68 @@ function initChatCommandHelpers() {
       }
     });
   });
+
+  // VIP Affiliate Code Quick Copy Button in #watch Socials Dock
+  const vipCopyBtn = document.getElementById('btn-copy-stake-vip-code');
+  if (vipCopyBtn) {
+    vipCopyBtn.addEventListener('click', () => {
+      const code = vipCopyBtn.getAttribute('data-copy-code') || 'DIGGITYBETS';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).catch(() => {});
+      }
+      if (window.soundEngine && typeof window.soundEngine.playCoin === 'function') {
+        try { window.soundEngine.playCoin(); } catch (_) {}
+      }
+      const origLabel = vipCopyBtn.textContent;
+      vipCopyBtn.textContent = '✓ Copied!';
+      vipCopyBtn.style.borderColor = 'var(--kick-green)';
+      vipCopyBtn.style.color = 'var(--kick-green)';
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'VIP Code Copied: DIGGITYBETS 💎',
+          message: 'Use code DIGGITYBETS on Stake for instant rakeback & VIP bonuses!',
+          type: 'gold'
+        });
+      }
+      setTimeout(() => {
+        vipCopyBtn.textContent = origLabel;
+        vipCopyBtn.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+        vipCopyBtn.style.color = 'var(--gold)';
+      }, 2200);
+    });
+  }
+
+  // Sync #watch Quick Telemetry Bar (King of the Hill + Bonus Hunt)
+  const syncWatchTelemetry = () => {
+    const kothEl = document.getElementById('watch-telemetry-koth');
+    if (kothEl) {
+      try {
+        const koth = JSON.parse(localStorage.getItem('hunthub_koth_state') || 'null');
+        if (koth && koth.king) {
+          const kingHandle = String(koth.king).startsWith('@') ? koth.king : '@' + koth.king;
+          kothEl.textContent = `${kingHandle} · ${koth.streak || 0}/${koth.maxStreak || 4} Wins`;
+        } else {
+          kothEl.textContent = 'Open Throne · $5/Win';
+        }
+      } catch (_) {}
+    }
+
+    const huntEl = document.getElementById('watch-telemetry-hunt');
+    if (huntEl) {
+      try {
+        const slots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]');
+        if (Array.isArray(slots) && slots.length > 0) {
+          const opened = slots.filter(s => Number(s.payout) > 0).length;
+          huntEl.textContent = `${opened}/${slots.length} Bonuses Opened`;
+        } else {
+          huntEl.textContent = 'Live Tracker Ready';
+        }
+      } catch (_) {}
+    }
+  };
+
+  syncWatchTelemetry();
+  window.addEventListener('storage', syncWatchTelemetry);
 }
 
 /**
