@@ -814,7 +814,11 @@
       tier: es.tier || '1',
       category: es.category,
       badge: es.badge,
-      color: es.color
+      color: es.color,
+      cloneOf: es.cloneOf || null,
+      events: es.events || null,
+      releasedAt: es.releasedAt || null,
+      bonusBuy: Boolean(es.bonusBuy)
     };
   }
 
@@ -900,10 +904,13 @@
   }
 
   function findMathTwins(slotOrName, limit) {
+    ensureCatalogCache();
     var base = resolve(slotOrName);
-    var baseRtp = parseRtpNum(base.rtp);
-    var baseMax = parseMaxWinNum(base.maxWin);
+    var baseRaw = (_cachedByKey && _cachedByKey[normalizeKey(base.name)]) || base;
+    var baseRtp = parseRtpNum(baseRaw.rtp || base.rtp);
+    var baseMax = parseMaxWinNum(baseRaw.maxWin || base.maxWin);
     var baseKey = normalizeKey(base.name);
+    var baseCloneRoot = normalizeKey(baseRaw.cloneOf || base.name);
     var baseProvLower = (base.provider || '').toLowerCase();
     var baseMech = detectMechanicFamily(base);
     var all = getAllCatalogSlots();
@@ -920,6 +927,29 @@
       var cMech = detectMechanicFamily(c);
       var rtpDiff = Math.abs(baseRtp - cRtp);
       var maxRatio = Math.max(baseMax, cMax) / Math.max(1, Math.min(baseMax, cMax));
+
+      // Check if this candidate is an EXACT verified Stake Engine (engine.io) paytable clone
+      var cCloneTarget = c.cloneOf ? normalizeKey(c.cloneOf) : '';
+      var isVerifiedEngineClone = Boolean(
+        (cCloneTarget && (cCloneTarget === baseKey || cCloneTarget === baseCloneRoot)) ||
+        (baseRaw.cloneOf && cKey === baseCloneRoot)
+      );
+
+      if (isVerifiedEngineClone) {
+        candidates.push({
+          rawSlot: c,
+          similarity: rtpDiff < 0.05 ? 100.0 : 99.8,
+          rtpDelta: Number((cRtp - baseRtp).toFixed(2)),
+          sharedCap: true,
+          isExactEngineClone: true,
+          mechanic: {
+            id: 'ENGINE_EXACT_CLONE',
+            label: rtpDiff < 0.05 ? '🧬 100% Identical engine.io Paytable' : '🧬 Same engine.io Paytable (Re-weighted RTP)',
+            volatility: baseMech.volatility
+          }
+        });
+        continue;
+      }
 
       // Base mathematical similarity (max 86 before mechanical & tier bonuses)
       var rawScore = 84.5 - (rtpDiff * 9.5) - (Math.log10(maxRatio) * 18.5);
@@ -956,11 +986,18 @@
         similarity: Number(finalSim.toFixed(1)),
         rtpDelta: Number((cRtp - baseRtp).toFixed(2)),
         sharedCap: cMax === baseMax,
+        isExactEngineClone: false,
         mechanic: cMech
       });
     }
 
-    candidates.sort(function(a, b) { return b.similarity - a.similarity; });
+    candidates.sort(function(a, b) {
+      if (b.similarity !== a.similarity) return b.similarity - a.similarity;
+      var tA = parseInt(a.rawSlot && a.rawSlot.tier || '3', 10) || 3;
+      var tB = parseInt(b.rawSlot && b.rawSlot.tier || '3', 10) || 3;
+      if (tA !== tB) return tA - tB;
+      return Math.abs(a.rtpDelta || 0) - Math.abs(b.rtpDelta || 0);
+    });
     return candidates.slice(0, limit || 6).map(function(item) {
       var formatted = formatCatalogSlot(item.rawSlot);
       formatted.mechanic = item.mechanic;
@@ -969,6 +1006,7 @@
         similarity: item.similarity,
         rtpDelta: item.rtpDelta,
         sharedCap: item.sharedCap,
+        isExactEngineClone: Boolean(item.isExactEngineClone),
         mechanic: item.mechanic
       };
     });
