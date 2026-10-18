@@ -290,6 +290,31 @@ class AdminHubController {
     }
   }
 
+  isIgnoredSybilAlert(c) {
+    if (!c) return true;
+    const id = String(c.id || c.cluster_id || '');
+    if (id.startsWith('alt_demo_') || id.startsWith('sim_')) return true;
+    const clean = (u) => String(u || '').trim().replace(/^@+/, '').toLowerCase();
+    const p = clean(c.primaryUser || c.primary_user);
+    const a = clean(c.altUser || c.alt_user);
+    if (!p || !a || p === a) return true;
+    const isSampleOrOwner = (u) => (
+      u === 'diggitybets' ||
+      u === 'tomas' ||
+      u === 'tarkansky' ||
+      u === 'viewer' ||
+      u === 'vieweroriginal' ||
+      u === 'guest' ||
+      u === 'player1' ||
+      u === 'player2' ||
+      this.demoUsernames.has(u) ||
+      u.startsWith('altfarmer') ||
+      u.startsWith('stakefarmer') ||
+      u.startsWith('kickuser_')
+    );
+    return isSampleOrOwner(p) || isSampleOrOwner(a);
+  }
+
   ensureInitialData() {
     let claims = [];
     try {
@@ -297,7 +322,7 @@ class AdminHubController {
       if (Array.isArray(claims)) {
         claims = claims.filter(c => {
           if (c.id && String(c.id).startsWith('claim_demo_')) return false;
-          const u = String(c.kick_username || c.username || '').toLowerCase().replace(/^@/, '');
+          const u = String(c.kick_username || c.username || '').toLowerCase().replace(/^@+/, '');
           return u && !this.demoUsernames.has(u) && !u.startsWith('altfarmer') && !u.startsWith('stakefarmer');
         });
         localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
@@ -308,10 +333,14 @@ class AdminHubController {
     try {
       clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
       if (Array.isArray(clusters)) {
-        clusters = clusters.filter(c => !String(c.id).startsWith('alt_demo_') && !String(c.id).startsWith('sim_'));
+        clusters = clusters.filter(c => !this.isIgnoredSybilAlert(c));
         localStorage.setItem('hunthub_alt_clusters', JSON.stringify(clusters));
       }
     } catch (e) { clusters = []; }
+
+    try {
+      localStorage.removeItem('hunthub_device_registry');
+    } catch (_) {}
   }
 
   // Subtabs Setup (4 Dedicated Master Panes)
@@ -400,12 +429,31 @@ class AdminHubController {
     const btnBulkVerify = document.getElementById('btn-admin-bulk-verify-stake');
     if (btnBulkVerify) btnBulkVerify.addEventListener('click', () => this.handleStakeBulkSync());
 
-    // 5. Security Radar Refresh
+    // 5. Security Radar Refresh & Clear
     const btnRefreshRadar = document.getElementById('btn-refresh-security-alerts');
     if (btnRefreshRadar) {
       btnRefreshRadar.addEventListener('click', () => {
         this.renderSecurityRadar();
         if (window.sonner) window.sonner.toast({ title: 'Radar Refreshed 🛡️', message: 'Anti-Sybil telemetry checked.', type: 'cyan' });
+      });
+    }
+
+    const btnClearRadar = document.getElementById('btn-clear-security-alerts');
+    if (btnClearRadar) {
+      btnClearRadar.addEventListener('click', () => {
+        try {
+          localStorage.setItem('hunthub_alt_clusters', '[]');
+          localStorage.removeItem('hunthub_device_registry');
+        } catch (_) {}
+        this.renderKPIs();
+        this.renderSecurityRadar();
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Alertas Anti-Sybil Limpiadas 🧹',
+            message: 'All sample and cached device clusters have been cleared.',
+            type: 'green'
+          });
+        }
       });
     }
 
@@ -451,18 +499,27 @@ class AdminHubController {
     const totalBurned = claims.reduce((sum, c) => sum + (c.cost || c.cost_points || 0), 0);
 
     let clusters = [];
-    try { clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]'); } catch (e) {}
+    try {
+      clusters = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
+      if (Array.isArray(clusters)) {
+        clusters = clusters.filter(c => !this.isIgnoredSybilAlert(c));
+      } else {
+        clusters = [];
+      }
+    } catch (e) { clusters = []; }
     const flaggedAlts = clusters.length;
 
     const elTotal = document.getElementById('admin-kpi-total-claims');
     const elPending = document.getElementById('admin-kpi-pending-claims');
     const elBurned = document.getElementById('admin-kpi-burned-points');
-    const elAlts = document.getElementById('admin-kpi-flagged-alts');
+    const elAlts = document.getElementById('admin-kpi-flagged-alts') || document.getElementById('admin-kpi-alts');
 
     if (elTotal) elTotal.textContent = totalClaims.toString();
     if (elPending) elPending.textContent = pendingClaims.toString();
     if (elBurned) elBurned.textContent = `${totalBurned.toLocaleString()} $DIG`;
     if (elAlts) elAlts.textContent = flaggedAlts.toString();
+    const elAlts2 = document.getElementById('admin-kpi-alts');
+    if (elAlts2) elAlts2.textContent = flaggedAlts.toString();
   }
 
   // ========================================================
@@ -1071,15 +1128,22 @@ class AdminHubController {
       });
       if (res.ok) {
         const data = await res.json();
-        alerts = data.alerts || [];
+        alerts = Array.isArray(data.alerts) ? data.alerts.filter(c => !this.isIgnoredSybilAlert(c)) : [];
       }
     } catch (_) {}
 
     if (alerts.length === 0) {
       try {
-        alerts = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
+        const stored = JSON.parse(localStorage.getItem('hunthub_alt_clusters') || '[]');
+        alerts = Array.isArray(stored) ? stored.filter(c => !this.isIgnoredSybilAlert(c)) : [];
+        localStorage.setItem('hunthub_alt_clusters', JSON.stringify(alerts));
       } catch (e) { alerts = []; }
     }
+
+    const elAlts = document.getElementById('admin-kpi-flagged-alts');
+    if (elAlts) elAlts.textContent = String(alerts.length);
+    const elAlts2 = document.getElementById('admin-kpi-alts');
+    if (elAlts2) elAlts2.textContent = String(alerts.length);
 
     if (alerts.length === 0) {
       tbody.innerHTML = `
@@ -1096,8 +1160,10 @@ class AdminHubController {
       const hash = String(a.device_hash || a.deviceHash || '—');
       const shortHash = this.escapeHTML(hash.length > 14 ? hash.substring(0, 12) + '...' : hash);
       const subnet = this.escapeHTML(a.ip_subnet || a.ipSubnet || '190.19.45.0/24');
-      const primary = this.escapeHTML(a.primaryUser || a.primary_user || 'Player1');
-      const alt = this.escapeHTML(a.altUser || a.alt_user || 'Player2');
+      const rawPrimary = String(a.primaryUser || a.primary_user || 'Player1').replace(/^@+/, '');
+      const rawAlt = String(a.altUser || a.alt_user || 'Player2').replace(/^@+/, '');
+      const primary = this.escapeHTML(rawPrimary);
+      const alt = this.escapeHTML(rawAlt);
       const reason = this.escapeHTML(a.reason || 'SHARED_HARDWARE_FINGERPRINT');
       const score = Number(a.risk_score || a.riskScore || 85);
       const clusterId = this.escapeHTML(a.cluster_id || a.id || 'cluster_1');

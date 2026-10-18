@@ -13,12 +13,86 @@ class AntiFraudEngine {
     this.storageKeyClusters = 'hunthub_alt_clusters';
     this.deviceHash = '';
 
+    this.ignoredAccounts = new Set([
+      'diggitybets', 'tomas', 'streamer', 'admin', 'moderator',
+      'viewer', 'guest', 'player1', 'player2', 'diggityviewer', 'diggitystreamer',
+      'altfarmer_450', 'stakefarmer_01', 'stakefarmer_02',
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
+      'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar',
+      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'catlover'
+    ]);
+
     this.init();
+  }
+
+  normalizeUsername(u) {
+    return String(u || '').trim().toLowerCase().replace(/^@+/, '');
+  }
+
+  isIgnoredOrDemoAccount(u) {
+    const clean = this.normalizeUsername(u);
+    if (!clean) return true;
+    if (this.ignoredAccounts.has(clean)) return true;
+    if (
+      clean.startsWith('altfarmer') ||
+      clean.startsWith('stakefarmer') ||
+      clean.startsWith('kickuser_') ||
+      clean.startsWith('demo_') ||
+      clean.startsWith('sim_') ||
+      clean.startsWith('guest_')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  purgeDemoAndSelfClusters() {
+    try {
+      const rawClusters = JSON.parse(localStorage.getItem(this.storageKeyClusters) || '[]');
+      if (Array.isArray(rawClusters)) {
+        const cleaned = rawClusters
+          .map(c => ({
+            ...c,
+            primaryUser: this.normalizeUsername(c.primaryUser || c.primary_user),
+            altUser: this.normalizeUsername(c.altUser || c.alt_user)
+          }))
+          .filter(c => {
+            if (!c.primaryUser || !c.altUser) return false;
+            if (c.primaryUser === c.altUser) return false;
+            if (this.isIgnoredOrDemoAccount(c.primaryUser) || this.isIgnoredOrDemoAccount(c.altUser)) return false;
+            if (String(c.id || '').startsWith('alt_demo_') || String(c.id || '').startsWith('sim_')) return false;
+            return true;
+          });
+        localStorage.setItem(this.storageKeyClusters, JSON.stringify(cleaned));
+      }
+    } catch (_) {}
+
+    try {
+      const registry = JSON.parse(localStorage.getItem(this.storageKeyRegistry) || '{}');
+      if (registry && typeof registry === 'object') {
+        Object.keys(registry).forEach(hashKey => {
+          if (Array.isArray(registry[hashKey])) {
+            const uniqueValid = [];
+            registry[hashKey].forEach(u => {
+              const norm = this.normalizeUsername(u);
+              if (norm && !this.isIgnoredOrDemoAccount(norm) && !uniqueValid.includes(norm)) {
+                uniqueValid.push(norm);
+              }
+            });
+            registry[hashKey] = uniqueValid;
+          }
+        });
+        localStorage.setItem(this.storageKeyRegistry, JSON.stringify(registry));
+      }
+    } catch (_) {}
   }
 
   async init() {
     if (this._initialized) return;
     this._initialized = true;
+    this.purgeDemoAndSelfClusters();
     this.deviceHash = localStorage.getItem(this.storageKeyDevice) || '';
     if (!this.deviceHash) {
       this.deviceHash = await this.computeHardwareFingerprint();
@@ -109,8 +183,8 @@ class AntiFraudEngine {
    * Detects multi-account clusters sharing the exact same device.
    */
   recordAccountUsage(username) {
-    if (!username) return;
-    const cleanUser = username.trim().toLowerCase();
+    const cleanUser = this.normalizeUsername(username);
+    if (!cleanUser || this.isIgnoredOrDemoAccount(cleanUser)) return;
     const currentHash = this.getDeviceHash();
 
     let registry = {};
@@ -119,35 +193,42 @@ class AntiFraudEngine {
     } catch (e) { registry = {}; }
 
     // List of users associated with this hardware device
-    let deviceUsers = registry[currentHash] || [];
+    let deviceUsers = (registry[currentHash] || [])
+      .map(u => this.normalizeUsername(u))
+      .filter(u => u && !this.isIgnoredOrDemoAccount(u));
     if (!deviceUsers.includes(cleanUser)) {
       deviceUsers.push(cleanUser);
       registry[currentHash] = deviceUsers;
       localStorage.setItem(this.storageKeyRegistry, JSON.stringify(registry));
     }
 
-    // If more than 1 user has used this physical device, record an alt cluster!
-    if (deviceUsers.length > 1) {
+    // If more than 1 distinct real spectator has used this physical device, record an alt cluster!
+    if (deviceUsers.length > 1 && deviceUsers[0] !== cleanUser) {
       this.recordAltCluster(deviceUsers[0], cleanUser, currentHash, 'SHARED_HARDWARE_DEVICE');
     }
   }
 
   recordAltCluster(primaryUser, altUser, deviceHash, reason) {
+    const pClean = this.normalizeUsername(primaryUser);
+    const aClean = this.normalizeUsername(altUser);
+    if (!pClean || !aClean || pClean === aClean) return;
+    if (this.isIgnoredOrDemoAccount(pClean) || this.isIgnoredOrDemoAccount(aClean)) return;
+
     let clusters = [];
     try {
       clusters = JSON.parse(localStorage.getItem(this.storageKeyClusters) || '[]');
     } catch (e) { clusters = []; }
 
     const exists = clusters.some(c => 
-      (c.primaryUser === primaryUser && c.altUser === altUser) ||
-      (c.primaryUser === altUser && c.altUser === primaryUser)
+      (this.normalizeUsername(c.primaryUser) === pClean && this.normalizeUsername(c.altUser) === aClean) ||
+      (this.normalizeUsername(c.primaryUser) === aClean && this.normalizeUsername(c.altUser) === pClean)
     );
 
     if (!exists) {
       clusters.push({
         id: 'alt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        primaryUser,
-        altUser,
+        primaryUser: pClean,
+        altUser: aClean,
         deviceHash: deviceHash.substring(0, 12) + '...',
         reason,
         riskScore: 85,
@@ -159,37 +240,40 @@ class AntiFraudEngine {
       // Notify across broadcast channel
       if (window.BroadcastChannel) {
         const bc = new BroadcastChannel('hunthub_admin_sync');
-        bc.postMessage({ type: 'ALT_DETECTED', primaryUser, altUser });
+        bc.postMessage({ type: 'ALT_DETECTED', primaryUser: pClean, altUser: aClean });
       }
     }
   }
 
   isAccountFlagged(username) {
-    if (!username) return false;
-    const clean = username.trim().toLowerCase();
+    const clean = this.normalizeUsername(username);
+    if (!clean || this.isIgnoredOrDemoAccount(clean)) return false;
     let clusters = [];
     try {
       clusters = JSON.parse(localStorage.getItem(this.storageKeyClusters) || '[]');
     } catch (e) { return false; }
 
-    return clusters.some(c => c.primaryUser === clean || c.altUser === clean);
+    return clusters.some(c => this.normalizeUsername(c.primaryUser) === clean || this.normalizeUsername(c.altUser) === clean);
   }
 
   getFlagReason(username) {
-    if (!username) return '';
-    const clean = username.trim().toLowerCase();
+    const clean = this.normalizeUsername(username);
+    if (!clean) return '';
     let clusters = [];
     try {
       clusters = JSON.parse(localStorage.getItem(this.storageKeyClusters) || '[]');
     } catch (e) { return ''; }
 
-    const match = clusters.find(c => c.primaryUser === clean || c.altUser === clean);
+    const match = clusters.find(c => this.normalizeUsername(c.primaryUser) === clean || this.normalizeUsername(c.altUser) === clean);
     if (!match) return '';
-    const other = match.primaryUser === clean ? match.altUser : match.primaryUser;
+    const pNorm = this.normalizeUsername(match.primaryUser);
+    const aNorm = this.normalizeUsername(match.altUser);
+    const other = pNorm === clean ? aNorm : pNorm;
     return `Shared PC / Hardware Fingerprint with @${other}`;
   }
 
   getAltClusters() {
+    this.purgeDemoAndSelfClusters();
     try {
       return JSON.parse(localStorage.getItem(this.storageKeyClusters) || '[]');
     } catch (e) { return []; }
