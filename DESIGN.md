@@ -99,10 +99,22 @@ Every screen and component MUST adhere to strict visual density rules to prevent
 
 ---
 
-## 8. Hallmark Anti-AI-Slop Pre-Emit Validation
-Before committing any UI or component, the Senior Frontend (`senior-coder`) verifies:
-1. No italic headers or dual-color gradient slop text.
-2. No fabricated proof stats or false metrics.
-3. Strict 8 states implementation for all interactive components.
-4. Mobile verification at 320px, 375px, 414px, and 768px with zero horizontal scroll (`overflow-x: clip`).
+## 8. Hallmark & Impeccable Anti-AI-Slop Pre-Emit Validation (impeccable.style/#slop)
+Before committing any UI or component, every agent verifies against the 7 Anti-Slop Commandments:
+1. **No Generic Purple/Violet AI Gradients:** Ban linear gradient backgrounds blending generic purple `#8b5cf6` with blue `#3b82f6`. Use curated HSL dark luxury slate `#06080d`, emerald `#53fc18` and gold `#ffd700`.
+2. **No Unanchored Floating Icon Halos:** Icons must never float inside vague blurry colorful circles with arbitrary drop-shadows. Icons must reside inside structured, semi-transparent pill or badge containers with crisp hairline borders.
+3. **No Meaningless Rounded-3xl Pill Bloat:** Avoid excessive border-radius (`rounded-3xl` / `rounded-full`) on structural content cards. Maximum card border-radius is `14px`; buttons and badges use `8px` or `10px`.
+4. **No Marketing Fluff / AI Prose Slop:** Zero meaningless filler copy (e.g. "Unleashing the next-generation decentralized synergy"). All copy must be factual, immediate, and written in direct gamer/casino language (e.g., "50/50 Net Profit Split", "Max Cap $100 USD").
+5. **No Italic Headers or Dual-Color Clipped Text:** Headings must be solid, readable, and firmly anchored in `'Chakra Petch'`.
+6. **Borders Over Halos:** 1px semi-transparent borders (`rgba(255, 255, 255, 0.08)`) with controlled inner contrast instead of multi-layer muddy black drop-shadows.
+7. **Tactile Spring Micro-Interactions:** Animations must serve a purpose (feedback, spatial continuity, status change). Zero decorative perpetual bouncing.
+
+---
+
+## 9. B2B Provider Telemetry & Media Kit Standards
+When rendering provider telemetry, "Only on Stake" metrics, or sponsor media kit blocks:
+- **Badge Styling:** `⚡ ONLY ON STAKE` rendered with an illuminated 1px border (`rgba(255, 215, 0, 0.4)`), gold font color (`#ffd700`), and dark micro-pill backdrop (`rgba(255, 215, 0, 0.08)`).
+- **Studio Attribution:** Always display the actual development studio (e.g., *Titan Gaming*, *Twist Gaming*, *Massive Studios*, *Paperclip Gaming*, *AvatarUX*) underneath the title in 10px tabular uppercase typography.
+- **Real-Time Impression Counters:** Tabular metric counters with instantaneous tooltip breakdowns showing battle selections, bonus hunt inclusions, and live player engagements.
+
 
