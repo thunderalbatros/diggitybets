@@ -65,7 +65,8 @@ const context = vm.createContext(windowMock);
 
 for (const src of scriptTags) {
   try {
-    const code = fs.readFileSync(src.replace(/^\//, ''), 'utf8');
+    const cleanPath = src.split('?')[0].replace(/^\//, '');
+    const code = fs.readFileSync(cleanPath, 'utf8');
     vm.runInContext(code, context);
     console.log(`[PASS] Loaded ${src}`);
   } catch (err) {

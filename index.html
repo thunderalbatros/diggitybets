@@ -2066,22 +2066,22 @@
       <div class="stats-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
         <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
           <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">👑 ALL-TIME #1 LEGEND</div>
-          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--gold); margin-top: 4px;">@DiggityVIP</div>
-          <div style="font-size: 12px; color: var(--kick-green); font-weight: 700; margin-top: 2px;">14,850 $DIG · 5 Trophies</div>
+          <div id="stat-leader-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--gold); margin-top: 4px;">—</div>
+          <div id="stat-leader-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Esperando actividad de chat...</div>
         </div>
         <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
           <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🏆 TOURNAMENT RECORD</div>
-          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #38bdf8; margin-top: 4px;">@LuckyRoller</div>
-          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">4 Bracket Tournament Titles</div>
+          <div id="stat-tourney-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #38bdf8; margin-top: 4px;">—</div>
+          <div id="stat-tourney-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Esperando campeones...</div>
         </div>
         <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
           <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🎰 TOP HUNT SNIPER</div>
-          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--kick-green); margin-top: 4px;">@StakeHighRoller</div>
-          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">8 Exact Payout Guesses</div>
+          <div id="stat-sniper-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--kick-green); margin-top: 4px;">—</div>
+          <div id="stat-sniper-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Esperando aciertos...</div>
         </div>
         <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
           <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">💎 TOTAL REWARDS DISTRIBUTED</div>
-          <div style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #ffffff; margin-top: 4px;">142,500 <span style="font-size: 14px; color: var(--gold);">$DIG</span></div>
+          <div id="stat-rewards-pool" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #ffffff; margin-top: 4px;">0 <span style="font-size: 14px; color: var(--gold);">$DIG</span></div>
           <div style="font-size: 12px; color: var(--kick-green); font-weight: 700; margin-top: 2px;">100% Free Spectator Pool</div>
         </div>
       </div>
@@ -2091,13 +2091,13 @@
         <!-- 2nd Place -->
         <div class="podium-card silver">
           <div class="podium-medal">🥈 2ND PLACE ALL-TIME</div>
-          <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(56,189,248,0.35);"><circle cx="32" cy="32" r="30" fill="#09182a" stroke="#38bdf8" stroke-width="2"/><path d="M20 22 H44 V36 C44 42 38 46 32 48 C26 46 20 42 20 36 Z" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round"/><line x1="24" y1="30" x2="40" y2="30" stroke="#38bdf8" stroke-width="2"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#38bdf8" text-anchor="middle">L</text></svg>
+          <div class="podium-avatar" id="podium-2-avatar">
+            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(56,189,248,0.2);"><circle cx="32" cy="32" r="30" fill="#09182a" stroke="rgba(56,189,248,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" fill="#64748b" text-anchor="middle">#2</text></svg>
           </div>
-          <div class="podium-user" id="podium-2-user">@LuckyRoller</div>
-          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 GOLD VIP</span></div>
-          <div class="podium-wager" id="podium-2-points" style="color: #cbd5e1; font-size: 15px; font-weight: 800; margin-top: 6px;">11,420 $DIG All-Time</div>
-          <div class="podium-prize" style="font-size: 11px; color: #38bdf8;">🏆 4 TOURNAMENTS WON</div>
+          <div class="podium-user" id="podium-2-user" style="color: #64748b;">—</div>
+          <div class="podium-kick" id="podium-2-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+          <div class="podium-wager" id="podium-2-points" style="color: #64748b; font-size: 15px; font-weight: 800; margin-top: 6px;">0 $DIG</div>
+          <div class="podium-prize" id="podium-2-prize" style="font-size: 11px; color: #64748b;">ESPERANDO CHAT</div>
         </div>
 
         <!-- 1st Place (Champion) -->
@@ -2106,25 +2106,25 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M4 14l3-8 5 5 5-5 3 8H4z" fill="rgba(255,215,0,0.2)"/></svg>
           </div>
           <div class="podium-medal">🥇 #1 ALL-TIME CHAMPION</div>
-          <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="58" height="58" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 14px rgba(255,215,0,0.4);"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="#ffd700" stroke-width="2"/><path d="M18 42 L46 42 L48 24 L38 31 L32 20 L26 31 L16 24 Z" fill="#ffd700" fill-opacity="0.25" stroke="#ffd700" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ffd700" text-anchor="middle">D</text></svg>
+          <div class="podium-avatar" id="podium-1-avatar">
+            <svg viewBox="0 0 64 64" width="58" height="58" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 14px rgba(255,215,0,0.25);"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="rgba(255,215,0,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="700" fill="#ffd700" text-anchor="middle">#1</text></svg>
           </div>
-          <div class="podium-user" id="podium-1-user">@DiggityVIP</div>
-          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 DIAMOND VIP</span></div>
-          <div class="podium-wager" id="podium-1-points" style="color: var(--gold); font-size: 17px; font-weight: 900; margin-top: 6px;">14,850 $DIG All-Time</div>
-          <div class="podium-prize highlight" style="font-size: 11px;">👑 5 TOURNAMENTS · 12 HUNT HITS</div>
+          <div class="podium-user" id="podium-1-user" style="color: #64748b;">—</div>
+          <div class="podium-kick" id="podium-1-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+          <div class="podium-wager" id="podium-1-points" style="color: #64748b; font-size: 17px; font-weight: 900; margin-top: 6px;">0 $DIG</div>
+          <div class="podium-prize highlight" id="podium-1-prize" style="font-size: 11px; color: #64748b;">ESPERANDO CHAT</div>
         </div>
 
         <!-- 3rd Place -->
         <div class="podium-card bronze">
           <div class="podium-medal">🥉 3RD PLACE ALL-TIME</div>
-          <div class="podium-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(255,42,95,0.35);"><circle cx="32" cy="32" r="30" fill="#230a10" stroke="#ff2a5f" stroke-width="2"/><path d="M34 16 L22 34 L31 34 L28 48 L42 28 L33 28 Z" fill="#ff2a5f" fill-opacity="0.25" stroke="#ff2a5f" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="58" font-family="'Chakra Petch', sans-serif" font-size="9" font-weight="700" fill="#ff2a5f" text-anchor="middle">S</text></svg>
+          <div class="podium-avatar" id="podium-3-avatar">
+            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(255,42,95,0.2);"><circle cx="32" cy="32" r="30" fill="#230a10" stroke="rgba(255,42,95,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" fill="#64748b" text-anchor="middle">#3</text></svg>
           </div>
-          <div class="podium-user" id="podium-3-user">@StakeHighRoller</div>
-          <div class="podium-kick"><span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ EMERALD VIP</span></div>
-          <div class="podium-wager" id="podium-3-points" style="color: #cbd5e1; font-size: 15px; font-weight: 800; margin-top: 6px;">9,900 $DIG All-Time</div>
-          <div class="podium-prize" style="font-size: 11px; color: var(--kick-green);">🎰 8 HUNT HITS · 3 TOURNAMENTS</div>
+          <div class="podium-user" id="podium-3-user" style="color: #64748b;">—</div>
+          <div class="podium-kick" id="podium-3-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+          <div class="podium-wager" id="podium-3-points" style="color: #64748b; font-size: 15px; font-weight: 800; margin-top: 6px;">0 $DIG</div>
+          <div class="podium-prize" id="podium-3-prize" style="font-size: 11px; color: #64748b;">ESPERANDO CHAT</div>
         </div>
       </div>
 

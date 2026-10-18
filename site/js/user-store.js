@@ -92,13 +92,54 @@ class UserStoreController {
   }
 
   recordVerifiedKickChatActivity(sender, content) {
-    if (!this.isLoggedIn || !this.username || !sender) return;
-    const cleanSender = String(sender).trim().replace(/^@/, '').toLowerCase();
-    const cleanSelf = String(this.username).trim().replace(/^@/, '').toLowerCase();
-    if (cleanSender && cleanSender === cleanSelf && String(content || '').trim().length > 0) {
-      this.lastVerifiedKickChatTs = Date.now();
-      this.lastUserInteractionTs = Date.now();
-      localStorage.setItem('hunthub_last_kick_chat_ts', String(this.lastVerifiedKickChatTs));
+    if (!sender) return;
+    const cleanSender = String(sender).trim().replace(/^@/, '');
+    if (this.isLoggedIn && this.username) {
+      const cleanSelf = String(this.username).trim().replace(/^@/, '').toLowerCase();
+      if (cleanSender.toLowerCase() === cleanSelf && String(content || '').trim().length > 0) {
+        this.lastVerifiedKickChatTs = Date.now();
+        this.lastUserInteractionTs = Date.now();
+        localStorage.setItem('hunthub_last_kick_chat_ts', String(this.lastVerifiedKickChatTs));
+      }
+    }
+    // Real Kick chat activity awards points & dynamically fills empty leaderboard slots!
+    this.awardChatterHistoricalPoints(cleanSender, 10);
+  }
+
+  awardChatterHistoricalPoints(username, pts = 10) {
+    if (!username) return;
+    const cleanUser = username.startsWith('@') ? username : `@${username}`;
+    let list = this.getHistoricalLeaderboard();
+
+    let found = list.find(u => (u.kickUser || '').toLowerCase() === cleanUser.toLowerCase());
+    if (!found) {
+      found = {
+        rank: list.length + 1,
+        kickUser: cleanUser,
+        totalDig: pts,
+        tourneysWon: 0,
+        huntHits: 0,
+        tier: 'SILVER',
+        status: 'ACTIVE'
+      };
+      list.push(found);
+    } else {
+      found.totalDig = (Number(found.totalDig) || 0) + pts;
+    }
+
+    list.sort((a, b) => b.totalDig - a.totalDig);
+    list.forEach((item, idx) => { item.rank = idx + 1; });
+
+    try {
+      localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
+    } catch (_) {}
+
+    this.renderHistoricalLeaderboard();
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        new BroadcastChannel('hunthub_bus').postMessage({ type: 'leaderboard_updated' });
+      } catch (_) {}
     }
   }
 
@@ -869,34 +910,34 @@ class UserStoreController {
    * Historical All-Time $DIG Community Leaderboard
    * Persisted in localStorage: hunthub_historical_leaderboard
    */
+  /**
+   * Historical All-Time $DIG Community Leaderboard
+   * Persisted in localStorage: hunthub_historical_leaderboard
+   * Empty by default — fills with real viewer chat activity!
+   */
   getHistoricalLeaderboard() {
     let list = [];
     try {
-      list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || 'null');
+      list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || '[]');
     } catch (_) {}
 
-    if (!Array.isArray(list) || list.length === 0) {
-      list = [
-        { rank: 1, kickUser: '@DiggityVIP', totalDig: 14850, tourneysWon: 5, huntHits: 12, tier: 'DIAMOND', status: 'LEGEND' },
-        { rank: 2, kickUser: '@LuckyRoller', totalDig: 11420, tourneysWon: 4, huntHits: 9, tier: 'GOLD', status: 'ACTIVE' },
-        { rank: 3, kickUser: '@StakeHighRoller', totalDig: 9900, tourneysWon: 3, huntHits: 8, tier: 'EMERALD', status: 'ACTIVE' },
-        { rank: 4, kickUser: '@GamerStake88', totalDig: 8450, tourneysWon: 2, huntHits: 7, tier: 'EMERALD', status: 'ACTIVE' },
-        { rank: 5, kickUser: '@NachoGamer', totalDig: 7200, tourneysWon: 2, huntHits: 6, tier: 'SILVER', status: 'ACTIVE' },
-        { rank: 6, kickUser: '@SlotKing21', totalDig: 6100, tourneysWon: 2, huntHits: 5, tier: 'SILVER', status: 'ACTIVE' },
-        { rank: 7, kickUser: '@CryptoChad', totalDig: 5400, tourneysWon: 1, huntHits: 4, tier: 'SILVER', status: 'ACTIVE' },
-        { rank: 8, kickUser: '@SpinsQueen', totalDig: 4650, tourneysWon: 1, huntHits: 3, tier: 'SILVER', status: 'ACTIVE' },
-        { rank: 9, kickUser: '@StakeHunter', totalDig: 3800, tourneysWon: 1, huntHits: 3, tier: 'SILVER', status: 'ACTIVE' },
-        { rank: 10, kickUser: '@AgusKick', totalDig: 2950, tourneysWon: 0, huntHits: 2, tier: 'SILVER', status: 'ACTIVE' }
-      ];
-      try {
-        localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
-      } catch (_) {}
+    // Filter out any legacy mock/demo users
+    if (Array.isArray(list)) {
+      list = list.filter(u => {
+        const name = (u.kickUser || u.username || '').toLowerCase();
+        return !name.includes('diggityvip') && !name.includes('luckyroller') && !name.includes('stakehighroller') &&
+               !name.includes('gamerstake88') && !name.includes('nachogamer') && !name.includes('slotking21') &&
+               !name.includes('cryptochad') && !name.includes('spinsqueen') && !name.includes('stakehunter') &&
+               !name.includes('aguskick');
+      });
+    } else {
+      list = [];
     }
 
     // If current logged-in user exists and has points, ensure they are tracked
     if (this.username) {
       const cleanUser = this.username.startsWith('@') ? this.username : `@${this.username}`;
-      const found = list.find(u => u.kickUser.toLowerCase() === cleanUser.toLowerCase());
+      const found = list.find(u => (u.kickUser || '').toLowerCase() === cleanUser.toLowerCase());
       const careerDig = parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || (window.houseGames ? window.houseGames.balance : 0);
       if (!found && careerDig > 0) {
         list.push({
@@ -930,23 +971,92 @@ class UserStoreController {
     const p1 = list[0];
     const p2 = list[1];
     const p3 = list[2];
-    if (p1) {
-      const u1 = document.getElementById('podium-1-user');
-      const pts1 = document.getElementById('podium-1-points');
-      if (u1) u1.textContent = p1.kickUser;
-      if (pts1) pts1.textContent = `${p1.totalDig.toLocaleString()} $DIG All-Time`;
+
+    const u1 = document.getElementById('podium-1-user');
+    const pts1 = document.getElementById('podium-1-points');
+    const prize1 = document.getElementById('podium-1-prize');
+    const tier1 = document.getElementById('podium-1-tier');
+    if (u1) {
+      u1.textContent = p1 ? p1.kickUser : '—';
+      u1.style.color = p1 ? 'var(--gold)' : '#64748b';
     }
-    if (p2) {
-      const u2 = document.getElementById('podium-2-user');
-      const pts2 = document.getElementById('podium-2-points');
-      if (u2) u2.textContent = p2.kickUser;
-      if (pts2) pts2.textContent = `${p2.totalDig.toLocaleString()} $DIG All-Time`;
+    if (pts1) {
+      pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
+      pts1.style.color = p1 ? 'var(--gold)' : '#64748b';
     }
-    if (p3) {
-      const u3 = document.getElementById('podium-3-user');
-      const pts3 = document.getElementById('podium-3-points');
-      if (u3) u3.textContent = p3.kickUser;
-      if (pts3) pts3.textContent = `${p3.totalDig.toLocaleString()} $DIG All-Time`;
+    if (prize1) prize1.textContent = p1 ? `👑 ${p1.tourneysWon || 0} TOURNAMENTS · ${p1.huntHits || 0} HUNT HITS` : 'ESPERANDO CHAT';
+    if (tier1) {
+      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 ${p1.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+    }
+
+    const u2 = document.getElementById('podium-2-user');
+    const pts2 = document.getElementById('podium-2-points');
+    const prize2 = document.getElementById('podium-2-prize');
+    const tier2 = document.getElementById('podium-2-tier');
+    if (u2) {
+      u2.textContent = p2 ? p2.kickUser : '—';
+      u2.style.color = p2 ? '#e2e8f0' : '#64748b';
+    }
+    if (pts2) {
+      pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
+      pts2.style.color = p2 ? '#cbd5e1' : '#64748b';
+    }
+    if (prize2) prize2.textContent = p2 ? `🏆 ${p2.tourneysWon || 0} TOURNAMENTS WON` : 'ESPERANDO CHAT';
+    if (tier2) {
+      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 ${p2.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+    }
+
+    const u3 = document.getElementById('podium-3-user');
+    const pts3 = document.getElementById('podium-3-points');
+    const prize3 = document.getElementById('podium-3-prize');
+    const tier3 = document.getElementById('podium-3-tier');
+    if (u3) {
+      u3.textContent = p3 ? p3.kickUser : '—';
+      u3.style.color = p3 ? '#cd7f32' : '#64748b';
+    }
+    if (pts3) {
+      pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
+      pts3.style.color = p3 ? '#cbd5e1' : '#64748b';
+    }
+    if (prize3) prize3.textContent = p3 ? `🎰 ${p3.huntHits || 0} HUNT HITS` : 'ESPERANDO CHAT';
+    if (tier3) {
+      tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${p3.tier || 'VIP'}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+    }
+
+    // Update stats strip cards
+    const statLeaderUser = document.getElementById('stat-leader-user');
+    const statLeaderDesc = document.getElementById('stat-leader-desc');
+    if (statLeaderUser) statLeaderUser.textContent = p1 ? p1.kickUser : '—';
+    if (statLeaderDesc) statLeaderDesc.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG · ${p1.tourneysWon || 0} Trophies` : 'Esperando actividad de chat...';
+
+    const statTourneyUser = document.getElementById('stat-tourney-user');
+    const statTourneyDesc = document.getElementById('stat-tourney-desc');
+    const topTourney = [...list].sort((a,b) => (b.tourneysWon || 0) - (a.tourneysWon || 0))[0];
+    if (statTourneyUser) statTourneyUser.textContent = (topTourney && topTourney.tourneysWon > 0) ? topTourney.kickUser : '—';
+    if (statTourneyDesc) statTourneyDesc.textContent = (topTourney && topTourney.tourneysWon > 0) ? `${topTourney.tourneysWon} Bracket Tournament Titles` : 'Esperando campeones...';
+
+    const statSniperUser = document.getElementById('stat-sniper-user');
+    const statSniperDesc = document.getElementById('stat-sniper-desc');
+    const topSniper = [...list].sort((a,b) => (b.huntHits || 0) - (a.huntHits || 0))[0];
+    if (statSniperUser) statSniperUser.textContent = (topSniper && topSniper.huntHits > 0) ? topSniper.kickUser : '—';
+    if (statSniperDesc) statSniperDesc.textContent = (topSniper && topSniper.huntHits > 0) ? `${topSniper.huntHits} Exact Payout Guesses` : 'Esperando aciertos...';
+
+    const statRewardsPool = document.getElementById('stat-rewards-pool');
+    const totalDigDistributed = list.reduce((acc, u) => acc + (Number(u.totalDig) || 0), 0);
+    if (statRewardsPool) statRewardsPool.innerHTML = `${totalDigDistributed.toLocaleString()} <span style="font-size: 14px; color: var(--gold);">$DIG</span>`;
+
+    // Render Table Rows
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 40px 16px; color: #64748b;">
+            <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
+            <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #cbd5e1;">ESPACIO VACÍO · ESPERANDO ACTIVIDAD DE CHAT</div>
+            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores de Kick aparecerán acá automáticamente al comentar en vivo (<strong style="color: var(--kick-green);">kick.com/diggitybets</strong>).</div>
+          </td>
+        </tr>
+      `;
+      return;
     }
 
     tbody.innerHTML = list.map((item, idx) => {
