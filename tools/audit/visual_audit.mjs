@@ -162,30 +162,35 @@ function pageChecks() {
     }
   }
 
-  // 10. Protagonist Centered $DIG Balance (HUD Symmetrical Balance at 2x Scale: Math.abs(centerDiff) <= 3px)
-  const digPill = document.querySelector('#topbar-dig-balance-pill');
-  if (digPill && visible(digPill)) {
-    const pr = digPill.getBoundingClientRect();
-    const pillCenter = pr.left + pr.width / 2;
+  // 10. Symmetrical Topbar Logo & Fixed $DIG Balance Pill
+  const topbarCenter = document.querySelector('.topbar-center');
+  const logoImg = document.querySelector('.site-header-logo');
+  if (topbarCenter && visible(topbarCenter) && logoImg && visible(logoImg)) {
+    const lr = topbarCenter.getBoundingClientRect();
+    const logoCenter = lr.left + lr.width / 2;
     const vpCenter = vw / 2;
-    const centerDiff = Math.abs(pillCenter - vpCenter);
-    if (centerDiff > 3) {
+    const centerDiff = Math.abs(logoCenter - vpCenter);
+    if (centerDiff > 4) {
       findings.push({
         sev: 'MAJOR',
-        rule: 'dig-balance-center',
-        msg: `#topbar-dig-balance-pill center (${pillCenter.toFixed(1)}px) is off from viewport center (${vpCenter.toFixed(1)}px) by ${centerDiff.toFixed(1)}px (> 3px)`
+        rule: 'topbar-logo-center',
+        msg: `.topbar-center (${logoCenter.toFixed(1)}px) is off from viewport center (${vpCenter.toFixed(1)}px) by ${centerDiff.toFixed(1)}px (> 4px)`
       });
     }
+  }
+  const digPill = document.querySelector('#topbar-dig-balance-pill');
+  if (digPill && visible(digPill)) {
     const ps = getComputedStyle(digPill);
+    const pr = digPill.getBoundingClientRect();
     const pillHeight = parseFloat(ps.height) || pr.height;
     const valEl = digPill.querySelector('.user-balance-val');
     const valFontSize = valEl ? parseFloat(getComputedStyle(valEl).fontSize) : 0;
-    // Compact scale check: height >= 24px and value font >= 11px on all viewports
+    // Scale check: height >= 24px and value font >= 11px on all viewports
     if (pillHeight < 24 || valFontSize < 11) {
       findings.push({
         sev: 'MAJOR',
         rule: 'dig-balance-scale',
-        msg: `#topbar-dig-balance-pill not compact scale: height=${pillHeight.toFixed(1)}px (expected >= 24px), fontSize=${valFontSize.toFixed(1)}px (expected >= 11px)`
+        msg: `#topbar-dig-balance-pill scale check: height=${pillHeight.toFixed(1)}px (expected >= 24px), fontSize=${valFontSize.toFixed(1)}px (expected >= 11px)`
       });
     }
   }

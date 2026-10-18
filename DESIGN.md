@@ -120,9 +120,9 @@ When rendering provider telemetry, "Only on Stake" metrics, or sponsor media kit
 ---
 
 ## 10. Symmetric Topbar HUD, Minimalist Sidebar & Clean `#watch` Stage Architecture
-- **Symmetric Topbar with Centered `$DIG` Balance & Rotating Laser Orbit:**
-  - `.site-topbar` uses a symmetric 3-column grid (`grid-template-columns: 1fr auto 1fr`) with `.topbar-center` locked at the exact mathematical horizontal midpoint (`position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%)`).
-  - `#topbar-dig-balance-pill` renders at a prominent, balanced scale (`min-height: 56px`, `padding: 0 24px`, `36x36px` coin SVG, `27px` tabular numeric balance, `20px` `$DIG` label) surrounded by an active rotating fluor green laser beam (`@keyframes digLaserOrbit`) tracing its perimeter.
+- **Symmetric Topbar with Centered Diggity Bets Logo & Floating Fixed $DIG Balance Pill:**
+  - `.site-topbar` (height: 164px) features `.topbar-center` symmetrically locked at the mathematical viewport midpoint (`left: calc(50% - 142px); transform: translateX(-50%)`) with a generous 20px top margin to prevent ceiling collision or clipping, preserving the full 132px Diggity Bets brand mark.
+  - `#topbar-dig-balance-pill` is anchored inside the fixed top-left corner brand container (`.fixed-corner-brand`, width: 284px, height: 164px), floating directly above the PORTAL sidebar. As the spectator scrolls with the wheel, the pill remains fixed and locked with the portal. It features the prominent 56px height, 36x36px coin SVG, 27px tabular numeric balance, 20px `$DIG` label, and active rotating fluor green laser orbit (`@keyframes digLaserOrbit`).
 - **Unified Right Profile Trigger:**
   - The top-right corner exclusively hosts the unified profile component (`#auth-user-panel` / `#topbar-profile-link` with avatar + `@username`, centered role badge `#auth-role-status-badge` underneath, and right-hand disconnect `✕` `#btn-kick-logout`), with zero separate `[ Profile ]` button.
 - **Minimalist `PORTAL` Sidebar (`248px` Expanded / `72px` Collapsed):**
