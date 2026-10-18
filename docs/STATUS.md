@@ -556,6 +556,12 @@
   - **7. Scorecard Cuantitativo Agent-Reach en Judge Harness:**
     - `tools/intelligence/instincts_engine.mjs` enriquecido con el Scorecard Cuantitativo (Tool Accuracy 100%, Context Hygiene 98.5%, Token Efficiency 96%, Latency Budget 99%, Overall Index 98.4 / 100 - Tier S).
     - `tools/build_dist.mjs` recompiló limpiamente `dist/` (1,100 archivos, 31.01 MB). 12/12 suites de prueba y 73 interactivos en verde (100%).
+  - **8. Integración Design Mastery 2026 & Primitivas Visuales de Lujo:**
+    - **12 Repositorios Integrados:** `Proton` (partículas y atracción magnética de monedas), `glsl-canvas` (shaders WebGL sin Three.js), `gl-transitions` (transiciones de broadcast), `hover-effect` (distorsión líquida), `Popmotion` (física de resortes e inercia), `Floating UI` (menús y tooltips sin colisión), `Keen Slider` (carruseles físicos 60 FPS), `Utopia Core` (tipografía y espaciado fluidos con clamp()), `GUI Challenges` (CSS 3D e iluminación), `Pts.js` (gráficos vectoriales algorítmicos), `SortableJS` (reordenamiento FLIP), `Inspection Chamber / View Transitions API` (transición de vistas sin parpadeo).
+    - **4 Nuevas Skills de Diseño (.agents/skills/):** `minimal-surface-hierarchy` (desencapsulamiento y luminancia), `utopia-fluid-ergonomics` (ajuste 100% zoom nativo), `vanilla-motion-choreography` (puente React a Vanilla), `optical-symmetry-and-focus` (simetría axial y balance $DIG al doble de escala).
+    - **Primitivas de Lujo Generadas:** `site/css/luxury-primitives.css` y `site/js/luxury-primitives.js` (`LuxuryFX.flyCoinsToWallet()`, `.fx-gold-beam`, etc.).
+    - **RAG & Reference Hygiene:** Deduplicación de repositorios redundantes en `references/`, catálogo semántico `knowledge/UI_RECIPES_CATALOG.md` y manual técnico `knowledge/DESIGN_MASTERY_2026.md`.
+    - **Linter Estético Automatizado:** `tools/audit/visual_audit.mjs` ampliado con verificación de clean-space-ratio (≥35%) y ajuste ergonómico 100% zoom en 1440x900 (0 blockers, 0 majors en todas las vistas).
 
 ---
 
