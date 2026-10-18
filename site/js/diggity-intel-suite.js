@@ -50,6 +50,8 @@
       this.liveIntelData = null;
       this.liveRtpIndex = {};
       this.isSyncingLiveFeed = false;
+      this._rtpPoolCache = new Map();
+      this._engineRendered = false;
     }
 
     isNonSlotTableGame(slot) {
@@ -108,19 +110,25 @@
       this.initDailyStreakVault();
       this.initGiveawayTicketVerifier();
       this.initCompanionExtensionBridge();
-      setTimeout(() => {
+
+      const scheduleIdle = typeof window.requestIdleCallback === 'function'
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 500 })
+        : (cb) => setTimeout(cb, 60);
+
+      scheduleIdle(() => {
         this.renderRtpRadar();
         this.initEngineExplorer();
         this.initPnlCalendarControls();
         this.renderPnlCalendar();
         this.renderFreshDrops();
         this.loadLiveCasinoIntel();
-      }, 40);
+      });
     }
 
     indexCasinoRtpList(casinoKey, raw) {
       const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.items) ? raw.items : []);
       if (!list.length) return;
+      if (this._rtpPoolCache) this._rtpPoolCache.clear();
       if (!this.liveRtpIndex[casinoKey]) {
         this.liveRtpIndex[casinoKey] = { bySlug: new Map(), byNorm: new Map(), list: [] };
       }
@@ -136,10 +144,10 @@
 
     async loadLiveCasinoIntel() {
       if (typeof fetch !== 'function') return;
-      const urls = ['/site/data/live_casino_intel.json', '/data/live_casino_intel.json'];
+      const urls = ['/data/live_casino_intel.json', '/site/data/live_casino_intel.json'];
       for (const url of urls) {
         try {
-          const res = await fetch(url, { cache: 'no-cache' });
+          const res = await fetch(url);
           if (!res.ok) continue;
           const data = await res.json();
           if (data && data.liveRtpByCasino) {
@@ -151,7 +159,7 @@
             if (tsEl && data.syncedAt) {
               const dt = new Date(data.syncedAt);
               const label = isNaN(dt.getTime()) ? data.syncedAt : dt.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-              tsEl.textContent = `🟢 Multi-Casino Snapshot: ${label} (${(data.totalCatalogSlots || 11351).toLocaleString()} Slots)`;
+              tsEl.textContent = `🟢 Multi-Casino Snapshot: ${label} (${(data.totalCatalogSlots || 11282).toLocaleString()} Slots)`;
             }
             const bannerEl = document.getElementById('intel-drops-lobby-banner');
             if (bannerEl && data.casinoLobbySummary) {
@@ -160,7 +168,9 @@
             }
             this.renderRtpRadar();
             this.renderFreshDrops();
-            this.renderEngineExplorer();
+            if (this.activeTab === 'engine') {
+              this.renderEngineExplorer();
+            }
             return;
           }
         } catch (_) {}
@@ -391,6 +401,10 @@
         const isMatch = panel.getAttribute('data-intel-panel') === this.activeTab;
         panel.style.display = isMatch ? 'block' : 'none';
       });
+      if (this.activeTab === 'engine' && !this._engineRendered) {
+        this._engineRendered = true;
+        this.renderEngineExplorer();
+      }
     }
 
     // =========================================================================
@@ -478,26 +492,40 @@
       return null;
     }
 
-    computeSlotThermalMetrics(slot, idx) {
-      let baseRtp = parseFloat(String(slot.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
-      const slotNameLower = String(slot.name || '').toLowerCase();
-
-      // 1. Live Bonus Hunt real opened bonuses
-      let huntDelta = 0;
-      let huntSamples = 0;
+    buildThermalLookupContext() {
+      const huntBySlot = Object.create(null);
       try {
         const huntSlots = JSON.parse(localStorage.getItem('hunthub_hunt_slots') || '[]');
-        huntSlots.forEach(hs => {
-          if (hs && hs.name && hs.name.toLowerCase() === slotNameLower && hs.payout !== undefined && hs.bet > 0 && Number(hs.payout) > 0) {
+        for (let i = 0; i < huntSlots.length; i++) {
+          const hs = huntSlots[i];
+          if (hs && hs.name && hs.payout !== undefined && hs.bet > 0 && Number(hs.payout) > 0) {
+            const key = String(hs.name).toLowerCase();
+            if (!huntBySlot[key]) huntBySlot[key] = { delta: 0, samples: 0 };
             const m = Number(hs.payout) / Number(hs.bet);
-            huntDelta += (m >= 100 ? 2.8 : (m >= 60 ? 0.6 : -2.1));
-            huntSamples += 1;
+            huntBySlot[key].delta += (m >= 100 ? 2.8 : (m >= 60 ? 0.6 : -2.1));
+            huntBySlot[key].samples += 1;
           }
-        });
+        }
       } catch (_) {}
+      return {
+        huntBySlot,
+        archiveStatsMap: this.getStakeArchiveSlotStats(),
+        votesMap: this.getCommunityHeatVotes()
+      };
+    }
 
-      // 2. Uploaded Stake Archive per-slot telemetry
-      const archiveStats = this.getStakeArchiveSlotStats()[slotNameLower];
+    computeSlotThermalMetrics(slot, idx, ctx) {
+      let baseRtp = parseFloat(String(slot.rtp || '96.35').replace(/[^0-9.]/g, '')) || 96.35;
+      const slotNameLower = String(slot.name || '').toLowerCase();
+      const lookup = ctx || this.buildThermalLookupContext();
+
+      // 1. Live Bonus Hunt real opened bonuses (pre-indexed O(1))
+      const huntEntry = lookup.huntBySlot[slotNameLower];
+      const huntDelta = huntEntry ? huntEntry.delta : 0;
+      const huntSamples = huntEntry ? huntEntry.samples : 0;
+
+      // 2. Uploaded Stake Archive per-slot telemetry (pre-indexed O(1))
+      const archiveStats = lookup.archiveStatsMap[slotNameLower];
       let archiveDelta = 0;
       let archiveSpins = 0;
       if (archiveStats && archiveStats.wagered > 0) {
@@ -506,8 +534,8 @@
         archiveSpins = Number(archiveStats.bets || 0) * 45;
       }
 
-      // 3. Spectator !hot / !cold community votes
-      const votes = this.getCommunityHeatVotes()[slot.id] || { hot: 0, cold: 0 };
+      // 3. Spectator !hot / !cold community votes (pre-indexed O(1))
+      const votes = lookup.votesMap[slot.id] || { hot: 0, cold: 0 };
       const voteDelta = (votes.hot - votes.cold) * 0.45;
 
       // 4. Real Multi-Casino Live RTP Telemetry (Stake, 500.Casino, Roobet, Razed, Duelbits)
@@ -659,53 +687,64 @@
       }
 
       const query = (searchInp?.value || '').trim();
-      let pool = [];
+      let studioFiltered = [];
       if (query && window.SlotResolver && typeof window.SlotResolver.smartSearch === 'function') {
-        pool = window.SlotResolver.smartSearch(query, 160).filter(s => !this.isNonSlotTableGame(s));
+        const pool = window.SlotResolver.smartSearch(query, 160);
+        studioFiltered = pool.filter(s => !this.isNonSlotTableGame(s) && this.matchesStudioFilter(s, this.rtpStudio));
       } else {
-        // Prioritize real video slots from the active casino's live RTP feed + curated & full catalog up to 360 slots
-        const activeBucket = this.liveRtpIndex[this.rtpCasino];
-        const seenIds = new Set();
-        const pushCandidate = (slotObj, fallbackThumb) => {
-          if (!slotObj || this.isNonSlotTableGame(slotObj)) return;
-          if (!this.matchesStudioFilter(slotObj, this.rtpStudio)) return;
-          if (seenIds.has(slotObj.id)) return;
-          if (!slotObj.image && fallbackThumb) slotObj.image = fallbackThumb;
-          seenIds.add(slotObj.id);
-          pool.push(slotObj);
-        };
+        const cacheKey = `${this.rtpCasino}:${this.rtpStudio}`;
+        if (this._rtpPoolCache && this._rtpPoolCache.has(cacheKey)) {
+          studioFiltered = this._rtpPoolCache.get(cacheKey);
+        } else {
+          const pool = [];
+          const activeBucket = this.liveRtpIndex[this.rtpCasino];
+          const seenIds = new Set();
+          const fastRes = (window.SlotResolver && (window.SlotResolver.resolveFast || window.SlotResolver.resolve))
+            ? (item) => (window.SlotResolver.resolveFast ? window.SlotResolver.resolveFast(item) : window.SlotResolver.resolve(item))
+            : null;
+          const pushCandidate = (slotObj, fallbackThumb) => {
+            if (!slotObj || this.isNonSlotTableGame(slotObj)) return;
+            if (!this.matchesStudioFilter(slotObj, this.rtpStudio)) return;
+            if (seenIds.has(slotObj.id)) return;
+            if (!slotObj.image && fallbackThumb) slotObj.image = fallbackThumb;
+            seenIds.add(slotObj.id);
+            pool.push(slotObj);
+          };
 
-        if (activeBucket && Array.isArray(activeBucket.list) && activeBucket.list.length > 0 && window.SlotResolver) {
-          for (let i = 0; i < activeBucket.list.length && pool.length < 180; i++) {
-            const liveItem = activeBucket.list[i];
-            if (this.isNonSlotTableGame(liveItem)) continue;
-            const resolved = window.SlotResolver.resolve(liveItem.name || liveItem.slug);
-            pushCandidate(resolved, liveItem.thumbnailUrl);
+          if (activeBucket && Array.isArray(activeBucket.list) && activeBucket.list.length > 0 && fastRes) {
+            for (let i = 0; i < activeBucket.list.length && pool.length < 180; i++) {
+              const liveItem = activeBucket.list[i];
+              if (this.isNonSlotTableGame(liveItem)) continue;
+              const resolved = fastRes(liveItem);
+              pushCandidate(resolved, liveItem.thumbnailUrl);
+            }
           }
-        }
 
-        if (window.SlotResolver && typeof window.SlotResolver.getCuratedCatalog === 'function') {
-          window.SlotResolver.getCuratedCatalog().forEach(s => {
-            if (pool.length < 360) pushCandidate(s);
-          });
-        }
-
-        if (window.SlotResolver && typeof window.SlotResolver.getAllCatalogSlots === 'function' && pool.length < 360) {
-          const all = window.SlotResolver.getAllCatalogSlots();
-          for (let i = 0; i < all.length && pool.length < 360; i++) {
-            const raw = all[i];
-            if (this.isNonSlotTableGame(raw)) continue;
-            if (!this.matchesStudioFilter(raw, this.rtpStudio)) continue;
-            const res = window.SlotResolver.resolve(raw);
-            pushCandidate(res);
+          if (window.SlotResolver && typeof window.SlotResolver.getCuratedCatalog === 'function') {
+            window.SlotResolver.getCuratedCatalog().forEach(s => {
+              if (pool.length < 360) pushCandidate(fastRes ? fastRes(s) : s);
+            });
           }
+
+          if (window.SlotResolver && typeof window.SlotResolver.getAllCatalogSlots === 'function' && pool.length < 360) {
+            const all = window.SlotResolver.getAllCatalogSlots();
+            for (let i = 0; i < all.length && pool.length < 360; i++) {
+              const raw = all[i];
+              if (this.isNonSlotTableGame(raw)) continue;
+              if (!this.matchesStudioFilter(raw, this.rtpStudio)) continue;
+              const res = fastRes ? fastRes(raw) : raw;
+              pushCandidate(res);
+            }
+          }
+          studioFiltered = pool;
+          if (this._rtpPoolCache) this._rtpPoolCache.set(cacheKey, studioFiltered);
         }
       }
 
-      const studioFiltered = pool.filter(s => !this.isNonSlotTableGame(s) && this.matchesStudioFilter(s, this.rtpStudio));
+      const thermalCtx = this.buildThermalLookupContext();
       const allMetrics = studioFiltered.map((s, idx) => ({
         slot: s,
-        metrics: this.computeSlotThermalMetrics(s, idx)
+        metrics: this.computeSlotThermalMetrics(s, idx, thermalCtx)
       }));
 
       const hotCount = allMetrics.filter(x => x.metrics.isHot).length;
@@ -713,7 +752,7 @@
       const liveFeedCount = allMetrics.filter(x => x.metrics.isRealCasinoFeed).length;
       const totalCatalogCount = (window.SlotResolver && typeof window.SlotResolver.getAllCatalogSlots === 'function')
         ? window.SlotResolver.getAllCatalogSlots().length
-        : 11351;
+        : 11282;
       const countersEl = document.getElementById('intel-rtp-live-counters');
       if (countersEl) {
         countersEl.innerHTML = `<span style="color:#fda4af;">🔥 ${hotCount} Hot</span> · <span style="color:#7dd3fc;">❄️ ${coldCount} Cold</span> · <span style="color:#53fc18;">📡 ${liveFeedCount} Live ${this.escapeHTML(this.rtpCasino.toUpperCase())}</span> · <span style="color:var(--gold);">${totalCatalogCount.toLocaleString()} Slots Indexed</span>`;
@@ -758,7 +797,7 @@
         return `
           <div class="rtp-heat-card ${metrics.isHot ? 'is-hot' : (metrics.isCold ? 'is-cold' : '')}">
             <div style="display:flex; gap:12px; align-items:center;">
-              <img src="${safeImg}" alt="${safeName}" loading="lazy" style="width:52px; height:68px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; border:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
+              <img src="${safeImg}" alt="${safeName}" loading="lazy" decoding="async" style="width:52px; height:68px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; border:1px solid rgba(255,255,255,0.12); flex-shrink:0;">
               <div style="min-width:0; flex:1;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:4px; flex-wrap:wrap;">
                   <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">${statusBadge}${liveBadge}</div>
@@ -821,16 +860,29 @@
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
           }
 
-          let pageBtnsHtml = '';
-          pageBtnsHtml += `<button type="button" class="intel-pill-btn" data-rtp-page="${Math.max(1, this.rtpPage - 1)}" ${this.rtpPage === 1 ? 'disabled style="opacity:0.45; cursor:not-allowed;"' : ''}>« Prev</button>`;
+          let pageBtnsHtml = '<div class="intel-pagination-group">';
+          pageBtnsHtml += `<button type="button" class="intel-pill-btn intel-page-nav-btn" data-rtp-page="${Math.max(1, this.rtpPage - 1)}" ${this.rtpPage === 1 ? 'disabled' : ''} title="Página anterior">« Prev</button>`;
           for (let p = startPage; p <= endPage; p++) {
             const isAct = p === this.rtpPage;
-            pageBtnsHtml += `<button type="button" class="intel-pill-btn ${isAct ? 'active' : ''}" data-rtp-page="${p}" style="min-width:36px; font-weight:900; ${isAct ? 'border-color:var(--gold); color:#05070e; background:var(--gold);' : ''}">${p}</button>`;
+            pageBtnsHtml += `<button type="button" class="intel-pill-btn intel-page-num-btn ${isAct ? 'active' : ''}" data-rtp-page="${p}" title="Página ${p}">${p}</button>`;
           }
-          pageBtnsHtml += `<button type="button" class="intel-pill-btn" data-rtp-page="${Math.min(totalPages, this.rtpPage + 1)}" ${this.rtpPage === totalPages ? 'disabled style="opacity:0.45; cursor:not-allowed;"' : ''}>Next »</button>`;
+          pageBtnsHtml += `<button type="button" class="intel-pill-btn intel-page-nav-btn" data-rtp-page="${Math.min(totalPages, this.rtpPage + 1)}" ${this.rtpPage === totalPages ? 'disabled' : ''} title="Página siguiente">Next »</button>`;
+          pageBtnsHtml += '</div>';
+
           const showingStart = enriched.length === 0 ? 0 : startIdx + 1;
           const showingEnd = Math.min(enriched.length, startIdx + pageSize);
-          pageBtnsHtml += `<span style="font-size:11.5px; color:#94a3b8; font-family:var(--font-display); font-weight:700; margin-left:8px;">Showing <strong style="color:#fff;">${showingStart}–${showingEnd}</strong> of <strong style="color:var(--gold);">${enriched.length}</strong> slots (Page ${this.rtpPage}/${totalPages})</span>`;
+          pageBtnsHtml += `
+            <div class="intel-page-stats-pill">
+              <span>Mostrando</span>
+              <strong style="color: #ffffff;">${showingStart}–${showingEnd}</strong>
+              <span style="opacity: 0.6;">de</span>
+              <strong style="color: var(--gold);">${enriched.length}</strong>
+              <span style="opacity: 0.6;">slots</span>
+              <span style="margin: 0 4px; opacity: 0.35;">|</span>
+              <span style="color: var(--text-dim);">Página</span>
+              <strong style="color: var(--kick-green);">${this.rtpPage}</strong><span style="opacity: 0.6;">/${totalPages}</span>
+            </div>
+          `;
 
           paginationEl.innerHTML = pageBtnsHtml;
           paginationEl.querySelectorAll('[data-rtp-page]').forEach(btn => {
@@ -918,7 +970,7 @@
             autoBox.style.display = 'block';
             autoBox.innerHTML = matches.map(m => `
               <div class="engine-auto-item" data-slot="${this.escapeHTML(m.name)}" style="display:flex; align-items:center; gap:10px; padding:8px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06);">
-                <img src="${this.escapeHTML(m.image)}" alt="" style="width:28px; height:36px; border-radius:4px; object-fit:contain; background:#070a12;">
+                <img src="${this.escapeHTML(m.image)}" alt="" loading="lazy" decoding="async" style="width:28px; height:36px; border-radius:4px; object-fit:contain; background:#070a12;">
                 <div style="min-width:0; flex:1;">
                   <div style="font-family:var(--font-display); font-size:12.5px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${this.escapeHTML(m.name)}</div>
                   <div style="font-size:10.5px; color:var(--gold);">${this.escapeHTML(m.provider)} · RTP ${this.escapeHTML(String(m.rtp || '96.35%'))} · Max ${this.escapeHTML(m.maxWin || '10,000x')}</div>
@@ -968,7 +1020,10 @@
         });
       }
 
-      this.renderEngineExplorer();
+      if (this.activeTab === 'engine') {
+        this._engineRendered = true;
+        this.renderEngineExplorer();
+      }
     }
 
     computeMysteryBonusDistribution(base, mech, rtpNum, maxNum) {
@@ -1003,6 +1058,7 @@
     }
 
     renderEngineExplorer() {
+      this._engineRendered = true;
       const container = document.getElementById('intel-engine-results');
       if (!container || !window.SlotResolver) return;
 
@@ -1039,7 +1095,7 @@
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 20px;">
           <!-- Primary Slot DNA Card -->
           <div style="padding: 18px; background: rgba(11, 17, 30, 0.92); border: 1.5px solid rgba(0, 229, 255, 0.45); border-radius: 14px; display: flex; gap: 16px; align-items: center;">
-            <img src="${safeBaseImg}" alt="${safeBaseName}" style="width: 78px; height: 102px; aspect-ratio: 180/236; border-radius: 10px; object-fit: contain; background: #070a12; border: 1px solid rgba(0,229,255,0.4);">
+            <img src="${safeBaseImg}" alt="${safeBaseName}" loading="lazy" decoding="async" style="width: 78px; height: 102px; aspect-ratio: 180/236; border-radius: 10px; object-fit: contain; background: #070a12; border: 1px solid rgba(0,229,255,0.4);">
             <div style="flex: 1; min-width: 0;">
               <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
                 <span class="bh-tier-badge tier-6s">🧬 SELECTED ENGINE DNA</span>
@@ -1110,7 +1166,7 @@
             const borderStyle = isExactClone ? 'border:1.5px solid rgba(255,42,95,0.55);' : 'border:1px solid rgba(255,255,255,0.09);';
             return `
               <div style="padding:12px; background:rgba(15,23,42,0.86); ${borderStyle} border-radius:12px; display:flex; align-items:center; gap:10px;">
-                <img src="${tImg}" alt="${tName}" loading="lazy" style="width:48px; height:64px; aspect-ratio:180/236; border-radius:7px; object-fit:contain; background:#070a12; flex-shrink:0;">
+                <img src="${tImg}" alt="${tName}" loading="lazy" decoding="async" style="width:48px; height:64px; aspect-ratio:180/236; border-radius:7px; object-fit:contain; background:#070a12; flex-shrink:0;">
                 <div style="min-width:0; flex:1;">
                   <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; flex-wrap:wrap;">
                     ${matchBadge}
@@ -1861,7 +1917,7 @@
 
         return `
           <div style="padding:12px; background:rgba(11,17,30,0.88); border:1px solid rgba(255,255,255,0.08); border-radius:12px; display:flex; align-items:center; gap:12px;">
-            <img src="${safeImg}" alt="${safeName}" loading="lazy" style="width:50px; height:66px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; flex-shrink:0;">
+            <img src="${safeImg}" alt="${safeName}" loading="lazy" decoding="async" style="width:50px; height:66px; aspect-ratio:180/236; border-radius:8px; object-fit:contain; background:#070a12; flex-shrink:0;">
             <div style="min-width:0; flex:1;">
               <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
                 <span class="bh-tier-badge ${badgeClass}">${this.escapeHTML(item.tag)}</span>

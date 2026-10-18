@@ -84,37 +84,6 @@
   window.getDeterministicAvatarSvg = generateAvatarSvg;
   window.getDeterministicAvatarDataUri = generateAvatarDataUri;
 
-  // Replace any existing emoji avatars in page on DOM ready
-  document.addEventListener('DOMContentLoaded', () => {
-    // Populate the 7 vector preset buttons
-    const presetBtns = document.querySelectorAll('.avatar-preset-btn[data-avatar-seed]');
-    presetBtns.forEach(btn => {
-      const seed = btn.getAttribute('data-avatar-seed') || 'WantedKing';
-      btn.innerHTML = generateAvatarSvg(seed, 36);
-      btn.addEventListener('click', () => {
-        const dataUri = generateAvatarDataUri(seed, 64);
-        if (window.userStore) {
-          window.userStore.avatar = dataUri;
-          window.userStore.avatarType = 'img';
-          localStorage.setItem('hunthub_avatar', dataUri);
-          localStorage.setItem('hunthub_avatar_type', 'img');
-          window.userStore.updateUserUI();
-          if (window.soundEngine) window.soundEngine.playTick();
-        }
-      });
-    });
-
-    // Replace podium avatars if present
-    const pSilver = document.querySelector('.podium-card.silver .podium-avatar');
-    if (pSilver) pSilver.innerHTML = generateAvatarSvg('NachoSpin', 54);
-
-    const pGold = document.querySelector('.podium-card.gold .podium-avatar');
-    if (pGold) pGold.innerHTML = generateAvatarSvg('GS8***', 62);
-
-    const pBronze = document.querySelector('.podium-card.bronze .podium-avatar');
-    if (pBronze) pBronze.innerHTML = generateAvatarSvg('ZeusMax', 54);
-
-    console.log('[DiggityBets Avatar Generator] DiceBear-style deterministic vector avatars active (0 emojis).');
-  });
-
+  // Deterministic SVG Generator ready for dynamic renders
+  console.log('[DiggityBets Avatar Generator] DiceBear-style deterministic vector avatars active (0 emojis).');
 })(window);

@@ -1682,7 +1682,7 @@
         <div class="rtp-heatmap-grid" id="intel-rtp-grid">
           <!-- Rendered dynamically by diggity-intel-suite.js -->
         </div>
-        <div id="intel-rtp-pagination" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding: 10px 14px; background: rgba(11, 17, 30, 0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;"></div>
+        <div id="intel-rtp-pagination"></div>
       </div>
 
       <!-- TAB 2: ENGINE DNA, MATH TWINS & MYSTERY BUY ODDS -->
@@ -2326,59 +2326,49 @@
           </div>
         </div>
 
-        <!-- Card 2: Identity & Profile Image (Deterministic Vector Avatars) -->
+        <!-- Card 2: Identity & Profile Photo (Kick.com Auto-Sync + Local File Upload) -->
         <div class="profile-glass-card">
-          <h3 class="profile-card-title"><span>🖼️</span> PROFILE IMAGE</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-            Choose a deterministic vector avatar preset or upload your custom profile picture from your device:
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h3 class="profile-card-title" style="margin: 0;"><span>🖼️</span> FOTO DE PERFIL / AVATAR</h3>
+            <span id="prof-avatar-sync-badge" class="reward-badge-pill" style="font-size: 10px; background: rgba(83, 252, 24, 0.12); color: var(--kick-green); border-color: rgba(83, 252, 24, 0.35);">
+              ⚡ KICK AUTO-SYNC
+            </span>
+          </div>
+          <p style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 18px; line-height: 1.5;">
+            Al vincular tu cuenta con <strong style="color: var(--kick-green);">Kick.com</strong> tu foto de perfil oficial se sincroniza automáticamente. También podés elegir una foto personalizada desde tu PC si lo preferís.
           </p>
 
-          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-            <div class="user-avatar-display profile-avatar-box">🤠</div>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 22px; padding: 14px 18px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;">
+            <div class="user-avatar-display profile-avatar-box" style="width: 58px; height: 58px; border-radius: 50%; overflow: hidden; border: 2px solid var(--kick-green); box-shadow: 0 0 16px rgba(83, 252, 24, 0.35); display: flex; align-items: center; justify-content: center; background: #0f172a; flex-shrink: 0;">
+              👤
+            </div>
             <div>
-              <div style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff;">ACTIVE AVATAR</div>
-              <div style="font-size: 12px; color: var(--text-dim);">Shown in Leaderboard, Tournaments and Duels</div>
+              <div style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #ffffff;">FOTO ACTIVA</div>
+              <div id="prof-avatar-source" style="font-size: 12px; color: var(--kick-green); font-weight: 600; margin-top: 2px;">
+                🟢 Sincronizado automáticamente con Kick.com
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Visible en Leaderboard, Batallas 1v1 y Torneos</div>
             </div>
           </div>
 
           <!-- File Upload from PC -->
-          <div style="margin-bottom: 18px; padding: 14px; background: rgba(0, 0, 0, 0.35); border-radius: 10px; border: 1px dashed var(--border-gold);">
-            <label style="font-size: 11px; font-family: var(--font-display); color: var(--gold); font-weight: 800; display: block; margin-bottom: 6px;">
-              📁 UPLOAD PROFILE PHOTO FROM DEVICE:
+          <div style="padding: 16px; background: rgba(0, 0, 0, 0.35); border-radius: 12px; border: 1px dashed rgba(255, 215, 0, 0.35);">
+            <label style="font-size: 11px; font-family: var(--font-display); color: var(--gold); font-weight: 800; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">
+              📁 SUBIR FOTO PERSONALIZADA DESDE TU PC:
             </label>
             <input type="file" id="prof-avatar-file-input" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <button type="button" class="btn-stake-primary" id="btn-upload-avatar-file" style="padding: 7px 14px; font-size: 12px;">
-                Choose File from Computer 📤
+              <button type="button" class="btn-stake-primary" id="btn-upload-avatar-file" style="padding: 8px 16px; font-size: 12.5px; font-weight: 800;">
+                Elegir archivo de tu PC 📤
               </button>
-              <span id="prof-file-name-display" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">No file chosen</span>
+              <button type="button" class="btn-stake-secondary" id="btn-restore-kick-avatar" style="padding: 8px 16px; font-size: 12px; font-weight: 700; border-color: rgba(83, 252, 24, 0.4); color: var(--kick-green);">
+                🔄 Usar foto de Kick.com
+              </button>
+              <span id="prof-file-name-display" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">Ningún archivo seleccionado</span>
             </div>
-            <span style="font-size: 10px; color: var(--text-dim); display: block; margin-top: 6px;">
-              Max file size: 2MB · Recommended: 400×400px (JPG, PNG, WebP)
+            <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 8px;">
+              Tamaño máximo: 2MB · Formatos recomendados: JPG, PNG o WebP (400×400px)
             </span>
-          </div>
-
-          <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-muted); display: block; margin-bottom: 6px;">
-            DETERMINISTIC VECTOR AVATAR PRESETS:
-          </label>
-          <div class="avatar-presets-row" id="avatar-presets-container">
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="WantedKing" title="Slot King"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="ZeusSpark" title="Zeus Spark"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="LeBandit" title="Bandit Core"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="SweetDiamond" title="Diamond Ace"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="TombstoneVisor" title="Outlaw Visor"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="CyberDice" title="Cyber Dice"></button>
-            <button type="button" class="avatar-preset-btn" data-avatar-seed="DiggityGold" title="Diggity Gold"></button>
-          </div>
-
-          <div style="margin-top: 16px;">
-            <label style="font-size: 11px; font-family: var(--font-display); color: var(--text-muted); display: block; margin-bottom: 4px;">
-              OR PASTE IMAGE URL:
-            </label>
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="prof-avatar-url" class="slots-search-input" placeholder="https://example.com/avatar.png">
-              <button type="button" class="btn-game-action primary" id="btn-apply-avatar-url" style="padding: 6px 12px; font-size: 12px;">Apply</button>
-            </div>
           </div>
         </div>
 
