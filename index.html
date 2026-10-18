@@ -1640,9 +1640,13 @@
 
       <!-- TAB 1: LIVE SLOT RTP THERMAL RADAR -->
       <div class="intel-subpanel" data-intel-panel="rtp" style="display: block;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; padding: 12px 16px; background: rgba(11, 17, 30, 0.86); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+        <div id="intel-rtp-summary-strip" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 14px; background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.24); border-radius: 10px; font-family: var(--font-display); font-size: 11.5px; color: #cbd5e1;">
+          <span>📡 <strong>HYBRID TELEMETRY ENGINE:</strong> Combines Official Theoretical RTP + Your Live Bonus Hunt Payouts + Stake Archive + Spectator <code style="color:#53fc18;">!hot</code>/<code style="color:#38bdf8;">!cold</code> Votes</span>
+          <span id="intel-rtp-live-counters" style="color: var(--gold); font-weight: 800;">7,009 Verified Slots Indexed</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 12px 16px; background: rgba(11, 17, 30, 0.86); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
           <div style="flex: 1; min-width: 220px;">
-            <input type="text" id="intel-rtp-search" class="slots-search-input" placeholder="Smart Search (try 'six six six', 'olympus gates', 'hacksaw')..." style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
+            <input type="text" id="intel-rtp-search" class="slots-search-input" placeholder="Smart Search 7,009 slots (try 'six six six', 'olympus gates', 'waylanders', 'paperclip')..." style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button type="button" class="intel-tab-btn active" data-rtp-period="24h" style="padding: 6px 11px; font-size: 11px;">24H Window</button>
@@ -1655,6 +1659,14 @@
             <button type="button" class="intel-tab-btn" data-rtp-filter="COLD" style="padding: 6px 11px; font-size: 11px; color: #7dd3fc;">❄️ Cold Only</button>
           </div>
         </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+          <button type="button" class="intel-tab-btn active" data-rtp-studio="ALL" style="padding: 5px 10px; font-size: 10.5px;">🌐 All Studios</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="hacksaw" style="padding: 5px 10px; font-size: 10.5px;">🪚 Hacksaw Gaming</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="pragmatic" style="padding: 5px 10px; font-size: 10.5px;">⚡ Pragmatic Play</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="nolimit" style="padding: 5px 10px; font-size: 10.5px;">☢️ Nolimit City</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="stake" style="padding: 5px 10px; font-size: 10.5px;">🔥 Stake Engine Exclusives</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="push" style="padding: 5px 10px; font-size: 10.5px;">🦈 Push Gaming</button>
+        </div>
         <div class="rtp-heatmap-grid" id="intel-rtp-grid">
           <!-- Rendered dynamically by diggity-intel-suite.js -->
         </div>
@@ -1662,12 +1674,28 @@
 
       <!-- TAB 2: ENGINE DNA, MATH TWINS & MYSTERY BUY ODDS -->
       <div class="intel-subpanel" data-intel-panel="engine" style="display: none;">
-        <div style="padding: 14px 16px; background: rgba(11, 17, 30, 0.88); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <strong style="font-family: var(--font-display); font-size: 14px; color: #fff;">🧬 MATHEMATICAL TWIN DETECTOR &amp; MYSTERY BONUS ODDS</strong>
-            <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Type any slot to inspect its Scatter Tier probabilities and discover mathematical clones across studios.</p>
+        <div style="padding: 14px 16px; background: rgba(11, 17, 30, 0.88); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 12px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <strong style="font-family: var(--font-display); font-size: 14px; color: #fff;">🧬 MATHEMATICAL TWIN DETECTOR &amp; MYSTERY BONUS ODDS</strong>
+              <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Inspect Scatter Tier probabilities and discover mathematical clones with identical volatility &amp; bonus mechanics when your favorite slot is running cold.</p>
+            </div>
+            <div style="position: relative; min-width: 290px;">
+              <input type="text" id="intel-engine-search" class="slots-search-input" placeholder="Search slot DNA (e.g. Wanted Dead, Gates 1000, SixSixSix)..." autocomplete="off" style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
+              <div id="intel-engine-autocomplete" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #0b111e; border: 1px solid rgba(0, 229, 255, 0.45); border-radius: 10px; z-index: 60; max-height: 240px; overflow-y: auto; box-shadow: 0 12px 28px rgba(0,0,0,0.85);"></div>
+            </div>
           </div>
-          <input type="text" id="intel-engine-search" class="slots-search-input" placeholder="Search slot DNA (e.g. Wanted Dead, Gates 1000, SixSixSix)..." style="min-width: 280px; padding: 8px 12px; font-size: 12.5px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-family: var(--font-display); font-size: 10.5px; color: var(--gold); font-weight: 800; margin-right: 4px;">⚡ QUICK DNA PRESETS:</span>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Wanted Dead or a Wild" style="padding: 3px 9px; font-size: 10.5px;">🤠 Wanted Dead or a Wild</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Gates of Olympus 1000" style="padding: 3px 9px; font-size: 10.5px;">⚡ Gates of Olympus 1000</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Le Bandit" style="padding: 3px 9px; font-size: 10.5px;">🦝 Le Bandit</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="San Quentin 2: Death Row" style="padding: 3px 9px; font-size: 10.5px;">⛓️ San Quentin 2</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="SixSixSix" style="padding: 3px 9px; font-size: 10.5px;">😈 SixSixSix</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Waylanders Forge" style="padding: 3px 9px; font-size: 10.5px;">🔥 Waylanders Forge (98% RTP)</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Minedrop 2" style="padding: 3px 9px; font-size: 10.5px;">⛏️ Minedrop 2</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Duck Hunters 2" style="padding: 3px 9px; font-size: 10.5px;">🦆 Duck Hunters 2</button>
+          </div>
         </div>
         <div id="intel-engine-results">
           <!-- Rendered dynamically by diggity-intel-suite.js -->
@@ -1695,18 +1723,22 @@
               <span class="bh-tier-badge tier-5s">🃏 INTERACTIVE 3D SLOT PICKER</span>
               <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 900; color: #fff; margin: 6px 0 4px 0;">RIP OPEN A HOLO-VAULT BOOSTER PACK</h3>
               <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin: 0;">
-                Can't decide which slot to spin next on stream? Filter by studio, rip the 3D holographic foil seal, and send the revealed slot straight to the <strong>!sr Wheel</strong> or <strong>Bonus Hunt</strong>!
+                Can't decide which slot to spin next on stream? Filter across all <strong>7,009 verified Stake slots</strong>, rip the 3D holographic foil seal, and send the revealed slot straight to the <strong>!sr Wheel</strong> or <strong>Bonus Hunt</strong>!
               </p>
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-              <select id="vault-filter-provider" class="slots-search-input" style="padding: 9px 12px; font-size: 12.5px; min-width: 190px;">
-                <option value="ALL">All Studios (4,889 Slots)</option>
-                <option value="hacksaw">Hacksaw Gaming</option>
-                <option value="pragmatic">Pragmatic Play</option>
-                <option value="nolimit">Nolimit City</option>
-                <option value="push">Push Gaming</option>
-                <option value="stake">Only on Stake / Engine</option>
+              <select id="vault-filter-provider" class="slots-search-input" style="padding: 9px 12px; font-size: 12.5px; min-width: 215px;">
+                <option value="ALL">All Studios (7,009 Verified Slots)</option>
+                <option value="hacksaw">Hacksaw Gaming (273 Slots)</option>
+                <option value="pragmatic">Pragmatic Play (795 Slots)</option>
+                <option value="nolimit">Nolimit City (119 Slots)</option>
+                <option value="paperclip">Paperclip Gaming (59 Exclusives)</option>
+                <option value="valkyrie">Valkyrie Studio (98% RTP Exclusives)</option>
+                <option value="massive">Massive Studios (47 Exclusives)</option>
+                <option value="twist">Twist Gaming (37 Exclusives)</option>
+                <option value="titan">Titan Gaming (63 Exclusives)</option>
+                <option value="push">Push Gaming (87 Slots)</option>
               </select>
               <button type="button" id="btn-rip-vault-pack" class="btn-stake-primary" style="padding: 10px 20px; font-size: 13px; font-weight: 900;">
                 ⚡ RIP HOLO-VAULT PACK
@@ -1714,7 +1746,7 @@
             </div>
 
             <div id="vault-revealed-stats" style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--cyan);">
-              RTP: 96.38% · Max Win: 12,500x
+              RTP: 96.38% · Max Win: 12,500x · ⚔️ VS Expanding Multipliers
             </div>
 
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1741,6 +1773,21 @@
             </h3>
             <div id="intel-pnl-month-summary" style="font-family: var(--font-display); font-size: 12.5px; color: #cbd5e1;"></div>
           </div>
+
+          <!-- Streamer Quick Session Logger & Calendar Editor -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 12px; margin-bottom: 14px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(0, 229, 255, 0.22); border-radius: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-family: var(--font-display); font-size: 11px; color: var(--cyan); font-weight: 800;">✏️ LOG / EDIT STREAM DAY:</span>
+              <input type="number" id="pnl-edit-day" class="slots-search-input" min="1" max="31" placeholder="Day (1-31)" style="width: 92px; padding: 5px 8px; font-size: 12px;">
+              <input type="number" id="pnl-edit-in" class="slots-search-input" min="0" step="10" placeholder="IN ($ USD)" style="width: 115px; padding: 5px 8px; font-size: 12px;">
+              <input type="number" id="pnl-edit-out" class="slots-search-input" min="0" step="10" placeholder="OUT ($ USD)" style="width: 115px; padding: 5px 8px; font-size: 12px;">
+              <button type="button" id="btn-pnl-save-day" class="btn-stake-primary" style="padding: 6px 12px; font-size: 11px; font-weight: 900;">+ Save Day</button>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="btn-pnl-clear-month" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 10.5px; border-color: rgba(239, 68, 68, 0.5); color: #fda4af;">🧹 Clear Demo / Reset Month</button>
+            </div>
+          </div>
+
           <div class="pnl-calendar-grid" id="intel-pnl-calendar-grid">
             <!-- Rendered dynamically -->
           </div>
@@ -1753,7 +1800,7 @@
               <h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0;">
                 📊 PERSONAL STAKE BET ARCHIVE ANALYZER (JSON / CSV)
               </h3>
-              <p style="font-size: 12px; color: #94a3b8; margin: 0;">Drop your Stake bet archive file to inspect total wagered, peak multipliers, and net P&amp;L. Zero data leaves your browser.</p>
+              <p style="font-size: 12px; color: #94a3b8; margin: 0;">Drop your Stake bet archive file to inspect total wagered, peak multipliers, net P&amp;L, and automatically feed real observed RTP into the Thermal Radar.</p>
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <label class="btn-stake-primary" style="padding: 7px 14px; font-size: 11.5px; font-weight: 900; cursor: pointer;">
@@ -1786,9 +1833,17 @@
           </button>
         </div>
 
-        <h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: var(--gold); margin: 0 0 12px 0;">
-          🆕 OCTOBER 2026 FRESH DROPS &amp; HIGH MAX-WIN BEASTS
-        </h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+          <h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: var(--gold); margin: 0;">
+            🆕 VERIFIED 2025–2026 FRESH RELEASES &amp; STAKE ENGINE EXCLUSIVES
+          </h4>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="intel-tab-btn active" data-drops-filter="ALL" style="padding: 5px 10px; font-size: 10.5px;">All 2026 Drops (16)</button>
+            <button type="button" class="intel-tab-btn" data-drops-filter="MAINSTREAM" style="padding: 5px 10px; font-size: 10.5px;">🪚 Hacksaw &amp; Nolimit 2026</button>
+            <button type="button" class="intel-tab-btn" data-drops-filter="ENGINE" style="padding: 5px 10px; font-size: 10.5px;">🔥 Stake Engine Exclusives</button>
+            <button type="button" class="intel-tab-btn" data-drops-filter="HIGHRTP" style="padding: 5px 10px; font-size: 10.5px;">💎 High RTP (96.7%–98.0%)</button>
+          </div>
+        </div>
         <div id="intel-fresh-drops-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
           <!-- Rendered dynamically -->
         </div>
@@ -3433,25 +3488,25 @@
   </div><!-- /.app-layout -->
 
   <!-- Data & Application Controllers -->
-  <script src="data/curated_slots.js?v=25.0"></script>
-  <script src="site/js/slot-resolver.js?v=25.0"></script>
-  <script src="site/js/vendor/confetti.browser.js?v=25.0"></script>
-  <script src="site/js/vendor/countUp.umd.js?v=25.0"></script>
-  <script src="site/js/audio.js?v=25.0"></script>
-  <script src="site/js/pro-fx-audio.js?v=25.0"></script>
-  <script src="site/js/provably-fair.js?v=25.0"></script>
-  <script src="site/js/security-anti-fraud.js?v=25.0"></script>
-  <script src="site/js/avatar-generator.js?v=25.0"></script>
-  <script src="site/js/user-store.js?v=25.0"></script>
-  <script src="site/js/auth-oauth.js?v=25.0"></script>
-  <script src="site/js/admin-hub.js?v=25.0"></script>
-  <script src="site/js/house-games.js?v=25.0"></script>
-  <script src="site/js/tournament-prediction.js?v=25.0"></script>
-  <script src="site/js/bonushunt.js?v=25.0"></script>
-  <script src="site/js/diggity-intel-suite.js?v=25.0"></script>
-  <script src="site/js/motion-fx.js?v=25.0"></script>
-  <script src="site/js/sonner-toast.js?v=25.0"></script>
-  <script src="site/js/app.js?v=25.0"></script>
+  <script src="data/curated_slots.js?v=26.0"></script>
+  <script src="site/js/slot-resolver.js?v=26.0"></script>
+  <script src="site/js/vendor/confetti.browser.js?v=26.0"></script>
+  <script src="site/js/vendor/countUp.umd.js?v=26.0"></script>
+  <script src="site/js/audio.js?v=26.0"></script>
+  <script src="site/js/pro-fx-audio.js?v=26.0"></script>
+  <script src="site/js/provably-fair.js?v=26.0"></script>
+  <script src="site/js/security-anti-fraud.js?v=26.0"></script>
+  <script src="site/js/avatar-generator.js?v=26.0"></script>
+  <script src="site/js/user-store.js?v=26.0"></script>
+  <script src="site/js/auth-oauth.js?v=26.0"></script>
+  <script src="site/js/admin-hub.js?v=26.0"></script>
+  <script src="site/js/house-games.js?v=26.0"></script>
+  <script src="site/js/tournament-prediction.js?v=26.0"></script>
+  <script src="site/js/bonushunt.js?v=26.0"></script>
+  <script src="site/js/diggity-intel-suite.js?v=26.0"></script>
+  <script src="site/js/motion-fx.js?v=26.0"></script>
+  <script src="site/js/sonner-toast.js?v=26.0"></script>
+  <script src="site/js/app.js?v=26.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 

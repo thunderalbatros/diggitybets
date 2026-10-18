@@ -40,7 +40,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 6.25,
     "color": "#00e5ff",
-    "rtp": 96.5
+    "rtp": 96.48
   },
   {
     "id": "sweet-bonanza-1000",
@@ -131,7 +131,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 6.25,
     "color": "#00e5ff",
-    "rtp": 96.5
+    "rtp": 96.55
   },
   {
     "id": "starlight-princess",
@@ -214,14 +214,14 @@ window.HUNTHUB_CURATED_SLOTS = [
   {
     "id": "ze-zeus",
     "name": "Ze Zeus",
-    "provider": "Pragmatic Play",
-    "category": "pragmatic",
+    "provider": "Hacksaw Gaming",
+    "category": "hacksaw",
     "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/e20cf100fe7b8cc8f19a428ca222abd4f85c46679f876aa08fa2521248360b54?w=360&auto=format",
-    "badge": "PRAGMATIC",
+    "badge": "HACKSAW",
     "tier": "1",
     "weight": 10,
-    "color": "#00e5ff",
+    "color": "#ff5722",
     "rtp": 96.34
   },
   {
@@ -274,7 +274,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 6.25,
     "color": "#ff5722",
-    "rtp": 96.22
+    "rtp": 96.1
   },
   {
     "id": "chaos-crew-2",
@@ -403,7 +403,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "NOLIMIT",
     "tier": "1",
     "weight": 6.25,
-    "color": "#e65100"
+    "color": "#e65100",
+    "rtp": 96.03
   },
   {
     "id": "san-quentin-2-death-row",
@@ -416,7 +417,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 6.25,
     "color": "#e65100",
-    "rtp": 96.13
+    "rtp": 96.13,
+    "isNewDrop": true
   },
   {
     "id": "mental",
@@ -429,7 +431,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 6.25,
     "color": "#e65100",
-    "rtp": 96.06
+    "rtp": 96.08
   },
   {
     "id": "tombstone-r-i-p",
@@ -1443,33 +1445,35 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 10,
     "color": "#ff5722",
-    "rtp": 96.24
+    "rtp": 96.24,
+    "isNewDrop": true
   },
   {
     "id": "waylanders-forge",
     "name": "Waylanders Forge",
     "provider": "Valkyrie",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "80,085x",
     "image": "https://mediumrare.imgix.net/7bee41634019f0eb07ba2b55388e79e3a0e0861047450b34d7075602f70520bf?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "1",
     "weight": 6.25,
     "color": "#ffd700",
-    "rtp": 97.7
+    "rtp": 98,
+    "isNewDrop": true
   },
   {
     "id": "ghost-rush",
     "name": "Ghost Rush",
     "provider": "Paperclip Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.3
   },
   {
     "id": "ra-vs-osiris-eternity",
@@ -1489,20 +1493,21 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Odin's Vault",
     "provider": "Valkyrie",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/bfd527bb6d54ad930db0fcfa2983dee64fd4b166bc75d0c71a4163a86440bd82?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "1",
     "weight": 6.25,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.7,
+    "isNewDrop": true
   },
   {
     "id": "big-bass-rock-and-roll",
     "name": "Big Bass Rock and Roll",
     "provider": "Big Bass Rock And Roll",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "5,000x",
     "image": "https://mediumrare.imgix.net/9d16a11dc6a6cef5017fa5fd993908c482cff3d41c749c615dd71dc75ee18774?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "1",
@@ -1528,7 +1533,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Ganja Snail",
     "provider": "Donut Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/f32931231205a5a8a2c712751d45bf17facc425be14cf5dd149096ba8ebfd073?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "1",
@@ -1593,13 +1598,14 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Spicy SixSixSix",
     "provider": "Hacksaw Gaming",
     "category": "hacksaw",
-    "maxWin": "10,000x",
+    "maxWin": "16,666x",
     "image": "https://mediumrare.imgix.net/a162b4d5c5e6181b4d8f3fd7add08f3446d35e0b9a85ac73b4bdca17ab02e165?w=360&auto=format",
     "badge": "HACKSAW",
     "tier": "1",
     "weight": 6.25,
     "color": "#ff5722",
-    "rtp": 96.15
+    "rtp": 96.15,
+    "isNewDrop": true
   },
   {
     "id": "farm-51",
@@ -1619,13 +1625,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Cyber Blade",
     "provider": "Paperclip Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "15,000x",
     "image": "https://mediumrare.imgix.net/5965ed250703fe18acaf01bd31657c6687b89afbcfc7781dc80142b0811492a5?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.2
   },
   {
     "id": "gemstone-golem",
@@ -1638,7 +1644,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.01
+    "rtp": 96.4,
+    "isNewDrop": true
   },
   {
     "id": "le-catcher",
@@ -1651,7 +1658,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 10,
     "color": "#ff5722",
-    "rtp": 96.33
+    "rtp": 96.33,
+    "isNewDrop": true
   },
   {
     "id": "toxic-spins",
@@ -1690,7 +1698,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.7,
+    "isNewDrop": true
   },
   {
     "id": "lucky-phoenix-megaways",
@@ -1723,13 +1732,14 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Wanted Salvation",
     "provider": "Hacksaw Gaming",
     "category": "hacksaw",
-    "maxWin": "10,000x",
+    "maxWin": "12,500x",
     "image": "https://mediumrare.imgix.net/951be46c9f7a071164b6cbefdbb15f254be75080cf67aa1313f5bcdd22c4482b?w=360&auto=format",
     "badge": "HACKSAW",
     "tier": "1",
     "weight": 10,
     "color": "#ff5722",
-    "rtp": 96.38
+    "rtp": 96.38,
+    "isNewDrop": true
   },
   {
     "id": "lit-city",
@@ -1742,7 +1752,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 10,
     "color": "#ff5722",
-    "rtp": 97.43
+    "rtp": 97.43,
+    "isNewDrop": true
   },
   {
     "id": "retro-gangster",
@@ -1762,26 +1773,26 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Thunder vs Underworld 250",
     "provider": "Thunder Vs Underworld 250",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/473aa45c8de37903a180d1134ffb5e66108cb6d85b6221cd69756e8fca4b42d1?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 98.01
+    "rtp": 96.5
   },
   {
     "id": "gates-of-heaven-super-scatter",
     "name": "Gates of Heaven Super Scatter",
     "provider": "Gates Of Heaven Super Scatter",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "15,000x",
     "image": "https://mediumrare.imgix.net/84d9fc15db9082b282ef8f5c6daa0acf46171b830e48aab3f7353a4c3dd47dd6?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 98
+    "rtp": 96.5
   },
   {
     "id": "moonshine",
@@ -1807,7 +1818,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "1",
     "weight": 10,
     "color": "#ff5722",
-    "rtp": 96.18
+    "rtp": 96.3
   },
   {
     "id": "chalice-of-olympia",
@@ -1846,7 +1857,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 97.69
+    "rtp": 97.69,
+    "isNewDrop": true
   },
   {
     "id": "big-bass-boom",
@@ -1872,7 +1884,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.5,
+    "isNewDrop": true
   },
   {
     "id": "lost-at-sea",
@@ -1996,13 +2009,14 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Candy Dash 2",
     "provider": "Paperclip Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "15,000x",
     "image": "https://mediumrare.imgix.net/8d65cf820966127b539cf791e750399a35d3f8d9cab99ac3c5e78ca8e0f333b1?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.4,
+    "isNewDrop": true
   },
   {
     "id": "evil-rooster",
@@ -2093,7 +2107,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.11
+    "rtp": 96.4
   },
   {
     "id": "bank-basher",
@@ -2113,13 +2127,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Blade Dance",
     "provider": "Phantom Interactive",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/f79cacc2d22d0e0c0b44a7b0bba4ec47254466e617fd256b1562288e87090994?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.5
   },
   {
     "id": "le-rapper",
@@ -2139,13 +2153,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Sky Drop",
     "provider": "Paperclip Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/88131cf4e6b71114aba9b27a711b0f17c073e5c3043b371d322aa3465bb04220?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 97
   },
   {
     "id": "wild-bay-2000",
@@ -2256,13 +2270,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Graffiti Ways",
     "provider": "Colorful Play",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/996d51fceb3573a2fda3ec4bdd4ae81786ed71913431a456f973d5e2960b96a6?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.12
+    "rtp": 96.5
   },
   {
     "id": "jewel-bonanza",
@@ -2379,7 +2393,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.8
   },
   {
     "id": "transylvania-mania",
@@ -2633,13 +2647,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Short Order",
     "provider": "Black Coffee Studios",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/507ec27479100f6e0e893d806e46f7a2dafcbc9ea2b47104ddf8dea124e2b354?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.5
+    "rtp": 96
   },
   {
     "id": "sugar-thief",
@@ -2711,13 +2725,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Da Guinea",
     "provider": "Cipher Games",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "15,000x",
     "image": "https://mediumrare.imgix.net/3f1f1a0f36e5baffe6d6c866881686d71ee493d4e3844646bfa51450268619b2?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.2
   },
   {
     "id": "dead-noon",
@@ -2841,13 +2855,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Angel of Asgard",
     "provider": "Angel Of Asgard",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/ad9e782efb94d5e9d7066cdbcc6dac07b6ac50d3689f73336d553be77b9575e8?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 97.7
+    "rtp": 96.8
   },
   {
     "id": "cash-paradise",
@@ -3036,13 +3050,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Infernos Forge",
     "provider": "Creative City",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "40,000x",
     "image": "https://mediumrare.imgix.net/ac05b4a84488701b00bb82904d280b79b5a54a02392bc0f9b3e3d024bec7cda5?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.5
+    "rtp": 96.6
   },
   {
     "id": "rage-9999",
@@ -3127,13 +3141,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Final Boss",
     "provider": "Black Coffee Studios",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/d60f76e5399de01b46821afe27f2f2b272db817f331be26fcc34c43febaeb0e8?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.5
+    "rtp": 96.8
   },
   {
     "id": "legion",
@@ -3244,13 +3258,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Dojo Duel 2",
     "provider": "Titan Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/99a060d80d139d8d81f7f41f0178af6b9813e293f13f8e65cb13aef977d02dd3?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.02
+    "rtp": 96.5
   },
   {
     "id": "hex-bloom",
@@ -3309,13 +3323,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Dragon Munch",
     "provider": "Parowdee",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "30,000x",
     "image": "https://mediumrare.imgix.net/07cd1dbfbe8d10a60835e0ee33e1a148016400fbdf28970d910fc0c1d7c60472?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.7
   },
   {
     "id": "sly-sailor",
@@ -4393,7 +4407,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "cemetery-gates",
@@ -4673,13 +4688,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Blood Water",
     "provider": "Degen Lab",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "40,000x",
     "image": "https://mediumrare.imgix.net/fe3860adb10a2d0615f8c1a68d3142ec792877f21e4f5de111a09d8fe7cd8107?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.5
+    "rtp": 96.7
   },
   {
     "id": "dark-forest",
@@ -4803,13 +4818,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Toon Biker",
     "provider": "Paperclip Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/361e2ef3f4d029bf2a55e84101f9508ee9429fdfdb220cd3c83592e33e08bb18?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.01
+    "rtp": 96.3
   },
   {
     "id": "akatsuki-50k",
@@ -5206,13 +5221,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Swamp King",
     "provider": "Meta Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/0fe45556518143fabb3656df7ed9022a5099142f4690c56b8822a97ce64fb612?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.8
   },
   {
     "id": "holy-guacamole",
@@ -5453,13 +5468,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Cake Fiesta",
     "provider": "Colorful Play",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/895002aed74a68ec1a3a12ce1227663b58c796ef141d3921f97b3b6ca70b457b?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.11
+    "rtp": 96.1
   },
   {
     "id": "fallen-god",
@@ -6272,13 +6287,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Frost Crown",
     "provider": "Punter Games",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/03c337906b27256e98c1ed01fcdba36ae41f2b35d036f2ceab2b6cb446fe141c?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.5
   },
   {
     "id": "smite-of-vulcan",
@@ -6298,13 +6313,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Anubis Rage",
     "provider": "Hyper Play",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "50,000x",
     "image": "https://mediumrare.imgix.net/fe00765699ab68f7acae78101dc60eb0a7c7e346d8487dc2c73f7da1a8eda685?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.8
   },
   {
     "id": "blood-orbs",
@@ -7200,7 +7215,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "flask-blast",
@@ -8130,13 +8146,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Wild Voltage",
     "provider": "Donut Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/d48d94b95bd683fa8107045bc2d582871ec59e2e2405f341c7c45bc47a3e7bad?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "2",
     "weight": 4.5,
     "color": "#ffd700",
-    "rtp": 97.7
+    "rtp": 96.4
   },
   {
     "id": "harakiri",
@@ -10320,7 +10336,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.37
+    "rtp": 96.37,
+    "isNewDrop": true
   },
   {
     "id": "witch-craft-fortune",
@@ -12321,7 +12338,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "roulette-royale",
@@ -16852,13 +16870,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Chrono Dimension",
     "provider": "Ornate Square",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "20,000x",
     "image": "https://mediumrare.imgix.net/ae57f2ca23dbce3318464eaf31bf7e270318f43e6e8cfd3df71d701795018d8f?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.4
   },
   {
     "id": "dont-fumble-the-tumble",
@@ -17437,13 +17455,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Dead Rude",
     "provider": "Nox Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "30,000x",
     "image": "https://mediumrare.imgix.net/6a6f994b9c29c182ef5f1607d0140bba3fafbc4b3b42f869c5b6a51857181c0b?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.2
   },
   {
     "id": "flaming-turkey",
@@ -20557,26 +20575,26 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Jade Fate",
     "provider": "Twist Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "15,000x",
     "image": "https://mediumrare.imgix.net/8495eab9a7d00252cde0714290b2d9fea0c4e8a2bd3faaa842a60e92179fb62b?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 97
+    "rtp": 96.2
   },
   {
     "id": "larrys-cake",
     "name": "Larrys Cake",
     "provider": "Partyhat Play",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "12,000x",
     "image": "https://mediumrare.imgix.net/beeef222658d9b4a0ec70205981d6b38e7523517a5c2d8d3b5008286703e2da5?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.7
+    "rtp": 96.3
   },
   {
     "id": "anubis-clusters",
@@ -20765,13 +20783,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Muffin Madness",
     "provider": "Evoslot",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/ac64f611181a7afbfb35b57bb82d7d2f088d3c4dbcc522e95f42d98d8fea1317?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96
+    "rtp": 96.1
   },
   {
     "id": "spooky-reels",
@@ -25476,7 +25494,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "odyssey-hero",
@@ -26315,13 +26334,13 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Shark Lagoon",
     "provider": "Rainfall Gaming",
     "category": "stake",
-    "maxWin": "25,000x",
+    "maxWin": "10,000x",
     "image": "https://mediumrare.imgix.net/0e7b23559480ecc1f78c977242383291c77cb975b76e5eb1c3f64ae174aa021f?w=360&auto=format",
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
     "color": "#ffd700",
-    "rtp": 96.01
+    "rtp": 96.5
   },
   {
     "id": "super-scarab",
@@ -30922,7 +30941,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "toxic-tombs",
@@ -33911,7 +33931,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "wanted-outlaw-s-gold",
@@ -34573,7 +34594,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "happy-reels",
@@ -37536,7 +37558,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "badge": "ONLY ON STAKE",
     "tier": "3",
     "weight": 1,
-    "color": "#ffd700"
+    "color": "#ffd700",
+    "rtp": 96.2
   },
   {
     "id": "rimefall",
@@ -72006,9 +72029,10 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Duel at Dawn",
     "provider": "Hacksaw Gaming",
     "rtp": 96.3,
-    "maxWin": "10,000x",
+    "maxWin": "15,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/bdff3ebf4d04f586ecab90203923fa65b39626ef03359106209089e0c8b1d0d3?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/bdff3ebf4d04f586ecab90203923fa65b39626ef03359106209089e0c8b1d0d3?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "hacksaw-rise-of-ymir",
@@ -72069,9 +72093,10 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Le Pharaoh",
     "provider": "Hacksaw Gaming",
     "rtp": 96.21,
-    "maxWin": "10,000x",
+    "maxWin": "15,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/293b2337d4d5cfda999ca423e34518a1a6682062340f1f1c5a669a26e7927c79?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/293b2337d4d5cfda999ca423e34518a1a6682062340f1f1c5a669a26e7927c79?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "hacksaw-octo-attack",
@@ -72159,7 +72184,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Slayers Inc",
     "provider": "Hacksaw Gaming",
     "rtp": 96.28,
-    "maxWin": "10,000x",
+    "maxWin": "15,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/f08dd3c03232627f508e0b4f458651947e13e46f6d8a53be08507672256d3be2?w=360&auto=format"
   },
@@ -73338,36 +73363,40 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Gator Hunters 2",
     "provider": "Nolimit City",
     "rtp": 96,
-    "maxWin": "10,000x",
+    "maxWin": "30,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/4a501b1086d6eefdad0e3fa186aefa5e7c7f887e428fd51852269eef6bedeced?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/4a501b1086d6eefdad0e3fa186aefa5e7c7f887e428fd51852269eef6bedeced?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-ding-dong-death",
     "name": "Ding Dong Death",
     "provider": "Nolimit City",
     "rtp": 96.08,
-    "maxWin": "10,000x",
+    "maxWin": "25,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/1986af0770fa95813907847d650dfdb8b74151a7dd292916ed9d06660d8f4269?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/1986af0770fa95813907847d650dfdb8b74151a7dd292916ed9d06660d8f4269?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-duck-hunters-2",
     "name": "Duck Hunters 2",
     "provider": "Nolimit City",
     "rtp": 96,
-    "maxWin": "10,000x",
+    "maxWin": "40,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/2554b9bc55d292b6de5645afbf5f74c8993af51d97e54875fa5e8b4edbbff49f?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/2554b9bc55d292b6de5645afbf5f74c8993af51d97e54875fa5e8b4edbbff49f?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-outsourced-2-balkan-engineering",
     "name": "Outsourced 2: Balkan Engineering",
     "provider": "Nolimit City",
     "rtp": 96.04,
-    "maxWin": "10,000x",
+    "maxWin": "11,111x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/2249066967b3ce0f2b45ad76a996c121942cc507cf7ef885bb11873b0e8415ca?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/2249066967b3ce0f2b45ad76a996c121942cc507cf7ef885bb11873b0e8415ca?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-afk-airport-security",
@@ -73392,9 +73421,10 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Tanked 3: First Blood 2",
     "provider": "Nolimit City",
     "rtp": 95.99,
-    "maxWin": "10,000x",
+    "maxWin": "25,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/bdae7295b6a3e51b6806b95142fc519474db711236179d816fabcb0db3127a70?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/bdae7295b6a3e51b6806b95142fc519474db711236179d816fabcb0db3127a70?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-true-grit-redemption-2",
@@ -73572,9 +73602,10 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Brute Force: Alien Onslaught",
     "provider": "Nolimit City",
     "rtp": 96.01,
-    "maxWin": "10,000x",
+    "maxWin": "40,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/26767b8164062b9f2c82f0cb3641efb2c414d2671c83aacb0e99f4776efc7b1b?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/26767b8164062b9f2c82f0cb3641efb2c414d2671c83aacb0e99f4776efc7b1b?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "nolimit-flight-mode",
@@ -73986,7 +74017,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "San Quentin",
     "provider": "Nolimit City",
     "rtp": 96.03,
-    "maxWin": "10,000x",
+    "maxWin": "150,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format"
   },
@@ -74148,7 +74179,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "True Grit Redemption",
     "provider": "Nolimit City",
     "rtp": 96.12,
-    "maxWin": "10,000x",
+    "maxWin": "20,220x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/68552e953aeae114fe69fbfc5203b2ef2b2b2fe87bc9b277ebdb593546a3bfe5?w=360&auto=format"
   },
@@ -74157,7 +74188,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Road Rage",
     "provider": "Nolimit City",
     "rtp": 96.03,
-    "maxWin": "10,000x",
+    "maxWin": "36,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/2e137750a5167c0ac6bad53698cf7ab78c4c1f32de0e7bcd775f5e6c8eda8594?w=360&auto=format"
   },
@@ -74175,7 +74206,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Bounty Hunters",
     "provider": "Nolimit City",
     "rtp": 96.07,
-    "maxWin": "10,000x",
+    "maxWin": "52,310x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/1b3e19c5dadcd298327774785a0ef6dad6128a2ffd323637a85eb34ed859b3ef?w=360&auto=format"
   },
@@ -74184,7 +74215,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Tombstone: No Mercy",
     "provider": "Nolimit City",
     "rtp": 96.05,
-    "maxWin": "10,000x",
+    "maxWin": "16,480x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/a8d6291dc467a3b9d33e3a0d85e6a364d1dcc777daaba11cd8c1a4289e177ca3?w=360&auto=format"
   },
@@ -74193,7 +74224,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Land of the Free",
     "provider": "Nolimit City",
     "rtp": 96.08,
-    "maxWin": "10,000x",
+    "maxWin": "57,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/789ad9f2881c31f08eb5b5ad4b813b7ae2f5fd0b183b4f5e361728dd902f622b?w=360&auto=format"
   },
@@ -74202,7 +74233,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Gluttony",
     "provider": "Nolimit City",
     "rtp": 96.09,
-    "maxWin": "10,000x",
+    "maxWin": "32,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/a0a15f74f26a5d3678fd445a3f5ef3827d571f7e9e9baf538c5ebb8f8e2cb300?w=360&auto=format"
   },
@@ -74211,7 +74242,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Remember Gulag",
     "provider": "Nolimit City",
     "rtp": 96.08,
-    "maxWin": "10,000x",
+    "maxWin": "30,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/8744b8f4130b95ed84a3bf7e8a59cf35cf01a8ecf2b74818f9beb0d599eaab39?w=360&auto=format"
   },
@@ -74220,7 +74251,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Punk Rocker",
     "provider": "Nolimit City",
     "rtp": 96.11,
-    "maxWin": "10,000x",
+    "maxWin": "15,072x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/ddbc0b14390ecf1945621881aa24a47f6669149b9bd9bd6ee7fa7f83ba93a534?w=360&auto=format"
   },
@@ -74229,7 +74260,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Bushido Ways xNudge",
     "provider": "Nolimit City",
     "rtp": 96.61,
-    "maxWin": "10,000x",
+    "maxWin": "30,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/814575272b63d45bb487398b19d55bf6884cd8ea9f125216f7c3d983f5304648?w=360&auto=format"
   },
@@ -74292,9 +74323,10 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Double Down Duel",
     "provider": "Massive Studios",
     "rtp": 96.5,
-    "maxWin": "10,000x",
+    "maxWin": "25,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/94b15f4812382d4965091a57c731b7bc4f156bbeab139ef02494133d95c64744?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/94b15f4812382d4965091a57c731b7bc4f156bbeab139ef02494133d95c64744?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "massive-grannies-vs-aliens",
@@ -74327,8 +74359,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "id": "massive-rolling-the-bones",
     "name": "Rolling the bones",
     "provider": "Massive Studios",
-    "rtp": 96.52,
-    "maxWin": "10,000x",
+    "rtp": 96.3,
+    "maxWin": "25,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/6d1680e37d071f5c7ecddfb3cb3b809a1dab534605536a4c27d82c2531dafb35?w=360&auto=format"
   },
@@ -78819,7 +78851,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Razor Returns",
     "provider": "Push Gaming",
     "rtp": 96.55,
-    "maxWin": "10,000x",
+    "maxWin": "100,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/3a1eed2aa20fa6baea392d305342fd520a93270c6633d3084bc2156ed50d71ef?w=360&auto=format"
   },
@@ -78855,7 +78887,7 @@ window.HUNTHUB_CURATED_SLOTS = [
     "name": "Big Bamboo",
     "provider": "Push Gaming",
     "rtp": 96.13,
-    "maxWin": "10,000x",
+    "maxWin": "50,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/2dc7799a8e8d3b7f00252686cf1f0cd9fce91114205fab56c4a46f913b6cbab3?w=360&auto=format"
   },
@@ -79556,8 +79588,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "id": "relax-money-train-4",
     "name": "Money Train 4",
     "provider": "Relax Gaming",
-    "rtp": 96.5,
-    "maxWin": "10,000x",
+    "rtp": 96.1,
+    "maxWin": "150,000x",
     "volatility": "High",
     "image": "https://mediumrare.imgix.net/ad34abbf38a8ec7311b885584fcb20b4aee1a8f693c019ec08f7d37fbc93bac2?w=360&auto=format"
   },
@@ -82520,7 +82552,8 @@ window.HUNTHUB_CURATED_SLOTS = [
     "rtp": 96.3,
     "maxWin": "10,000x",
     "volatility": "High",
-    "image": "https://mediumrare.imgix.net/bb67a41005ba5eae4937db24bc3e907c4ad604dd57f1fbf6bafb2d4c668e86ec?w=360&auto=format"
+    "image": "https://mediumrare.imgix.net/bb67a41005ba5eae4937db24bc3e907c4ad604dd57f1fbf6bafb2d4c668e86ec?w=360&auto=format",
+    "isNewDrop": true
   },
   {
     "id": "bullshark-doctor-dust",

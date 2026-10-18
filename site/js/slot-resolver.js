@@ -341,7 +341,7 @@
       slug: 'waylanders-forge',
       provider: 'Valkyrie Studio',
       image: 'https://mediumrare.imgix.net/7bee41634019f0eb07ba2b55388e79e3a0e0861047450b34d7075602f70520bf?w=360&auto=format',
-      maxWin: '25,000x',
+      maxWin: '80,085x',
       rtp: '98.00%',
       tier: '1',
       category: 'stake',
@@ -865,12 +865,47 @@
     return isNaN(n) || n < 80 || n > 99.9 ? 96.30 : n;
   }
 
+  function detectMechanicFamily(slot) {
+    if (!slot || !slot.name) {
+      return { id: 'MULTI_VOLATILITY_REELS', label: '⚡ High-Volatility Bonus Reels', volatility: 'HIGH' };
+    }
+    if (slot._mechFamily) return slot._mechFamily;
+    var n = String(slot.name || '').toLowerCase();
+    var p = String(slot.provider || '').toLowerCase();
+    var maxW = slot._maxWinNum !== undefined ? slot._maxWinNum : (slot._maxWinNum = parseMaxWinNum(slot.maxWin));
+    var rtp = slot._rtpNum !== undefined ? slot._rtpNum : (slot._rtpNum = parseRtpNum(slot.rtp));
+
+    var res;
+    if (/wanted|gladiator|2 wild 2 die|duel at dawn|slayers|beam boys|fist of destruction|outlaws|stormforged|densho|anubis|blood & shadow/i.test(n)) {
+      res = { id: 'VS_MULTIPLIER_REELS', label: '⚔️ VS Expanding Multiplier Reels', volatility: 'EXTREME (5/5)' };
+    } else if (/1000|2000|2500|olympus|sweet bonanza|sugar rush|starlight|gates of|wisdom of athena|fruit party|bonanza/i.test(n)) {
+      res = { id: 'TUMBLE_SCATTER_1000', label: '💎 Scatter Pays + Tumble Multipliers', volatility: 'EXTREME (5/5)' };
+    } else if (/le bandit|le pharaoh|le catcher|ze zeus|donny dough|dork|drop.?em|vending|rainbow/i.test(n)) {
+      res = { id: 'CLUSTER_COIN_REVEAL', label: '🍀 Golden Squares + Coin Reveal', volatility: 'MEDIUM-HIGH (4/5)' };
+    } else if (p.indexOf('nolimit') !== -1 || /san quentin|mental|tombstone|fire in the hole|xboot|folsom|dead canary|duck hunters|gator hunters|brute force|tanked|serial|misery|gulag|road rage|gluttony|bushido/i.test(n)) {
+      res = { id: 'XWAYS_EXTREME_CAP', label: '☢️ xWays / xSplit Extreme Cap', volatility: 'INSANE (6/5)' };
+    } else if (/666|sixsixsix|chaos crew|rip city|wicked grin|lit city|rolling the bones/i.test(n)) {
+      res = { id: 'WHEEL_GAMBLE_MULTI', label: '🎰 Multi-Tier Wheel / Multiplier Grid', volatility: 'HIGH-EXTREME (5/5)' };
+    } else if (/razor|bamboo|sharks|boss bear|push/i.test(n) || p.indexOf('push') !== -1) {
+      res = { id: 'MYSTERY_REVEAL_STACKS', label: '🦈 Mystery Reveal Stacks + Instant Coins', volatility: 'EXTREME (5/5)' };
+    } else if (/bass|dog house|fish|carp diem|splash|angler/i.test(n)) {
+      res = { id: 'COLLECTOR_FREE_SPINS', label: '🎣 Collector Progression + Sticky Multipliers', volatility: 'HIGH (4/5)' };
+    } else if (rtp >= 96.65 || /valkyrie|paperclip|twist|titan|massive|backseat|bullshark|uppercut|pocket play|donut|shady lady/i.test(p)) {
+      res = { id: 'STAKE_ENGINE_HIGH_RTP', label: '🔥 Stake Engine High-RTP Exclusive', volatility: maxW >= 25000 ? 'EXTREME (5/5)' : 'HIGH (4/5)' };
+    } else {
+      res = { id: 'MULTI_VOLATILITY_REELS', label: '⚡ Multi-Feature Bonus Buy Engine', volatility: maxW >= 20000 ? 'EXTREME (5/5)' : 'HIGH (4/5)' };
+    }
+    slot._mechFamily = res;
+    return res;
+  }
+
   function findMathTwins(slotOrName, limit) {
     var base = resolve(slotOrName);
     var baseRtp = parseRtpNum(base.rtp);
     var baseMax = parseMaxWinNum(base.maxWin);
     var baseKey = normalizeKey(base.name);
     var baseProvLower = (base.provider || '').toLowerCase();
+    var baseMech = detectMechanicFamily(base);
     var all = getAllCatalogSlots();
     var candidates = [];
 
@@ -880,32 +915,61 @@
       var cKey = c._normName || (c._normName = normalizeKey(c.name));
       if (cKey === baseKey) continue;
       var cRtp = c._rtpNum !== undefined ? c._rtpNum : (c._rtpNum = parseRtpNum(c.rtp));
+      if (cRtp < 94.0) continue; // Skip low-RTP scratch cards
       var cMax = c._maxWinNum !== undefined ? c._maxWinNum : (c._maxWinNum = parseMaxWinNum(c.maxWin));
+      var cMech = detectMechanicFamily(c);
       var rtpDiff = Math.abs(baseRtp - cRtp);
       var maxRatio = Math.max(baseMax, cMax) / Math.max(1, Math.min(baseMax, cMax));
 
-      // Compute mathematical DNA similarity (0 - 99.8%)
-      var sim = 100 - (rtpDiff * 14) - (Math.log10(maxRatio) * 28);
-      var cProvLower = c._provLower !== undefined ? c._provLower : (c._provLower = String(c.provider || '').toLowerCase());
-      if (cProvLower && baseProvLower && cProvLower !== baseProvLower) {
-        sim += 3.5; // Cross-studio mathematical clone bonus
+      // Base mathematical similarity (max 86 before mechanical & tier bonuses)
+      var rawScore = 84.5 - (rtpDiff * 9.5) - (Math.log10(maxRatio) * 18.5);
+
+      // Mechanical DNA match bonus
+      if (cMech.id === baseMech.id) {
+        rawScore += 11.2;
       }
-      sim = Math.max(55, Math.min(99.6, sim));
+
+      // Cross-studio mathematical clone bonus vs same-studio sibling bonus
+      var cProvLower = c._provLower !== undefined ? c._provLower : (c._provLower = String(c.provider || '').toLowerCase());
+      var isBaseEngine = /valkyrie|paperclip|twist|titan|massive|backseat|bullshark|uppercut|pocket play|donut|shady lady/i.test(baseProvLower);
+      var isCandEngine = /valkyrie|paperclip|twist|titan|massive|backseat|bullshark|uppercut|pocket play|donut|shady lady/i.test(cProvLower);
+      if (isBaseEngine && isCandEngine) {
+        rawScore += 5.5;
+      } else if (cProvLower && baseProvLower && cProvLower !== baseProvLower && cMech.id === baseMech.id) {
+        rawScore += 2.6;
+      } else if (cProvLower === baseProvLower && cMech.id === baseMech.id) {
+        rawScore += 2.1;
+      }
+
+      // Prioritize Tier 1 & Tier 2 recognized studios so recommendations are always playable top hits
+      var tierStr = String(c.tier || '3');
+      if (tierStr === '1') rawScore += 2.4;
+      else if (tierStr === '2') rawScore += 1.6;
+      else rawScore -= 4.5;
+
+      // Deterministic fine-grain spread (0.0 to 0.7) so clones never all tie at 99.6%
+      var tieSpread = ((cKey.charCodeAt(0) * 7 + cKey.length * 13) % 8) * 0.1;
+      var finalSim = Math.max(62.0, Math.min(99.4, rawScore - tieSpread));
+
       candidates.push({
         rawSlot: c,
-        similarity: Number(sim.toFixed(1)),
+        similarity: Number(finalSim.toFixed(1)),
         rtpDelta: Number((cRtp - baseRtp).toFixed(2)),
-        sharedCap: cMax === baseMax
+        sharedCap: cMax === baseMax,
+        mechanic: cMech
       });
     }
 
     candidates.sort(function(a, b) { return b.similarity - a.similarity; });
     return candidates.slice(0, limit || 6).map(function(item) {
+      var formatted = formatCatalogSlot(item.rawSlot);
+      formatted.mechanic = item.mechanic;
       return {
-        slot: formatCatalogSlot(item.rawSlot),
+        slot: formatted,
         similarity: item.similarity,
         rtpDelta: item.rtpDelta,
-        sharedCap: item.sharedCap
+        sharedCap: item.sharedCap,
+        mechanic: item.mechanic
       };
     });
   }
@@ -1044,6 +1108,7 @@
     fuzzyMatch: fuzzyMatch,
     smartSearch: smartSearch,
     findMathTwins: findMathTwins,
+    detectMechanicFamily: detectMechanicFamily,
     expandNumberWords: expandNumberWords,
     getAllCatalogSlots: getAllCatalogSlots,
     resolveSlotImageUrl: resolveSlotImageUrl,
