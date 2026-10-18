@@ -87,6 +87,9 @@ const headersContent = `/*
 /site/js/*
   Cache-Control: public, max-age=0, must-revalidate
 
+/data/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /site/images/*
   Cache-Control: public, max-age=2592000, immutable
 
