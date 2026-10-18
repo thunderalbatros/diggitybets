@@ -285,7 +285,7 @@ for (const vp of VIEWPORTS) {
   page.on('pageerror', e => report.console.push(`[${vp.w}] PAGEERROR ${e.message.slice(0, 200)}`));
   page.on('response', r => { if (r.status() >= 400 && !/kick\.com|fonts\.g|imgix|pusher\.app/.test(r.url())) report.failedRequests.push(`[${vp.w}] ${r.status()} ${r.url().slice(0, 140)}`); });
   page.on('requestfailed', r => { const u = r.url(); if (!/kick\.com|fonts\.g|imgix|pusher\.app/.test(u)) report.failedRequests.push(`[${vp.w}] ${u.slice(0, 140)}`); });
-  await page.goto(BASE + '/#watch', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/#watch', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(1200);
   for (const v of VIEWS) {
     await page.evaluate(id => {

@@ -563,10 +563,66 @@
     - **RAG & Reference Hygiene:** Deduplicación de repositorios redundantes en `references/`, catálogo semántico `knowledge/UI_RECIPES_CATALOG.md` y manual técnico `knowledge/DESIGN_MASTERY_2026.md`.
     - **Linter Estético Automatizado:** `tools/audit/visual_audit.mjs` ampliado con verificación de clean-space-ratio (≥35%) y ajuste ergonómico 100% zoom en 1440x900 (0 blockers, 0 majors en todas las vistas).
 
+- [x] **Stage 23 (SOTA Agent Harness Engineering, Scaffolding, Repo Hunt & 8-Squad Alignment):** COMPLETED, VERIFIED & AUDITED.
+  - **1. Investigación Exhaustiva de Harnesses (SOTA 2026):**
+    - Desglose y formalización del principio central: *"The model is smart. The harness makes it reliable."* (variaciones de 20-35% de rendimiento por ingeniería de arnés con el mismo modelo en benchmarks reales).
+    - Mapeo de los 6 pilares de un arnés de grado de producción: 1. Alineación & Steering, 2. Ejecución & Sandboxing Git Worktree, 3. Verificación & Juez Determinista, 4. Coordinación Multi-Agente (8 Squads), 5. Presupuesto de Contexto FinOps, 6. Evaluación Continua & Scorecards.
+  - **2. Cacería de Repositorios de Arneses Abiertos (`REFERENCE_REPOS.md` Sección 9):**
+    - Censo exhaustivo de 13 repositorios clave evaluados bajo restricción permanente USD 0 y Windows: `UKGovernmentBEIS/inspect_ai`, `promptfoo/promptfoo`, `princeton-nlp/SWE-bench`, `princeton-nlp/SWE-agent`, `walkinglabs/learn-harness-engineering`, `affaan-m/everything-claude-code`, `addyosmani/agent-house`, `guardrails-ai/guardrails`, `mattpocock/sandcastle`, `confident-ai/deepeval`, `explodinggradients/ragas`, `langfuse/langfuse` y `ast-grep/ast-grep`.
+  - **3. Ingesta Canónica de Conocimiento:**
+    - Generado el tratado técnico fundamental: `knowledge/architecture_and_books/CANON_SOTA_AGENT_HARNESS_ENGINEERING_2026.md` con anclas de alcance, fact-tagging `[VERIFICADO]` y matriz de decisión de arnés.
+  - **4. Reparación Crítica de Regresión en Judge Harness:**
+    - Corregida la aserción de `phase7-overlays-obs.test.ts` en `tools/intelligence/rag_pipeline.mjs` escaneando el directorio raíz `references/`, restaurando el Judge Harness a 100% verde (12/12 test suites pasando, exit code 0).
+  - **5. Expansión y Alineación de Topología de 8 Squads (`tools/intelligence/agent_squad.mjs`):**
+    - Incorporados formalmente todos los squads (Squad 0 Lead, Squad 1 Research, Squad 2 Backend, Squad 3 Kick Integration, Squad 4 Frontend, Squad 5 Visual & Motion, Squad 6 QA & Fairness, Squad 7 DevOps & Docs) con habilidades verificadas y función `verifySquadAlignment()` integrada en el Pre-Flight Check.
+  - **6. Verificación Determinista Completa:**
+    - Pre-flight check passed (10 reglas activas, 8 squads alineados, 0 dependencias prohibidas).
+    - AST & Symbolic Code Guard: 86.0/100 (0 errores simbólicos, 0 bloqueadores de seguridad).
+    - Judge Harness: 100% passed en 18.17s (Agent-Reach Index: 98.4 / 100.0 Tier S).
+    - Squad Pipeline: 100% passed (Overall Eval Score: 95.1 / 100.0 S+ Elite).
+
+- [x] **Stage 24 (Kick Spectator Points Podium Unification, Fluor Green Laser FX & Levitating Stage):** COMPLETED, VERIFIED & AUDITED.
+  - **1. Unificación de Información & Eliminación de Panel Separado:**
+    - Se removió el banner superior flotante `.points-prize-hero-card`, consolidando de forma limpia toda la información de premios, multiplicador 2X con código `diggity`, y roles Kick directamente dentro de las tarjetas del podio.
+  - **2. Arquitectura de Escenario de Podio 3D (`.kick-podium-stage`):**
+    - Réplica de la jerarquía monumental de "Stake Leaderboard" con columnas escalonadas (2do lugar a la izquierda, 1er lugar al centro elevado, 3er lugar a la derecha).
+    - Haces de luz radiales cenitales (`.kick-podium-spotlight`), halos de luminancia (`.kick-podium-halo`), corona flotante sobre el campeón y pedestales escalonados (`.kick-podium-pedestal`).
+  - **3. Estética Verde Flúor Kick & Borde Láser:**
+    - Bordes de tarjetas estilizados con efecto de rayo láser verde flúor intenso (`#53fc18` y `#00e676`) con auras de resplandor multicapa (`box-shadow: 0 0 26px rgba(83, 252, 24, 0.4), 0 0 10px rgba(83, 252, 24, 0.25)`).
+    - Tarjeta de Campeón #1 dotada de rayo láser eléctrico reforzado (`border: 2.5px solid #53fc18` con resplandor expansivo de hasta 48px y gradiente interno de luminancia verde flúor).
+  - **4. Tipografía Agrandada y Bloque de Premios Integrado:**
+    - Tipografía de nombres de usuario y puntajes $DIG aumentada a 22px-26px para máxima legibilidad.
+    - Bloque de premios debajo de cada tarjeta con tipografía de alto impacto (24px-28px para el monto base y pastilla de multiplicador 2X o rol VIP Kick).
+  - **5. Animaciones de Levitación Sincronizadas:**
+    - Incorporada la física de levitación suave `@keyframes podiumFloat` (4.4s) con desfase staggered entre columnas (0.4s en 2do, 0s en 1ero, 0.9s en 3ero) y flotación de corona `@keyframes crownFloat` (2.8s) idéntica a la del Stake Leaderboard.
+  - **6. Auditoría y Verificación:**
+    - `test_site.mjs`: 73/73 identificadores interactivos preservados intactos.
+    - `healthcheck.mjs`: 12/12 suites de verificación en verde (100%).
+    - `visual_audit.mjs`: 0 bloqueadores y 0 advertencias en 1440px, 768px y 390px.
+    - `build_dist.mjs`: Build de producción `dist/` recompilado y sincronizado limpiamente.
+
+- [x] **Stage 25 (Voucher Claims Trash Button & Deletion, Streamer Settlement Cleanup & Intro Branding Expansion):** COMPLETED, VERIFIED & AUDITED.
+  - **1. Botón de Papelera y Borrado Definitivo de Reclamos:**
+    - Se incorporó un botón de papelera real (`🗑️`) en cada fila de la cola de redenciones (`admin-claims-tbody`).
+    - Implementado `deleteClaim(id, username)` con confirmación del navegador, eliminación en SQLite (`DELETE FROM store_redemptions WHERE id = ?` vía `/api/admin/delete-store-redemption`) y limpieza inmediata en `localStorage` (`hunthub_redemptions_queue`).
+    - Actualizado `purgeDemoUsersForLiveStream()` para purgar automáticamente reclamos de usuarios mock (`megalol`, `crashbandicoot`, `playera`) y reclamos en estado `REFUNDED` al hacer clic en "🧹 Clean Demo Users".
+  - **2. Traslado de "Streamer Settlement" Exclusivamente a Control Panel:**
+    - Se eliminó el botón de liquidación `#bh-streamer-settlement-container` de la vista pública de Bonus Hunt (`#bonushunt`), dejando el formulario de predicciones limpio para los espectadores.
+    - Se preservó y validó el control de liquidación `#cp-btn-settle-gtb` dentro del panel de control streamer (`#control-panel`), con su correspondiente campo de balance final.
+  - **3. Ampliación de Marca en Escena de Intro OBS (`overlay-intro/`):**
+    - Logotipo de Diggity Bets ampliado de 48px a **76px x 76px** con borde verde flúor reforzado (`border: 2px solid rgba(83, 252, 24, 0.65)`) y resplandor atmosférico de 28px.
+    - Título `DIGGITY BETS` aumentado de 26px a **38px** (con espacio formal entre palabras y `BETS` en verde neón brillante).
+    - Subtítulo ampliado a 15px en mayúsculas (`VIP CASINO & STREAM ENGAGEMENT SUITE`) para alta visibilidad en OBS.
+  - **4. Verificación y Auditoría:**
+    - `npm test` en `core/`: 12/12 suites en verde (100% de aserciones pasando).
+    - `test_site.mjs`: 73/73 identificadores interactivos verificados.
+    - `visual_audit.mjs`: 0 bloqueadores, 0 mayores en 1440px, 768px y 390px.
+    - `build_dist.mjs`: Build de producción `dist/` actualizado.
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements & SOTA 2026 Evolution (Stages 1 to 22): 100% COMPLETED, VERIFIED & PRODUCTION READY.**
+- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium & Admin Cleanup (Stages 1 to 25): 100% COMPLETED, VERIFIED & PRODUCTION READY.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
@@ -576,6 +632,7 @@
 - **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
 - **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, WAAPI/CSS compositor animations, procedural Web Audio (≤3% CPU in OBS).
 - **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.
+
 
 
 

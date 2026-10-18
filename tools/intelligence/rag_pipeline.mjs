@@ -83,7 +83,7 @@ function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
   const codeSkip = new Set(['vendor', 'client', 'packages', 'assets']);
   
   const isDedicatedKnowledge = dir.includes('sota-2026') || dir.includes('skills') || dir.includes('knowledge') || dir.includes('docs');
-  const isVisualRepo = dir.includes('design-mastery') || dir.includes('ui-craft') || dir.includes('clones') || dir.includes('ui-kb');
+  const isVisualRepo = dir.includes('design-mastery') || dir.includes('ui-craft') || dir.includes('fx-audio-sota') || dir.includes('clones') || dir.includes('ui-kb');
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -92,7 +92,7 @@ function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
       if (ent.isDirectory()) {
         if (!ent.name.startsWith('.')) {
           if (baseSkip.has(ent.name)) continue;
-          if (isVisualRepo && (noiseDirSkip.has(ent.name.toLowerCase()) || depth >= 3)) continue;
+          if (isVisualRepo && (noiseDirSkip.has(ent.name.toLowerCase()) || depth >= 4)) continue;
           if (!isDedicatedKnowledge && !isVisualRepo && codeSkip.has(ent.name)) continue;
           files = files.concat(scanKnowledgeFiles(fp, maxDepth, depth + 1));
         }
@@ -103,11 +103,11 @@ function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
         if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
           files.push(fp);
         } else if (isVisualRepo) {
-          // Index shaders, visual stylesheets, and core animation modules
-          if (lower.endsWith('.css') || lower.endsWith('.glsl') || lower.endsWith('.vert') || lower.endsWith('.frag')) {
+          // Index shaders, visual stylesheets, and core animation/audio modules
+          if (lower.endsWith('.css') || lower.endsWith('.glsl') || lower.endsWith('.vert') || lower.endsWith('.frag') || lower.endsWith('.svelte')) {
             files.push(fp);
           } else if ((lower.endsWith('.js') || lower.endsWith('.ts')) && 
-                     (fp.includes('animation') || fp.includes('shader') || fp.includes('behavior') || fp.includes('transition'))) {
+                     (fp.includes('animation') || fp.includes('shader') || fp.includes('behavior') || fp.includes('transition') || fp.includes('atropos') || fp.includes('tilt') || fp.includes('zzfx') || fp.includes('sfxr'))) {
             files.push(fp);
           }
         }
@@ -127,7 +127,7 @@ function createDocumentChunks(filePath) {
   const fileName = path.basename(filePath, ext);
   const text = fs.readFileSync(filePath, 'utf8');
   const cleanText = text.replace(/^---[\s\S]*?---\s*/, '').trim();
-  const isCanon = filePath.includes('knowledge') || filePath.includes('design-mastery');
+  const isCanon = filePath.includes('knowledge') || filePath.includes('design-mastery') || filePath.includes('fx-audio-sota');
   const category = isCanon ? 'canon' : 'general';
 
   // Handle CSS, GLSL and code files as structured code blocks
@@ -273,11 +273,7 @@ export function getOrBuildMiniSearchIndex(force = false) {
   const searchDirs = [
     { dir: path.join(ROOT, 'knowledge'), depth: 4 },
     { dir: path.join(ROOT, 'docs'), depth: 4 },
-    { dir: path.join(ROOT, 'references', 'design-mastery'), depth: 3 },
-    { dir: path.join(ROOT, 'references', 'ui-craft'), depth: 2 },
-    { dir: path.join(ROOT, 'references', 'sota-2026'), depth: 4 },
-    { dir: path.join(ROOT, 'references', 'clones', 'emil-skills', 'skills'), depth: 4 },
-    { dir: path.join(ROOT, 'references', 'ui-kb'), depth: 3 },
+    { dir: path.join(ROOT, 'references'), depth: 4 },
     { dir: path.join(ROOT, '.agents', 'skills'), depth: 4 },
     { dir: path.join(ROOT, '.agents', 'memory'), depth: 4 }
   ];

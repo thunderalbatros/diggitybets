@@ -31,7 +31,8 @@ class AdminHubController {
       'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
       'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar',
       'altfarmer_450', 'stakefarmer_01', 'stakefarmer_02',
-      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'catlover'
+      'stakenacho', 'stakevalen', 'stakeagus', 'diggityfan01', 'newplayer99', 'catlover',
+      'megalol', 'crashbandicoot', 'playera', 'playerb', 'player1', 'player2'
     ]);
 
     // Duo-Wheel Queue (Unified with wheel-duo/main.js via hunthub_duo_pool_v2)
@@ -670,6 +671,9 @@ class AdminHubController {
               <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${username}" data-voucher="${safeVoucher}" title="Copy chat shoutout" style="padding: 4px 8px; font-size: 11px;">
                 📋
               </button>
+              <button type="button" class="btn-chat-toggle btn-delete-claim" data-id="${safeId}" data-user="${username}" title="Delete claim 🗑️" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12);">
+                🗑️
+              </button>
             </div>
           </td>
         </tr>
@@ -682,6 +686,9 @@ class AdminHubController {
     });
     tbody.querySelectorAll('.btn-reject-claim').forEach(b => {
       b.onclick = () => this.rejectClaim(b.dataset.id, b.dataset.user);
+    });
+    tbody.querySelectorAll('.btn-delete-claim').forEach(b => {
+      b.onclick = () => this.deleteClaim(b.dataset.id, b.dataset.user);
     });
     tbody.querySelectorAll('.btn-copy-wallet').forEach(b => {
       b.onclick = () => {
@@ -753,6 +760,36 @@ class AdminHubController {
         title: 'Voucher Rejected & Refunded ↩️',
         message: `$DIG points returned to @${username}.`,
         type: 'danger'
+      });
+    }
+    this.renderKPIs();
+    this.renderClaimsQueue();
+  }
+
+  async deleteClaim(id, username) {
+    if (!confirm(`Are you sure you want to permanently delete the claim for @${username}?`)) return;
+
+    try {
+      await fetch('/api/admin/delete-store-redemption', {
+        method: 'POST',
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ redemptionId: id, adminUser: 'diggitybets' })
+      });
+    } catch (_) {}
+
+    // Local storage removal
+    try {
+      let claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]');
+      claims = claims.filter(c => String(c.id) !== String(id));
+      localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
+    } catch (_) {}
+
+    if (window.soundEngine && typeof window.soundEngine.playChip === 'function') window.soundEngine.playChip();
+    if (window.sonner) {
+      window.sonner.toast({
+        title: 'Claim Deleted 🗑️',
+        message: `Voucher claim for @${username} was permanently removed.`,
+        type: 'gold'
       });
     }
     this.renderKPIs();
@@ -4766,6 +4803,7 @@ class AdminHubController {
         const realClaims = savedClaims.filter(c => {
           if (c.id && String(c.id).startsWith('claim_demo_')) return false;
           const u = c.kick_username || c.username || '';
+          if (force && c.status === 'REFUNDED') return false;
           return !isDemo(u);
         });
         localStorage.setItem(this.storageKeyClaims, JSON.stringify(realClaims));

@@ -1331,6 +1331,15 @@ export class HuntHubDatabase {
     }
   }
 
+  public deleteStoreRedemption(redemptionId: string): { success: boolean; error?: string } {
+    try {
+      this.db.prepare('DELETE FROM store_redemptions WHERE id = ?').run(redemptionId);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
   // --- Weekly Stream Draw & Provably Fair Raffles ---
 
   public getWeekNumber(date: Date = new Date()): number {

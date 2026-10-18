@@ -81,6 +81,10 @@
 | **barvian/number-flow** | Números animados (`@number-flow/svelte`) con `Intl.NumberFormat`. Ideal para Avg X, Req Avg, balance. | verificar | V | DEP candidata |
 | **CrazyTim/spin-wheel** | Ruleta para el sorteo de espectadores. **Solo cosmética:** el ganador sale del RNG criptográfico; verificar que permita fijar el resultado de antemano. | MIT | V | DEP candidata |
 | **catdad/canvas-confetti** | Confeti con opción `disableForReducedMotion`. **Licencia con evidencia contradictoria (ISC vs 0BSD): confirmar en el repo.** Limitar partículas. | ISC / 0BSD | V (parcial) | DEP condicionada |
+| **simeydotme/pokemon-cards-css** | Sombreadores holográficos CSS multi-capa (`color-dodge`, `sunpillar`, `radiant-holo`, `secret-rare`, `cosmos-holo`) + física de resortes 3D sin WebGL pesado. Clonado en `references/fx-audio-sota/pokemon-cards-css`. | MIT | V | **REF canónico (Holo-Vault & Foil Cards)** |
+| **nolimits4web/atropos** | Paralaje 3D táctil multi-plano (`translate3d` por capas Z con `data-atropos-offset`, highlight especular y sombra proyectada). Clonado en `references/fx-audio-sota/atropos`. | MIT | V | **REF canónico (3D Depth Layers)** |
+| **micku7zu/vanilla-tilt.js** | Motor ligero sin dependencias para inclinación 3D y cálculo de reflejo radial (`glare`). Clonado en `references/fx-audio-sota/vanilla-tilt`. | MIT | V | **REF (3D Tilt Math)** |
+| **KilledByAPixel/ZzFX** + **chr15m/jsfxr** + **Tonejs/Tone.js** | Síntesis procedural WebAudio de efectos de sonido, foley metálico, rasgado de sobres, monedas FM y fanfarrias sin archivos MP3 pesados. Clonados en `references/fx-audio-sota/{zzfx,jsfxr,tonejs}`. | MIT | V | **REF canónico (`pro-fx-audio.js`)** |
 | **GSAP** | Gratis incluso con plugins, pero con licencia propia (no OSS; restringe uso en herramientas que compitan con Webflow y puede darse de baja). | propietaria | V | **NO** (regla 3.1) |
 
 ---
@@ -132,6 +136,28 @@
 
 ---
 
+## 9. Harnesses de Agentes, Scaffolding, Evals y Seguridad 2026
+
+> Cacería de repositorios de arneses agénticos (18/10/2026). Todos evaluados bajo restricción USD 0, cero Docker local permanente y compatibilidad Windows / Node.js.
+
+| Repo | Para qué sirve | Licencia | Estado | Modo |
+|---|---|---|---|---|
+| **UKGovernmentBEIS/inspect_ai** | Framework de alta seguridad del UK AISI para evaluación rigurosa de LLMs, ejecución de herramientas y sandboxing. | MIT | V | REF / TOOL |
+| **promptfoo/promptfoo** | CLI ligero Node/TS para evaluación determinista de prompts, red-teaming de seguridad y aserciones CI/CD sin servidor. | MIT | V | **DEP dev / TOOL** |
+| **princeton-nlp/SWE-bench** | Benchmark de referencia de la industria para resolver issues reales de GitHub con parches evaluados en tests. | MIT | V | REF canónico |
+| **princeton-nlp/SWE-agent** | Arquitectura de bucle agéntico (~100 líneas) para navegación de archivos y ejecución de terminal. | MIT | V | REF de diseño |
+| **walkinglabs/learn-harness-engineering** | Curriculum canónico de ingeniería de arneses: progressive disclosure, maker-checker y feedback loops. | MIT | V | REF canónico |
+| **affaan-m/everything-claude-code** | Harness completo: instincts engine v2, delivery gates, adverse review y disciplina anti-atajos. | MIT | V | **REF / DEP** (en `.agents/`) |
+| **addyosmani/agent-house** + **context-buddy** | "Lighthouse for Agents": scoring cuantitativo en Costo, Latencia, Confiabilidad e Higiene de Contexto. | MIT | V | REF (scoring base) |
+| **guardrails-ai/guardrails** | Validación estructural y semántica de entradas/salidas de agentes mediante guardas programáticas. | Apache-2.0 | V | REF / TOOL |
+| **mattpocock/sandcastle** | Sandboxing efímero con Git Worktrees: 0 MB daemon, 0 Docker, aislamiento perfecto en Windows. | MIT | V | **TOOL** (`sandcastle-runner.mjs`) |
+| **confident-ai/deepeval** | Suite de pruebas unitarias para LLMs (G-Eval, Faithfulness, Tool Correctness). | Apache-2.0 | V | REF |
+| **explodinggradients/ragas** | Evaluación de RAG Triad (Context Relevance, Faithfulness, Answer Relevancy). | Apache-2.0 | V | REF (para `eval_matrix.mjs`) |
+| **langfuse/langfuse** | Trazabilidad y observabilidad agéntica de prompts, latencia y costos. | MIT / Apache-2.0 | V | REF |
+| **ast-grep/ast-grep** | Linter estructural AST para auditoría de código determinista sin alucinaciones. | MIT | V | **TOOL** (`ast_guard.mjs`) |
+
+---
+
 ## Pendientes de verificación para el squad de Investigación
 - Rutas GitHub exactas: KickForge, kient, retconned/kick-js, vercel-labs/skills, davideast/stitch-mcp.
 - Licencias marcadas "verificar" y las marcadas G.
@@ -139,3 +165,4 @@
 - Si `better-auth` o `panva/oauth4webapi` resuelven el login con Kick en Workers sin parches.
 - Decisión por ADR: SvelteKit vs. Vite+Svelte SPA + Worker Hono para exportar el Durable Object.
 - Fecha del último commit y estado de cada repo antes de adoptarlo.
+
