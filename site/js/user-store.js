@@ -1186,20 +1186,20 @@ class UserStoreController {
     const tier1 = document.getElementById('podium-1-tier');
     if (u1) {
       u1.textContent = p1 ? p1.kickUser : '—';
-      u1.style.color = p1 ? '#53fc18' : '#cbd5e1';
+      u1.style.color = '#53fc18';
     }
     if (pts1) {
       pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG` : '0 $DIG';
-      pts1.style.color = p1 ? '#53fc18' : '#64748b';
+      pts1.style.color = '#53fc18';
     }
     if (prize1) {
       prize1.innerHTML = `
-        <div class="kick-prize-main">$20 <span style="font-size: 15px; opacity: 0.9;">USD</span></div>
+        <div class="kick-prize-main">$20 <span style="font-size: 18px; opacity: 0.95;">USD</span></div>
         <div class="kick-prize-boost">⚡ $40 USD (2X CODE: DIGGITY)</div>
       `;
     }
     if (tier1) {
-      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.2); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">👑 ${esc(p1.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier1.innerHTML = p1 ? `<span class="kick-podium-tier-pill active-tier">👑 ${esc(p1.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
     }
 
     const u2 = document.getElementById('podium-2-user');
@@ -1208,20 +1208,20 @@ class UserStoreController {
     const tier2 = document.getElementById('podium-2-tier');
     if (u2) {
       u2.textContent = p2 ? p2.kickUser : '—';
-      u2.style.color = p2 ? '#ffffff' : '#cbd5e1';
+      u2.style.color = '#ffffff';
     }
     if (pts2) {
       pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG` : '0 $DIG';
-      pts2.style.color = p2 ? '#ffffff' : '#64748b';
+      pts2.style.color = '#ffffff';
     }
     if (prize2) {
       prize2.innerHTML = `
-        <div class="kick-prize-main">$10 <span style="font-size: 14px; opacity: 0.85;">USD</span></div>
+        <div class="kick-prize-main">$10 <span style="font-size: 16px; opacity: 0.9;">USD</span></div>
         <div class="kick-prize-boost">⚡ $20 USD (2X CODE: DIGGITY)</div>
       `;
     }
     if (tier2) {
-      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(0, 230, 118, 0.18); border-color: #00e676; color: #00e676; font-size: 10px;">🥈 ${esc(p2.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier2.innerHTML = p2 ? `<span class="kick-podium-tier-pill active-tier">🥈 ${esc(p2.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
     }
 
     const u3 = document.getElementById('podium-3-user');
@@ -1230,20 +1230,20 @@ class UserStoreController {
     const tier3 = document.getElementById('podium-3-tier');
     if (u3) {
       u3.textContent = p3 ? p3.kickUser : '—';
-      u3.style.color = p3 ? '#ffffff' : '#cbd5e1';
+      u3.style.color = '#ffffff';
     }
     if (pts3) {
       pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG` : '0 $DIG';
-      pts3.style.color = p3 ? '#ffffff' : '#64748b';
+      pts3.style.color = '#ffffff';
     }
     if (prize3) {
       prize3.innerHTML = `
-        <div class="kick-prize-main" style="font-size: 21px;">VIP BADGE</div>
+        <div class="kick-prize-main" style="font-size: 28px;">VIP BADGE</div>
         <div class="kick-prize-boost">💎 KICK VIP ROLE</div>
       `;
     }
     if (tier3) {
-      tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier3.innerHTML = p3 ? `<span class="kick-podium-tier-pill active-tier">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
     }
 
     // Update stats strip cards
