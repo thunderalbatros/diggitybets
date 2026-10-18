@@ -52,7 +52,7 @@
     const betInp = document.getElementById('diggity-ext-bet');
     const callerInp = document.getElementById('diggity-ext-caller');
     const betSize = betInp ? (parseFloat(betInp.value) || 2.0) : 2.0;
-    const caller = callerInp && callerInp.value.trim() ? callerInp.value.trim() : '@StakeAutoCapture';
+    const caller = callerInp && callerInp.value.trim() ? callerInp.value.trim() : '@tarkansky';
 
     const payload = {
       source: 'DIGGITY_STAKE_COMPANION',
@@ -76,6 +76,27 @@
       chrome.runtime.sendMessage({ action: 'CAPTURE_FROM_STAKE_CONTENT', payload }).catch(() => {});
     }
 
+    // Channel A: Direct window.opener postMessage (immune to CSP)
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(payload, '*');
+      }
+    } catch (_) {}
+
+    // Channel B: Cloud Edge POST + Image Beacon (works across any tab/window even without extension storage)
+    try {
+      fetch('https://diggitybets.vip/api/companion/capture', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    } catch (_) {}
+    try {
+      const beacon = new Image();
+      beacon.src = `https://diggitybets.vip/api/companion/capture?beacon=1&slot=${encodeURIComponent(slotName)}&bet=${encodeURIComponent(betSize)}&tier=${encodeURIComponent(bonusTier)}&caller=${encodeURIComponent(caller)}&ts=${payload.ts}`;
+    } catch (_) {}
+
     const statusEl = document.getElementById('diggity-ext-status');
     if (statusEl) {
       statusEl.textContent = `✓ Captured: ${slotName} (${bonusTier} @ $${betSize.toFixed(2)})`;
@@ -83,11 +104,17 @@
     }
   }
 
-  // Listen for Alt+B and Alt+S in both top frame and child slot iframes
+  // Listen for Alt+B (3S), Alt+4 (4S), Alt+5 (5S), and Alt+S (SUPER) in both top frame and child slot iframes
   window.addEventListener('keydown', (e) => {
     if (e.altKey && (e.code === 'KeyB' || e.key === 'b' || e.key === 'B')) {
       e.preventDefault();
       sendBonusCapture('3S');
+    } else if (e.altKey && (e.code === 'Digit4' || e.key === '4')) {
+      e.preventDefault();
+      sendBonusCapture('4S');
+    } else if (e.altKey && (e.code === 'Digit5' || e.key === '5')) {
+      e.preventDefault();
+      sendBonusCapture('5S');
     } else if (e.altKey && (e.code === 'KeyS' || e.key === 's' || e.key === 'S')) {
       e.preventDefault();
       sendBonusCapture('SUPER');
