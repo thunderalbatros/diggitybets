@@ -122,7 +122,7 @@ When rendering provider telemetry, "Only on Stake" metrics, or sponsor media kit
 ## 10. Symmetric Topbar HUD, Minimalist Sidebar & Clean `#watch` Stage Architecture
 - **Symmetric Topbar with Centered `$DIG` Balance & Rotating Laser Orbit:**
   - `.site-topbar` uses a symmetric 3-column grid (`grid-template-columns: 1fr auto 1fr`) with `.topbar-center` locked at the exact mathematical horizontal midpoint (`position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%)`).
-  - `#topbar-dig-balance-pill` renders in a sleek, compact aesthetic (`min-height: 28px`, `padding: 0 12px`, `18x18px` coin SVG, `13.5px` tabular numeric balance, `10.5px` `$DIG` label) surrounded by an active rotating fluor green laser beam (`@keyframes digLaserOrbit`) tracing its perimeter.
+  - `#topbar-dig-balance-pill` renders at a prominent, balanced scale (`min-height: 56px`, `padding: 0 24px`, `36x36px` coin SVG, `27px` tabular numeric balance, `20px` `$DIG` label) surrounded by an active rotating fluor green laser beam (`@keyframes digLaserOrbit`) tracing its perimeter.
 - **Unified Right Profile Trigger:**
   - The top-right corner exclusively hosts the unified profile component (`#auth-user-panel` / `#topbar-profile-link` with avatar + `@username`, centered role badge `#auth-role-status-badge` underneath, and right-hand disconnect `✕` `#btn-kick-logout`), with zero separate `[ Profile ]` button.
 - **Minimalist `PORTAL` Sidebar (`248px` Expanded / `72px` Collapsed):**
