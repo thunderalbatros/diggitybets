@@ -71,15 +71,19 @@ let cachedIndex = null;
 let lastIndexTime = 0;
 
 /**
- * Scan workspace documentation avoiding heavy code/build directories
+ * Scan workspace documentation and visual repositories with noise exclusion filter
  */
 function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
   let files = [];
   if (depth > maxDepth || !fs.existsSync(dir)) return files;
 
   const baseSkip = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage']);
-  const codeSkip = new Set(['vendor', 'src', 'ui', 'client', 'packages', 'assets']);
+  const noiseDirSkip = new Set(['docs', 'examples', 'tests', 'test', '__tests__', 'spec', 'fixtures', 'demo', 'site']);
+  const noiseFileSkip = new Set(['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'tsconfig.json']);
+  const codeSkip = new Set(['vendor', 'client', 'packages', 'assets']);
+  
   const isDedicatedKnowledge = dir.includes('sota-2026') || dir.includes('skills') || dir.includes('knowledge') || dir.includes('docs');
+  const isVisualRepo = dir.includes('design-mastery') || dir.includes('ui-craft') || dir.includes('clones') || dir.includes('ui-kb');
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -88,13 +92,24 @@ function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
       if (ent.isDirectory()) {
         if (!ent.name.startsWith('.')) {
           if (baseSkip.has(ent.name)) continue;
-          if (!isDedicatedKnowledge && codeSkip.has(ent.name)) continue;
+          if (isVisualRepo && (noiseDirSkip.has(ent.name.toLowerCase()) || depth >= 3)) continue;
+          if (!isDedicatedKnowledge && !isVisualRepo && codeSkip.has(ent.name)) continue;
           files = files.concat(scanKnowledgeFiles(fp, maxDepth, depth + 1));
         }
       } else if (ent.isFile()) {
         const lower = ent.name.toLowerCase();
+        if (noiseFileSkip.has(lower) || lower.startsWith('webpack.') || lower.startsWith('vite.config.')) continue;
+
         if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
           files.push(fp);
+        } else if (isVisualRepo) {
+          // Index shaders, visual stylesheets, and core animation modules
+          if (lower.endsWith('.css') || lower.endsWith('.glsl') || lower.endsWith('.vert') || lower.endsWith('.frag')) {
+            files.push(fp);
+          } else if ((lower.endsWith('.js') || lower.endsWith('.ts')) && 
+                     (fp.includes('animation') || fp.includes('shader') || fp.includes('behavior') || fp.includes('transition'))) {
+            files.push(fp);
+          }
         }
       }
     }
@@ -104,15 +119,31 @@ function scanKnowledgeFiles(dir, maxDepth = 8, depth = 0) {
 }
 
 /**
- * Anthropic Contextual Chunker: Splits large documents into header-aware contextual chunks
+ * Anthropic Contextual Chunker: Splits documents & visual assets into header-aware contextual chunks
  */
 function createDocumentChunks(filePath) {
   const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
-  const fileName = path.basename(filePath, '.md');
+  const ext = path.extname(filePath).toLowerCase();
+  const fileName = path.basename(filePath, ext);
   const text = fs.readFileSync(filePath, 'utf8');
   const cleanText = text.replace(/^---[\s\S]*?---\s*/, '').trim();
-  const isCanon = filePath.includes('knowledge');
+  const isCanon = filePath.includes('knowledge') || filePath.includes('design-mastery');
   const category = isCanon ? 'canon' : 'general';
+
+  // Handle CSS, GLSL and code files as structured code blocks
+  if (['.css', '.glsl', '.vert', '.frag', '.js', '.ts'].includes(ext)) {
+    const assetType = ext.slice(1).toUpperCase();
+    const snippet = cleanText.slice(0, 1500);
+    return [{
+      id: rel,
+      source: `local://${rel}`,
+      title: `${fileName} (${assetType})`,
+      section: 'Visual Code Asset',
+      category: 'visual-asset',
+      text: `[Visual Asset: ${fileName}.${ext} > ${assetType}]\n\`\`\`${assetType.toLowerCase()}\n${cleanText.slice(0, 3000)}\n\`\`\``,
+      snippet: snippet.slice(0, 450)
+    }];
+  }
 
   // If file is very small (< 1,500 chars) and has no subheadings, index as single chunk
   const sections = cleanText.split(/\n(?=#{1,3}\s+)/);
@@ -242,11 +273,13 @@ export function getOrBuildMiniSearchIndex(force = false) {
   const searchDirs = [
     { dir: path.join(ROOT, 'knowledge'), depth: 4 },
     { dir: path.join(ROOT, 'docs'), depth: 4 },
-    { dir: path.join(ROOT, 'references', 'sota-2026'), depth: 6 },
-    { dir: path.join(ROOT, 'references', 'clones', 'emil-skills', 'skills'), depth: 5 },
+    { dir: path.join(ROOT, 'references', 'design-mastery'), depth: 3 },
+    { dir: path.join(ROOT, 'references', 'ui-craft'), depth: 2 },
+    { dir: path.join(ROOT, 'references', 'sota-2026'), depth: 4 },
+    { dir: path.join(ROOT, 'references', 'clones', 'emil-skills', 'skills'), depth: 4 },
+    { dir: path.join(ROOT, 'references', 'ui-kb'), depth: 3 },
     { dir: path.join(ROOT, '.agents', 'skills'), depth: 4 },
-    { dir: path.join(ROOT, '.agents', 'memory'), depth: 4 },
-    { dir: path.join(ROOT, 'references'), depth: 4 }
+    { dir: path.join(ROOT, '.agents', 'memory'), depth: 4 }
   ];
 
   const allChunks = [];

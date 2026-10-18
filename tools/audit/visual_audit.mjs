@@ -230,6 +230,40 @@ function pageChecks() {
     }
   }
 
+  // 13. Clean Space Ratio Gate (At least 35% of the screen must be free of heavy nested bordered boxes)
+  const allBoxes = document.querySelectorAll('.module-card, .game-card, .reward-card, .control-box, .stat-card');
+  let totalBoxArea = 0;
+  for (const box of allBoxes) {
+    if (!visible(box)) continue;
+    const br = box.getBoundingClientRect();
+    totalBoxArea += br.width * br.height;
+  }
+  const screenArea = vw * (window.innerHeight || 900);
+  const cleanSpaceRatio = Math.max(0, 1 - (totalBoxArea / (screenArea * 1.8)));
+  if (cleanSpaceRatio < 0.35) {
+    findings.push({
+      sev: 'MAJOR',
+      rule: 'clean-space-ratio',
+      msg: `Clean space ratio ${(cleanSpaceRatio * 100).toFixed(1)}% is below 35% aesthetic bar`
+    });
+  }
+
+  // 14. 100% Zoom Native Fit Check (1440x900 viewport fits stream player within ergonomic bounds)
+  const currentView = document.querySelector('.view-section.active-view');
+  if (vw >= 1080 && currentView && currentView.id === 'watch') {
+    const player = currentView.querySelector('.stream-player-card');
+    if (player && visible(player)) {
+      const pr = player.getBoundingClientRect();
+      if (pr.height > 660) {
+        findings.push({
+          sev: 'MAJOR',
+          rule: '100pct-zoom-fit',
+          msg: `Stream player height ${pr.height.toFixed(0)}px exceeds 660px for 100% zoom fit`
+        });
+      }
+    }
+  }
+
   return findings;
 }
 
