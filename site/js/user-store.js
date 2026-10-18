@@ -1243,7 +1243,7 @@ class UserStoreController {
       tourney_entry: 6,
       bonus_split_20: 3,
       bonus_split_40: 2,
-      og_badge_role: 6
+      og_badge_role: 3
     };
     const currentWeek = this.getIsoWeekKey();
     const savedWeek = localStorage.getItem('hunthub_store_stock_week');
@@ -1348,10 +1348,10 @@ class UserStoreController {
       tourneyBtn.setAttribute('data-cost', String(effectiveTourneyCost));
     }
 
-    // OG Badge Kick Role (1,500 -> 1,200 $DIG, same as 8-bracket)
+    // OG Badge Kick Role (2,500 -> 2,000 $DIG Stake VIP)
     const ogBtn = document.getElementById('btn-redeem-og-badge') || document.querySelector('.btn-store-redeem[data-key="og_badge_role"]');
     const ogCostEl = document.getElementById('og-badge-cost-display') || document.querySelector('[data-cost-display="og_badge_role"]');
-    const effectiveOgCost = this.stakeVerified ? 1200 : 1500;
+    const effectiveOgCost = this.stakeVerified ? 2000 : 2500;
     if (ogCostEl) {
       ogCostEl.textContent = `${effectiveOgCost.toLocaleString()} $DIG`;
       ogCostEl.style.color = this.stakeVerified ? 'var(--kick-green)' : '';
@@ -1377,7 +1377,8 @@ class UserStoreController {
       battle_entry: 6,
       tourney_entry: 6,
       bonus_split_20: 3,
-      bonus_split_40: 2
+      bonus_split_40: 2,
+      og_badge_role: 3
     };
     Object.keys(stockLimits).forEach(key => {
       const limit = stockLimits[key];
@@ -1495,8 +1496,10 @@ class UserStoreController {
           cost = this.stakeVerified ? 2400 : 3000;
         } else if (itemKey === 'bonus_split_40') {
           cost = this.stakeVerified ? 4800 : 6000;
-        } else if (itemKey === 'tourney_entry' || itemKey === 'og_badge_role') {
+        } else if (itemKey === 'tourney_entry') {
           cost = this.stakeVerified ? 1200 : 1500;
+        } else if (itemKey === 'og_badge_role') {
+          cost = this.stakeVerified ? 2000 : 2500;
         } else if (itemKey === 'battle_entry') {
           cost = this.stakeVerified ? 800 : 1000;
         } else if (itemKey === 'vip_discord') {
@@ -1505,11 +1508,6 @@ class UserStoreController {
 
         if (itemKey === 'vip_discord' && this.vipDiscordClaimed) {
           alert('LIMIT REACHED: VIP Streamer Discord Role can only be redeemed 1 time per account.');
-          return;
-        }
-
-        if (itemKey === 'og_badge_role' && this.ogBadgeClaimed) {
-          alert('LIMIT REACHED: OG Badge Kick Role can only be redeemed 1 time per account.');
           return;
         }
 
@@ -1522,7 +1520,8 @@ class UserStoreController {
           battle_entry: 6,
           tourney_entry: 6,
           bonus_split_20: 3,
-          bonus_split_40: 2
+          bonus_split_40: 2,
+          og_badge_role: 3
         };
         if (stockLimits[itemKey] !== undefined && (this.storeStock[itemKey] ?? stockLimits[itemKey]) <= 0) {
           alert(`SOLD OUT THIS WEEK: Weekly stock limit (${stockLimits[itemKey]}/${stockLimits[itemKey]}) reached for this reward. Resets every Monday.`);
@@ -1604,6 +1603,7 @@ class UserStoreController {
               }
             } catch (_) {}
           } else if (itemKey === 'og_badge_role') {
+            this.storeStock.og_badge_role = Math.max(0, (this.storeStock.og_badge_role ?? 3) - 1);
             this.ogBadgeClaimed = true;
             localStorage.setItem('hunthub_og_badge_claimed', 'true');
           }

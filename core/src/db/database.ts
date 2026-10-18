@@ -857,10 +857,10 @@ export class HuntHubDatabase {
       return {
         key: 'og_badge_role',
         title: 'OG Badge Kick Role',
-        regularCost: 1500,
-        vipCost: 1200,
-        weeklyStockLimit: null,
-        oneTimePerAccount: true,
+        regularCost: 2500,
+        vipCost: 2000,
+        weeklyStockLimit: 3,
+        oneTimePerAccount: false,
         cooldownDays: 0,
         maxSplitCapUsd: null
       };
