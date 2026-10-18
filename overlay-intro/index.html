@@ -33,9 +33,6 @@
         <div class="pill-stake">
           ⚡ STAKE VIP CODE: <strong>DIGGITY</strong>
         </div>
-        <button type="button" class="pill-audio-toggle" id="btn-audio-toggle">
-          🔊 Audio Active
-        </button>
       </div>
     </header>
 
@@ -55,52 +52,25 @@
 
     <!-- 3. Dynamic Live Widgets Bento Grid -->
     <section class="intro-bento-grid">
-      <!-- Card 1: King of the Hill Current Throne -->
-      <article class="bento-card">
+      <!-- Card 1: Pending Bonus Buy Splits Queue ($20 & $40) -->
+      <article class="bento-card" id="card-pending-splits">
         <div class="card-header-row">
-          <span class="card-tag tag-koth">👑 REIGNING KING OF THE HILL</span>
-          <span class="badge-live-pulse">LIVE THRONE</span>
+          <span class="card-tag tag-splits">🎟️ PENDING BONUS BUY SPLITS</span>
+          <span class="badge-live-pulse" id="splits-queue-badge">LIVE QUEUE</span>
         </div>
-        <div class="koth-content">
-          <div class="koth-avatar-box">👑</div>
-          <div class="koth-details">
-            <h3 id="koth-king-name">@IronKing</h3>
-            <div class="koth-streak-row">
-              <span class="koth-streak-pill" id="koth-streak-badge">STREAK 3/4</span>
-              <span class="koth-prize-tag" id="koth-prize-val">$20 USD PRIZE</span>
-            </div>
-          </div>
+        <div class="splits-list" id="splits-list-container">
+          <!-- Populated dynamically via main.js from hunthub_pending_splits -->
         </div>
       </article>
 
-      <!-- Card 2: Weekly $DIG Leaderboard Top 3 -->
-      <article class="bento-card">
+      <!-- Card 2: Historical $DIG Community Leaders Top 3 -->
+      <article class="bento-card" id="card-historical-leaderboard">
         <div class="card-header-row">
-          <span class="card-tag tag-leaderboard">💎 WEEKLY $DIG LEADERS</span>
+          <span class="card-tag tag-leaderboard">💎 HISTORICAL $DIG LEADERS</span>
           <span class="badge-live-pulse">TOP COMMUNITY</span>
         </div>
-        <div class="leaderboard-list">
-          <div class="leaderboard-item">
-            <div class="lb-user-info">
-              <span class="lb-rank lb-rank-1">#1</span>
-              <span class="lb-name">@DiggityVIP</span>
-            </div>
-            <span class="lb-points">4,850 $DIG</span>
-          </div>
-          <div class="leaderboard-item">
-            <div class="lb-user-info">
-              <span class="lb-rank lb-rank-2">#2</span>
-              <span class="lb-name">@LuckyRoller</span>
-            </div>
-            <span class="lb-points">3,420 $DIG</span>
-          </div>
-          <div class="leaderboard-item">
-            <div class="lb-user-info">
-              <span class="lb-rank lb-rank-3">#3</span>
-              <span class="lb-name">@StakeHighRoller</span>
-            </div>
-            <span class="lb-points">2,900 $DIG</span>
-          </div>
+        <div class="leaderboard-list" id="intro-leaderboard-list">
+          <!-- Populated dynamically via main.js from hunthub_historical_leaderboard -->
         </div>
       </article>
 
@@ -135,7 +105,6 @@
   </div>
 
   <!-- Scripts -->
-  <script src="audio-synth.js?v=1.0"></script>
-  <script src="main.js?v=1.0"></script>
+  <script src="main.js?v=2.0"></script>
 </body>
 </html>
