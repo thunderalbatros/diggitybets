@@ -5107,6 +5107,18 @@ class AdminHubController {
     const cmd = parts[0].toLowerCase();
     const arg = parts.slice(1).join(' ').trim();
 
+    if ((cmd === '!bounties' || cmd === '!bounty') && window.DiggityBountySystem && typeof window.DiggityBountySystem.handleChatCommand === 'function') {
+      const reply = window.DiggityBountySystem.handleChatCommand(cleanUser, text);
+      if (reply && window.sonner) {
+        window.sonner.toast({
+          title: `🎯 !bounty (@${cleanUser})`,
+          message: reply,
+          type: 'green'
+        });
+      }
+      return;
+    }
+
     if (cmd === '!battle') {
       const slotName = arg || 'Wanted Dead or a Wild';
       this.addDuoEntry(cleanUser, slotName, 'battle');

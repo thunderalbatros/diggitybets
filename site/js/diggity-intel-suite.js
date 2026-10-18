@@ -3057,6 +3057,11 @@
                 handleIncoming(item);
               }
             }
+            if (Array.isArray(data.companionVerifiedBets) && data.companionVerifiedBets.length > 0 && window.DiggityBountySystem) {
+              for (const vBet of data.companionVerifiedBets) {
+                window.DiggityBountySystem.applyCompanionVerifiedBet(vBet);
+              }
+            }
           } catch (_) {}
         }, 3500);
       }
