@@ -1,0 +1,40 @@
+name: Automated Multi-Casino Slot Catalog & Live RTP Sync
+
+on:
+  schedule:
+    # Runs automatically every 6 hours (00:00, 06:00, 12:00, 18:00 UTC) — 100% Free GitHub Actions tier
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-slot-intel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sync Multi-Casino Catalog & Live RTP Snapshot
+        run: node tools/sync_live_casino_intel.mjs
+
+      - name: Rebuild Production Bundle (dist/)
+        run: node tools/build_dist.mjs
+
+      - name: Commit & Push Updated Catalog and Live Telemetry
+        run: |
+          git config user.name "DiggityBets Intel Bot"
+          git config user.email "intel-bot@diggitybets.vip"
+          git add data/curated_slots.js data/live_casino_intel.json site/data/live_casino_intel.json dist/
+          if git diff --staged --quiet; then
+            echo "No catalog or telemetry changes to commit."
+          else
+            git commit -m "chore(intel): auto-sync multi-casino slot catalog & live RTP telemetry [skip ci]"
+            git push
+          fi

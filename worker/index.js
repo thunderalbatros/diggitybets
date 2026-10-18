@@ -228,6 +228,122 @@ export default {
       }), { headers: corsHeaders });
     }
 
+    // 3.05 Live Casino RTP & New Slots Edge Proxy (Cached 300s at Cloudflare Edge)
+    if (url.pathname === '/api/intel/live-rtp' && request.method === 'GET') {
+      const casino = (url.searchParams.get('casino') || 'stake').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const validCasinos = ['stake', '500', 'roobet', 'razed', 'duelbits', 'all'];
+      const targetCasino = validCasinos.includes(casino) ? casino : 'stake';
+      const win = (url.searchParams.get('window') || 'day').toLowerCase();
+      const cacheKey = new Request(`https://edge-cache.diggitybets.internal/intel/rtp/${targetCasino}/${win}`, { method: 'GET' });
+      const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+
+      if (cache) {
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+          const resp = new Response(cached.body, cached);
+          resp.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+          return resp;
+        }
+      }
+
+      try {
+        const upstreamUrl = `https://bonushunt.gg/api/slots/rtp?casino=${encodeURIComponent(targetCasino)}&window=${encodeURIComponent(win)}`;
+        const upRes = await fetch(upstreamUrl, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'DiggityBets-Edge/2.1' }
+        });
+        if (upRes.ok) {
+          const data = await upRes.json();
+          const rows = Array.isArray(data.rows) ? data.rows : [];
+          // Trim to top 160 most relevant rows (highest volume + hottest + coldest) to keep payload < 45 KB
+          const activeWin = data.window || win || 'day';
+          const scored = rows.map(r => {
+            const st = r.stats?.[activeWin] || r.stats?.day || r.stats?.week || r.stats?.month || r.stats?.all || {};
+            const rtpPct = typeof st.rtp === 'number' ? Number((st.rtp * 100).toFixed(2)) : null;
+            return {
+              name: r.name,
+              provider: r.provider,
+              image: r.image,
+              url: r.url,
+              bonusBuy: Boolean(r.bonusBuy),
+              onlyOnStake: Boolean(r.onlyOnStake),
+              casinos: r.casinos || [targetCasino],
+              observedRtp: rtpPct,
+              betCount: st.betCount ?? null,
+              wageredValue: st.wageredValue ? Math.round(st.wageredValue) : null,
+              hasVolume: Boolean(st.hasVolume),
+              stats: r.stats
+            };
+          }).filter(r => r.observedRtp != null && r.observedRtp > 5 && r.observedRtp < 450);
+
+          const highVol = scored.filter(r => (r.betCount == null || r.betCount >= 5000));
+          const pool = highVol.length >= 60 ? highVol : scored;
+          const hot = [...pool].sort((a, b) => b.observedRtp - a.observedRtp).slice(0, 55);
+          const cold = [...pool].sort((a, b) => a.observedRtp - b.observedRtp).slice(0, 45);
+          const byBets = [...scored].sort((a, b) => (b.betCount || 0) - (a.betCount || 0)).slice(0, 60);
+
+          const dedup = new Map();
+          for (const item of [...byBets, ...hot, ...cold]) {
+            if (!dedup.has(item.name.toLowerCase())) dedup.set(item.name.toLowerCase(), item);
+          }
+
+          const payload = JSON.stringify({
+            ok: true,
+            source: 'cloudflare-edge-live',
+            casino: targetCasino,
+            window: activeWin,
+            windows: data.windows || ['day', 'week', 'month', 'all'],
+            casinos: data.casinos || [],
+            fetchedAt: data.fetchedAt || new Date().toISOString(),
+            totalTracked: rows.length,
+            items: [...dedup.values()]
+          });
+
+          const edgeResp = new Response(payload, {
+            headers: {
+              ...corsHeaders,
+              'Cache-Control': 'public, max-age=300, s-maxage=300'
+            }
+          });
+          if (cache) ctx.waitUntil(cache.put(cacheKey, edgeResp.clone()));
+          return edgeResp;
+        }
+      } catch (e) {}
+      return new Response(JSON.stringify({ ok: false, fallback: true }), { status: 200, headers: corsHeaders });
+    }
+
+    if (url.pathname === '/api/intel/new-slots' && request.method === 'GET') {
+      const winDays = url.searchParams.get('window') || '7';
+      const cacheKey = new Request(`https://edge-cache.diggitybets.internal/intel/new-slots/${winDays}`, { method: 'GET' });
+      const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+
+      if (cache) {
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+          const resp = new Response(cached.body, cached);
+          resp.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+          return resp;
+        }
+      }
+
+      try {
+        const upRes = await fetch(`https://bonushunt.gg/api/public/slots/updates?window=${encodeURIComponent(winDays)}`, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'DiggityBets-Edge/2.1' }
+        });
+        if (upRes.ok) {
+          const raw = await upRes.text();
+          const edgeResp = new Response(raw, {
+            headers: {
+              ...corsHeaders,
+              'Cache-Control': 'public, max-age=600, s-maxage=600'
+            }
+          });
+          if (cache) ctx.waitUntil(cache.put(cacheKey, edgeResp.clone()));
+          return edgeResp;
+        }
+      } catch (e) {}
+      return new Response(JSON.stringify({ ok: false, fallback: true }), { status: 200, headers: corsHeaders });
+    }
+
     // 3a. Kick Public Channel Profile Proxy & Live Stream Status
     if (url.pathname === '/api/kick/stream-status' && request.method === 'GET') {
       try {
