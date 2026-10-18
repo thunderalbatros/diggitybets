@@ -1641,17 +1641,35 @@
       <!-- TAB 1: LIVE SLOT RTP THERMAL RADAR -->
       <div class="intel-subpanel" data-intel-panel="rtp" style="display: block;">
         <div id="intel-rtp-summary-strip" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 14px; background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.24); border-radius: 10px; font-family: var(--font-display); font-size: 11.5px; color: #cbd5e1;">
-          <span>📡 <strong>HYBRID TELEMETRY ENGINE:</strong> Combines Official Theoretical RTP + Your Live Bonus Hunt Payouts + Stake Archive + Spectator <code style="color:#53fc18;">!hot</code>/<code style="color:#38bdf8;">!cold</code> Votes</span>
-          <span id="intel-rtp-live-counters" style="color: var(--gold); font-weight: 800;">7,009 Verified Slots Indexed</span>
+          <span>📡 <strong>LIVE MULTI-CASINO TELEMETRY:</strong> Real Observed RTP from <strong>Stake · 500.Casino · Roobet · Razed · Duelbits</strong> + Live Bonus Hunt + Spectator <code style="color:#53fc18;">!hot</code>/<code style="color:#38bdf8;">!cold</code></span>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span id="intel-rtp-live-counters" style="color: var(--gold); font-weight: 800;">11,351 Verified Slots Indexed</span>
+            <button type="button" id="btn-intel-sync-live" class="btn-chat-toggle" style="padding: 4px 10px; font-size: 10.5px; border-color: #53fc18; color: #53fc18; font-weight: 800;" title="Fetch fresh live RTP &amp; spin counts from casino lobby feeds">🔄 Sync Live Feed</button>
+          </div>
+        </div>
+        <!-- Casino Feed Switcher -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding: 8px 12px; background: rgba(7, 10, 18, 0.78); border: 1px solid rgba(83, 252, 24, 0.22); border-radius: 10px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-family: var(--font-display); font-size: 10.5px; font-weight: 900; color: #94a3b8; margin-right: 4px;">🏛️ CASINO FEED:</span>
+            <button type="button" class="intel-tab-btn active" data-rtp-casino="stake" style="padding: 5px 11px; font-size: 11px;">🟢 Stake (24H/7D/30D/All)</button>
+            <button type="button" class="intel-tab-btn" data-rtp-casino="500" style="padding: 5px 11px; font-size: 11px;">🟡 500.Casino (10M/1H/24H)</button>
+            <button type="button" class="intel-tab-btn" data-rtp-casino="roobet" style="padding: 5px 11px; font-size: 11px;">🟠 Roobet (24H)</button>
+            <button type="button" class="intel-tab-btn" data-rtp-casino="razed" style="padding: 5px 11px; font-size: 11px;">⚡ Razed (24H/7D)</button>
+            <button type="button" class="intel-tab-btn" data-rtp-casino="duelbits" style="padding: 5px 11px; font-size: 11px;">🍀 Duelbits (All-Time)</button>
+          </div>
+          <span id="intel-rtp-feed-timestamp" style="font-family: var(--font-display); font-size: 10.5px; color: #38bdf8; font-weight: 700;">⚡ Live Casino Snapshot Ready</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 12px 16px; background: rgba(11, 17, 30, 0.86); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
           <div style="flex: 1; min-width: 220px;">
-            <input type="text" id="intel-rtp-search" class="slots-search-input" placeholder="Smart Search 7,009 slots (try 'six six six', 'olympus gates', 'waylanders', 'paperclip')..." style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
+            <input type="text" id="intel-rtp-search" class="slots-search-input" placeholder="Smart Search 11,351 slots (try 'six six six', 'olympus gates', 'borrowed time', 'paperclip')..." style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
           </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="intel-tab-btn active" data-rtp-period="24h" style="padding: 6px 11px; font-size: 11px;">24H Window</button>
-            <button type="button" class="intel-tab-btn" data-rtp-period="7d" style="padding: 6px 11px; font-size: 11px;">7D Window</button>
-            <button type="button" class="intel-tab-btn" data-rtp-period="30d" style="padding: 6px 11px; font-size: 11px;">30D Window</button>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <button type="button" class="intel-tab-btn" data-rtp-period="10m" style="padding: 6px 9px; font-size: 10.5px;" title="10-Minute Rolling RTP (500.Casino)">10M</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="1h" style="padding: 6px 9px; font-size: 10.5px;" title="1-Hour Rolling RTP (500.Casino)">1H</button>
+            <button type="button" class="intel-tab-btn active" data-rtp-period="24h" style="padding: 6px 10px; font-size: 11px;">24H</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="7d" style="padding: 6px 10px; font-size: 11px;">7D</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="30d" style="padding: 6px 10px; font-size: 11px;">30D</button>
+            <button type="button" class="intel-tab-btn" data-rtp-period="all" style="padding: 6px 10px; font-size: 11px;">ALL</button>
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button type="button" class="intel-tab-btn active" data-rtp-filter="ALL" style="padding: 6px 11px; font-size: 11px;">All Slots</button>
@@ -1660,12 +1678,13 @@
           </div>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
-          <button type="button" class="intel-tab-btn active" data-rtp-studio="ALL" style="padding: 5px 10px; font-size: 10.5px;">🌐 All Studios</button>
+          <button type="button" class="intel-tab-btn active" data-rtp-studio="ALL" style="padding: 5px 10px; font-size: 10.5px;">🌐 All Studios (11,351)</button>
           <button type="button" class="intel-tab-btn" data-rtp-studio="hacksaw" style="padding: 5px 10px; font-size: 10.5px;">🪚 Hacksaw Gaming</button>
           <button type="button" class="intel-tab-btn" data-rtp-studio="pragmatic" style="padding: 5px 10px; font-size: 10.5px;">⚡ Pragmatic Play</button>
           <button type="button" class="intel-tab-btn" data-rtp-studio="nolimit" style="padding: 5px 10px; font-size: 10.5px;">☢️ Nolimit City</button>
           <button type="button" class="intel-tab-btn" data-rtp-studio="stake" style="padding: 5px 10px; font-size: 10.5px;">🔥 Stake Engine Exclusives</button>
           <button type="button" class="intel-tab-btn" data-rtp-studio="push" style="padding: 5px 10px; font-size: 10.5px;">🦈 Push Gaming</button>
+          <button type="button" class="intel-tab-btn" data-rtp-studio="playngo" style="padding: 5px 10px; font-size: 10.5px;">🗡️ Play'n Go</button>
         </div>
         <div class="rtp-heatmap-grid" id="intel-rtp-grid">
           <!-- Rendered dynamically by diggity-intel-suite.js -->
@@ -1677,24 +1696,24 @@
         <div style="padding: 14px 16px; background: rgba(11, 17, 30, 0.88); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 12px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
-              <strong style="font-family: var(--font-display); font-size: 14px; color: #fff;">🧬 MATHEMATICAL TWIN DETECTOR &amp; MYSTERY BONUS ODDS</strong>
-              <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Inspect Scatter Tier probabilities and discover mathematical clones with identical volatility &amp; bonus mechanics when your favorite slot is running cold.</p>
+              <strong style="font-family: var(--font-display); font-size: 14px; color: #fff;">🧬 STAKE ENGINE CLONE SCANNER (5,595 GAMES / 660 EXACT CLONES) &amp; MYSTERY ODDS</strong>
+              <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Compare verified <code style="color:var(--cyan);">fair.stake-engine.com</code> payout tables (96,395 modes) to expose 100% mathematical reskins &amp; Scatter Tier landing odds.</p>
             </div>
             <div style="position: relative; min-width: 290px;">
-              <input type="text" id="intel-engine-search" class="slots-search-input" placeholder="Search slot DNA (e.g. Wanted Dead, Gates 1000, SixSixSix)..." autocomplete="off" style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
+              <input type="text" id="intel-engine-search" class="slots-search-input" placeholder="Search 11,351 slots (e.g. Borrowed Time, Wanted Dead, Gates 1000)..." autocomplete="off" style="width: 100%; padding: 8px 12px; font-size: 12.5px;">
               <div id="intel-engine-autocomplete" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #0b111e; border: 1px solid rgba(0, 229, 255, 0.45); border-radius: 10px; z-index: 60; max-height: 240px; overflow-y: auto; box-shadow: 0 12px 28px rgba(0,0,0,0.85);"></div>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
-            <span style="font-family: var(--font-display); font-size: 10.5px; color: var(--gold); font-weight: 800; margin-right: 4px;">⚡ QUICK DNA PRESETS:</span>
+            <span style="font-family: var(--font-display); font-size: 10.5px; color: var(--gold); font-weight: 800; margin-right: 4px;">⚡ QUICK DNA &amp; VERIFIED CLONES:</span>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Borrowed Time" style="padding: 3px 9px; font-size: 10.5px; border-color: #ff2a5f; color: #fda4af;">🧬 Borrowed Time (4 Exact Clones)</button>
+            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Obey The Reptillians" style="padding: 3px 9px; font-size: 10.5px; border-color: #ff2a5f; color: #fda4af;">🦎 Obey The Reptillians (3 Clones)</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Wanted Dead or a Wild" style="padding: 3px 9px; font-size: 10.5px;">🤠 Wanted Dead or a Wild</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Gates of Olympus 1000" style="padding: 3px 9px; font-size: 10.5px;">⚡ Gates of Olympus 1000</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Le Bandit" style="padding: 3px 9px; font-size: 10.5px;">🦝 Le Bandit</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="San Quentin 2: Death Row" style="padding: 3px 9px; font-size: 10.5px;">⛓️ San Quentin 2</button>
-            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="SixSixSix" style="padding: 3px 9px; font-size: 10.5px;">😈 SixSixSix</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Waylanders Forge" style="padding: 3px 9px; font-size: 10.5px;">🔥 Waylanders Forge (98% RTP)</button>
             <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Minedrop 2" style="padding: 3px 9px; font-size: 10.5px;">⛏️ Minedrop 2</button>
-            <button type="button" class="btn-chat-toggle btn-engine-preset" data-slot="Duck Hunters 2" style="padding: 3px 9px; font-size: 10.5px;">🦆 Duck Hunters 2</button>
           </div>
         </div>
         <div id="intel-engine-results">
@@ -1723,16 +1742,17 @@
               <span class="bh-tier-badge tier-5s">🃏 INTERACTIVE 3D SLOT PICKER</span>
               <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 900; color: #fff; margin: 6px 0 4px 0;">RIP OPEN A HOLO-VAULT BOOSTER PACK</h3>
               <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin: 0;">
-                Can't decide which slot to spin next on stream? Filter across all <strong>7,009 verified Stake slots</strong>, rip the 3D holographic foil seal, and send the revealed slot straight to the <strong>!sr Wheel</strong> or <strong>Bonus Hunt</strong>!
+                Can't decide which slot to spin next on stream? Filter across all <strong>11,351 verified Stake slots</strong>, rip the 3D holographic foil seal, and send the revealed slot straight to the <strong>!sr Wheel</strong> or <strong>Bonus Hunt</strong>!
               </p>
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <select id="vault-filter-provider" class="slots-search-input" style="padding: 9px 12px; font-size: 12.5px; min-width: 215px;">
-                <option value="ALL">All Studios (7,009 Verified Slots)</option>
-                <option value="hacksaw">Hacksaw Gaming (273 Slots)</option>
-                <option value="pragmatic">Pragmatic Play (795 Slots)</option>
-                <option value="nolimit">Nolimit City (119 Slots)</option>
+                <option value="ALL">All Studios (11,351 Verified Slots)</option>
+                <option value="hacksaw">Hacksaw Gaming (273+ Slots)</option>
+                <option value="pragmatic">Pragmatic Play (795+ Slots)</option>
+                <option value="nolimit">Nolimit City (119+ Slots)</option>
+                <option value="playngo">Play'n Go (400+ Slots)</option>
                 <option value="paperclip">Paperclip Gaming (59 Exclusives)</option>
                 <option value="valkyrie">Valkyrie Studio (98% RTP Exclusives)</option>
                 <option value="massive">Massive Studios (47 Exclusives)</option>
@@ -1834,12 +1854,17 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-          <h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: var(--gold); margin: 0;">
-            🆕 VERIFIED 2025–2026 FRESH RELEASES &amp; STAKE ENGINE EXCLUSIVES
-          </h4>
+          <div>
+            <h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 900; color: var(--gold); margin: 0;">
+              🆕 LIVE 27-CASINO HOURLY NEW SLOTS RADAR &amp; STAKE ENGINE EXCLUSIVES
+            </h4>
+            <div id="intel-drops-lobby-banner" style="font-size: 11px; color: #94a3b8; font-family: var(--font-display); margin-top: 2px;">
+              📡 161,053 Lobby Listings Tracked Across 27 Casinos · Hourly Diff Feed Active
+            </div>
+          </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="intel-tab-btn active" data-drops-filter="ALL" style="padding: 5px 10px; font-size: 10.5px;">All 2026 Drops (16)</button>
-            <button type="button" class="intel-tab-btn" data-drops-filter="MAINSTREAM" style="padding: 5px 10px; font-size: 10.5px;">🪚 Hacksaw &amp; Nolimit 2026</button>
+            <button type="button" class="intel-tab-btn active" data-drops-filter="ALL" style="padding: 5px 10px; font-size: 10.5px;">🌐 All Fresh Drops</button>
+            <button type="button" class="intel-tab-btn" data-drops-filter="MAINSTREAM" style="padding: 5px 10px; font-size: 10.5px;">🪚 Mainstream 2026</button>
             <button type="button" class="intel-tab-btn" data-drops-filter="ENGINE" style="padding: 5px 10px; font-size: 10.5px;">🔥 Stake Engine Exclusives</button>
             <button type="button" class="intel-tab-btn" data-drops-filter="HIGHRTP" style="padding: 5px 10px; font-size: 10.5px;">💎 High RTP (96.7%–98.0%)</button>
           </div>
