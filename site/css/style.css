@@ -184,7 +184,7 @@ body:has(.site-sidebar.collapsed) .fixed-corner-brand {
   top: 164px;
   height: calc(100vh - 164px);
   z-index: 1050;
-  background: rgba(6, 9, 16, 0.99);
+  background-color: #060910;
   border-right: 1px solid rgba(255, 255, 255, 0.14);
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   border-top-right-radius: 12px;
@@ -650,7 +650,7 @@ body:has(.site-sidebar.collapsed) .fixed-corner-brand {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  background: rgba(10, 14, 24, 0.92);
+  background-color: #0a0e18;
   border: 1.5px solid var(--border-gold);
   border-radius: 999px;
   padding: 6px 14px;
@@ -673,7 +673,7 @@ body:has(.site-sidebar.collapsed) .fixed-corner-brand {
   border-radius: 999px;
   position: relative;
   overflow: hidden;
-  background: rgba(83, 252, 24, 0.12);
+  background-color: #0d121c;
   border: none;
   display: inline-flex;
   align-items: center;

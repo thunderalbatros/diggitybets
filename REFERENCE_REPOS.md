@@ -162,6 +162,21 @@
 
 ---
 
+## 16. Super-Auditor de Código Limpio, Diseño Gráfico, Accesibilidad (WCAG) y Fluidez 60-FPS
+
+Clonados en `references/audit-sota/` e integrados en `tools/audit/` (`code_clean_audit.mjs`, `visual_audit.mjs`, `lighthouse_pa11y_audit.mjs`):
+
+| Repo | Qué aporta | Licencia | Estado | Rol |
+|---|---|---|---|---|
+| **GoogleChrome/lighthouse** | Auditor oficial de Google (0–100) para Rendimiento (Core Web Vitals: FCP, LCP, TBT, CLS), Accesibilidad (WCAG), Best Practices y SEO. | Apache-2.0 | V | **DEP dev / TOOL** (`tools/audit/lighthouse_pa11y_audit.mjs`) |
+| **pa11y/pa11y** | Runner CLI y programático de accesibilidad masiva multi-vista con soporte dual `axe-core` + `HTML_CodeSniffer` (`WCAG2AA`). | LGPL-3.0 (CLI/Runner) | V | **DEP dev / TOOL** (`tools/audit/lighthouse_pa11y_audit.mjs`) |
+| **squizlabs/HTML_CodeSniffer** | Motor de inspección de estándares WCAG 2.1 (A/AA/AAA) y Section 508 integrado con Pa11y. | BSD-3-Clause | V | **REF / TOOL** (`references/audit-sota/HTML_CodeSniffer`) |
+| **dequelabs/axe-core** | Motor de reglas de accesibilidad WCAG 2.1/2.2 sin falsos positivos usado por Lighthouse, Playwright y Pa11y. | MPL-2.0 | V | **DEP dev / TOOL** (`tools/audit/`) |
+| **Myndex/apca-w3** | Algoritmo perceptual de contraste APCA (WCAG 3.0 $L_c$) para UI dark-mode casino y textos sobre vidrio oscuro. | MIT / W3C | V | **DEP dev / TOOL** (`tools/audit/`) |
+| **mapbox/pixelmatch** | Comparación visual pixel-a-pixel ultrarrápida y sin dependencias para regresiones de UI/Overlays. | ISC | V | **DEP dev / TOOL** (`tools/audit/`) |
+
+---
+
 ## Pendientes de verificación para el squad de Investigación
 - Rutas GitHub exactas: KickForge, kient, retconned/kick-js, vercel-labs/skills, davideast/stitch-mcp.
 - Licencias marcadas "verificar" y las marcadas G.
@@ -169,4 +184,5 @@
 - Si `better-auth` o `panva/oauth4webapi` resuelven el login con Kick en Workers sin parches.
 - Decisión por ADR: SvelteKit vs. Vite+Svelte SPA + Worker Hono para exportar el Durable Object.
 - Fecha del último commit y estado de cada repo antes de adoptarlo.
+
 
