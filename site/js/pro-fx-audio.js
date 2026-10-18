@@ -417,6 +417,299 @@ class ProAudioFXEngine {
       osc.stop(time + 0.13);
     });
   }
+
+  /**
+   * 4. playFoilCrinkle(intensity = 0.5)
+   * Physical Mylar/metallic foil wrapper crinkle micro-transients when tilting or dragging the sealed pack.
+   */
+  playFoilCrinkle(intensity = 0.5) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    if (this._lastCrinkleAt && (now - this._lastCrinkleAt) < 0.065) return;
+    this._lastCrinkleAt = now;
+
+    if (!this._crinkleBuffer || this._crinkleBuffer.sampleRate !== ctx.sampleRate) {
+      const len = Math.floor(ctx.sampleRate * 0.045);
+      this._crinkleBuffer = ctx.createBuffer(1, len, ctx.sampleRate);
+      const data = this._crinkleBuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        // Sparse crackle impulses typical of metallic foil flex
+        const env = Math.sin((i / len) * Math.PI);
+        data[i] = (Math.random() > 0.65 ? (Math.random() * 2 - 1) : 0) * env;
+      }
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = this._crinkleBuffer;
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(3600 + Math.random() * 2800, now);
+    bp.Q.setValueAtTime(4.8, now);
+
+    const gain = ctx.createGain();
+    const peak = Math.min(0.11, Math.max(0.02, intensity * 0.08));
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
+
+    src.connect(bp);
+    bp.connect(gain);
+    gain.connect(this.masterGain);
+    src.start(now);
+    src.stop(now + 0.045);
+  }
+
+  /**
+   * 5. playBoosterLaserTear()
+   * Stage 1 (0ms - 360ms): Stereo-panned (-0.75 -> +0.75) serrated metallic crimp tear
+   * with 32Hz sawtooth teeth modulation + ZzFX plasma spark transients.
+   */
+  playBoosterLaserTear() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const dur = 0.36;
+
+    const len = Math.floor(ctx.sampleRate * dur);
+    const tearBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const out = tearBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      // 32Hz serrated crimp teeth modulation + high-frequency metallic noise
+      const teethMod = 0.55 + 0.45 * Math.sin(t * Math.PI * 2 * 26);
+      const env = Math.pow(Math.sin(t * Math.PI), 0.65);
+      out[i] = (Math.random() * 2 - 1) * teethMod * env;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = tearBuf;
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1150, now);
+    bp.frequency.exponentialRampToValueAtTime(6800, now + dur);
+    bp.Q.setValueAtTime(3.4, now);
+
+    // High-pitched laser slice harmonic whistle
+    const laserOsc = ctx.createOscillator();
+    laserOsc.type = 'sawtooth';
+    laserOsc.frequency.setValueAtTime(680, now);
+    laserOsc.frequency.exponentialRampToValueAtTime(2950, now + dur);
+
+    const laserGain = ctx.createGain();
+    laserGain.gain.setValueAtTime(0.001, now);
+    laserGain.gain.linearRampToValueAtTime(0.065, now + 0.04);
+    laserGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    const tearGain = ctx.createGain();
+    tearGain.gain.setValueAtTime(0.001, now);
+    tearGain.gain.linearRampToValueAtTime(0.26, now + 0.035);
+    tearGain.gain.setValueAtTime(0.24, now + dur - 0.06);
+    tearGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    let panner = null;
+    if (typeof ctx.createStereoPanner === 'function') {
+      panner = ctx.createStereoPanner();
+      panner.pan.setValueAtTime(-0.75, now);
+      panner.pan.linearRampToValueAtTime(0.75, now + dur);
+    }
+
+    noise.connect(bp);
+    bp.connect(tearGain);
+    laserOsc.connect(laserGain);
+
+    if (panner) {
+      tearGain.connect(panner);
+      laserGain.connect(panner);
+      panner.connect(this.masterGain);
+    } else {
+      tearGain.connect(this.masterGain);
+      laserGain.connect(this.masterGain);
+    }
+
+    noise.start(now);
+    noise.stop(now + dur);
+    laserOsc.start(now);
+    laserOsc.stop(now + dur);
+  }
+
+  /**
+   * 6. playBoosterCoreRiser()
+   * Stage 2 (360ms - 740ms): Pressurized vacuum seal sub-bass pop + dual-oscillator harmonic tension riser.
+   */
+  playBoosterCoreRiser() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // 1. Vacuum seal pop (155Hz -> 36Hz)
+    const popOsc = ctx.createOscillator();
+    popOsc.type = 'sine';
+    popOsc.frequency.setValueAtTime(155, now);
+    popOsc.frequency.exponentialRampToValueAtTime(36, now + 0.13);
+
+    const popGain = ctx.createGain();
+    popGain.gain.setValueAtTime(0.34, now);
+    popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+    popOsc.connect(popGain);
+    popGain.connect(this.masterGain);
+    popOsc.start(now);
+    popOsc.stop(now + 0.17);
+
+    // 2. Dual-voice harmonic suspense riser (220Hz -> 880Hz)
+    [1, 1.498].forEach((ratio, idx) => {
+      const osc = ctx.createOscillator();
+      osc.type = idx === 0 ? 'triangle' : 'sawtooth';
+      osc.frequency.setValueAtTime(220 * ratio, now);
+      osc.frequency.exponentialRampToValueAtTime(880 * ratio, now + 0.38);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.setValueAtTime(5.0, now);
+      filter.frequency.setValueAtTime(600, now);
+      filter.frequency.exponentialRampToValueAtTime(4800, now + 0.38);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(idx === 0 ? 0.14 : 0.08, now + 0.28);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.40);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      if (this.reverbNode) {
+        const rev = ctx.createGain();
+        rev.gain.setValueAtTime(0.25, now);
+        gain.connect(rev);
+        rev.connect(this.reverbNode);
+      }
+      osc.start(now);
+      osc.stop(now + 0.41);
+    });
+  }
+
+  /**
+   * 7. playBoosterCardWhooshFlip()
+   * Stage 3 (740ms - 1080ms): Aerodynamic 3D card spin whoosh + crisp card lock snap.
+   */
+  playBoosterCardWhooshFlip() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const dur = 0.28;
+
+    const len = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin((i / len) * Math.PI);
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.setValueAtTime(2.6, now);
+    filter.frequency.setValueAtTime(320, now);
+    filter.frequency.exponentialRampToValueAtTime(2100, now + dur * 0.55);
+    filter.frequency.exponentialRampToValueAtTime(380, now + dur);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.24, now + dur * 0.45);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    src.start(now);
+    src.stop(now + dur);
+
+    // Crisp mechanical card lock snap at end of flip
+    this.synthesizeSingleCoinClink(now + 0.22, 1320, 0, [1.0, 1.483, 2.546], 0.85);
+  }
+
+  /**
+   * 8. playBoosterRarityReveal(rarityTier = 'radiant-prism')
+   * Stage 4 (1080ms+): Tier-adaptive musical & crystalline reveal payoff!
+   * - 'mythic-gold': Full Royal Brass & FM Crystal Bell Choir + Sub-Bass Impact + Gold Coin Cascade
+   * - 'radiant-prism': Shimmering Major-9th Crystal Arpeggio + Holographic Foil Glint
+   * - 'cosmos-holo': Pentatonic Starlight Chime + Coin Shimmer
+   */
+  playBoosterRarityReveal(rarityTier = 'radiant-prism') {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // 1. Sub-bass impact drop on card lock-in
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(110, now);
+    sub.frequency.exponentialRampToValueAtTime(32, now + 0.38);
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(rarityTier === 'mythic-gold' ? 0.48 : 0.30, now);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    sub.connect(subGain);
+    subGain.connect(this.masterGain);
+    sub.start(now);
+    sub.stop(now + 0.44);
+
+    // 2. Crystalline Holographic Bell Arpeggio (D Major 9th / Lydian Sparkle)
+    const chordNotes = rarityTier === 'mythic-gold'
+      ? [587.33, 739.99, 880.00, 1108.73, 1174.66, 1479.98, 1760.00, 2349.32] // D5..D7 Mythic Choir
+      : (rarityTier === 'radiant-prism'
+          ? [523.25, 659.25, 783.99, 987.77, 1174.66, 1567.98] // C5 Major 9th Prism
+          : [523.25, 659.25, 783.99, 1046.50, 1318.51]); // C5 Pentatonic Cosmos
+
+    chordNotes.forEach((freq, idx) => {
+      const start = now + idx * 0.042;
+      const dur = 0.65 + (idx * 0.06);
+
+      // FM-like Bell Pair: Sine fundamental + Triangle 2nd/3rd harmonic
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc2.type = 'triangle';
+      osc1.frequency.setValueAtTime(freq, start);
+      osc2.frequency.setValueAtTime(freq * 2.0, start);
+      osc2.detune.setValueAtTime(6, start);
+
+      const gain = ctx.createGain();
+      const peak = (rarityTier === 'mythic-gold' ? 0.14 : 0.11) / Math.sqrt(chordNotes.length * 0.5);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(peak, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+      const revSend = ctx.createGain();
+      revSend.gain.setValueAtTime(0.42, start);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.masterGain);
+      if (this.reverbNode) {
+        gain.connect(revSend);
+        revSend.connect(this.reverbNode);
+      }
+
+      osc1.start(start);
+      osc2.start(start);
+      osc1.stop(start + dur + 0.02);
+      osc2.stop(start + dur + 0.02);
+    });
+
+    // 3. Extra payoff for Mythic Gold Secret Rare
+    if (rarityTier === 'mythic-gold') {
+      this.playSkyCoinShower(1.8, 18);
+    } else {
+      // Subtle metallic foil shimmer clinks
+      this.synthesizeSingleCoinClink(now + 0.08, 1480, -0.45, [1.0, 1.483, 2.546], 0.6);
+      this.synthesizeSingleCoinClink(now + 0.16, 1760, 0.45, [1.0, 1.483, 2.546], 0.65);
+    }
+  }
 }
 
 // Global Singleton Instance & Universal Attachment
@@ -424,9 +717,11 @@ const ProAudioFX = new ProAudioFXEngine();
 
 if (typeof window !== 'undefined') {
   window.ProAudioFX = ProAudioFX;
+  window.proAudioFX = ProAudioFX;
   window.ProAudioFXEngine = ProAudioFXEngine;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ProAudioFX, ProAudioFXEngine };
 }
+

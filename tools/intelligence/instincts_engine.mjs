@@ -228,7 +228,7 @@ export function refineSkill(skillName, refinementSection) {
 /**
  * Pre-Flight Check: Mandatory verification before phase work starts
  */
-export function runPreFlightCheck() {
+export async function runPreFlightCheck() {
   console.log('\n======================================================');
   console.log('🛫 PRE-FLIGHT CHECK: TEMPORAL STACK & GUARD INTEGRITY');
   console.log('======================================================\n');
@@ -248,7 +248,7 @@ export function runPreFlightCheck() {
   }
   console.log('  ✓ Zero forbidden dependencies found.');
 
-  // Check 2: Config Protection Guard
+  // Check 3: Config Protection Guard
   console.log('• Running Config Protection Guard...');
   try {
     execSync('node tools/guardrails/config-protection.js', { cwd: ROOT, stdio: 'pipe' });
@@ -256,6 +256,32 @@ export function runPreFlightCheck() {
   } catch (err) {
     console.warn('  ⚠ Config protection warning:', err.message);
   }
+
+  // Check 4: Multi-Squad Topology & Skills Alignment
+  console.log('• Verifying Multi-Squad Topology (Squads 0 to 7)...');
+  try {
+    const squadModule = await import('./agent_squad.mjs');
+    if (typeof squadModule.verifySquadAlignment === 'function') {
+      const alignment = squadModule.verifySquadAlignment();
+      if (!alignment.valid) {
+        throw new Error(`[PRE-FLIGHT FAILED] Missing squad skills: ${JSON.stringify(alignment.missingSkills)}`);
+      }
+      console.log(`  ✓ All ${alignment.squadCount} Specialized Squads aligned with 100% verified skills.`);
+    }
+  } catch (err) {
+    if (err.message.includes('[PRE-FLIGHT FAILED]')) throw err;
+    console.warn('  ⚠ Squad alignment note:', err.message);
+  }
+
+  // Check 5: Anti-Shortcut & Invariant Files Integrity
+  console.log('• Verifying Anti-Shortcut & Invariant Files...');
+  const invariantFiles = ['AGENTS.md', 'CONSTRAINTS.md', 'openrig.json'];
+  for (const f of invariantFiles) {
+    if (!fs.existsSync(path.join(ROOT, f))) {
+      throw new Error(`[PRE-FLIGHT FAILED] Missing invariant file: ${f}`);
+    }
+  }
+  console.log('  ✓ Invariant governance files verified.');
 
   console.log('\n[PRE-FLIGHT PASSED] All systems ready for phase execution.\n');
   return true;

@@ -1194,9 +1194,6 @@
             <span style="width: 7px; height: 7px; border-radius: 50%; background: #00e676; box-shadow: 0 0 8px #00e676;"></span>
             <span id="pub-battle-status-text">LIVE ARENA · !BATTLE QUEUE OPEN</span>
           </span>
-          <a href="#control-panel" data-target="#control-panel" id="pub-battle-admin-link" class="btn-chat-toggle" style="display: none; padding: 6px 12px; font-size: 11px; text-decoration: none; border-color: var(--gold); color: var(--gold); font-weight: 800;">
-            🎛️ Streamer Control Panel
-          </a>
         </div>
       </div>
 
@@ -1566,14 +1563,6 @@
             </div>
           </form>
 
-          <!-- Settle GTB Button (Streamer / Admin Control - Restricted to Whitelist) -->
-          <div id="bh-streamer-settlement-container" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); justify-content: space-between; align-items: center;">
-            <span style="font-size: 11px; color: var(--text-dim);">Streamer Settlement:</span>
-            <button type="button" class="btn-stake-primary" id="bh-btn-settle-gtb" style="padding: 6px 14px; font-size: 11px; background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); color: #000; font-weight: 800; border-radius: 6px; border: none; cursor: pointer;">
-              🏆 Settle GTB & Award $DIG
-            </button>
-          </div>
-
           <!-- Live Winners Podium (Visible when settled) -->
           <div id="bh-gtb-podium-card" style="display: none; margin-top: 16px; padding: 14px; background: rgba(0, 0, 0, 0.4); border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.3);">
             <div style="font-size: 12px; font-family: var(--font-display); font-weight: 800; color: #ffd700; text-align: center; margin-bottom: 8px;">
@@ -1716,63 +1705,99 @@
 
       <!-- TAB 3: 3D HOLO-VAULT PACK SLOT PICKER -->
       <div class="intel-subpanel" data-intel-panel="vault" style="display: none;">
-        <div class="holo-vault-stage">
-          <div class="booster-pack-perspective">
-            <div class="booster-pack-3d is-sealed" id="diggity-booster-pack-3d" title="Click to rip open the sealed 3D Holo-Vault Booster Pack!">
-              <!-- Top Crimped Foil Tear Strip -->
+        <div class="holo-vault-stage" id="holo-vault-stage">
+          <div class="booster-pack-perspective" id="booster-pack-perspective">
+            <canvas id="vault-fx-canvas" class="vault-fx-canvas" width="420" height="460" aria-hidden="true"></canvas>
+            <div class="booster-pack-3d is-sealed" id="diggity-booster-pack-3d" data-holo-rarity="radiant-prism" title="Drag across the top seal or click to rip open the 3D Holo-Vault Booster Pack!">
+              <!-- Top Crimped Foil Tear Strip (Interactive Drag-to-Tear + 1-Click Laser Slice) -->
               <div class="booster-pack-seal-top" id="vault-foil-seal-top">
                 <div class="booster-crimp-ridges"></div>
-                <span class="booster-seal-text">✂️ TEAR HOLO-VAULT FOIL SEAL</span>
-                <div class="booster-laser-cut"></div>
+                <span class="booster-seal-text" id="vault-seal-hint-text">✂️ DRAG OR CLICK TO SLICE FOIL SEAL</span>
+                <div class="booster-laser-cut" id="vault-laser-cut-bar">
+                  <span class="booster-laser-spark-head"></span>
+                </div>
               </div>
 
-              <!-- Inner Radiant Light Burst When Ripped -->
+              <!-- Inner Radiant Light Burst & Shockwave Ring When Ripped -->
               <div class="booster-core-flash"></div>
+              <div class="booster-shockwave-ring"></div>
 
               <!-- Sealed Outer Foil Booster Wrapper (Covers the mystery slot until ripped!) -->
               <div class="booster-pack-front-wrapper" id="vault-sealed-wrapper">
-                <div class="booster-foil-glare"></div>
+                <div class="holo-card-shine"></div>
+                <div class="holo-card-glitter"></div>
+                <div class="holo-card-glare"></div>
                 <div class="booster-wrapper-shimmer"></div>
-                <span class="bh-tier-badge tier-6s" style="position: relative; z-index: 2; margin-top: 28px; font-size: 9.5px; letter-spacing: 1px;">DIGGITY HOLO-VAULT · SERIES I</span>
+                <div class="booster-wrapper-header-row">
+                  <span class="bh-tier-badge tier-6s" style="font-size: 9px; letter-spacing: 0.9px;">DIGGITY HOLO-VAULT · S1</span>
+                  <span class="booster-foil-stamp">1ST EDITION</span>
+                </div>
                 <div class="booster-mystery-emblem">
                   <div class="booster-emblem-ring"></div>
+                  <div class="booster-emblem-ring-inner"></div>
                   <div class="booster-emblem-core">?</div>
                 </div>
-                <div style="position: relative; z-index: 2; text-align: center; margin-top: 8px;">
-                  <div style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase; text-shadow: 0 0 14px rgba(0, 229, 255, 0.55);">
+                <div class="booster-wrapper-title-block">
+                  <div class="booster-wrapper-main-title">
                     SEALED MYSTERY PACK
                   </div>
-                  <div id="vault-sealed-studio-tag" style="font-size: 10.5px; color: var(--gold); font-weight: 800; margin-top: 3px; letter-spacing: 0.6px;">
+                  <div id="vault-sealed-studio-tag" class="booster-wrapper-sub-tag">
                     11,351 VERIFIED SLOTS POOL
                   </div>
                 </div>
                 <div class="booster-pack-crimp-bottom">
-                  <span>⚡ CLICK PACK OR PRESS RIP TO OPEN ⚡</span>
+                  <span>⚡ CLICK OR DRAG SEAL TO RIP OPEN ⚡</span>
                 </div>
               </div>
 
-              <!-- Inner 3D Revealed Slot Card (Emerges & Flips 180deg -> 0deg on Rip!) -->
-              <div class="booster-pack-body booster-revealed-card" id="vault-revealed-card">
-                <div class="booster-foil-glare"></div>
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px; position: relative; z-index: 2;">
-                  <span class="bh-tier-badge tier-6s" id="vault-revealed-rarity" style="font-size: 9.5px;">🌈 HOLO-FOIL HIT</span>
-                  <span id="vault-revealed-rtp-pill" style="font-family: var(--font-display); font-size: 10px; font-weight: 900; color: #53fc18; background: rgba(83,252,24,0.12); border: 1px solid rgba(83,252,24,0.4); padding: 2px 6px; border-radius: 999px;">96.38% RTP</span>
+              <!-- Inner 3D Revealed Collectible Slot Card (Multi-Layer Holographic Shaders + Atropos 3D Depth Planes) -->
+              <div class="booster-pack-body booster-revealed-card" id="vault-revealed-card" data-holo-rarity="radiant-prism">
+                <div class="holo-card-shine"></div>
+                <div class="holo-card-glitter"></div>
+                <div class="holo-card-glare"></div>
+
+                <!-- 3D Depth Plane 1 (Z: +36px): Collector Header -->
+                <div class="vault-card-header-3d">
+                  <span class="bh-tier-badge tier-6s" id="vault-revealed-rarity" style="font-size: 9px;">🌈 RADIANT HOLO</span>
+                  <span class="vault-card-serial-tag" id="vault-revealed-serial">#0418</span>
+                  <span id="vault-revealed-rtp-pill" class="vault-card-rtp-pill">96.38% RTP</span>
                 </div>
+
+                <!-- 3D Depth Plane 2 (Z: +26px): Floating Holographic Artwork Frame -->
                 <div class="booster-card-art-frame">
-                  <img id="vault-revealed-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="Revealed Slot" style="width: 152px; height: 198px; aspect-ratio: 180/236; border-radius: 12px; object-fit: contain; background: #070a12; border: 2px solid var(--gold); box-shadow: 0 10px 28px rgba(0,0,0,0.85);">
+                  <div class="booster-art-holo-sheen"></div>
+                  <img id="vault-revealed-img" src="https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format" alt="Revealed Slot" class="vault-revealed-art-img">
                 </div>
-                <div id="vault-revealed-name" style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #fff; text-align: center; margin-top: 10px; position: relative; z-index: 2; line-height: 1.2;">Wanted Dead or a Wild</div>
-                <div id="vault-revealed-provider" style="font-size: 11px; color: var(--gold); font-weight: 800; margin-top: 2px; position: relative; z-index: 2;">Hacksaw Gaming</div>
+
+                <!-- 3D Depth Plane 3 (Z: +40px): Collector Title & Telemetry Footer Plate -->
+                <div class="vault-card-footer-3d">
+                  <div id="vault-revealed-name" class="vault-card-slot-title">Wanted Dead or a Wild</div>
+                  <div id="vault-revealed-provider" class="vault-card-slot-studio">Hacksaw Gaming</div>
+                  <div class="vault-card-telemetry-grid">
+                    <div class="vault-MiniStat">
+                      <span class="vault-MiniStat-lbl">MAX WIN</span>
+                      <strong id="vault-card-maxwin" class="vault-MiniStat-val">12,500x</strong>
+                    </div>
+                    <div class="vault-MiniStat">
+                      <span class="vault-MiniStat-lbl">VOLATILITY</span>
+                      <strong id="vault-card-vol" class="vault-MiniStat-val">EXTREME</strong>
+                    </div>
+                    <div class="vault-MiniStat">
+                      <span class="vault-MiniStat-lbl">ENGINE</span>
+                      <strong id="vault-card-mech" class="vault-MiniStat-val">DUEL REELS</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <div>
-              <span class="bh-tier-badge tier-5s">🃏 INTERACTIVE 3D FOIL BOOSTER PACK</span>
+              <span class="bh-tier-badge tier-5s">🃏 INTERACTIVE 3D FOIL BOOSTER PACK · SHADER v2</span>
               <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 900; color: #fff; margin: 6px 0 4px 0;">RIP OPEN A HOLO-VAULT BOOSTER PACK</h3>
               <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin: 0;">
-                The Holo-Vault pack starts <strong>sealed</strong>. Choose a studio (or roll all <strong>11,351 verified slots</strong>), click <strong>⚡ RIP HOLO-VAULT PACK</strong> to tear the top metallic crimp seal, and watch your winning slot card emerge in 3D!
+                Drag across the top metallic crimp seal or click <strong>⚡ RIP HOLO-VAULT PACK</strong> to slice the foil with plasma sparks and reveal a 3D multi-layer holographic collectible slot card!
               </p>
             </div>
 
@@ -2231,108 +2256,93 @@
         </div>
       </div>
 
-      <!-- Points Leaderboard Cash Prize Banner ($20 1st / $10 2nd + 2X Multiplier under code: diggity + 3rd VIP Badge Kick Role) -->
-      <div class="leaderboard-prize-card points-prize-hero-card">
-        <div class="prize-card-left">
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.2); border-color: var(--gold); color: var(--gold);">
-              MOST ACTIVE CHANNEL VIEWERS REWARD
-            </span>
-            <span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.18); border-color: var(--kick-green); color: var(--kick-green);">
-              ⚡ 2X PRIZE UNDER CODE: DIGGITY
-            </span>
-          </div>
-          <div class="points-prize-tiers-row">
-            <div class="points-prize-tier-box gold">
-              <div class="tier-rank-label">🥇 1ST MOST ACTIVE</div>
-              <div class="tier-base-amount">$20 <span style="font-size: 13px; color: #cbd5e1;">USD</span></div>
-              <div class="tier-boost-badge">⚡ $40 USD (2X CODE: DIGGITY)</div>
-            </div>
-            <div class="points-prize-tier-box silver">
-              <div class="tier-rank-label">🥈 2ND MOST ACTIVE</div>
-              <div class="tier-base-amount">$10 <span style="font-size: 13px; color: #cbd5e1;">USD</span></div>
-              <div class="tier-boost-badge">⚡ $20 USD (2X CODE: DIGGITY)</div>
-            </div>
-            <div class="points-prize-tier-box bronze">
-              <div class="tier-rank-label">🥉 3RD MOST ACTIVE</div>
-              <div class="tier-base-amount" style="font-size: 22px; color: #fde68a; line-height: 1.25;">VIP BADGE</div>
-              <div class="tier-boost-badge" style="background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.5); color: #fde68a;">💎 KICK VIP ROLE</div>
-            </div>
-          </div>
-          <p style="font-size: 12.5px; color: #cbd5e1; max-width: 720px; line-height: 1.5; margin: 6px 0 0 0;">
-            The <strong>1st</strong> and <strong>2nd</strong> most active viewers in the channel win <strong>$20 USD</strong> and <strong>$10 USD</strong> respectively (automatically <strong>doubled 2X to $40 USD and $20 USD</strong> under Stake code <strong style="color: var(--kick-green);">diggity</strong>), and the <strong>3rd</strong> most active viewer wins the exclusive <strong style="color: #fde68a;">VIP Badge Kick Role</strong>!
-          </p>
-        </div>
-        <div class="prize-timer-box">
-          <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display);">Code Multiplier Bonus</div>
-          <div class="prize-timer-clock" style="color: var(--kick-green);">2X PRIZE</div>
-          <div style="font-size: 11px; color: var(--gold); font-weight: 700;">Code: diggity Verified</div>
-        </div>
-      </div>
-
-      <!-- Historical Community Stats Strip -->
-      <div class="stats-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
-        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
-          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">👑 #1 MOST ACTIVE VIEWER</div>
-          <div id="stat-leader-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--gold); margin-top: 4px;">—</div>
-          <div id="stat-leader-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Prize: $20 USD ($40 w/ code diggity)</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
-          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🏆 TOURNAMENT RECORD</div>
-          <div id="stat-tourney-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #38bdf8; margin-top: 4px;">—</div>
-          <div id="stat-tourney-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Esperando campeones...</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
-          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">🎰 TOP HUNT SNIPER</div>
-          <div id="stat-sniper-user" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: var(--kick-green); margin-top: 4px;">—</div>
-          <div id="stat-sniper-desc" style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 2px;">Esperando aciertos...</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 20px;">
-          <div style="font-size: 11px; font-family: var(--font-display); font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px;">💎 TOTAL POINTS DISTRIBUTED</div>
-          <div id="stat-rewards-pool" style="font-size: 22px; font-family: var(--font-display); font-weight: 900; color: #ffffff; margin-top: 4px;">0 <span style="font-size: 14px; color: var(--gold);">$DIG</span></div>
-          <div style="font-size: 12px; color: var(--kick-green); font-weight: 700; margin-top: 2px;">100% Free Spectator Pool</div>
-        </div>
-      </div>
-
-      <!-- Top 3 Points Activity Podium Showcase -->
-      <div class="podium-grid">
+      <!-- Top 3 Points Activity 3D Animated Levitating Podium (Kick Fluor Green Laser Aesthetics) -->
+      <div class="kick-podium-stage" aria-label="Kick Points Leaderboard Top 3 Podium">
         <!-- 2nd Place ($10 USD / $20 USD 2X code: diggity) -->
-        <div class="podium-card silver">
-          <div class="podium-medal">🥈 2ND MOST ACTIVE · $10 USD (2X: $20)</div>
-          <div class="podium-avatar" id="podium-2-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(56,189,248,0.2);"><circle cx="32" cy="32" r="30" fill="#09182a" stroke="rgba(56,189,248,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" fill="#64748b" text-anchor="middle">#2</text></svg>
+        <div class="kick-podium-column second-place">
+          <div class="kick-podium-spotlight second-beam" aria-hidden="true"></div>
+          <div class="kick-podium-card">
+            <div class="kick-podium-halo" aria-hidden="true"></div>
+            <div class="kick-rank-crest silver-crest">🥈 2ND MOST ACTIVE</div>
+            <div class="podium-avatar kick-podium-avatar" id="podium-2-avatar">
+              <svg viewBox="0 0 64 64" width="60" height="60" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 16px rgba(0,230,118,0.35);"><circle cx="32" cy="32" r="30" fill="#091812" stroke="#00e676" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#00e676" text-anchor="middle">#2</text></svg>
+            </div>
+            <div class="kick-podium-user" id="podium-2-user" style="color: #cbd5e1;">—</div>
+            <div class="podium-kick" id="podium-2-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+            <div class="kick-podium-points-box">
+              <span class="points-label">ACTIVITY POINTS</span>
+              <span class="points-val" id="podium-2-points">0 $DIG</span>
+            </div>
+            <div class="kick-podium-prize-container">
+              <div class="kick-podium-prize-pill silver-prize" id="podium-2-prize">
+                <div class="kick-prize-main">$10 <span style="font-size: 14px; opacity: 0.85;">USD</span></div>
+                <div class="kick-prize-boost">⚡ $20 USD (2X CODE: DIGGITY)</div>
+              </div>
+            </div>
           </div>
-          <div class="podium-user" id="podium-2-user" style="color: #64748b;">—</div>
-          <div class="podium-kick" id="podium-2-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
-          <div class="podium-wager" id="podium-2-points" style="color: #64748b; font-size: 15px; font-weight: 800; margin-top: 6px;">0 $DIG</div>
-          <div class="podium-prize" id="podium-2-prize" style="font-size: 11px; color: #e2e8f0; border-color: rgba(226, 232, 240, 0.35);">💰 $10 USD ($20 2X CODE: DIGGITY)</div>
+          <div class="kick-podium-pedestal silver-pedestal">
+            <span class="pedestal-number">#2</span>
+            <span class="pedestal-sub">KICK VIEWER</span>
+          </div>
         </div>
 
-        <!-- 1st Place ($20 USD / $40 USD 2X code: diggity) -->
-        <div class="podium-card gold">
-          <div class="podium-crown">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M4 14l3-8 5 5 5-5 3 8H4z" fill="rgba(255,215,0,0.2)"/></svg>
+        <!-- 1st Place Champion ($20 USD / $40 USD 2X code: diggity) -->
+        <div class="kick-podium-column first-place">
+          <div class="kick-podium-spotlight champion-beam" aria-hidden="true"></div>
+          <div class="kick-podium-card champion-laser">
+            <div class="kick-podium-halo" aria-hidden="true"></div>
+            <div class="kick-floating-crown">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#53fc18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(83,252,24,0.8));"><path d="M3 18h18M4 14l3-8 5 5 5-5 3 8H4z" fill="rgba(83,252,24,0.4)"/></svg>
+            </div>
+            <div class="kick-rank-crest champion-crest">👑 #1 MOST ACTIVE CHAMPION</div>
+            <div class="podium-avatar kick-podium-avatar champion-avatar" id="podium-1-avatar">
+              <svg viewBox="0 0 64 64" width="72" height="72" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 24px rgba(83,252,24,0.6);"><circle cx="32" cy="32" r="30" fill="#0a1a0f" stroke="#53fc18" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="25" font-weight="900" fill="#53fc18" text-anchor="middle">#1</text></svg>
+            </div>
+            <div class="kick-podium-user champion-user" id="podium-1-user">—</div>
+            <div class="podium-kick" id="podium-1-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+            <div class="kick-podium-points-box champion-points-box">
+              <span class="points-label">ACTIVITY POINTS</span>
+              <span class="points-val champion-val" id="podium-1-points">0 $DIG</span>
+            </div>
+            <div class="kick-podium-prize-container">
+              <div class="kick-podium-prize-pill champion-prize" id="podium-1-prize">
+                <div class="kick-prize-main">$20 <span style="font-size: 15px; opacity: 0.9;">USD</span></div>
+                <div class="kick-prize-boost">⚡ $40 USD (2X CODE: DIGGITY)</div>
+              </div>
+            </div>
           </div>
-          <div class="podium-medal">🥇 #1 MOST ACTIVE · $20 USD (2X: $40)</div>
-          <div class="podium-avatar" id="podium-1-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 14px rgba(255,215,0,0.25);"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="rgba(255,215,0,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" fill="#ffd700" text-anchor="middle">#1</text></svg>
+          <div class="kick-podium-pedestal champion-pedestal">
+            <span class="pedestal-number">#1</span>
+            <span class="pedestal-sub">COMMUNITY CHAMPION</span>
           </div>
-          <div class="podium-user" id="podium-1-user" style="color: #64748b;">—</div>
-          <div class="podium-kick" id="podium-1-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
-          <div class="podium-wager" id="podium-1-points" style="color: #64748b; font-size: 15px; font-weight: 800; margin-top: 6px;">0 $DIG</div>
-          <div class="podium-prize highlight" id="podium-1-prize" style="font-size: 11px; color: var(--gold);">🏆 $20 USD ($40 2X CODE: DIGGITY)</div>
         </div>
 
         <!-- 3rd Place (VIP Badge Kick Role) -->
-        <div class="podium-card bronze">
-          <div class="podium-medal">🥉 3RD MOST ACTIVE · VIP BADGE</div>
-          <div class="podium-avatar" id="podium-3-avatar">
-            <svg viewBox="0 0 64 64" width="52" height="52" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(255,42,95,0.2);"><circle cx="32" cy="32" r="30" fill="#230a10" stroke="rgba(255,42,95,0.4)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="38" font-family="'Chakra Petch', sans-serif" font-size="20" font-weight="700" fill="#64748b" text-anchor="middle">#3</text></svg>
+        <div class="kick-podium-column third-place">
+          <div class="kick-podium-spotlight third-beam" aria-hidden="true"></div>
+          <div class="kick-podium-card">
+            <div class="kick-podium-halo" aria-hidden="true"></div>
+            <div class="kick-rank-crest bronze-crest">🥉 3RD MOST ACTIVE</div>
+            <div class="podium-avatar kick-podium-avatar" id="podium-3-avatar">
+              <svg viewBox="0 0 64 64" width="60" height="60" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 16px rgba(83,252,24,0.3);"><circle cx="32" cy="32" r="30" fill="#091812" stroke="rgba(83,252,24,0.6)" stroke-width="2" stroke-dasharray="4 4"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#53fc18" text-anchor="middle">#3</text></svg>
+            </div>
+            <div class="kick-podium-user" id="podium-3-user" style="color: #cbd5e1;">—</div>
+            <div class="podium-kick" id="podium-3-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
+            <div class="kick-podium-points-box">
+              <span class="points-label">ACTIVITY POINTS</span>
+              <span class="points-val" id="podium-3-points">0 $DIG</span>
+            </div>
+            <div class="kick-podium-prize-container">
+              <div class="kick-podium-prize-pill bronze-prize" id="podium-3-prize">
+                <div class="kick-prize-main" style="font-size: 21px;">VIP BADGE</div>
+                <div class="kick-prize-boost">💎 KICK VIP ROLE</div>
+              </div>
+            </div>
           </div>
-          <div class="podium-user" id="podium-3-user" style="color: #64748b;">—</div>
-          <div class="podium-kick" id="podium-3-tier"><span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span></div>
-          <div class="podium-wager" id="podium-3-points" style="color: #64748b; font-size: 15px; font-weight: 800; margin-top: 6px;">0 $DIG</div>
-          <div class="podium-prize" id="podium-3-prize" style="font-size: 11px; color: #fde68a; border-color: rgba(245, 158, 11, 0.45);">💎 VIP BADGE KICK ROLE</div>
+          <div class="kick-podium-pedestal bronze-pedestal">
+            <span class="pedestal-number">#3</span>
+            <span class="pedestal-sub">VIP SPECTATOR</span>
+          </div>
         </div>
       </div>
 

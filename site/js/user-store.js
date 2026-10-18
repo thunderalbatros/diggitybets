@@ -1127,15 +1127,20 @@ class UserStoreController {
     const tier1 = document.getElementById('podium-1-tier');
     if (u1) {
       u1.textContent = p1 ? p1.kickUser : '—';
-      u1.style.color = p1 ? 'var(--gold)' : '#64748b';
+      u1.style.color = p1 ? '#53fc18' : '#cbd5e1';
     }
     if (pts1) {
-      pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
-      pts1.style.color = p1 ? 'var(--gold)' : '#64748b';
+      pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts1.style.color = p1 ? '#53fc18' : '#64748b';
     }
-    if (prize1) prize1.textContent = '🏆 $20 USD ($40 2X CODE: DIGGITY)';
+    if (prize1) {
+      prize1.innerHTML = `
+        <div class="kick-prize-main">$20 <span style="font-size: 15px; opacity: 0.9;">USD</span></div>
+        <div class="kick-prize-boost">⚡ $40 USD (2X CODE: DIGGITY)</div>
+      `;
+    }
     if (tier1) {
-      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(0, 229, 255, 0.2); border-color: var(--cyan); color: var(--cyan); font-size: 10px;">💎 ${esc(p1.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier1.innerHTML = p1 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.2); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">👑 ${esc(p1.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
 
     const u2 = document.getElementById('podium-2-user');
@@ -1144,15 +1149,20 @@ class UserStoreController {
     const tier2 = document.getElementById('podium-2-tier');
     if (u2) {
       u2.textContent = p2 ? p2.kickUser : '—';
-      u2.style.color = p2 ? '#e2e8f0' : '#64748b';
+      u2.style.color = p2 ? '#ffffff' : '#cbd5e1';
     }
     if (pts2) {
-      pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
-      pts2.style.color = p2 ? '#cbd5e1' : '#64748b';
+      pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts2.style.color = p2 ? '#ffffff' : '#64748b';
     }
-    if (prize2) prize2.textContent = '💰 $10 USD ($20 2X CODE: DIGGITY)';
+    if (prize2) {
+      prize2.innerHTML = `
+        <div class="kick-prize-main">$10 <span style="font-size: 14px; opacity: 0.85;">USD</span></div>
+        <div class="kick-prize-boost">⚡ $20 USD (2X CODE: DIGGITY)</div>
+      `;
+    }
     if (tier2) {
-      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(255, 215, 0, 0.15); border-color: var(--gold); color: var(--gold); font-size: 10px;">👑 ${esc(p2.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
+      tier2.innerHTML = p2 ? `<span class="reward-badge-pill" style="background: rgba(0, 230, 118, 0.18); border-color: #00e676; color: #00e676; font-size: 10px;">🥈 ${esc(p2.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }
 
     const u3 = document.getElementById('podium-3-user');
@@ -1161,13 +1171,18 @@ class UserStoreController {
     const tier3 = document.getElementById('podium-3-tier');
     if (u3) {
       u3.textContent = p3 ? p3.kickUser : '—';
-      u3.style.color = p3 ? '#cd7f32' : '#64748b';
+      u3.style.color = p3 ? '#ffffff' : '#cbd5e1';
     }
     if (pts3) {
-      pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG All-Time` : '0 $DIG';
-      pts3.style.color = p3 ? '#cbd5e1' : '#64748b';
+      pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts3.style.color = p3 ? '#ffffff' : '#64748b';
     }
-    if (prize3) prize3.textContent = '💎 VIP BADGE KICK ROLE';
+    if (prize3) {
+      prize3.innerHTML = `
+        <div class="kick-prize-main" style="font-size: 21px;">VIP BADGE</div>
+        <div class="kick-prize-boost">💎 KICK VIP ROLE</div>
+      `;
+    }
     if (tier3) {
       tier3.innerHTML = p3 ? `<span class="reward-badge-pill" style="background: rgba(83, 252, 24, 0.15); border-color: var(--kick-green); color: var(--kick-green); font-size: 10px;">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #64748b; font-size: 10px;">ESPACIO VACÍO</span>`;
     }

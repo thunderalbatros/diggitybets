@@ -200,16 +200,28 @@
   background: linear-gradient(160deg, rgba(10, 28, 48, 0.72) 0%, rgba(11, 16, 28, 0.94) 65%);
 }
 
-/* 4. 3D CYBER-VAULT FOIL BOOSTER PACK (/random-slot EVOLVED) */
+/* 4. 3D CYBER-VAULT FOIL BOOSTER PACK (pokemon-cards-css Shaders + Atropos 3D Depth Planes) */
+:root {
+  --sunpillar-1: hsl(2, 100%, 73%);
+  --sunpillar-2: hsl(53, 100%, 69%);
+  --sunpillar-3: hsl(93, 100%, 69%);
+  --sunpillar-4: hsl(176, 100%, 76%);
+  --sunpillar-5: hsl(228, 100%, 74%);
+  --sunpillar-6: hsl(283, 100%, 73%);
+}
+
 .holo-vault-stage {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
+  grid-template-columns: minmax(290px, 370px) 1fr;
   gap: 28px;
   align-items: center;
-  padding: 24px;
-  background: radial-gradient(circle at 28% 50%, rgba(0, 229, 255, 0.1), rgba(7, 10, 18, 0.95) 70%);
-  border: 1px solid rgba(0, 229, 255, 0.26);
+  padding: 26px;
+  background:
+    radial-gradient(circle at 26% 50%, rgba(0, 229, 255, 0.14), rgba(168, 85, 247, 0.06) 42%, rgba(7, 10, 18, 0.96) 75%);
+  border: 1px solid rgba(0, 229, 255, 0.3);
   border-radius: 18px;
+  overflow: hidden;
 }
 
 @media (max-width: 860px) {
@@ -220,34 +232,64 @@
 }
 
 .booster-pack-perspective {
-  perspective: 1200px;
-  width: 266px;
-  height: 376px;
+  position: relative;
+  perspective: 1100px;
+  width: 276px;
+  height: 392px;
   margin: 0 auto;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vault-fx-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  height: 460px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 12;
 }
 
 .booster-pack-3d {
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --pointer-from-center: 0.25;
+  --pointer-from-top: 0.5;
+  --pointer-from-left: 0.5;
+  --background-x: 50%;
+  --background-y: 50%;
+  --rotate-x: 0deg;
+  --rotate-y: 0deg;
+  --card-opacity: 0.65;
+  --tear-progress: 0;
+
   position: relative;
   width: 100%;
   height: 100%;
   border-radius: 18px;
   transform-style: preserve-3d;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-transform-style: preserve-3d;
+  transform: rotateY(var(--rotate-x)) rotateX(var(--rotate-y)) translateZ(0.01px);
+  will-change: transform;
   cursor: pointer;
+  z-index: 4;
 }
 
-/* Stage 1: Tension Shake & Laser Cut */
+/* Stage 1: High-Frequency Tension Shake & Laser Cut */
 @keyframes vaultPackTensionShake {
-  0%, 100% { transform: translate3d(0, 0, 0) rotateZ(0deg) scale(1.02); }
-  20% { transform: translate3d(-4px, 2px, 12px) rotateZ(-1.8deg) scale(1.03); }
-  40% { transform: translate3d(4px, -2px, 16px) rotateZ(1.8deg) scale(1.04); }
-  60% { transform: translate3d(-5px, -1px, 20px) rotateZ(-2.2deg) scale(1.05); }
-  80% { transform: translate3d(5px, 2px, 24px) rotateZ(2.2deg) scale(1.05); }
+  0%, 100% { transform: translate3d(0, 0, 10px) rotateZ(0deg) scale(1.02); }
+  20% { transform: translate3d(-4px, 2px, 18px) rotateZ(-1.8deg) scale(1.03); }
+  40% { transform: translate3d(4px, -2px, 22px) rotateZ(1.8deg) scale(1.04); }
+  60% { transform: translate3d(-5px, -1px, 26px) rotateZ(-2.2deg) scale(1.05); }
+  80% { transform: translate3d(5px, 2px, 30px) rotateZ(2.2deg) scale(1.05); }
 }
 
 .booster-pack-3d.is-ripping-stage-1 {
-  animation: vaultPackTensionShake 0.32s ease-in-out infinite;
+  animation: vaultPackTensionShake 0.28s ease-in-out infinite;
 }
 
 /* Top Metallic Crimped Foil Seal */
@@ -257,23 +299,33 @@
   left: 0;
   right: 0;
   height: 54px;
-  background: linear-gradient(90deg, #0f172a 0%, #1e293b 25%, #475569 50%, #1e293b 75%, #0f172a 100%);
-  border: 1.5px solid rgba(255, 215, 0, 0.78);
+  background:
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 215, 0, 0.14) 12px,
+      rgba(0, 229, 255, 0.12) 24px,
+      rgba(255, 255, 255, 0.06) 36px
+    ),
+    linear-gradient(90deg, #0f172a 0%, #1e293b 25%, #475569 50%, #1e293b 75%, #0f172a 100%);
+  border: 1.5px solid rgba(255, 215, 0, 0.85);
   border-bottom: 2px dashed #ffd700;
   border-radius: 18px 18px 0 0;
-  z-index: 6;
+  z-index: 8;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   font-family: var(--font-display, 'Chakra Petch', sans-serif);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 900;
   color: #ffd700;
-  letter-spacing: 1.3px;
+  letter-spacing: 1.1px;
   clip-path: polygon(0% 0%, 100% 0%, 100% 86%, 92% 100%, 84% 86%, 76% 100%, 68% 86%, 60% 100%, 52% 86%, 44% 100%, 36% 86%, 28% 100%, 20% 86%, 12% 100%, 4% 86%, 0% 100%);
   transform-origin: right top;
-  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+  transform: translateZ(14px);
+  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s ease;
+  cursor: ew-resize;
 }
 
 .booster-crimp-ridges {
@@ -281,10 +333,10 @@
   inset: 0;
   background: repeating-linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.08) 0px,
-    rgba(255, 255, 255, 0.08) 3px,
-    rgba(0, 0, 0, 0.35) 3px,
-    rgba(0, 0, 0, 0.35) 6px
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.1) 3px,
+    rgba(0, 0, 0, 0.38) 3px,
+    rgba(0, 0, 0, 0.38) 6px
   );
   pointer-events: none;
 }
@@ -292,35 +344,49 @@
 .booster-seal-text {
   position: relative;
   z-index: 2;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
 }
 
-/* Glowing Laser Tear Beam across the seal */
+/* Glowing Plasma Laser Tear Beam across the seal */
 .booster-laser-cut {
   position: absolute;
   bottom: 2px;
   left: 0;
-  height: 4px;
+  height: 5px;
   width: 100%;
-  background: linear-gradient(90deg, #53fc18, #00e5ff, #ffd700, #ffffff);
-  box-shadow: 0 0 14px #00e5ff, 0 0 24px #ffd700;
-  transform: scaleX(0);
+  background: linear-gradient(90deg, #53fc18 0%, #00e5ff 45%, #ffd700 80%, #ffffff 100%);
+  box-shadow: 0 0 16px #00e5ff, 0 0 28px #ffd700;
+  transform: scaleX(var(--tear-progress, 0));
   transform-origin: left center;
-  opacity: 0;
+  opacity: calc(var(--tear-progress, 0) * 1.2);
   z-index: 3;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  transition: transform 0.08s linear, opacity 0.12s ease;
+}
+
+.booster-laser-spark-head {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #ffd700 45%, rgba(0, 229, 255, 0) 75%);
+  box-shadow: 0 0 16px #ffffff, 0 0 24px #ffd700;
+  transform: translateY(-50%);
 }
 
 .booster-pack-3d.is-ripping-stage-1 .booster-laser-cut {
+  transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.12s ease;
   transform: scaleX(1);
   opacity: 1;
 }
 
-/* Stage 2+: Top Seal Tears Off & Flies Away */
+/* Stage 2+: Top Seal Tears Off & Flies Away with 3D Torque */
 .booster-pack-3d.is-ripping-stage-2 .booster-pack-seal-top,
 .booster-pack-3d.is-ripping-stage-3 .booster-pack-seal-top,
 .booster-pack-3d.is-opened .booster-pack-seal-top {
-  transform: translate3d(135px, -78px, 95px) rotateZ(28deg) rotateX(45deg);
+  transform: translate3d(150px, -92px, 115px) rotateZ(32deg) rotateX(52deg);
   opacity: 0;
   pointer-events: none;
 }
@@ -331,22 +397,47 @@
   inset: 0;
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(0, 229, 255, 0.22) 0%, rgba(16, 24, 48, 0.96) 58%, #060911 100%),
+    radial-gradient(circle at 50% 42%, rgba(0, 229, 255, 0.25) 0%, rgba(16, 24, 48, 0.96) 58%, #060911 100%),
     linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #090d16 100%);
-  border: 2px solid rgba(255, 215, 0, 0.65);
+  border: 2px solid rgba(255, 215, 0, 0.72);
   box-shadow:
-    0 22px 50px rgba(0, 0, 0, 0.85),
-    0 0 30px rgba(0, 229, 255, 0.22),
-    inset 0 0 28px rgba(255, 215, 0, 0.12);
-  z-index: 4;
+    0 24px 54px rgba(0, 0, 0, 0.88),
+    0 0 32px rgba(0, 229, 255, 0.24),
+    inset 0 0 30px rgba(255, 215, 0, 0.15);
+  z-index: 5;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 36px 18px 0 18px;
+  padding: 58px 16px 0 16px;
+  transform-style: preserve-3d;
   transform-origin: center bottom;
-  transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.48s ease;
+  transform: translateZ(6px);
+  transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.46s ease;
+}
+
+.booster-wrapper-header-row {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 6px;
+  transform: translateZ(18px);
+}
+
+.booster-foil-stamp {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #05070e;
+  background: linear-gradient(135deg, #ffd700, #fde047, #f59e0b);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.45);
 }
 
 .booster-wrapper-shimmer {
@@ -355,9 +446,9 @@
   background: conic-gradient(
     from 0deg at 50% 50%,
     rgba(0, 229, 255, 0.08),
-    rgba(255, 215, 0, 0.16),
-    rgba(255, 42, 95, 0.12),
-    rgba(83, 252, 24, 0.12),
+    rgba(255, 215, 0, 0.18),
+    rgba(255, 42, 95, 0.14),
+    rgba(83, 252, 24, 0.14),
     rgba(0, 229, 255, 0.08)
   );
   animation: holoFoilSpin 7s linear infinite;
@@ -369,72 +460,101 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Mystery Holo Crest in center of sealed pack */
+/* Mystery Holo Crest in center of sealed pack (3D Parallax Z: +28px) */
 .booster-mystery-emblem {
   position: relative;
-  width: 118px;
-  height: 118px;
+  width: 122px;
+  height: 122px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 8px 0 2px 0;
-  z-index: 2;
+  margin: 4px 0;
+  z-index: 3;
+  transform: translateZ(28px);
 }
 
 .booster-emblem-ring {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px dashed rgba(0, 229, 255, 0.68);
-  box-shadow: 0 0 24px rgba(0, 229, 255, 0.32), inset 0 0 18px rgba(255, 215, 0, 0.25);
+  border: 2px dashed rgba(0, 229, 255, 0.78);
+  box-shadow: 0 0 26px rgba(0, 229, 255, 0.38), inset 0 0 18px rgba(255, 215, 0, 0.28);
   animation: holoFoilSpin 10s linear infinite reverse;
 }
 
+.booster-emblem-ring-inner {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  border: 1.5px dotted rgba(255, 215, 0, 0.68);
+  animation: holoFoilSpin 6.5s linear infinite;
+}
+
 .booster-emblem-core {
-  width: 84px;
-  height: 84px;
+  width: 82px;
+  height: 82px;
   border-radius: 20px;
   transform: rotate(45deg);
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22) 0%, rgba(0, 229, 255, 0.24) 50%, rgba(15, 23, 42, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.28) 0%, rgba(0, 229, 255, 0.28) 50%, rgba(15, 23, 42, 0.96) 100%);
   border: 2px solid #ffd700;
-  box-shadow: 0 0 25px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 28px rgba(255, 215, 0, 0.55), inset 0 0 14px rgba(0, 229, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display, 'Chakra Petch', sans-serif);
-  font-size: 42px;
+  font-size: 0;
   font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 0 16px rgba(255, 215, 0, 0.9);
+  text-shadow: 0 0 18px rgba(255, 215, 0, 0.95);
 }
 
 .booster-emblem-core::before {
   content: '?';
+  font-size: 42px;
   transform: rotate(-45deg);
   display: block;
 }
 
-.booster-emblem-core {
-  font-size: 0;
+.booster-wrapper-title-block {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  margin-top: 4px;
+  transform: translateZ(22px);
 }
-.booster-emblem-core::before {
-  font-size: 42px;
+
+.booster-wrapper-main-title {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(0, 229, 255, 0.65);
+}
+
+.booster-wrapper-sub-tag {
+  font-size: 10.5px;
+  color: var(--gold);
+  font-weight: 800;
+  margin-top: 3px;
+  letter-spacing: 0.6px;
 }
 
 .booster-pack-crimp-bottom {
-  width: calc(100% + 36px);
+  width: calc(100% + 32px);
   height: 36px;
-  margin-top: 12px;
+  margin-top: 10px;
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.07) 0px,
-      rgba(255, 255, 255, 0.07) 3px,
-      rgba(0, 0, 0, 0.35) 3px,
-      rgba(0, 0, 0, 0.35) 6px
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 3px,
+      rgba(0, 0, 0, 0.38) 3px,
+      rgba(0, 0, 0, 0.38) 6px
     ),
     linear-gradient(90deg, #0f172a, #1e293b, #334155, #1e293b, #0f172a);
-  border-top: 1.5px solid rgba(255, 215, 0, 0.5);
+  border-top: 1.5px solid rgba(255, 215, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -444,101 +564,400 @@
   color: #53fc18;
   letter-spacing: 0.8px;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* Stage 3+: Sealed Wrapper Splits / Peels Open to Reveal Card */
 .booster-pack-3d.is-ripping-stage-3 .booster-pack-front-wrapper,
 .booster-pack-3d.is-opened .booster-pack-front-wrapper {
-  transform: translate3d(0, 112%, 45px) rotateX(-55deg) scale(0.9);
+  transform: translate3d(0, 118%, 55px) rotateX(-62deg) scale(0.88);
   opacity: 0;
   pointer-events: none;
 }
 
-/* Inner Radiant Core Flash Burst when Wrapper Splits */
+/* Inner Radiant Core Flash Burst & Shockwave Ring when Wrapper Splits */
 .booster-core-flash {
   position: absolute;
-  inset: -24px;
-  border-radius: 28px;
-  background: radial-gradient(circle, #ffffff 0%, #ffd700 32%, #00e5ff 62%, transparent 78%);
+  inset: -32px;
+  border-radius: 32px;
+  background: radial-gradient(circle, #ffffff 0%, #ffd700 30%, #00e5ff 58%, rgba(168, 85, 247, 0.4) 72%, transparent 82%);
   opacity: 0;
-  transform: scale(0.5);
-  z-index: 5;
+  transform: scale(0.45);
+  z-index: 7;
   pointer-events: none;
   mix-blend-mode: screen;
-  transition: opacity 0.32s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.28s ease, transform 0.46s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.booster-shockwave-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  margin-left: -110px;
+  margin-top: -110px;
+  border-radius: 50%;
+  border: 3px solid #00e5ff;
+  box-shadow: 0 0 28px #00e5ff, inset 0 0 24px #ffd700;
+  opacity: 0;
+  transform: scale(0.2);
+  z-index: 7;
+  pointer-events: none;
 }
 
 .booster-pack-3d.is-ripping-stage-2 .booster-core-flash,
 .booster-pack-3d.is-ripping-stage-3 .booster-core-flash {
-  opacity: 0.92;
-  transform: scale(1.22);
+  opacity: 0.96;
+  transform: scale(1.28);
 }
 
-/* Inner Revealed 3D Slot Card */
+@keyframes vaultShockwaveExpand {
+  0% { opacity: 0.95; transform: scale(0.25); border-width: 5px; }
+  100% { opacity: 0; transform: scale(1.95); border-width: 1px; }
+}
+
+.booster-pack-3d.is-ripping-stage-2 .booster-shockwave-ring,
+.booster-pack-3d.is-ripping-stage-3 .booster-shockwave-ring {
+  animation: vaultShockwaveExpand 0.62s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   SIMEY POKEMON-CARDS-CSS MULTI-LAYER HOLOGRAPHIC SHADERS
+   (.holo-card-shine + .holo-card-glitter + .holo-card-glare)
+   ========================================================================== */
+.holo-card-shine,
+.holo-card-glitter,
+.holo-card-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Layer 1: Sunpillar Rainbow Spectrum + Crosshatch Interference (color-dodge) */
+.holo-card-shine {
+  z-index: 3;
+  transform: translateZ(2px);
+  --barwidth: 1.4%;
+  background-image:
+    radial-gradient(
+      farthest-corner ellipse at calc(((var(--pointer-x, 50%)) * 0.5) + 25%) calc(((var(--pointer-y, 50%)) * 0.5) + 25%),
+      hsla(0, 0%, 98%, 0.72) 12%,
+      rgba(0, 229, 255, 0.35) 65%,
+      transparent 110%
+    ),
+    repeating-linear-gradient(
+      110deg,
+      var(--sunpillar-1) calc(7% * 1),
+      var(--sunpillar-2) calc(7% * 2),
+      var(--sunpillar-3) calc(7% * 3),
+      var(--sunpillar-4) calc(7% * 4),
+      var(--sunpillar-5) calc(7% * 5),
+      var(--sunpillar-6) calc(7% * 6),
+      var(--sunpillar-1) calc(7% * 7)
+    ),
+    repeating-linear-gradient(
+      45deg,
+      hsl(0, 0%, 12%) 0%,
+      hsl(0, 0%, 12%) var(--barwidth),
+      hsl(0, 0%, 38%) calc(var(--barwidth) * 2),
+      hsl(0, 0%, 52%) calc(var(--barwidth) * 3),
+      hsl(0, 0%, 38%) calc(var(--barwidth) * 4),
+      hsl(0, 0%, 12%) calc(var(--barwidth) * 5)
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      hsl(0, 0%, 12%) 0%,
+      hsl(0, 0%, 12%) var(--barwidth),
+      hsl(0, 0%, 38%) calc(var(--barwidth) * 2),
+      hsl(0, 0%, 52%) calc(var(--barwidth) * 3),
+      hsl(0, 0%, 38%) calc(var(--barwidth) * 4),
+      hsl(0, 0%, 12%) calc(var(--barwidth) * 5)
+    );
+  background-size: cover, 320% 320%, 210% 210%, 210% 210%;
+  background-position:
+    center,
+    calc(((var(--background-x, 50%) - 50%) * -2.2) + 50%) calc(((var(--background-y, 50%) - 50%) * -2.2) + 50%),
+    calc(((var(--background-x, 50%) - 50%) * 1.4) + 50%) calc(((var(--background-y, 50%) - 50%) * 1.4) + 50%),
+    calc(((var(--background-x, 50%) - 50%) * -1.4) + 50%) calc(((var(--background-y, 50%) - 50%) * -1.4) + 50%);
+  background-blend-mode: exclusion, color-dodge, darken;
+  mix-blend-mode: color-dodge;
+  filter: brightness(calc(0.45 + (var(--pointer-from-center, 0.25) * 0.35))) contrast(2.15) saturate(1.9);
+  opacity: var(--card-opacity, 0.72);
+  transition: opacity 0.22s ease;
+}
+
+/* Layer 2: Procedural Starlight / Foil Glitter Matrix (overlay) */
+.holo-card-glitter {
+  z-index: 4;
+  transform: translateZ(4px);
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.85) 0.8px, transparent 2px),
+    radial-gradient(circle at 75% 18%, rgba(255, 215, 0, 0.9) 1px, transparent 2.4px),
+    radial-gradient(circle at 42% 62%, rgba(0, 229, 255, 0.9) 1px, transparent 2.2px),
+    radial-gradient(circle at 82% 72%, rgba(255, 255, 255, 0.85) 0.9px, transparent 2px),
+    radial-gradient(circle at 18% 82%, rgba(83, 252, 24, 0.85) 1px, transparent 2.2px),
+    radial-gradient(circle at 58% 36%, rgba(255, 42, 95, 0.85) 0.9px, transparent 2.2px);
+  background-size: 56px 56px, 68px 68px, 62px 62px, 52px 52px, 74px 74px, 64px 64px;
+  background-position:
+    calc(50% - (var(--pointer-from-left, 0.5) * 18px)) calc(50% - (var(--pointer-from-top, 0.5) * 18px)),
+    calc(50% + (var(--pointer-from-left, 0.5) * 22px)) calc(50% + (var(--pointer-from-top, 0.5) * 22px));
+  mix-blend-mode: overlay;
+  filter: brightness(calc(0.8 + (var(--pointer-from-center, 0.25) * 0.6))) contrast(1.65);
+  opacity: calc(var(--card-opacity, 0.72) * 0.88);
+}
+
+/* Layer 3: Dynamic Pointer Radial Specular Glare (overlay / hard-light) */
+.holo-card-glare {
+  z-index: 5;
+  transform: translateZ(6px);
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
+    hsla(0, 0%, 100%, 0.78) 6%,
+    hsla(48, 100%, 76%, 0.42) 22%,
+    hsla(190, 100%, 60%, 0.22) 45%,
+    hsla(0, 0%, 0%, 0.55) 92%
+  );
+  mix-blend-mode: overlay;
+  opacity: calc(var(--card-opacity, 0.72) * 0.92);
+}
+
+/* Rarity Shader Variant 1: MYTHIC 24K SECRET RARE GOLD */
+.booster-revealed-card[data-holo-rarity="mythic-gold"] {
+  border-color: #ffd700 !important;
+  background: linear-gradient(145deg, #1c1406 0%, #0d0a04 46%, #271a05 100%) !important;
+}
+
+.booster-revealed-card[data-holo-rarity="mythic-gold"] .holo-card-shine {
+  filter: brightness(calc(0.55 + (var(--pointer-from-center, 0.3) * 0.42))) contrast(2.35) saturate(2.5) sepia(0.25);
+}
+
+/* Rarity Shader Variant 2: RADIANT PRISM CROSSHATCH */
+.booster-revealed-card[data-holo-rarity="radiant-prism"] {
+  border-color: #00e5ff !important;
+  background: linear-gradient(145deg, #091528 0%, #060a14 48%, #1a0f32 100%) !important;
+}
+
+/* Rarity Shader Variant 3: COSMOS NEBULA HOLO */
+.booster-revealed-card[data-holo-rarity="cosmos-holo"] {
+  border-color: #53fc18 !important;
+  background: linear-gradient(145deg, #071b16 0%, #060b14 48%, #0d1d31 100%) !important;
+}
+
+/* ==========================================================================
+   INNER REVEALED 3D COLLECTIBLE SLOT CARD (Atropos Multi-Plane Z Depth)
+   ========================================================================== */
 .booster-pack-body.booster-revealed-card {
   position: absolute;
   inset: 0;
   border-radius: 18px;
   background: linear-gradient(145deg, #0b1325 0%, #070b14 45%, #161030 100%);
-  border: 2px solid rgba(255, 215, 0, 0.82);
-  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.85), 0 0 34px rgba(255, 215, 0, 0.32);
-  overflow: hidden;
+  border: 2px solid rgba(255, 215, 0, 0.88);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.88), 0 0 38px rgba(255, 215, 0, 0.35);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 18px 16px;
-  z-index: 2;
-  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease, box-shadow 0.4s ease;
+  justify-content: space-between;
+  padding: 14px 14px 12px 14px;
+  z-index: 3;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.66s cubic-bezier(0.18, 1.22, 0.32, 1), opacity 0.36s ease, box-shadow 0.4s ease;
 }
 
 /* While Pack is Sealed or Tearing Top Seal: Card is hidden inside & turned 180deg */
 .booster-pack-3d.is-sealed .booster-revealed-card,
 .booster-pack-3d.is-ripping-stage-1 .booster-revealed-card,
 .booster-pack-3d.is-ripping-stage-2 .booster-revealed-card {
-  transform: translate3d(0, 14px, -24px) rotateY(180deg) scale(0.84);
+  transform: translate3d(0, 18px, -30px) rotateY(180deg) scale(0.76);
   opacity: 0;
   pointer-events: none;
 }
 
-/* Stage 3: Card begins emerging from the radiant burst */
+/* Stage 3: Card launches upward and spins in 3D space */
 .booster-pack-3d.is-ripping-stage-3 .booster-revealed-card {
-  transform: translate3d(0, -10px, 28px) rotateY(90deg) scale(0.95);
-  opacity: 0.85;
+  transform: translate3d(0, -14px, 42px) rotateY(90deg) scale(1.04);
+  opacity: 0.92;
 }
 
-/* Stage 4 (Opened): Card flips 0deg face-up and locks into 3D showcase */
+/* Stage 4 (Opened): Card locks into 3D multi-plane showcase */
 .booster-pack-3d.is-opened .booster-revealed-card {
-  transform: translate3d(0, 0, 18px) rotateY(0deg) scale(1);
+  transform: translate3d(0, 0, 22px) rotateY(0deg) scale(1);
   opacity: 1;
   box-shadow:
-    0 24px 56px rgba(0, 0, 0, 0.88),
-    0 0 36px rgba(255, 215, 0, 0.42),
-    0 0 18px rgba(0, 229, 255, 0.35);
+    0 26px 60px rgba(0, 0, 0, 0.92),
+    0 0 42px rgba(255, 215, 0, 0.46),
+    0 0 22px rgba(0, 229, 255, 0.38),
+    inset 0 0 22px rgba(255, 255, 255, 0.12);
 }
 
+/* 3D Depth Plane 1 (Z: +32px): Collector Header */
+.vault-card-header-3d {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+  position: relative;
+  z-index: 6;
+  transform: translateZ(32px);
+}
+
+.vault-card-serial-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(226, 232, 240, 0.78);
+  letter-spacing: 0.5px;
+}
+
+.vault-card-rtp-pill {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 10px;
+  font-weight: 900;
+  color: #53fc18;
+  background: rgba(83, 252, 24, 0.15);
+  border: 1px solid rgba(83, 252, 24, 0.5);
+  padding: 2px 7px;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(83, 252, 24, 0.22);
+}
+
+/* 3D Depth Plane 2 (Z: +24px): Floating Holographic Artwork Frame */
 .booster-card-art-frame {
   position: relative;
-  z-index: 2;
+  z-index: 6;
   border-radius: 14px;
   padding: 3px;
-  background: linear-gradient(135deg, #ffd700 0%, #00e5ff 50%, #ff2a5f 100%);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.75);
+  background: conic-gradient(
+    from var(--border-angle, 0deg),
+    #ffd700,
+    #00e5ff,
+    #ff2a5f,
+    #53fc18,
+    #ffd700
+  );
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.85),
+    0 0 20px rgba(0, 229, 255, 0.3);
+  transform: translateZ(24px);
+  overflow: hidden;
 }
 
-.booster-foil-glare {
+.booster-art-holo-sheen {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(125deg,
-    rgba(255, 255, 255, 0) 18%,
-    rgba(0, 229, 255, 0.25) 35%,
-    rgba(255, 215, 0, 0.3) 48%,
-    rgba(255, 42, 95, 0.25) 62%,
-    rgba(255, 255, 255, 0) 80%);
-  mix-blend-mode: screen;
+  inset: 3px;
+  border-radius: 11px;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.32) calc(var(--pointer-x, 50%) - 8%),
+    rgba(0, 229, 255, 0.28) var(--pointer-x, 50%),
+    rgba(255, 215, 0, 0.28) calc(var(--pointer-x, 50%) + 8%),
+    transparent 80%
+  );
+  mix-blend-mode: color-dodge;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+
+.vault-revealed-art-img {
+  display: block;
+  width: 148px;
+  height: 192px;
+  aspect-ratio: 180 / 236;
+  border-radius: 11px;
+  object-fit: cover;
+  background: #070a12;
+}
+
+/* 3D Depth Plane 3 (Z: +36px): Collector Title & Telemetry Footer Plate */
+.vault-card-footer-3d {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+  z-index: 6;
+  transform: translateZ(36px);
+}
+
+.vault-card-slot-title {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+}
+
+.vault-card-slot-studio {
+  font-size: 10.5px;
+  color: var(--gold);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.vault-card-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 5px 6px;
+  border-radius: 9px;
+  background: rgba(5, 8, 16, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.vault-MiniStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.vault-MiniStat-lbl {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.vault-MiniStat-val {
+  font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booster-pack-3d,
+  .booster-pack-seal-top,
+  .booster-pack-front-wrapper,
+  .booster-revealed-card,
+  .booster-wrapper-shimmer,
+  .booster-emblem-ring,
+  .booster-emblem-ring-inner {
+    animation: none !important;
+    transition-duration: 0.15s !important;
+  }
 }
 
 /* 5. MONTHLY P&L CALENDAR GRID */

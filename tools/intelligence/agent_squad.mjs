@@ -22,31 +22,77 @@ const ROOT = path.resolve(__dirname, '..', '..');
 
 export const SQUADS = {
   squad_0: {
+    id: "squad_0",
     name: "Squad 0 — Manager & Orchestrator",
     mission: "Decomposes missions into atomic contracts, enforces Gates, and verifies overall invariants.",
-    skills: ["subagent-driven-development", "verify-before-claim", "delivery-gate"]
+    skills: ["subagent-driven-development", "verify-before-claim", "delivery-gate", "anti-shortcut-discipline"]
+  },
+  squad_1: {
+    id: "squad_1",
+    name: "Squad 1 — Research & Sourcing",
+    mission: "Gathers primary documentation, audits licenses, verifies Kick API contracts, and prevents hallucinations.",
+    skills: ["research-mode", "kb-retrieval", "firecrawl", "finops-context-budget"]
   },
   squad_2: {
+    id: "squad_2",
     name: "Squad 2 — Architecture & Backend",
     mission: "Ensures SQLite data structures, API contracts, Durable Objects, and state machines.",
-    skills: ["cloudflare-durable-objects", "error-handling", "number-parsing"]
+    skills: ["cloudflare-durable-objects", "error-handling", "number-parsing", "workers-best-practices"]
+  },
+  squad_3: {
+    id: "squad_3",
+    name: "Squad 3 — Kick Integration & Protocols",
+    mission: "Maintains Pusher WS chat connections, Webhooks RSA signature verification, and OAuth 2.1 PKCE.",
+    skills: ["kick-api", "kick-api-contracts", "channel-points-bridge", "moderation-guard"]
   },
   squad_4: {
+    id: "squad_4",
     name: "Squad 4 — Frontend & Layout",
     mission: "Maintains semantic HTML, design tokens, layout primitives, and component architecture.",
-    skills: ["frontend-design", "design-system", "layout-primitives-architect"]
+    skills: ["frontend-design", "design-system", "layout-primitives-architect", "minimal-surface-hierarchy"]
   },
   squad_5: {
+    id: "squad_5",
     name: "Squad 5 — Visual & Motion",
     mission: "Guarantees 60 FPS WAAPI animations, composite-only properties, and OBS CPU <= 5%.",
-    skills: ["motion-engineer", "animation-performance", "obs-overlays"]
+    skills: ["motion-engineer", "animation-performance", "obs-overlays", "vanilla-motion-choreography"]
   },
   squad_6: {
+    id: "squad_6",
     name: "Squad 6 — QA, Security & Fairness",
     mission: "Adversarial review, XSS audit, Provably Fair HMAC-SHA256 audits, and test suites.",
-    skills: ["adverse-review", "break-ui", "security-audit", "fair-draws"]
+    skills: ["adverse-review", "break-ui", "security-audit", "fair-draws", "provably-fair-games"]
+  },
+  squad_7: {
+    id: "squad_7",
+    name: "Squad 7 — DevOps & Documentation",
+    mission: "Zero-cost Cloudflare edge deployments, runbooks, STATUS.md updates, and packaging.",
+    skills: ["verify-before-claim", "delivery-gate", "kb-writing", "stop-slop"]
   }
 };
+
+/**
+ * Validates that all specialized squads have valid skills and clear operational boundaries
+ */
+export function verifySquadAlignment() {
+  const missingSkills = [];
+  const skillsDir = path.join(ROOT, '.agents', 'skills');
+
+  for (const [key, squad] of Object.entries(SQUADS)) {
+    for (const skill of squad.skills) {
+      const skillPath = path.join(skillsDir, skill);
+      if (!fs.existsSync(skillPath)) {
+        missingSkills.push({ squad: key, skill });
+      }
+    }
+  }
+
+  return {
+    valid: missingSkills.length === 0,
+    squadCount: Object.keys(SQUADS).length,
+    missingSkills
+  };
+}
 
 export async function runSquadMission(missionTitle, options = { useSandbox: false }) {
   console.log(`\n======================================================`);
@@ -63,7 +109,7 @@ export async function runSquadMission(missionTitle, options = { useSandbox: fals
 
   // Stage 1: Squad 0 Pre-Flight & Contract Verification
   console.log(`[STAGE 1] Squad 0 Lead — Pre-Flight & Temporal Invariants...`);
-  const preflightOk = runPreFlightChecks();
+  const preflightOk = await runPreFlightChecks();
   report.stages.push({ stage: 1, name: 'Squad 0 Pre-Flight', passed: preflightOk });
   if (!preflightOk) {
     report.passed = false;

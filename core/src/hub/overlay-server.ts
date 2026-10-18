@@ -944,6 +944,33 @@ export class OverlayServer {
         return;
       }
 
+      // Admin Delete Store Redemption (Gated for diggitybets)
+      if (url.pathname === '/api/admin/delete-store-redemption' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const { redemptionId, adminUser } = JSON.parse(body);
+            const cleanAdmin = String(adminUser || req.headers['x-admin-user'] || '').trim().toLowerCase().replace('@', '');
+            if ((cleanAdmin !== 'diggitybets' && cleanAdmin !== 'tarkansky')) {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden: Admin access restricted to diggitybets' }));
+              return;
+            }
+            let result = { success: true };
+            if (this.db) {
+              result = this.db.deleteStoreRedemption(redemptionId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          } catch (err: any) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+
       // Admin Raffle Ledger (Gated for diggitybets)
       if (url.pathname === '/api/admin/raffle-ledger' && req.method === 'GET') {
         const adminUser = req.headers['x-admin-user'] || url.searchParams.get('adminUser') || '';
