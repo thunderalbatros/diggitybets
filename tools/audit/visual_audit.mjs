@@ -384,8 +384,12 @@ for (const vp of VIEWPORTS) {
           jsHeapUsedMB: Number(((map.JSHeapUsedSize || 0) / (1024 * 1024)).toFixed(2))
         };
       } catch (_) {}
+      try {
+        await page.screenshot({ path: path.join(out, `${v}-${vp.w}.png`), fullPage: false, timeout: 8000 });
+      } catch (err) {
+        console.warn(`[VisualAudit] Screenshot warning for ${v}-${vp.w}:`, err.message);
+      }
     }
-    await page.screenshot({ path: path.join(out, `${v}-${vp.w}.png`), fullPage: false });
     blockers += findings.filter(f => f.sev === 'BLOCKER').length;
     report.runs.push({ view: v, width: vp.w, findings });
   }

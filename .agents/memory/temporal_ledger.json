@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-18T01:30:09.346Z",
+  "last_updated": "2026-10-19T08:23:08.005Z",
   "rules": [
     {
       "id": "stack-vanilla-web-obs",
@@ -87,7 +87,7 @@
       "id": "linear-ast-scanning-no-redos",
       "type": "performance_invariable",
       "title": "Linear Line-by-Line AST Scanning (Zero ReDoS)",
-      "valid_from": "2026-10-18T01:30:09.334Z",
+      "valid_from": "2026-10-19T08:23:07.993Z",
       "valid_until": null,
       "status": "ACTIVE",
       "rationale": "Nested regular expression quantifiers (e.g. `([^()]*|\\([^()]*\\))*`) cause catastrophic backtracking and terminal freezes on large files (>2,000 lines). Parse class methods linearly with line splitting.",
@@ -97,7 +97,7 @@
       "id": "mock-server-api-catchall",
       "type": "architectural_decision",
       "title": "Catch-All 200 OK JSON Fallback for Local API Testing",
-      "valid_from": "2026-10-18T01:30:09.339Z",
+      "valid_from": "2026-10-19T08:23:07.998Z",
       "valid_until": null,
       "status": "ACTIVE",
       "rationale": "Headless Playwright audits capture all 404 network failures as console errors. Local simulation servers must implement a catch-all 200 OK JSON fallback for `/api/*` to guarantee a clean 0-error report.",
@@ -107,7 +107,7 @@
       "id": "network-fetch-abort-timeout-guard",
       "type": "resilience_pattern",
       "title": "Mandatory AbortSignal.timeout on External API Calls",
-      "valid_from": "2026-10-18T01:30:09.343Z",
+      "valid_from": "2026-10-19T08:23:08.002Z",
       "valid_until": null,
       "status": "ACTIVE",
       "rationale": "External API services (Serper, Qdrant Cloud, Vertex AI) can hang indefinitely when connection pools saturate or sockets drop. Every remote fetch must have an explicit timeout between 2,500ms and 3,500ms.",
@@ -117,7 +117,7 @@
       "id": "symbolic-method-aliasing",
       "type": "bug_fix",
       "title": "Method Renaming Aliases on Class Prototypes",
-      "valid_from": "2026-10-18T01:30:09.346Z",
+      "valid_from": "2026-10-19T08:23:08.005Z",
       "valid_until": null,
       "status": "ACTIVE",
       "rationale": "When refactoring methods in public client controllers, provide a prototype alias to prevent runtime PAGEERROR exceptions when older modules or event handlers invoke the previous symbol name.",
