@@ -50,22 +50,26 @@
 
 ---
 
-## 3. Team Squads & Workflow Protocol
+## 3. Team Squads & Workflow Protocol (10-Squad Web Software Factory)
 
-### 3.1 Specialized Squads
-- **Squad 0 — Manager / Tech Lead:** Orchestration, Gates, ADRs, `STATUS.md`, `AGENTS.md`, and single point of contact with the user.
-- **Squad 1 — Research:** Kick Platform, Free Real-Time Infra, and Casino Domain metrics (`research/`).
-- **Squad 2 — Architecture & Backend:** Worker, Durable Object, state machines, WebSocket hub, data structures.
-- **Squad 3 — Kick Integration:** OAuth 2.1 PKCE, webhooks, command parser, message delivery, `ChatSim`.
-- **Squad 4 — Frontend:** Admin dashboard and public mobile-first website.
-- **Squad 5 — Visual & Motion:** Dark glassmorphism design system, OBS overlays, animations, audio synthesizers.
-- **Squad 6 — QA, Security & Fairness:** Unit/property tests, load simulation, CSP/XSS defense, commit-reveal audits.
-- **Squad 7 — DevOps & Documentation:** Free deployments, simple user guides (`GUIA_STREAMER.md`, `GUIA_MODS.md`), runbooks.
+### 3.1 Specialized Squads (*Team Topologies* + *Anthropic Orchestrator-Workers & Evaluator-Optimizer*)
+- **Squad 0 — Executive Orchestrator & CTO HITL Liaison:** Atomic task decomposition, Gates, ADRs, `STATUS.md`, `AGENTS.md`, and single point of contact with the CTO (Human-In-The-Loop).
+- **Squad 1 — Deep Research & Tech Scout (*Enabling Team*):** SOTA web technologies, live design DNA harvesting (`extract-design`), Kick platform & casino domain metrics (`research/`).
+- **Squad 2 — Edge Architecture & Realtime Backend (*Platform Team*):** Cloudflare Workers, Durable Objects, SQLite/D1, WebSocket Hibernation hub, Valibot schema validation.
+- **Squad 3 — Kick Integration & Stream Protocols (*Complicated-Subsystem*):** OAuth 2.1 PKCE, RSA webhooks, Pusher command parser, chat moderation guard, `ChatSim`.
+- **Squad 4 — Design Systems, OKLCH Tokens & Frontend Architect (*Stream-Aligned A*):** 90/8/2 chromatic budget, OKLCH + APCA contrast, W3C DTCG tokens, Utopia fluid `clamp()`, de-boxing, semantic HTML/CSS (`site/`).
+- **Squad 5 — Creative Tech, 60-FPS Motion, Shaders & WebAudio (*Complicated-Subsystem*):** Native CSS motion (`@starting-style`, `interpolate-size`, `linear()`), GSAP Flip, 2D SDF shaders, OBS overlays (`<=5% CPU`), `ZzFX` WebAudio with master limiter (`-4 dBFS`).
+- **Squad 6 — Adversarial Security, 5-Gate Visual QA & VLM Critic (*Evaluator-Optimizer Gatekeeper*):** Independent *Maker-Checker* verification across 5 automated pre-HITL gates (`AST/Tokens`, `Playwright 4-Viewport Geometry + break-ui`, `CDP 60-FPS Telemetry`, `Lighthouse + Pa11y + UXBench`, `Gemini 2.5 Flash VLM UI Critic`), CSP/XSS defense, and Commit-Reveal fairness audits.
+- **Squad 7 — Zero-Cost DevOps, Build Pipeline & Documentation (*Platform Team*):** `tools/build_dist.mjs`, security `_headers`, Sandcastle Git Worktrees, streamer/mod guides (`GUIA_STREAMER.md`, `GUIA_MODS.md`).
+- **Squad 8 — Interactive Crowd-Play Games, Gamification & CRO (*Stream-Aligned B*):** Zero-custody live spectator games, Provably Fair `HMAC-SHA256`, Octalysis Core Drives, Hooked loops, Fogg $B=MAP$, Cialdini ethical conversion.
+- **Squad 9 — Self-Evolving Meta-Coach, Omni-RAG v5 & FinOps (*Enabling / Meta-Platform*):** Supercharged Omni-RAG v5 (`SQLite FTS5` + `CodeGraph/WikiGraph PageRank` + `ONNX Q8`), Speculative RAG, Vertex AI Context Caching, TextGrad/SkillSmith Surrogate Verifier, and Temporal Instinct Ledger.
 
-### 3.2 Gate Protocol
-- Work is broken into Gates. After each milestone, the Manager updates `docs/STATUS.md` and presents a 1-page executive summary:
+### 3.2 Gate Protocol & CTO HITL Visual Sign-Off
+- Work is broken into Gates. No UI/frontend change may be presented to the CTO HITL until **Squad 6** certifies `100/100` (`B:0 M:0 m:0`) across all 5 Automated Pre-HITL Visual Gates (`cto-hitl-visual-gate`).
+- After each milestone, **Squad 0** updates `docs/STATUS.md` and presents a concise executive summary with the **CTO Visual Sign-Off Packet** (3-viewport screenshot carousel + telemetry scorecard):
   1. What was accomplished (3 concise bullets).
   2. What is needed from the user (checklist of human actions).
   3. Identified risks & mitigations.
   4. What comes next.
-- Max 5 questions per gate, each with a recommended default. Never write product code before Gate 1 approval.
+- Max 5 questions per gate, each with a recommended default.
+
