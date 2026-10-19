@@ -22,6 +22,7 @@
 - [websockets_masterclass_hussein_nasser.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/streaming_and_overlays/websockets_masterclass_hussein_nasser.md) — Curso completo de WebSockets y arquitecturas bidireccionales en tiempo real.
 
 ### 1.3 Diseño UI/UX Minimalista, Tipografía, Layout y Rendimiento Web
+- [AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026.md) — Inteligencia de diseño, tecnologías creativas (shaders, dinámicas físicas, KokonutUI), bucle de conciencia visual con Playwright + Gemini Vision y linter Design-Auditor.
 - [DESIGN_MASTERY_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/DESIGN_MASTERY_2026.md) — Regla cromática 90/8/2, jerarquía de luminancia y diseño de lujo oscuro.
 - [CANON_EVERY_LAYOUT_CSS_ALGORITHMS.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/ui_ux_design/CANON_EVERY_LAYOUT_CSS_ALGORITHMS.md) — Primitivas algorítmicas CSS (`Stack`, `Cluster`, `Sidebar`, `Grid`).
 - [CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/ui_ux_design/CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026.md) — Arquitectura visual y técnica de la sección Bounties *Only on Stake*.

@@ -3,7 +3,7 @@ id: "symbolic-method-aliasing"
 type: "bug_fix"
 confidence: 0.95
 status: "ACTIVE"
-created_at: "2026-10-18T01:30:09.347Z"
+created_at: "2026-10-19T08:23:08.006Z"
 ---
 
 # Instinct: Method Renaming Aliases on Class Prototypes
