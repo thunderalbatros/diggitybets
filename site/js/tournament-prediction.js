@@ -403,7 +403,7 @@ class TournamentPredictionController {
 
     return `
       <div class="${rowClasses}" data-slot-id="${esc(entry.id)}" data-target="${esc(targetKey)}" data-match-id="${esc(matchId)}">
-        <img class="slot-mini-thumb" src="${esc(entry.img)}" alt="${esc(entry.slotName)}" style="width: 38px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0;">
+        <img class="slot-mini-thumb lazy" src="${esc(entry.img)}" alt="${esc(entry.slotName)}" loading="lazy" decoding="async" style="width: 38px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0;">
         <div class="slot-mini-meta">
           <div class="slot-mini-user">
             <span style="color: ${isSelected ? '#53fc18' : '#ffffff'};">${esc(entry.username)}</span>
@@ -612,6 +612,9 @@ class TournamentPredictionController {
 
     this.bindClickHandlers();
     this.updateStatusBanner();
+    if (typeof window.refreshLazyLoad === 'function') {
+      window.refreshLazyLoad();
+    }
   }
 
   getEntry(entryId) {
@@ -1359,7 +1362,7 @@ class TournamentPredictionController {
       const imgSrc = meta.image || item.imageUrl || fallbackSvg;
       return `
         <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; font-size: 12px;">
-          <img src="${imgSrc}" alt="" style="width: 26px; height: 34px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';" />
+          <img class="lazy" src="${imgSrc}" alt="" loading="lazy" decoding="async" style="width: 26px; height: 34px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackSvg}';" />
           <strong style="color: #fff;">@${esc(user)}</strong>
           <span style="color: var(--gold); font-weight: 700;">${esc(meta.name || rawSlot)}</span>
         </div>

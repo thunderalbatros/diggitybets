@@ -383,7 +383,7 @@ class BonusHuntController {
         <td class="bh-td-num">#${idx + 1}</td>
         <td class="bh-td-slot">
           <div class="bh-slot-info" style="display: flex; align-items: center; gap: 10px;">
-            <img class="bh-slot-thumb" src="${imgSrc}" alt="" loading="lazy" style="width: 42px; height: 55px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
+            <img class="bh-slot-thumb lazy" src="${imgSrc}" alt="" loading="lazy" decoding="async" style="width: 42px; height: 55px; aspect-ratio: 180 / 236; object-fit: contain; background: #070a12; border-radius: 6px;" onerror="this.onerror=null; this.src='${fallbackSvg}';">
             <div>
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <span class="bh-slot-name" style="font-weight: 700; color: #ffffff;">${slotName}</span>
@@ -400,6 +400,9 @@ class BonusHuntController {
       `;
       tbody.appendChild(tr);
     });
+    if (typeof window.refreshLazyLoad === 'function') {
+      window.refreshLazyLoad();
+    }
   }
 
   // ==========================================

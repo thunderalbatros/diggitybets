@@ -150,7 +150,7 @@ class SlotsExplorerController {
 
       card.innerHTML = `
         <div class="slot-card-image-wrap">
-          <img class="slot-card-img" src="${imgSrc}" alt="${safeName}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'180\\' height=\\'236\\' viewBox=\\'0 0 180 236\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%230e1320\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23ffd700\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>${encodeURIComponent(slot.name || '')}</text></svg>'">
+          <img class="slot-card-img lazy" src="${imgSrc}" alt="${safeName}" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'180\\' height=\\'236\\' viewBox=\\'0 0 180 236\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%230e1320\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23ffd700\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>${encodeURIComponent(slot.name || '')}</text></svg>'">
           <span class="slot-badge-pill">${providerBadge}</span>
           <span class="slot-maxwin-pill">${maxWin}</span>
         </div>
@@ -168,6 +168,10 @@ class SlotsExplorerController {
     });
 
     gridEl.appendChild(fragment);
+
+    if (typeof window.refreshLazyLoad === 'function') {
+      window.refreshLazyLoad();
+    }
 
     // Bind +Hunt buttons
     gridEl.querySelectorAll('.btn-add-hunt').forEach(btn => {
