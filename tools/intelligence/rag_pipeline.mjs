@@ -219,20 +219,39 @@ function createDocumentChunks(filePath) {
   const cleanText = text.replace(/^---[\s\S]*?---\s*/, '').trim();
   if (!cleanText) return [];
 
-  const isHighPriorityCanon = rel.startsWith('knowledge/') && (
-    fileName.startsWith('CANON_') ||
-    fileName.startsWith('CURATED_') ||
-    fileName.startsWith('DESIGN_') ||
-    fileName.startsWith('POPULAR_') ||
-    fileName.startsWith('CYBERSECURITY_') ||
-    fileName.startsWith('ANTI_BOT_') ||
-    fileName.startsWith('KWS_') ||
-    fileName.startsWith('AGENT_') ||
-    fileName === 'INDEX'
-  );
+  const CORE_PROJECT_TREATISES = new Set([
+    'CANON_GAMIFICATION_PSYCHOLOGY_CRO_AND_STREAM_MARKETING_2026',
+    'CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026',
+    'CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB',
+    'CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026',
+    'CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026',
+    'CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026',
+    'CANON_EVERY_LAYOUT_CSS_ALGORITHMS',
+    'CANON_UX_HUMAN_EXPERIENCE_ACCESSIBILITY_2026',
+    'CANON_CYBERSECURITY_DEVSECOPS_2026',
+    'CURATED_MASTER_BOOKS_AND_COURSES_2026',
+    'DESIGN_MASTERY_2026',
+    'AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026',
+    'POPULAR_SLOTS_ONLY_ON_STAKE_TIERS',
+    'CYBERSECURITY_MASTER_PROTOCOL',
+    'ANTI_BOT_STEALTH_GUIDE',
+    'KWS_EDGE_AUDIO_STREAMING_SOTA',
+    'INDEX'
+  ]);
+  const isHighPriorityCanon = rel.startsWith('knowledge/') && CORE_PROJECT_TREATISES.has(fileName);
   const isVaultOrMasterclass = rel.startsWith('knowledge/') && (
+    fileName.startsWith('CANON_') ||
     fileName.startsWith('VAULT_') ||
     fileName.startsWith('MASTERCLASS_') ||
+    fileName.startsWith('COURSE_') ||
+    fileName.startsWith('COMPENDIO_') ||
+    fileName.startsWith('TRATADO_') ||
+    fileName.startsWith('BENCHMARK_') ||
+    fileName.startsWith('SCORING_') ||
+    fileName.startsWith('SOTA_') ||
+    fileName.startsWith('FOSS_') ||
+    fileName.startsWith('GAME_THEORY_') ||
+    fileName.startsWith('TECNOLOGIAS_') ||
     fileName.startsWith('course_') ||
     fileName.startsWith('websockets_') ||
     fileName.startsWith('next_gen_')
@@ -473,12 +492,13 @@ function buildMiniSearchInstance(chunks) {
   const miniChunks = [];
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
-    if (c.category === 'canon-treatise' || c.category === 'canon-vault') {
+    if (c.category === 'canon-treatise') {
       miniChunks.push(c);
     } else {
       const base = String(c.source || c.id).split('#')[0];
       const count = fileCounts.get(base) || 0;
-      if (count < 12) {
+      const maxForCat = c.category === 'canon-vault' ? 16 : 10;
+      if (count < maxForCat) {
         fileCounts.set(base, count + 1);
         miniChunks.push(c);
       }
