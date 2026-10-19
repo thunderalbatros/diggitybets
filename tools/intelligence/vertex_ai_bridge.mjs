@@ -141,7 +141,7 @@ Respond strictly in valid JSON format:
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'qwen/qwen3.8-27b',
+          model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemInstruction },
             { role: 'user', content: `User Query: "${userQuery}"` }
@@ -206,10 +206,11 @@ Filter out irrelevant candidates (score < 0.40). Sort descending by score.`;
   // 1. Try Groq (Fastest listwise inference ~700-900ms)
   const groqKey = env.GROQ_API_KEY;
   if (groqKey) {
-    for (const model of ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b']) {
+    for (const model of ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
+          signal: AbortSignal.timeout(3500),
           headers: {
             'Authorization': `Bearer ${groqKey}`,
             'Content-Type': 'application/json'

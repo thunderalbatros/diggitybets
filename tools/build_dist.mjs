@@ -134,7 +134,36 @@ async function minifyDistAssets() {
       } catch (_) {}
     }
   }
-  console.log(`  ✓ Minified dist/ CSS & JS (saved ${(savedBytes / 1024).toFixed(1)} KiB + generated .map files)`);
+
+  // Optimize SVG assets in dist/ via svgo (if installed in tools/audit/node_modules/svgo)
+  try {
+    const svgoPath = path.join(root, 'tools', 'audit', 'node_modules', 'svgo', 'dist', 'svgo.node.cjs');
+    const svgoEsmPath = path.join(root, 'tools', 'audit', 'node_modules', 'svgo', 'lib', 'svgo.js');
+    let svgoMod = null;
+    if (fs.existsSync(svgoEsmPath)) {
+      svgoMod = await import('file:///' + svgoEsmPath.replace(/\\/g, '/'));
+    } else if (fs.existsSync(svgoPath)) {
+      svgoMod = await import('file:///' + svgoPath.replace(/\\/g, '/'));
+    }
+    const optimizeSvg = svgoMod?.optimize || svgoMod?.default?.optimize;
+    if (typeof optimizeSvg === 'function') {
+      const svgDir = path.join(dist, 'site', 'images');
+      if (fs.existsSync(svgDir)) {
+        for (const file of fs.readdirSync(svgDir)) {
+          if (!file.endsWith('.svg')) continue;
+          const fullSvg = path.join(svgDir, file);
+          const rawSvg = fs.readFileSync(fullSvg, 'utf8');
+          const result = optimizeSvg(rawSvg, { path: fullSvg, multipass: true });
+          if (result && result.data) {
+            fs.writeFileSync(fullSvg, result.data, 'utf8');
+            savedBytes += Math.max(0, Buffer.byteLength(rawSvg) - Buffer.byteLength(result.data));
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  console.log(`  ✓ Minified dist/ CSS, JS & SVGs (saved ${(savedBytes / 1024).toFixed(1)} KiB + generated .map files)`);
 }
 
 await minifyDistAssets();

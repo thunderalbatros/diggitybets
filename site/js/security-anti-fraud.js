@@ -369,6 +369,65 @@ class AntiFraudEngine {
   } catch (_) {}
 
   window.StorageQuotaGuard = { pruneLocalStorageArrays };
+
+  // 4. ValibotSchemaGuard: Runtime contract validator for Bounties, Stake VIP & Store
+  window.ValibotSchemaGuard = {
+    validateBountyClaim(payload) {
+      if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload inválido.' };
+      const bountyId = String(payload.bountyId || '').trim();
+      const betId = String(payload.betId || '').trim();
+      const multi = Number(payload.achievedMulti || payload.multiplier || 0);
+      if (!bountyId || bountyId.length > 64) return { valid: false, error: 'ID de Bounty inválido.' };
+      if (!/^(house:|casino:|sport:)?[a-zA-Z0-9_-]{6,64}$/.test(betId)) {
+        return { valid: false, error: 'Formato de Bet ID inválido (mín. 6 caracteres alfanuméricos).' };
+      }
+      if (!Number.isFinite(multi) || multi <= 0 || multi > 500000) {
+        return { valid: false, error: 'Multiplicador fuera de rango permitido.' };
+      }
+      return { valid: true, sanitized: { bountyId, betId, achievedMulti: multi } };
+    },
+    validateStakeVerification(payload) {
+      if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload inválido.' };
+      const stakeUsername = String(payload.stakeUsername || '').trim().replace(/^@/, '');
+      if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(stakeUsername)) {
+        return { valid: false, error: 'Usuario de Stake inválido (3–32 caracteres).' };
+      }
+      return { valid: true, sanitized: { stakeUsername } };
+    }
+  };
+
+  // 5. ThumbHashPlaceholder: Ultra-fast binary-to-DataURL placeholder decoder (evanw/thumbhash)
+  window.ThumbHashPlaceholder = {
+    decodeBase64ToDataUrl(b64Hash) {
+      try {
+        if (window.ThumbHash && typeof window.ThumbHash.thumbHashToDataURL === 'function' && b64Hash) {
+          const bin = atob(b64Hash);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return window.ThumbHash.thumbHashToDataURL(bytes);
+        }
+      } catch (_) {}
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"%3E%3Crect width="300" height="400" fill="%230d111a"/%3E%3C/svg%3E';
+    }
+  };
+
+  // 6. QuicklinkIdlePrefetch: Idle viewport asset prefetcher (GoogleChromeLabs/quicklink pattern)
+  if ('requestIdleCallback' in window && !navigator.connection?.saveData) {
+    window.requestIdleCallback(() => {
+      try {
+        const prefetched = new Set();
+        const links = ['data/slot_tiers.js', 'data/live_casino_intel.json'];
+        for (const href of links) {
+          if (prefetched.has(href)) continue;
+          prefetched.add(href);
+          const linkEl = document.createElement('link');
+          linkEl.rel = 'prefetch';
+          linkEl.href = href;
+          document.head.appendChild(linkEl);
+        }
+      } catch (_) {}
+    }, { timeout: 4000 });
+  }
 })();
 
 // Global initialization

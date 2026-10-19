@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { queryKnowledge } from './rag_pipeline.mjs';
+import { queryKnowledge, getOrBuildMiniSearchIndex } from './rag_pipeline.mjs';
 import { runAstAudit } from './ast_guard.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,42 +32,69 @@ export async function runEvalMatrix() {
   };
 
   // --------------------------------------------------------------------------
-  // Dimension 1: Omni-RAG Retrieval Recall & Latency
+  // Dimension 1: Omni-RAG v3 Bilingual Retrieval Recall, MRR & Latency (12 Golden Queries)
   // --------------------------------------------------------------------------
-  console.log(`[DIMENSION 1] Testing Omni-RAG Precision & Latency...`);
+  console.log(`[DIMENSION 1] Testing Omni-RAG v3 Bilingual Precision, MRR & Latency (12 Golden Queries)...`);
+  getOrBuildMiniSearchIndex();
+
   const ragQueries = [
     { q: "OBS Browser Source CPU Impact budget", expectedKeyword: "cpu" },
-    { q: "Kick compliance spectator zero custody", expectedKeyword: "custody" }
+    { q: "Kick compliance spectator zero custody", expectedKeyword: "custody" },
+    { q: "juegos interactivos en vivo para espectadores de kick crowd play premios", expectedKeyword: "crowd" },
+    { q: "marco octalysis gamificación recompensas variables ciclo hooked", expectedKeyword: "octalysis" },
+    { q: "marketing conversion cro afiliados aversion a la perdida cialdini", expectedKeyword: "cialdini" },
+    { q: "sistema de bountys only on stake tiers multiplicador bet_id", expectedKeyword: "bount" },
+    { q: "ciberseguridad defensa xss dompurify trustedtypes csp oauth pkce", expectedKeyword: "dompurify" },
+    { q: "animaciones 60fps emil kowalski modal entrance scale waapi", expectedKeyword: "0.95" },
+    { q: "shaders glsl bordes laser webaudio dynamicscompressor zzfx", expectedKeyword: "zzfx" },
+    { q: "diseño minimalista jerarquia 90/8/2 leyes de ux contraste apca", expectedKeyword: "90/8/2" },
+    { q: "cloudflare durable objects websocket hibernation sqlite", expectedKeyword: "hibernation" },
+    { q: "catalogo maestro libros documentacion oficial videocursos", expectedKeyword: "curated_master_books" }
   ];
 
   let ragScore = 100;
   const ragStart = Date.now();
   let queriesPassed = 0;
+  let mrrSum = 0;
+
+  // Verify LEC-015 knowledge/INDEX.md exists
+  const hasKnowledgeIndex = fs.existsSync(path.join(ROOT, 'knowledge', 'INDEX.md'));
+  if (!hasKnowledgeIndex) ragScore -= 15;
 
   for (const item of ragQueries) {
     const t0 = Date.now();
     try {
-      const hits = await queryKnowledge(item.q, 3);
+      const hits = await queryKnowledge(item.q, 5, { fastLocalOnly: true });
       const elapsed = Date.now() - t0;
-      const foundMatch = hits.some(h => (h.text || '').toLowerCase().includes(item.expectedKeyword) || (h.title || '').toLowerCase().includes(item.expectedKeyword));
-      if (foundMatch && elapsed < 350) {
+      const kw = item.expectedKeyword.toLowerCase();
+      const matchRank = hits.findIndex(h =>
+        (h.text || '').toLowerCase().includes(kw) ||
+        (h.title || '').toLowerCase().includes(kw) ||
+        (h.source || '').toLowerCase().includes(kw)
+      );
+      if (matchRank >= 0 && elapsed < 350) {
         queriesPassed++;
-      } else if (!foundMatch) {
-        ragScore -= 20;
+        mrrSum += 1 / (matchRank + 1);
+      } else {
+        ragScore -= 8;
       }
     } catch (_) {
-      ragScore -= 25;
+      ragScore -= 10;
     }
   }
 
   const ragTotalTime = Date.now() - ragStart;
+  const hitAt5Rate = ((queriesPassed / ragQueries.length) * 100).toFixed(1);
+  const mrr = (mrrSum / ragQueries.length).toFixed(3);
   results.dimensions.rag = {
     score: Math.max(0, ragScore),
     queriesTested: ragQueries.length,
     queriesPassed,
+    hitAt5Rate: `${hitAt5Rate}%`,
+    mrr: Number(mrr),
     totalLatencyMs: ragTotalTime
   };
-  console.log(`  ✓ RAG Score: ${ragScore}/100 (Tested in ${ragTotalTime}ms)`);
+  console.log(`  ✓ RAG Score: ${Math.max(0, ragScore)}/100 | Hit@5: ${hitAt5Rate}% (${queriesPassed}/${ragQueries.length}) | MRR: ${mrr} | Total Latency: ${ragTotalTime}ms`);
 
   // --------------------------------------------------------------------------
   // Dimension 2: AST Symbolic Integrity
