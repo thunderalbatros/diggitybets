@@ -60,7 +60,8 @@ export async function runEvalMatrix() {
     { q: "darwin godel machine textgrad speculative rag vertex context caching skillsmith", expectedKeyword: "textgrad" },
     { q: "auditoria visual automatizada cto hitl vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" },
     { q: "topologia equipos multi-agente 10 escuadrones team topologies skelton pais anthropic", expectedKeyword: "skelton" },
-    { q: "renderingng chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" }
+    { q: "renderingng chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" },
+    { q: "game programming patterns nystrom object pool dirty flag rauschmayer es2025 shiffman", expectedKeyword: "nystrom" }
   ];
 
   let ragScore = 100;
