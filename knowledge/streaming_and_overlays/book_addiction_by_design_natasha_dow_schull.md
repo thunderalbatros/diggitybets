@@ -4861,3 +4861,6 @@ or her to sign up for one. “The anonymous player costs you money,” a
 proponent of tracking technology told a G2E audience in 2005, “whereas
 the carded player— you know what motivates him, what he likes to play,
 you can pick up that rifle and shoot
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

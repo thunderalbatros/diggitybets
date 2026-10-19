@@ -5011,3 +5011,6 @@ examine the corresponding physical properties that the players are inferring in 
 minds from the nebulous, general sensation and trace that down to the level of individual effects.
 This means that what we’re actually interested in tracking are not the physical
 properties of objects in a
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB]] · [[CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026]] · [[CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026]] · [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]] · #motion_and_animation

@@ -81,3 +81,6 @@ Todo efecto sonoro debe pasar por el `DynamicsCompressorNode` maestro (`threshol
 - **`playBoosterRarityReveal(rarity)`**:
   - `mythic-gold`: Acorde triunfal de metales reales + campanas FM cristalinas (`D4, F#4, A4, C#5, D5, F#5, A5`) + cascada de monedas de oro (`playSkyCoinShower`) + impacto sub-grave.
   - `radiant-prism` / `cosmos-holo`: Arpegio pentatónico cristalino ascendente con cola de reverberación espacial y destello metálico agudo.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB]] · [[CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026]] · [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]] · [[CANON_60FPS_RENDER_AND_MOTION_OPTIMIZATION_PIPELINE]] · #motion_and_animation

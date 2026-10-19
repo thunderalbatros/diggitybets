@@ -5105,3 +5105,6 @@ wear out. Too much relaxation, and we grow bored. When we fluctuate between
 the two, we enjoy both excitement and relaxation, and this oscillation also provides
 both the pleasure of variety, and the pleasure of anticipation.
 You can see how useful the idea of flow and the flo
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

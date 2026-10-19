@@ -157,3 +157,6 @@ En interfaces oscuras modernas, las sombras proyectadas negras son casi invisibl
 4. **Impacto en OBS Browser Sources:**
    - La resolución de renderizado debe coincidir exactamente con el canvas (evitar downsampling en tiempo real).
    - Pausar animaciones y loops de canvas (`requestAnimationFrame`) cuando el overlay no esté activo o visible.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB]] · [[CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026]] · [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]] · [[CANON_60FPS_RENDER_AND_MOTION_OPTIMIZATION_PIPELINE]] · #motion_and_animation

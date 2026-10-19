@@ -158,3 +158,6 @@ Como explica **theSeniorDev** y **Zach Lloyd (Warp)**:
    - **Promptfoo:** Pruebas automatizadas de aserciones, red-teaming de seguridad y evaluación de salidas.
    - **SWE-bench:** Suite de evaluación estándar de la industria basada en resolución real de issues de GitHub.
    - **Agent-House (Lighthouse para Agentes):** Auditoría de latencia, coste, higiene de contexto y confiabilidad.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

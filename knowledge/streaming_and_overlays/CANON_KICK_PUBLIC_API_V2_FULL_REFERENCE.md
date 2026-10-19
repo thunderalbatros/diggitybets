@@ -120,3 +120,6 @@ Headers en cada entrega: `Kick-Event-Type` y `Kick-Event-Version`.
 | 403 | Scope insuficiente / Cloudflare bloqueó | Verificar scope; en API interna NO insistir |
 | 404 | Path incorrecto (ej. `/api/v2` en host oficial) | Corregir host: `kick.com` vs `api.kick.com` |
 | 429 | Rate limit | Backoff exponencial; respetar límite |
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · [[CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026]] · #streaming_and_overlays

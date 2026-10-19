@@ -5397,3 +5397,6 @@ systemdesigninsider@gmail.com. Besides, if you notice any errors, please let us 
 can make corrections in the next edition. Thank you!
 
 -- 269 of 269 --
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

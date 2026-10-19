@@ -167,3 +167,6 @@ La Software Factory opera bajo una regla de **cumplimiento estricto de licencias
 * **Cloudflare Developer Platform Docs**: Arquitectura de Cloudflare Workers, Cloudflare D1 (SQLite en Edge) y Workers Static Assets.
 * **Kick.com Official Developer Docs (KickEngineering/KickDevDocs)**: Contratos de API v1, flujo OAuth 2.1 PKCE y especificación de eventos Pusher y Webhooks.
 * **OWASP Foundation**: Application Security Verification Standard (ASVS v4.0), Cross-Site Scripting (XSS) Prevention Cheat Sheet y Content Security Policy Guidelines.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

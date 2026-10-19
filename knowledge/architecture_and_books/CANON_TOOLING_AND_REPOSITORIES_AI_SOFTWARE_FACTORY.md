@@ -142,3 +142,6 @@ En entornos de hardware acotado (como notebooks de trabajo con Windows, CPU/RAM 
 3. **Protocolo MCP:** Consumo directo de servidores MCP locales y nativos del IDE (`gemini-api-docs`, `chrome-devtools`) para validar documentación y auditar interfaces.
 4. **Evaluación de Código:** Integración del **Judge Harness** (`tools/intelligence/instincts_engine.mjs --judge`) con compuertas de evaluación deterministas que auditan sintaxis, tipos, protección de configuración y ejecución de suites de prueba.
 5. **Observabilidad:** Persistencia de trazas de ejecución en archivos JSONL locales (`.system_generated/logs/transcript.jsonl`) y libros de registro temporal (`.agents/memory/temporal_ledger.json`).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

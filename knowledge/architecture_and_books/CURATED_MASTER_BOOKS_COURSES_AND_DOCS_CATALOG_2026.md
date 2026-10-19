@@ -81,3 +81,6 @@ Tras completar **"La Gran Mudanza"** desde *Centinela Studio*, *Yendo Mobile* y 
 4. **Frontend Masters & Brad Frost**: *Front-End System Design & Advanced UI Performance* & *Creating and Maintaining Successful Design Systems*
 5. **Pixar / Khan Academy**: *Animation & Bézier Curves: The Mathematics of Motion*
 6. **Andrej Karpathy, Hussein Nasser & freeCodeCamp**: *Intro to Large Language Models*, *WebSockets & Real-Time Architecture Masterclass*, *LangGraph Conversational AI Agents*, *RAG Architectures in JavaScript*
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

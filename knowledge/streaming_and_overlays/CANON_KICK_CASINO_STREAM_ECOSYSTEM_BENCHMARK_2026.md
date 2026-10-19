@@ -61,3 +61,6 @@
 - El ecosistema cambia rápido: re-verificar cada 2-3 meses (nuevos bots Kick-nativos aparecen con frecuencia).
 
 *Fuentes: botrix.live, kicklet.app, kickbot.pro, fossabot.com + docs, streamelements.com + docs, streamlabs.com (Cloudbot Kick), foro NightDev (Nightbot sin Kick), streamergiveaway.org, sweepwidget.com, getailicia.com, kicktools.app, webopedia.com (top streamers slots 2026).*
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

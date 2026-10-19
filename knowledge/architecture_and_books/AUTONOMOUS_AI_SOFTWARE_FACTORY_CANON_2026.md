@@ -59,3 +59,6 @@ En la era moderna de LLMs y sistemas multi-agente, la fábrica de software se co
   - *Agentic AI* & *Building Coding Agents with Tool Execution* — DeepLearning.AI.
   - *Stanford CS329A / CS329Z: Engineering AI Agents & Self-Improving Systems* — Stanford Online / YouTube.
   - *UC Berkeley CS294-196: Agentic AI MOOC* — Berkeley RDI / YouTube.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

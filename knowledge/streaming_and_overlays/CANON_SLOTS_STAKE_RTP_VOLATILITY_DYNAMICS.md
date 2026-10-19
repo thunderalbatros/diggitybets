@@ -74,3 +74,6 @@ Para humanizar al bot, es crítico **leer la sala**:
 3. **Preguntando por Calls (Interactivo):** El streamer dice "What should we play?" o pone en el título "!calls".
    - *Comportamiento del bot:* Responder rápido pero orgánico: "can i call something?" o "im feeling [Nombre de la Slot] real hard rn".
 4. **Modo Sorteo / Tickets:** Canales como Classybeef usan comandos como `!tickets` o `!w`. El bot debe integrarse usando estos comandos cuando el chat empiece a spamearlos (seguimiento de masas).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026]] · #streaming_and_overlays

@@ -111,3 +111,6 @@ Juegos sumamente frecuentes en rotación y compras de bonos secundarias:
    - Si se sugiere `Gates of Heaven Super Scatter`: destaca los **Super Scatters con multipliers de hasta 1000x**.
    - Si se sugiere `Sharks!`: destaca los **wilds multiplicadores persistentes de hasta x100**.
    - Si se sugiere `Odin's Vault`: destaca el **techo de 50kx y sus 4 niveles de Free Spins**.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

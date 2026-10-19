@@ -107,3 +107,6 @@ provocaban picos en el Proceso de Hawkes y transiciones bayesianas en el HMM de 
    - Enciende la VM, sincroniza el repositorio con Git y levanta PM2.
    - En una ventana separada: ejecutar `npm run bell:listen` para habilitar el receptor de campanitas locales de Windows.
    - Para apagar: `npm run bot:off`.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

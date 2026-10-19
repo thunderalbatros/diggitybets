@@ -97,3 +97,6 @@ Para cumplir con la directiva de **animaciones más fluidas (60 FPS constantes),
 4. **Documentación Oficial W3C / Chrome For Developers (`web.dev/learn/performance` & `developer.chrome.com/docs/web-platform/view-transitions`)**:
    - Uso de `document.startViewTransition()` al cambiar entre filtros del tablero de Bountys o al pasar una tarjeta de estado `ACTIVE` a `CLAIMED`.
    - Separación estricta **Pass 1 (Read DOM `getBoundingClientRect`) -> Pass 2 (Write WAAPI `element.animate`)** para eliminar el *Layout Thrashing*.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

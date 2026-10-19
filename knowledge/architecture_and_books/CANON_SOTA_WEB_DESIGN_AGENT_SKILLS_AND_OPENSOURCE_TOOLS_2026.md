@@ -65,3 +65,6 @@ Rastreamos las tendencias virales y de mayor adopción en GitHub en el área de 
 | **`VoltAgent/awesome-design-md`** | Colección y especificación de archivos `DESIGN.md` legibles por agentes para replicar sistemas de diseño exactos. | 🟢 **Excelente** (Estandariza nuestro `DESIGN.md` para que los agentes no desvíen estilos). |
 | **`vercel-labs/json-render`** | Motor ligero de UI generativa que convierte payloads JSON seguros en componentes interactivos sin ejecutar scripts arbitrarios. | 🟢 **Muy Buena** (Para renderizar paneles dinámicos de administración y estadísticas). |
 | **`Graphify-Labs/graphify`** | Constructor de grafos de conocimiento local a partir de bases de código y documentación para alimentar RAG determinista. | 🟡 **Media** (Útil a futuro para expandir el Omni-RAG sin costo). |
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

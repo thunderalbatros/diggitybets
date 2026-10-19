@@ -181,3 +181,6 @@ El ecosistema de Centinela Studio ya incorpora activamente los fundamentos más 
 Para el próximo ciclo de evolución, las dos optimizaciones de mayor retorno sobre la inversión (ROI) serán:
 1. **Adopción de DSPy (Hashimoto):** Automatizar el tuning de prompts de personalidad mediante métricas de recompensa.
 2. **Pausa Human-in-the-Loop estilo LangGraph `interrupt()` (Chase):** Añadir punto de interrupción condicional para reclamos de alto valor monetario.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

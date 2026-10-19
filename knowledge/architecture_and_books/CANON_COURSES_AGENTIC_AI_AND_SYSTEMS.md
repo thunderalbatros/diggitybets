@@ -136,3 +136,6 @@
    - Comando que destruye la base de datos local y re-ejecuta todas las migraciones desde cero seguidas de `seed.sql`, garantizando que las pruebas agénticas siempre comiencen desde un estado limpio y predecible.
 4. **Detección de Drift de Esquema (`supabase db diff`):**
    - Comparación automática entre el estado en vivo y los archivos de migración para capturar cambios no documentados.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

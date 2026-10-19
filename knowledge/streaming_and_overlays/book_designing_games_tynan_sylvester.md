@@ -5651,3 +5651,6 @@ For example, we can’t balance an archer’s bow by giving it a 10-foot
 range. This might be fair, and it might create fascinating strategic decisions, but it wouldn’t make any sense in the fiction layer. We can’t balance
 a jumping puzzle by making the player character’s jump shorter in this
 level only, because this would defy player expectation and create frustration. We can’t balance a car in a driving game by makin
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

@@ -6844,3 +6844,6 @@ This style of programming is workable, but the indentation level increases
 with each asynchronous action because you end up in another function. Doing
 more complicated things, such as running multiple actions at the same time,
 -- 195 of 447 --
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

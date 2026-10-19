@@ -171,3 +171,6 @@ The HuntHub project integrates these principles under strict hardware and budget
 │    • Standardized tool dispatch with typed parameter validation        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

@@ -127,3 +127,6 @@ High-confidence routine commands (slot calls, verified keyword waves) execute au
 
 #### 6.3 Phase 3: Autonomous 24/7 Deployment
 Full autonomous operation is unlocked only on approved channels with automated telemetry, health checks, and circuit-breaker shutdown guards.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

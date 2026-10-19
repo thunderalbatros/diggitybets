@@ -64,3 +64,6 @@
 - **8.1 Human-in-the-Loop Review Phase:** Routing candidate responses to Telegram with inline approval/rejection buttons.
 - **8.2 Unary KTO Feedback Loops:** Converting human approvals and rejections into preference signals that dynamically tune operational instincts.
 - **8.3 Transitioning to Autonomous Production:** Unlocking 24/7 execution with Healthchecks.io dead man's switch monitoring, automatic quota guards, and graceful failover.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

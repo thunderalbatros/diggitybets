@@ -6085,3 +6085,6 @@ engraving from Wood’s Illustrated Natural History. The cover fonts are
 URW Typewriter and Guardian Sans. The text font is Adobe Minion Pro; the
 heading font is Adobe Myriad Condensed; and the code font is Dalton
 Maag’s Ubuntu Mono.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

@@ -41,3 +41,6 @@ Un flujo web es tan fácil como su eslabón más débil. Para maximizar $A$ en l
    - Cuando el espectador quiere reclamar su premio pero no sabe dónde encontrar el `Bet ID`: incluir un botón de ayuda visual instantáneo o autocompletado desde la extensión *Diggity Stake Companion*.
 3. **Signal Prompts (Señal — Alta Motivación y Alta Habilidad)**:
    - Cuando el espectador ya está listo: un simple indicador luminoso verde (`ACTIVO`) o notificación sonora limpia basta para detonar la acción.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

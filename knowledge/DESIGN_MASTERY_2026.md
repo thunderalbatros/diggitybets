@@ -169,3 +169,6 @@
   - Shared element tagging: `view-transition-name: section-header`.
 - **Application in DiggityBets:**
   - Seamless SPA tab switching between PORTAL views (Watch, Bonus Hunt, Tourney, House Games, Profile) with 60 FPS cross-fade and zero flicker.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

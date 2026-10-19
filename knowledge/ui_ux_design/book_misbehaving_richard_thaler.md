@@ -3040,3 +3040,6 @@ behavioral finance researchers and defenders of the efficient market hypothesis 
 years, but in some ways it all began that afternoon in Chicago. We will see where that debate has taken us in the next section of the book.
 ________________
 * For a long tim
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design
