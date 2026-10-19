@@ -66,7 +66,8 @@ export async function runEvalMatrix() {
     { q: "qasimhbti definitive guide sqlite vdbe varnish cache stampede matters computational arndt akf scale cube", expectedKeyword: "vdbe" },
     { q: "ousterhout deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" },
     { q: "strazzullo frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" },
-    { q: "poeaa fowler money allocation unit of work goos walking skeleton c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" }
+    { q: "poeaa fowler money allocation unit of work goos walking skeleton c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" },
+    { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture jason gregory serious cryptography aumasson", expectedKeyword: "gregory" }
   ];
 
   let ragScore = 100;
