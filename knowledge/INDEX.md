@@ -58,6 +58,7 @@
 - [VAULT_3D_PBR_AND_CINEMATOGRAPHY_GUIDE.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/motion_and_animation/VAULT_3D_PBR_AND_CINEMATOGRAPHY_GUIDE.md) & [VAULT_MOTION_AND_ANIMATION_BIBLES.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/motion_and_animation/VAULT_MOTION_AND_ANIMATION_BIBLES.md) — Iluminación PBR y los 12 principios de animación de Disney en UI.
 
 ### 1.4 Arquitectura de Software, Sistemas Distribuidos, SRE e Ingeniería de Agentes IA
+- [CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/architecture_and_books/CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026.md) — Arquitectura SOTA RAG 2026 (`SQLite FTS5` en C, `LightRAG`, `HippoRAG`, Anthropic Contextual Retrieval, IDF + Minimal-Span Proximity y `ONNX Q8` Cross-Encoder Reranking).
 - [designing_data_intensive_applications.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/architecture_and_books/designing_data_intensive_applications.md) — *Designing Data-Intensive Applications* (Martin Kleppmann, 1.45 MB).
 - [database_internals.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/architecture_and_books/database_internals.md) — *Database Internals* (Alex Petrov, 410 KB).
 - [release_it.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/architecture_and_books/release_it.md) — *Release It! Design and Deploy Production-Ready Software* (Michael Nygard, 410 KB).

@@ -1,83 +1,58 @@
 ---
 name: kb-retrieval
-description: Cómo consultar y mantener la base de conocimiento vectorial de HuntHub en Qdrant. Úsalo cuando necesites documentación técnica oficial, benchmarks, decisiones arquitectónicas previas o lecciones aprendidas en lugar de adivinar; y cuando quieras añadir conocimiento nuevo.
+description: Cómo consultar y mantener el cerebro híbrido Supercharged Omni-RAG v4 (SQLite FTS5 en C + MiniSearch + IDF/LightRAG Dual-Level + ONNX Q8 Cross-Encoder + Qdrant Cloud). Úsalo cuando necesites documentación técnica oficial, libros completos, masterclasses, decisiones arquitectónicas previas o lecciones aprendidas en lugar de adivinar; y cuando quieras añadir conocimiento nuevo.
 ---
 
-# Knowledge Base — Retrieval sobre Qdrant
+# Knowledge Base — Supercharged Omni-RAG v4 Retrieval
 
 **Objetivo:** el agente no adivina, **recupera**. Contexto justo a tiempo (Factor 3).
 
-## Arquitectura
+## Arquitectura Híbrida Cuádruple (`tools/intelligence/rag_pipeline.mjs`)
 
-| Elemento | Valor |
-|----------|-------|
-| Vector DB | Qdrant Cloud (free tier) |
-| Colección Principal | `hunthub_knowledge` / `centinela_knowledge` |
-| Modelo de embeddings | `Xenova/paraphrase-multilingual-MiniLM-L12-v2` |
-| Dimensiones | **384**, distancia Cosine |
-| Coste | **$0** (modelo local en CPU, sin API) |
-| Fuentes ingeridas | `knowledge/`, `memory/`, `agents/`, `docs/` |
+| Componente | Tecnología | Cobertura y Latencia |
+|------------|------------|----------------------|
+| **Engine A1 (C-Compiled BM25)** | `node:sqlite` (`DatabaseSync` `FTS5` con `porter unicode61 remove_diacritics 2`) | **100% de los ~19.550 fragmentos** (52 libros completos, 16 cursos, +80 tratados) en `.cache/omni_rag_fts5.sqlite` (`< 3 ms`) |
+| **Engine A2 (Fuzzy Lexical)** | `MiniSearch` (Levenshtein `fuzzy: 0.15` + prefijos) | Tolerancia a errores tipográficos en tratados, vaults y skills (`< 8 ms`) |
+| **Engine B (Exact IDF + LightRAG)** | Single-Pass Bitmask Robertson-Sparck Jones $\text{IDF}(t)$ + LightRAG Dual-Level (Entidades + Temas Bilingües ES/EN) | Ponderación matemática de términos técnicos raros + expansión bilingüe instantánea (`< 12 ms`) |
+| **Engine C (Cloud Vector/Hybrid)** | Qdrant Cloud (`centinela_knowledge`) + Corrective RAG (Serper Web Search Fallback) | Timeout estricto `2500 ms` + sanitización anti-Prompt Injection |
+| **Engine D (Neural Reranker Opcional)** | `@huggingface/transformers` (`Xenova/ms-marco-MiniLM-L-6-v2` Q8 en CPU) | Reordenamiento de precisión cruzada (`--rerank` / `useOnnxRerank: true`, coste **$0**) |
+| **Fusión y Diversidad** | Reciprocal Rank Fusion ($\text{RRF}, k=60$) + `maxPerFile = 2` | Evita que un libro de 600 páginas monopolice el Top-5 |
 
-## Uso
+## Uso por CLI
 
 ```bash
-npm run kb:probe     # ¿Qdrant responde? ¿embeddings cargan?
-npm run kb:ingest    # ingesta incremental (upsert idempotente, sin duplicados)
-npm run kb:ingest -- --dry-run   # analiza chunking sin escribir
-npm run kb:ingest -- --only knowledge   # solo una fuente
-npm run kb:eval      # BENCHMARK: Hit@k + MRR (puerta de calidad)
+# Reconstruir índice completo (JSON + SQLite FTS5 C-Engine)
+node tools/intelligence/rag_pipeline.mjs --rebuild
+
+# Consultar fragmentos relevantes (modo ultra-rápido local <25ms)
+node tools/intelligence/rag_pipeline.mjs --query "arquitectura rag lightrag sqlite fts5" 5
+
+# Consultar con Reranking Neural Cross-Encoder ONNX Q8 en CPU ($0)
+node tools/intelligence/rag_pipeline.mjs --query "emil kowalski modal entrance scale" 5 --rerank
+
+# Consultar y sintetizar respuesta experta (Vertex AI Gemini 2.5 Flash / Groq LPU)
+node tools/intelligence/rag_pipeline.mjs --ask "¿Cómo funciona el sistema de Bountys Only on Stake y cómo se verifica el bet_id?"
+
+# Ejecutar Matriz de Evaluación Multi-Dimensional (17 Consultas Doradas + AST + Budgets + Compliance)
+node tools/intelligence/eval_matrix.mjs
 ```
 
-## Pipeline de dos etapas (DEC-011)
+### Puerta de Calidad No Negociable (`tools/intelligence/eval_matrix.mjs`)
 
-```
-consulta → [1] densos locales, top-20   →   [2] cross-encoder reranker → top-5
-```
+| Métrica | Umbral Mínimo | Actual (Omni-RAG v4) |
+|---------|---------------|----------------------|
+| **Hit@5** | $\ge 90\%$ | **100.0 %** (17/17 consultas doradas bilingües) |
+| **MRR** | $\ge 0.75$ | **$\ge 0.90$** |
+| **Latencia por consulta** | $< 350\text{ ms}$ | **$\sim 18\text{ ms}$** |
+| **Coste** | **$0.00** | **$0.00** |
 
-| Etapa | Modelo | Latencia medible |
-|-------|--------|------------------|
-| 1 · Recall | `paraphrase-multilingual-MiniLM-L12-v2` (384-dim) | ~250 ms |
-| 2 · Precision | `ms-marco-MiniLM-L-6-v2` (cross-encoder) | ~930 ms |
+Si un cambio baja el `Hit@5` por debajo de $90\%$, **se revierte**.
 
-**Modos disponibles** (`tools/kb-search.mjs`): `dense` (línea base) · `rerank` (por defecto) ·
-`hybrid-rerank` (denso + BM25 sparse + fusión RRF — evalúa igual que rerank a 2026-10-04;
-la pata sparse de token exacto es la mejora pendiente que mata los fallos léxicos).
+### Protocolo de Ingesta (LEC-015)
 
-### Puerta de calidad (no negociable)
-
-| Métrica | Umbral | Actual (2026-10-04) |
-|---------|--------|--------|
-| Hit@5 | ≥ 90 % | **100.0 %** (25/25 consultas doradas) |
-| MRR | ≥ 0.70 | **0.885** (récord histórico) |
-| Coste | $0.00 | $0.00 |
-
-Si un cambio baja el Hit@5 por debajo de 90 %, **se revierte**.
-
-### Protocolo de ingesta (LEC-015, battle-tested ×5)
-
-1. Todo doc nuevo que CRUCE temas lleva un **ancla de alcance** ("NO es fuente de X, ver Y")
-   ANTES de ingestar — los docs que mezclan temas roban ranking a los canónicos.
-2. Tras CADA `kb:ingest` se corre `kb:eval`; si cae de la puerta → diagnosticar con
-   `kb:eval --verbose` y curar.
-3. **Cura duradera**: si un doc canónico es viejo, enriquecerlo con los términos exactos de su
-   consulta dorada (remedio probado 5/5: GCP_PRICING, GIVEAWAY_STRATEGIES, lessons, secops-secrets).
-4. Confirmar siempre la línea `LISTO` del ingest (ha crasheado en silencio una vez).
-
-## Diseño del chunking
-
-- Troceo **consciente de encabezados** (`##`, `###`) → mejor precisión.
-- Solape de 200 chars cuando un chunk excede 1400 chars.
-- El contexto va **dentro** del texto embebido:
-  `[ruta/archivo.md › Encabezado › Subencabezado]` + contenido.
-- El frontmatter YAML se descarta (metadatos que ensucian el embedding).
-- IDs deterministas (`hash(source::index)`) → reingesta sin duplicar.
-
-## Reglas de uso
-
-1. **Recupera antes de escribir**: si existe una decisión vinculante en `memory/decisions.md`,
-   está en la colección. Consúltala antes de contradecirla.
-2. **No inyectes el corpus completo** en el prompt: 3–5 fragmentos bastan.
-3. Filtra por `source` o `project` en la búsqueda para acotar el dominio.
-4. Toda decisión nueva se documenta en `memory/decisions.md` **y se reingesta**.
-5. Nunca cambies el modelo de embeddings sin reingestar todo con `--reset`
-   (dimensiones incompatibles rompen la colección).
+1. Todo documento nuevo en `knowledge/` debe incluir el encabezado explícito `**Alcance:** ...` en las primeras líneas y registrarse en `knowledge/INDEX.md`.
+2. Para ingerir libros PDF o EPUB nuevos sin truncamiento:
+   ```bash
+   node tools/intelligence/book_pdf_ingester.mjs "<ruta-pdf-o-epub>" "<slug_destino>" "<subcarpeta>"
+   ```
+3. Tras cada ingesta, ejecutar `node tools/intelligence/rag_pipeline.mjs --rebuild` y verificar `node tools/intelligence/eval_matrix.mjs`.

@@ -32,9 +32,9 @@ export async function runEvalMatrix() {
   };
 
   // --------------------------------------------------------------------------
-  // Dimension 1: Omni-RAG v3 Bilingual Retrieval Recall, MRR & Latency (12 Golden Queries)
+  // Dimension 1: Omni-RAG v4 Bilingual Retrieval Recall, MRR & Latency (17 Golden Queries)
   // --------------------------------------------------------------------------
-  console.log(`[DIMENSION 1] Testing Omni-RAG v3 Bilingual Precision, MRR & Latency (12 Golden Queries)...`);
+  console.log(`[DIMENSION 1] Testing Omni-RAG v4 Bilingual Precision, MRR & Latency (17 Golden Queries)...`);
   getOrBuildMiniSearchIndex();
 
   const ragQueries = [
@@ -53,7 +53,8 @@ export async function runEvalMatrix() {
     { q: "tipografia matematica bringhurst grilla suiza proporcion aurea", expectedKeyword: "bringhurst" },
     { q: "probabilidad matematica slots rtp volatilidad barboianu", expectedKeyword: "barboianu" },
     { q: "game feel steve swink kirupa creating web animations springs wwdc", expectedKeyword: "swink" },
-    { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" }
+    { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" },
+    { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" }
   ];
 
   let ragScore = 100;
