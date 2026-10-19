@@ -129,3 +129,6 @@ Al comparar nuestro sitio contra una referencia de alta gama, el VLM o agente ev
 1. **Web.dev (Google Chrome Devs):** *Learn CSS, Learn Responsive Design, Learn Accessibility*. El estándar de oro de especificaciones nativas de la W3C.
 2. **Animations on the Web (Emil Kowalski):** La guía definitiva de física de resortes, animaciones de layout FLIP y rendimiento a 60/120 FPS sin tocar el hilo principal de la CPU.
 3. **Playwright Official Documentation & Trace Viewer:** Técnicas de captura determinista, snapshots visuales y emulación precisa de dispositivos móviles.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

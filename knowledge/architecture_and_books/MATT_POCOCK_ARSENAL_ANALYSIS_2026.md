@@ -111,3 +111,6 @@ His work centers on two complementary domains:
   - [`.agents/skills/grill-me/SKILL.md`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/skills/grill-me/SKILL.md) (Interactive alignment interview).
   - [`.agents/skills/test-driven-development/SKILL.md`](file:///c:/Users/tomas/Desktop/streamerbot/.agents/skills/test-driven-development/SKILL.md) (Red-Green-Refactor).
   - [`tools/sandbox.mjs`](file:///c:/Users/tomas/Desktop/streamerbot/tools/sandbox.mjs) (Local CLI for worktree creation and teardown).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

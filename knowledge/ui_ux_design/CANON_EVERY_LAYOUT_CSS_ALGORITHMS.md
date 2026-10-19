@@ -199,3 +199,6 @@ Ensures SVGs scale and align seamlessly alongside typography:
 1. **Tournament Brackets & Slot Grid:** Replace rigid pixel grids with `.grid-auto` (`minmax(min(100%, 280px), 1fr)`) so slot tiers wrap effortlessly on both mobile phone screens and widescreen desktop monitors.
 2. **OBS Live Overlays:** Use `.imposter-center` and `.frame` to lock overlay compositions into transparent 1920x1080 canvas viewports without manual margin tweaking.
 3. **Admin Dashboard Controls:** Use `.cluster` and `.switcher` so moderation buttons and betting controls reflow naturally on tablet or folded browser windows.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

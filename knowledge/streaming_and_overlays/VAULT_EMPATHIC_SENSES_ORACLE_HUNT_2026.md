@@ -85,3 +85,6 @@
 ---
 
 *Fuentes de la investigación: GitHub/SourceForge/docs oficiales de cada repo, pyannote.ai (Live-1), arXiv:2412.10117 (CosyVoice 2), HF Forums (ecosistema Neuro-sama-like), índices de topics `speech-emotion-recognition` y `realtime-emotion-recognition`. Verificación de existencia: clonado exitoso `git clone --depth 1` el 2026-10-07.*
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

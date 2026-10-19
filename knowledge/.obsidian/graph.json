@@ -1,0 +1,41 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:ui_ux_design",
+      "color": { "a": 1, "rgb": 1096065 }
+    },
+    {
+      "query": "path:motion_and_animation",
+      "color": { "a": 1, "rgb": 9133302 }
+    },
+    {
+      "query": "path:architecture_and_books",
+      "color": { "a": 1, "rgb": 16096779 }
+    },
+    {
+      "query": "path:cybersecurity",
+      "color": { "a": 1, "rgb": 15680580 }
+    },
+    {
+      "query": "path:streaming_and_overlays",
+      "color": { "a": 1, "rgb": 440020 }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": -0.5,
+  "nodeSizeMultiplier": 1.15,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": false,
+  "centerStrength": 0.45,
+  "repelStrength": 11.5,
+  "linkStrength": 0.9,
+  "linkDistance": 220
+}

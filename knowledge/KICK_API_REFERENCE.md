@@ -50,3 +50,6 @@ Scope: moderation:chat_message:manage
 - message_id es UUID v4
 - Para type "bot", el mensaje va al canal asociado al token (broadcaster_user_id ignorado)
 - SOLO se debe usar API oficial. Bypass Cloudflare PROHIBIDO.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

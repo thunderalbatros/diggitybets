@@ -126,3 +126,6 @@ Respect users with vestibular disorders or motion sensitivities. Never disable t
 1. **CS:GO / Slot Wheels:** Use ease-out quint `cubic-bezier(0.12, 0.8, 0.2, 1)` for the final reel tick deceleration to generate peak spectator tension.
 2. **Battle / Tournament Modals:** Use the `scale(0.94)` entrance with `translateY(10px)` instead of sliding in from outside the screen.
 3. **Betting & Guessing Buttons:** Apply `scale(0.97)` on `:active` with `transform-origin: center` for immediate tactile confirmation.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026]] · [[CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026]] · [[CANON_ANIMATION_PRINCIPLES_ILLUSION_OF_LIFE_DISNEY]] · [[CANON_60FPS_RENDER_AND_MOTION_OPTIMIZATION_PIPELINE]] · #motion_and_animation

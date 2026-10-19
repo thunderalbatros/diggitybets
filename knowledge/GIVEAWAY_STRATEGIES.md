@@ -63,3 +63,6 @@ follow, ventana **visible** (más humano y menos probable de provocar challenge)
 - Tu notebook (16 GB, 8 núcleos, con el IDE abierto) aguanta **~2–3 canales** desatendidos.
 - **10 canales 24/7 ⇒ VM GCP `e2-medium`** (2 vCPU/4 GB, ~$28-29/mes, us-central1):
   es la única forma de que el portátil quede libre. Ver `npm run healthcheck` (§capacidad).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

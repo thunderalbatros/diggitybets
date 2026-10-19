@@ -102,3 +102,6 @@ El modelado formal de estados establece transiciones matemáticas mutuamente exc
 - `@total-typescript/ts-reset` instalado como dependencia de desarrollo e integrado en `src/reset.d.ts`.
 - Tipos de `src/centinela.ts` saneados con interfaces explícitas libres de index signatures inseguras.
 - Verificación completa superada con `npx tsc --noEmit` limpio (cero errores en rojo).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

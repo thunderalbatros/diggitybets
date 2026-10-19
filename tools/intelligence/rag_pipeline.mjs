@@ -28,10 +28,28 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { sanitizeRagPayload } from './qdrant_rag.mjs';
+import { applyCragAndGraphRefinement, routeQueryToSquads } from './squad_semantic_router.mjs';
+import { buildAndPersistAllGraphs } from './code_and_wiki_graph.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..', '..');
+const GRAPH_CACHE_FILE = path.join(ROOT, '.cache', 'code_and_wiki_graph.json');
+let cachedGraphData = null;
+
+function getLoadedGraphData(forceRebuild = false) {
+  if (!forceRebuild && cachedGraphData) return cachedGraphData;
+  try {
+    if (!forceRebuild && fs.existsSync(GRAPH_CACHE_FILE)) {
+      cachedGraphData = JSON.parse(fs.readFileSync(GRAPH_CACHE_FILE, 'utf8'));
+      return cachedGraphData;
+    }
+    cachedGraphData = buildAndPersistAllGraphs();
+    return cachedGraphData;
+  } catch (_) {
+    return null;
+  }
+}
 
 // Dynamically import built-in C-compiled SQLite (Node.js v22.5+ / v24+)
 let DatabaseSyncClass = null;
@@ -216,7 +234,10 @@ function createDocumentChunks(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const fileName = path.basename(filePath, ext);
   const text = fs.readFileSync(filePath, 'utf8');
-  const cleanText = text.replace(/^---[\s\S]*?---\s*/, '').trim();
+  const cleanText = text
+    .replace(/^---[\s\S]*?---\s*/, '')
+    .replace(/\n---\n\*\*Conexiones del Grafo \(Obsidian\):\*\*[\s\S]*$/, '')
+    .trim();
   if (!cleanText) return [];
 
   const CORE_PROJECT_TREATISES = new Set([
@@ -921,8 +942,10 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
     } catch (_) {}
   }
 
-  // 4. Fused Ranking using Reciprocal Rank Fusion (RRF, k=60)
-  const fused = reciprocalRankFusion(rankedLists, 60, 2);
+  // 4. Fused Ranking using Reciprocal Rank Fusion (RRF, k=60) + Squad Semantic Router + 1-Hop Wikilink Graph & CRAG
+  const rawFused = reciprocalRankFusion(rankedLists, 60, 2);
+  const graphData = getLoadedGraphData(false);
+  const { results: fused, cragStatus, route } = applyCragAndGraphRefinement(rawFused, qClean, graphData?.wikiGraph);
 
   // 5. Optional Local ONNX Q8 Cross-Encoder Reranking (Xenova/ms-marco-MiniLM-L-6-v2)
   if (options.useOnnxRerank && fused.length > 1) {
@@ -930,12 +953,12 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
   }
 
   // 6. Corrective RAG (CRAG Web Search Fallback only if local + cloud return 0 hits)
-  if (!options.fastLocalOnly && fused.length === 0 && env.SERPER_API_KEY) {
+  if (!options.fastLocalOnly && (fused.length === 0 || cragStatus === 'LOW') && env.SERPER_API_KEY) {
     try {
       const { searchWeb } = await import('./serper_researcher.mjs');
       const webData = await searchWeb(canonicalQuery || qClean, 4);
       const organic = webData.organic || [];
-      if (organic.length > 0) {
+      if (organic.length > 0 && fused.length === 0) {
         return organic.map((item, idx) => ({
           id: `web://${item.link}`,
           source: item.link,
@@ -943,13 +966,44 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
           snippet: sanitizeRagPayload(item.snippet || ''),
           text: sanitizeRagPayload(`[Live Web Search Source: ${item.title} (${item.link})]\n${item.snippet || ''}`),
           rerankScore: 0.95 - (idx * 0.05),
-          isWebFallback: true
+          isWebFallback: true,
+          squadRoute: route.primarySquad.squad
         })).slice(0, limit);
       }
     } catch (_) {}
   }
 
   return fused.slice(0, limit);
+}
+
+/**
+ * Queries the AST CodeGraph + PageRank Centrality Index in <2ms
+ */
+export function queryCodeGraph(symbolOrFileQuery, limit = 8) {
+  const g = getLoadedGraphData(false);
+  if (!g || !g.codeGraph) return { matches: [], edges: [] };
+  const q = String(symbolOrFileQuery || '').toLowerCase().trim();
+  const nodes = g.codeGraph.nodes || [];
+  const edges = g.codeGraph.edges || [];
+
+  const scored = [];
+  for (const n of nodes) {
+    let score = 0;
+    if (n.id.toLowerCase().includes(q)) score += 10;
+    if ((n.classes || []).some(c => c.toLowerCase().includes(q))) score += 8;
+    if ((n.globals || []).some(gl => gl.toLowerCase().includes(q))) score += 9;
+    if ((n.functions || []).some(fn => fn.toLowerCase().includes(q))) score += 6;
+    if ((n.apiRoutes || []).some(rt => rt.toLowerCase().includes(q))) score += 8;
+    if (score > 0 || !q) {
+      scored.push({ ...n, matchScore: score + (n.pagerank || 0) });
+    }
+  }
+  scored.sort((a, b) => b.matchScore - a.matchScore);
+  const topNodes = scored.slice(0, limit);
+  const topIds = new Set(topNodes.map(n => n.id));
+  const relatedEdges = edges.filter(e => topIds.has(e.source) || topIds.has(e.target)).slice(0, 25);
+
+  return { matches: topNodes, edges: relatedEdges };
 }
 
 /**
@@ -1015,16 +1069,21 @@ Output pure markdown text and cite the specific sources used.`;
     }
   }
 
-  return 'Context retrieved successfully via Omni-RAG v4 (SQLite FTS5 + MiniSearch + IDF/Proximity/LightRAG RRF).';
+  return 'Context retrieved successfully via Omni-RAG v5 (SQLite FTS5 + MiniSearch + IDF/LightRAG + Squad Router + Code/Wiki Graph PageRank).';
 }
 
 export async function getClusterStats() {
   const indexData = getOrBuildMiniSearchIndex();
+  const graphData = getLoadedGraphData(false);
   const stats = {
-    local_omni_rag_v4: {
+    local_omni_rag_v5: {
       chunks_count: indexData.chunks.length,
       sqlite_fts5_active: Boolean(indexData.sqliteDb),
       minisearch_active: Boolean(indexData.mini),
+      code_graph_files: graphData?.codeGraph?.nodes?.length || 0,
+      code_graph_edges: graphData?.codeGraph?.edges?.length || 0,
+      wiki_graph_nodes: graphData?.wikiGraph?.nodes?.length || 0,
+      wiki_graph_edges: graphData?.wikiGraph?.edges?.length || 0,
       status: 'green'
     }
   };
@@ -1052,13 +1111,19 @@ export async function getClusterStats() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const useRerank = process.argv.includes('--rerank');
   if (process.argv.includes('--rebuild')) {
-    console.log('🔄 Rebuilding Omni-RAG v4 Hybrid Index (SQLite FTS5 + MiniSearch + Contextual Chunks)...');
+    console.log('🔄 Rebuilding Omni-RAG v5 Hybrid Index (SQLite FTS5 + MiniSearch + AST CodeGraph + Obsidian WikiGraph)...');
     const t0 = Date.now();
+    const g = getLoadedGraphData(true);
     const idx = getOrBuildMiniSearchIndex(true);
-    console.log(`✅ Built ${idx.chunks.length} contextual chunks (SQLite FTS5 C-Engine: ${idx.sqliteDb ? 'ACTIVE' : 'OFF'}) in ${Date.now() - t0}ms.`);
+    console.log(`✅ Built ${idx.chunks.length} contextual chunks | CodeGraph: ${g?.codeGraph?.nodes?.length || 0} files | WikiGraph: ${g?.wikiGraph?.edges?.length || 0} [[wikilinks]] in ${Date.now() - t0}ms.`);
   } else if (process.argv.includes('--stats')) {
-    console.log('📊 Checking Omni-RAG v4 & Qdrant Stats...');
+    console.log('📊 Checking Omni-RAG v5 & Qdrant Stats...');
     getClusterStats().then(s => console.log(JSON.stringify(s, null, 2)));
+  } else if (process.argv.includes('--code-graph')) {
+    const qIdx = process.argv.indexOf('--code-graph') + 1;
+    const q = process.argv[qIdx] || '';
+    const res = queryCodeGraph(q, 8);
+    console.log(JSON.stringify(res, null, 2));
   } else if (process.argv.includes('--ask')) {
     const qIdx = process.argv.indexOf('--ask') + 1;
     const q = process.argv[qIdx] || 'How does Kick OAuth 2.1 PKCE work?';
@@ -1072,12 +1137,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const qIdx = process.argv.indexOf('--query') + 1;
     const q = process.argv[qIdx] || 'kick';
     const lim = parseInt(process.argv[qIdx + 1], 10) || 5;
-    console.log(`\n🔎 Querying Omni-RAG v4 Knowledge for: "${q}" (ONNX Rerank: ${useRerank})...`);
+    const route = routeQueryToSquads(q);
+    console.log(`\n🔎 Querying Omni-RAG v5 Knowledge for: "${q}" (Squad: ${route.primarySquad.squad} | ONNX Rerank: ${useRerank})...`);
     queryKnowledge(q, lim, { fastLocalOnly: true, useOnnxRerank: useRerank }).then(res => {
       console.log(`\nFound ${res.length} matches:`);
       res.forEach((r, i) => {
         const extra = r.onnxRerankScore !== undefined ? ` | ONNX: ${r.onnxRerankScore.toFixed(4)}` : '';
-        console.log(`\n[${i + 1}] (RRF: ${(r.rrfScore || 0).toFixed(4)}${extra}) ${r.title}`);
+        console.log(`\n[${i + 1}] (RRF: ${(r.fusedScore || r.rrfScore || 0).toFixed(4)}${extra}) ${r.title}`);
         console.log(`    Source: ${r.source}`);
         console.log(`    Snippet: "${r.snippet ? r.snippet.trim().slice(0, 160) : ''}..."`);
       });

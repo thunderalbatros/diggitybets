@@ -111,3 +111,6 @@ La investigación empírica moderna (Anthropic 2024–2025, HKUDS LightRAG 2025,
 3. **Reciprocal Rank Fusion (RRF, Cormack et al.) con Tope de Diversidad**:
    $$\text{RRF}(d) = \sum_{m \in \{\text{A1}, \text{A2}, \text{B}, \text{C}\}} \frac{1}{60 + r_m(d)}$$
    aplicando un tope estricto de $\le 2$ fragmentos por archivo fuente (`maxPerFile = 2`) para garantizar que ningún libro individual de 600 páginas monopolice la ventana de contexto del agente.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · [[CANON_SRE_RELIABILITY_ZERO_CRASH_2026]] · #architecture_and_books

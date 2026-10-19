@@ -162,3 +162,6 @@ const context = await browser.newContext({
 - **Sesión persistente:** `storageState()` guarda cookies + tokens
 
 El headless browser es SOLO para el login inicial. Todo lo demás usa API oficial.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_CYBERSECURITY_DEVSECOPS_2026]] · [[CYBERSECURITY_MASTER_PROTOCOL]] · [[CANON_IDENTITY_AND_OAUTH_CYBERSECURITY_AUDIT_2026]] · [[CANON_SEMINAL_CRYPTOGRAPHY_PAPERS_AND_PROTOCOLS]] · #cybersecurity

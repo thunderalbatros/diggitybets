@@ -5179,3 +5179,6 @@ project. In this scenario, the developer couldn't turn to the expert for a brain
 probe for the missing concepts she suspected to be lurking under the surface.
 Instead, she went to the bookstore. After a little browsing, she found an introductory accounting
 book she liked, and she skimmed it. She discovered a whole system of well-defined concepts
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

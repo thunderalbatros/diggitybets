@@ -59,3 +59,6 @@
    - El padding interno de una tarjeta (`--card-pad: 20px`) debe ser siempre **mayor o igual** que el espacio entre tarjetas adyacentes (`--grid-gap: 16px`), pero **menor** que el margen exterior de la sección (`--section-margin: 48px`). Esto garantiza la **Ley de Proximidad de la Gestalt** sin necesidad de bordes gruesos.
 3. **Jerarquía de Luminancia Superficial (De-Boxed Swiss Hierarchy)**:
    - En lugar de encerrar cada dato dentro de cajas anidadas con bordes pesados, la escuela suiza separa campos mediante **espacio negativo** y sutiles escalones de luminancia (`#07090e` → `#0d111a` → `#131926`).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

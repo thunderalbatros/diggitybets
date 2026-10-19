@@ -66,3 +66,6 @@
      - Tests que verifiquen que ninguna vista del frontend rompa la jerarquía semántica o cause desbordamiento horizontal.
      - Pruebas que midan el tiempo de ejecución de las consultas a SQLite para garantizar que se mantengan por debajo de 5 milisegundos.
    - Las Fitness Functions actúan como el sistema inmunológico permanente de la fábrica agéntica.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

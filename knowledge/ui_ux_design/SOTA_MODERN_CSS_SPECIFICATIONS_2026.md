@@ -206,3 +206,6 @@ p, .prose {
 - [x] Enable `interpolate-size: allow-keywords` on `:root` for smooth collapsible drawers and accordions.
 - [x] Use `text-wrap: balance` on all game cards and tournament header titles.
 - [x] Migrate floating menus to the native `popover` top-layer API to prevent OBS overlay clipping.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

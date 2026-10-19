@@ -82,3 +82,6 @@ grandes (`graphify-out/graph.html`, JSONL) — ya cubierto por `.clineignore`.
 - `ANTHROPIC_API_KEY` en el entorno → correr `npm run finops:cache-test` (evidencia activa).
 - Key de Anthropic dedicada (`cline-centinela`) + límite mensual + alertas 50/80 % en consola.
 - Opcional: proxy de Caveman (`caveman setup --install`) y `graphify install` — solo con revisión.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

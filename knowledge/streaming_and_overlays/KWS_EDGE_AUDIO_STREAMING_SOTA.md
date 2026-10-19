@@ -88,3 +88,6 @@ export class KeywordSpottingEngine {
 - **Latencia de Detección:** $\le 100\text{ ms}$ desde el fin del fonema en el stream PCM.
 - **Tasa de Falsos Positivos:** $< 0.1$ falsos positivos por hora en audio de slots con música continua.
 - **Resiliencia Térmica / CPU:** Consumo sostenido $< 5\%$ CPU en nodo local.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

@@ -50,3 +50,6 @@
 | :--- | :--- | :--- | :--- |
 | **RTP curve & volatility radar charts** | Pts.js | `references/design-mastery/pts-js/src/CanvasSpace.ts` | `const space = new CanvasSpace(canvas).setup(); space.add({ animate: ... });` |
 | **3D card tilt on mouse move** | GUI Challenges | `references/design-mastery/gui-challenges/` | `transform: perspective(1000px) rotateX(calc(var(--y) * 10deg)) rotateY(calc(var(--x) * -10deg))` |
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

@@ -5574,3 +5574,6 @@ shows the user how many pages of items there are, as well as letting a user jump
 among those pages.
 • Infinite List is a single-page alternative to Pagination. The first section of a long list
 gets loaded, and at the bottom the user
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

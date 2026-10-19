@@ -47,3 +47,6 @@ El RLHF clásico asume la recopilación offline de preferencias. En Live Streami
 
 ## Conclusión
 La arquitectura actual de Centinela (con enrutamiento Top9, Harvester de demostraciones y separación de Hilos) se alinea sorprendentemente bien con los patrones SOTA (State Of The Art) de agentes multimodales y aprendizaje offline (Behavioral Cloning). El periodo de Shadow Mode que has decretado es estadísticamente y operativamente la decisión más sensata antes de liberar un agente estocástico en un entorno en vivo.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

@@ -172,3 +172,6 @@ Cuando un agente se inspire en un componente de `kokonutui` o `magicui` (origina
 | **flubber** | `references/sota-expansion/motion-ui/flubber` | Interpolación fluida de rutas vectoriales SVG (shape morphing). |
 | **lax.js** | `references/sota-expansion/motion-ui/lax.js` | Animaciones fluidas al hacer scroll basadas en el hardware. |
 | **tabler-icons** | `references/sota-expansion/design-assets/tabler-icons` | Catálogo de 5.200+ íconos vectoriales SVG limpios. |
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

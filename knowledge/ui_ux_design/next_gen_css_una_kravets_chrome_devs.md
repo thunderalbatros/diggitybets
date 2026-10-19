@@ -71,3 +71,6 @@ for when you are pulling in content from the CMS or otherwise, and you have a sp
 
 ### [20:42]
 so that's gonna be maintaining that aspect ratio, and it's just exciting, so I wanted to mention it and let you know that it's coming down the pipeline. And those are the 10 really powerful lines of CSS that I wanted to talk about in this 1 line layout video. I hope that you all learned something new, and if you're looking for these demos, check out 1linelayouts.glitch.me Thank you all for watching, if you want more CSS content and to dive deeper into layout techniques, including all the bells and whistles of CSS Grid and Flexbox, check out the CSS podcast that I do with my co-host Adam Argyle. It is at pod.link/thecsspodcast Thank you again, enjoy the rest of your web day! ♪ [music] ♪
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

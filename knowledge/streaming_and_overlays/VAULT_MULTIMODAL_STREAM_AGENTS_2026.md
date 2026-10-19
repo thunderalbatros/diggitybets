@@ -90,3 +90,6 @@ Todos los repositorios se encuentran clonados en modo seguro (`--depth 1 --singl
 1. **Latencia Sub-100ms:** Adopción del esquema *Cerebellum-Brain* para mantener a Centinela reactivo en el chat sin bloquearse con tareas pesadas de visión o LLMs.
 2. **Cero Falsos Positivos:** Validación cruzada en dos fases: el Cerebelo emite un pre-alerta acústico/local y el Cerebro confirma la validez del sorteo (excluyendo wager leaderboards).
 3. **Memoria Continua Multicanal:** El bot aprende las reglas específicas de cada streamer (slots favoritos, comandos de canal, moders activos) y las retiene entre sesiones.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

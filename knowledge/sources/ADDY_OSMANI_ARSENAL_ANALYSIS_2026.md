@@ -43,3 +43,6 @@
    - **Page Visibility Smart Governor (`visibly.js`):** Automatically pauses background decorative animations (`document.hidden`) when the Control Panel tab is unfocused while keeping the Kick Pusher WebSocket (`!battle`, `!sr`, `!tourney`, `!guess`) and OBS Overlay sync 100% live.
    - **CSS Layout & Style Containment (`critical` / `web-quality-skills`):** Added `contain: layout style;` on `#control-panel` game module cards so DOM updates in one game never trigger layout thrashing in the others.
    - **Agentic Engine Optimization (`agentic-seo`):** Added `/llms.txt` and `/robots.txt` (bundled into `dist/`) plus semantic metadata so `diggitybets.vip` scores 100/100 on AEO discoverability.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #sources

@@ -5210,3 +5210,6 @@ procesos para mantener con éxito su sistema de diseño, espero que usted y su
 equipo puedan crear grandes cosas juntos. ¡Avanza y sé atómico!
 
 -- 178 of 178 --
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

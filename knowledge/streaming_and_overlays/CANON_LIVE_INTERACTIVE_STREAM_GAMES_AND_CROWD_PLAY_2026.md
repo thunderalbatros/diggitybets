@@ -76,3 +76,6 @@ Para que cientos o miles de espectadores de **Kick.com** jueguen en vivo por pre
    - Todo reclamo de premio o participación web combina: sesión OAuth 2.1 de Kick verificada + token Cloudflare Turnstile + hash de dispositivo `ThumbmarkJS` + límite de tasa por IP/Usuario en Cloudflare Worker (`checkRateLimit`).
 4. **Higiene DOM Anti-XSS**:
    - Los nombres de usuario del chat de Kick y los argumentos de comandos (`!sr`, `!guess`) son entrada no confiable: siempre se renderizan mediante `.textContent` o pasan por `escapeHtml()` / `DOMPurify` + `TrustedTypes`.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[KICK_API_REFERENCE]] · [[CANON_KICK_PUBLIC_API_V2_FULL_REFERENCE]] · [[POPULAR_SLOTS_ONLY_ON_STAKE_TIERS]] · [[CANON_SLOTS_STAKE_RTP_VOLATILITY_DYNAMICS]] · #streaming_and_overlays

@@ -72,3 +72,6 @@ Aplicando los principios de **Robert Cialdini** y **CRO de baja fricción**:
    - Prohibido alterar probabilidades dinámicamente según el saldo del usuario; cada resultado de juego gratuito puede auditarse con su `serverSeed`, `clientSeed` y `nonce`.
 3. **Advertencias Visibles `+18` y Juego Responsable**:
    - El sitio mantiene de forma permanente los avisos de mayoría de edad (`+18`), límites de sesión saludables y prohibición absoluta de compras dentro de la plataforma (`AGENTS.md §2.2`).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

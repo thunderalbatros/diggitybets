@@ -85,3 +85,6 @@ Operan con un **modelo de identidad dual (Discord + Kick)**:
    - `!guess <valor>` → Entrada en Guess The Balance / Bonus Guess.
    - `!claim` / `!reload` → Reclamo de balance recargable.
    - Menciones de bot del canal (`Botrix`, `KickBot`, `AlphaBot`) anunciando el ganador.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #core_index

@@ -60,3 +60,6 @@ Dado que HuntHub opera bajo un presupuesto estricto de **$0 USD** y un requerimi
    - `--cyan: #00e5ff`
    - `--magenta: #ff2a5f`
 3. **Presupuesto Cromático 90/8/2:** 90% fondo oscuro/vidrio, 8% información de contraste blanco/gris, 2% acento vibrante (oro/verde/cyan).
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design

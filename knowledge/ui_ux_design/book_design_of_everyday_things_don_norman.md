@@ -37,3 +37,6 @@
 2. **Riesgo de Usabilidad (Usability Risk)**: ¿Pueden los espectadores en móvil o escritorio entender y completar el flujo en menos de 10 segundos mientras miran el stream en vivo?
 3. **Riesgo de Factibilidad (Feasibility Risk)**: ¿Puede ejecutarse con `$0` de costo de infraestructura y `<= 5%` de CPU en OBS Studio?
 4. **Riesgo de Viabilidad de Negocio (Business Viability Risk)**: ¿Cumple al 100% con los Términos de Servicio de Kick.com, las leyes de juego responsable (+18, cero cobro de entrada) y genera patrocinios B2B para el canal?
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[DESIGN_MASTERY_2026]] · [[AGENT_CREATIVE_AND_VISUAL_AWARENESS_2026]] · [[CANON_REFACTORING_UI_WATHAN_SCHOGER]] · [[CANON_PRACTICAL_UI_ADHAM_DANNAWAY]] · #ui_ux_design
