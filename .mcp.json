@@ -1,5 +1,30 @@
 {
   "mcpServers": {
+    "centinela-kb": {
+      "command": "node",
+      "args": ["C:\\Users\\tomas\\.zcode\\workspace\\default\\centinela-studio\\tools\\mcp\\kb-server.mjs"],
+      "disabled": false
+    },
+    "centinela-kick": {
+      "command": "node",
+      "args": ["C:\\Users\\tomas\\.zcode\\workspace\\default\\centinela-studio\\tools\\mcp\\kick-server.mjs"],
+      "disabled": false
+    },
+    "firecrawl": {
+      "command": "node",
+      "args": ["C:\\Users\\tomas\\.zcode\\workspace\\default\\centinela-studio\\tools\\mcp\\firecrawl-launcher.mjs"],
+      "disabled": false
+    },
+    "github": {
+      "command": "node",
+      "args": ["C:\\Users\\tomas\\.zcode\\workspace\\default\\centinela-studio\\tools\\mcp\\github-launcher.mjs"],
+      "disabled": false
+    },
+    "yendo-rag": {
+      "command": "node",
+      "args": ["C:\\Users\\tomas\\yendo_mobile\\tools\\mcp\\yendo_rag_mcp.js"],
+      "disabled": false
+    },
     "21st": {
       "url": "https://21st.dev/api/mcp",
       "headers": {
