@@ -1,12 +1,12 @@
 # Tratado Canónico Clean-Room: Color y Luz (Albers, Gurney, Arnheim), Tipografía Suiza (Ruder, Tschichold, Vignelli, Samara), CSS Moderno (Grant, Lea Verou), Micro-Interacciones (Saffer) y Componentes Inclusivos (Pickering) (2026)
 
-**Alcance:** Aplicable al diseño gráfico, sistema cromático `90/8/2` en `OKLCH`, jerarquía tipográfica, grillas suizas, hojas de estilo en `site/css/` y `overlay-*/style.css`, micro-interacciones y accesibilidad `WCAG AA / APCA` (`Squad 4` & `Squad 6`). Sintetiza en sala limpia (*Clean-Room*) los principios científicos, ópticos y matemáticos de Albers, Gurney, Arnheim, Ruder, Tschichold, Vignelli, Samara, Grant, Verou, Saffer y Pickering.
+**Alcance:** Aplicable al diseño gráfico, sistema cromático `90/8/2` en `OKLCH`, jerarquía tipográfica, grillas suizas, hojas de estilo en `site/css/` y `overlay-*/style.css`, micro-interacciones y accesibilidad `WCAG AA / APCA` (`Squad 4` & `Squad 6`). Sintetiza en sala limpia (*Clean-Room*) los principios científicos, ópticos y matemáticos de Albers, Gurney, Arnheim, Ruder, Tschichold, Vignelli, Samara, Grant, Verou, Saffer y Pickering, integrándose con la tetralogía Clean-Room: [[CANON_CLEAN_ROOM_SOFTWARE_DESIGN_REFACTORING_AND_LEGACY_CODE_2026]] (*Ousterhout Deep Modules*, Fowler, Feathers), [[CANON_CLEAN_ROOM_SVG_ANIMATIONS_GAME_AUDIO_AND_REALTIME_RENDERING_2026]] (*ACES Filmic Tone Mapping*, Drasner, Williams) y [[CANON_CLEAN_ROOM_WEB_SECURITY_OAUTH2_BUG_HUNTING_AND_VIRTUAL_ECONOMIES_2026]] (*TOCTOU double-spend*, *Lehdonvirta Virtual Economies*).
 
 ---
 
 ## 1. Ciencia del Color, Contraste Simultáneo e Iluminación Realista (*Interaction of Color* — Albers, *Color and Light* — Gurney & *Visual Perception* — Arnheim)
 
-### 1.1 Ley de Contraste Simultáneo e Irradiación de Albers en Superficies Oscuras
+### 1.1 Ley de Contraste Simultáneo e Irradiación de Albers en Superficies Oscuras (Tetralogía Clean-Room: Ousterhout Deep Modules, ACES Filmic, TOCTOU Double-Spend & Lehdonvirta)
 - **Efecto de Irradiación (*Halation*)**:
   - Un texto blanco puro (`#FFFFFF`) o verde neón sobre un fondo negro puro (`#000000`) parece expandirse ópticamente ("sangrar" hacia los bordes), engrosando visualmente las letras un **8%–12%** y provocando fatiga ocular.
   - **Solución Matemática para Modo Oscuro de Lujo (`DiggityBets Obsidian`)**:
