@@ -56,7 +56,9 @@ export async function runEvalMatrix() {
     { q: "game feel steve swink kirupa creating web animations springs wwdc", expectedKeyword: "swink" },
     { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" },
     { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" },
-    { q: "refactoring ui wathan schoger practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" }
+    { q: "refactoring ui wathan schoger practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" },
+    { q: "darwin godel machine textgrad speculative rag vertex context caching skillsmith", expectedKeyword: "textgrad" },
+    { q: "auditoria visual automatizada cto hitl vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" }
   ];
 
   let ragScore = 100;
