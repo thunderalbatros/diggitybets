@@ -1,9 +1,10 @@
+> **Alcance:** Literatura canónica de diseño UI/UX, sistemas de diseño, psicología cognitiva, economía conductual, gamificación y conversión (CRO) para la Software Factory Web y DiggityBets.
+
 ---
 version: 1.0.0
 tipo: research
 tags:
-  - web-application
-  - ui-ux
+  - yendo-mobile
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -30,4 +31,7 @@ Dannaway sistematiza las reglas lógicas que aseguran que una interfaz sea intui
 ---
 
 ## Relaciones de Contexto
+- [[YENDO_DNA]]
+- [[YENDO_LIBRARY]]
+- [[Biblia_Maestra_Visual_3D_Motion_Yendo]]
 - [[DESIGN_SYSTEM_MAP]]

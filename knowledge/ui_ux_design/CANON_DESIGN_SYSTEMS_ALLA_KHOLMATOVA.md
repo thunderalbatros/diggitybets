@@ -1,9 +1,10 @@
+> **Alcance:** Literatura canónica de diseño UI/UX, sistemas de diseño, psicología cognitiva, economía conductual, gamificación y conversión (CRO) para la Software Factory Web y DiggityBets.
+
 ---
 version: 1.0.0
 tipo: research
 tags:
-  - web-application
-  - ui-ux
+  - yendo-mobile
   - architecture
   - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
@@ -30,5 +31,7 @@ Un Design System no es solo una biblioteca de componentes Figma o código React;
 ---
 
 ## Relaciones de Contexto
+- [[YENDO_DNA]]
+- [[YENDO_LIBRARY]]
 - [[DESIGN_SYSTEM_MAP]]
 - [[YDS_Catalog]]

@@ -32,10 +32,11 @@ export async function runEvalMatrix() {
   };
 
   // --------------------------------------------------------------------------
-  // Dimension 1: Omni-RAG v4 Bilingual Retrieval Recall, MRR & Latency (17 Golden Queries)
+  // Dimension 1: Omni-RAG v4 Bilingual Retrieval Recall, MRR & Latency (18 Golden Queries)
   // --------------------------------------------------------------------------
-  console.log(`[DIMENSION 1] Testing Omni-RAG v4 Bilingual Precision, MRR & Latency (17 Golden Queries)...`);
+  console.log(`[DIMENSION 1] Testing Omni-RAG v4 Bilingual Precision, MRR & Latency (18 Golden Queries)...`);
   getOrBuildMiniSearchIndex();
+  await queryKnowledge("warmup", 1, { fastLocalOnly: true });
 
   const ragQueries = [
     { q: "OBS Browser Source CPU Impact budget", expectedKeyword: "cpu" },
@@ -54,7 +55,8 @@ export async function runEvalMatrix() {
     { q: "probabilidad matematica slots rtp volatilidad barboianu", expectedKeyword: "barboianu" },
     { q: "game feel steve swink kirupa creating web animations springs wwdc", expectedKeyword: "swink" },
     { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" },
-    { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" }
+    { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" },
+    { q: "refactoring ui wathan schoger practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" }
   ];
 
   let ragScore = 100;
