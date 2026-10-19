@@ -64,7 +64,8 @@ export async function runEvalMatrix() {
     { q: "game programming patterns nystrom object pool dirty flag rauschmayer es2025 shiffman", expectedKeyword: "nystrom" },
     { q: "ebookfoundation web browser engineering panchekha harrelson use the index luke winand fuzzing book", expectedKeyword: "panchekha" },
     { q: "qasimhbti definitive guide sqlite vdbe varnish cache stampede matters computational arndt akf scale cube", expectedKeyword: "vdbe" },
-    { q: "ousterhout deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" }
+    { q: "ousterhout deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" },
+    { q: "strazzullo frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" }
   ];
 
   let ragScore = 100;
