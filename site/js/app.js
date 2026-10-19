@@ -137,6 +137,9 @@ window.switchView = function(targetId) {
   }
 
   window.scrollTo(0, 0);
+  if (typeof window.refreshLazyLoad === 'function') {
+    setTimeout(window.refreshLazyLoad, 60);
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -163,6 +166,24 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('stakeGamesSwitcher', initStakeGamesSwitcher);
   safeInit('chatCommandHelpers', initChatCommandHelpers);
   safeInit('provablyFairAuditHub', initProvablyFairAuditHub);
+
+  // SOTA 2026: Ultra-lightweight Vanilla Lazy Loading (verlok/vanilla-lazyload)
+  safeInit('lazyLoad', () => {
+    if (typeof LazyLoad !== 'undefined') {
+      window.lazyLoadInstance = new LazyLoad({
+        elements_selector: '.lazy, img[loading="lazy"]',
+        threshold: 300,
+        cancel_on_exit: true
+      });
+      window.refreshLazyLoad = function() {
+        if (window.lazyLoadInstance && typeof window.lazyLoadInstance.update === 'function') {
+          window.lazyLoadInstance.update();
+        }
+      };
+    } else {
+      window.refreshLazyLoad = function() {};
+    }
+  });
 
   // 3. Year in footer
   const yearEl = document.getElementById('footer-year');
