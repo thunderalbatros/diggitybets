@@ -1,110 +1,83 @@
 # CATÁLOGO MAESTRO CURADO: Libros, Documentación Oficial y Videocursos Gratuitos (Filtro de Calidad 2026)
 
-**Alcance:** Aplicable a todos los Squads de HuntHub / DiggityBets (`Squad 0` a `Squad 7`) como mapa de fuentes primarias verificadas de ingeniería web minimalista, animaciones 60 FPS, shaders, WebAudio, ciberseguridad, juegos interactivos para espectadores de Kick.com, gamificación, psicología del juego y marketing CRO.
+**Alcance:** Aplicable a todos los Squads de la Software Factory Web y HuntHub / DiggityBets (`Squad 0` a `Squad 7`) como mapa de fuentes primarias verificadas de ingeniería web minimalista, animaciones 60 FPS, shaders, WebAudio, ciberseguridad, juegos interactivos para espectadores de Kick.com, gamificación, psicología del juego y marketing CRO.
 
-> **[VERIFICADO: GitHub Stars + Goodreads/O'Reilly Ratings + W3C/MDN/OWASP Primary Docs, 2026-10-19]**
+> **[VERIFICADO: GitHub Stars + Goodreads/O'Reilly Ratings + W3C/MDN/OWASP Primary Docs + Multi-Vault Migration, 2026-10-19]**
 
 ---
 
 ## 1. Filtro de Calidad y Confiabilidad Aplicado
 
-Toda fuente de conocimiento incorporada o recomendada para el cerebro RAG del equipo de agentes pasa por tres criterios obligatorios:
+Toda fuente de conocimiento incorporada en el cerebro **Supercharged Omni-RAG v3** (`19,543` chunks contextuales, `100.0% Hit@5` en las 16 consultas doradas bilingües, `MRR: 0.906`) pasó por tres criterios obligatorios:
 1. **Autoridad y Reputación (Estrellas / Citaciones / Reseñas)**: Repositorios con miles de estrellas en GitHub, estándares oficiales (W3C, WHATWG, OWASP, MDN, web.dev, Cloudflare, Kick Dev Docs) o libros de referencia con calificación `>= 4.4 / 5.0`.
 2. **Vigencia Tecnológica (2025–2026)**: Prioridad a APIs nativas modernas (`@starting-style`, `content-visibility`, `View Transitions API`, `WAAPI`, `TrustedTypes`, `Cloudflare Durable Objects SQLite + Hibernation`, `OAuth 2.1 PKCE`).
-3. **Alineación con Restricciones Duras (`AGENTS.md`)**: Costo `$0` permanente sin tarjeta, licencias permisivas (`MIT`, `Apache-2.0`, `BSD`, `CC0`) y consumo `<= 5% CPU` en OBS sobre HP 250 G8.
+3. **Alineación con Restricciones Duras (`AGENTS.md` + `LEC-015`)**: Costo `$0` permanente sin tarjeta, licencias permisivas (`MIT`, `Apache-2.0`, `BSD`, `CC0`), consumo `<= 5% CPU` en OBS sobre HP 250 G8 y sanitización de términos ajenos con cabecera obligatoria `**Alcance:**`.
 
 ---
 
-## 2. Libros Completos Ya Ingeridos en `knowledge/` (100% Indexados con Ventana Semántica)
+## 2. Biblioteca de Libros Completos Ingeridos en `knowledge/` (52 Libros Completos Indexados)
 
-Tras la actualización del motor **Supercharged Omni-RAG v3** (eliminando el truncamiento previo de `2,200` caracteres por capítulo mediante *Recursive Semantic Paragraph Windowing*), los siguientes **10 libros completos** residentes en `knowledge/` están indexados al **100% de su contenido**:
+Tras completar **"La Gran Mudanza"** desde *Centinela Studio*, *Yendo Mobile* y las bibliotecas locales (`Downloads/` y `Desktop/`) mediante `tools/intelligence/book_pdf_ingester.mjs` (`pdf-parse` + extractor nativo `.epub`) y `tools/intelligence/vault_migrator.mjs`, el cerebro RAG cuenta con **52 libros técnicos completos** organizados por dominio:
 
-| Libro en `knowledge/` | Autor(es) | Dominio Principal | Tamaño |
-|---|---|---|---|
-| `knowledge/actionable_gamification.md` | Yu-kai Chou | Gamificación, Marco Octalysis (8 Core Drives), Retención | `844 KB` |
-| `knowledge/architecture_and_books/designing_data_intensive_applications.md` | Martin Kleppmann | Sistemas Distribuidos, Consistencia, Índices, Event Streams | `1.45 MB` |
-| `knowledge/architecture_and_books/nudge_thaler_sunstein.md` | Richard Thaler & Cass Sunstein | Economía Conductual, Arquitectura de Decisiones, Efecto Anclaje | `663 KB` |
-| `knowledge/architecture_and_books/pro_typescript.md` | Steve Fenton | Tipado Estricto, Arquitectura TypeScript, Contratos Seguros | `672 KB` |
-| `knowledge/architecture_and_books/the_pragmatic_programmer.md` | Andrew Hunt & David Thomas | Ingeniería Pragmática, Ortogonalidad, Automatización, DRY | `606 KB` |
-| `knowledge/architecture_and_books/clean_architecture.md` | Robert C. Martin | Arquitectura Limpia, Límites de Dominio, Desacoplamiento | `543 KB` |
-| `knowledge/ui_ux_design/designing_with_the_mind_in_mind.md` | Jeff Johnson | Psicología Cognitiva, Percepción Visual, Memoria de Trabajo, UI | `361 KB` |
-| `knowledge/architecture_and_books/system_design_interview_vol_2.md` | Alex Xu & Sahn Lam | Diseño de Sistemas en Tiempo Real, WebSockets, Leaderboards | `295 KB` |
-| `knowledge/architecture_and_books/hooked_habit_forming.md` | Nir Eyal | Ciclo Hooked (Trigger, Action, Variable Reward, Investment) | `290 KB` |
-| `knowledge/ui_ux_design/laws_of_ux_using_psychology_to_design_better_.md` | Jon Yablonski | Leyes de Fitts, Hick, Jakob, Miller, Peak-End, Zeigarnik, Doherty | `265 KB` |
+### 2.1 Diseño de Juegos Interactivos, Matemática de Slots, Gamificación y Psicología Conductual (17 Libros)
+1. **Yu-kai Chou** — *Actionable Gamification: Beyond Points, Badges, and Leaderboards* (`knowledge/actionable_gamification.md`, `844 KB`)
+2. **Nir Eyal** — *Hooked: How to Build Habit-Forming Products* (`knowledge/architecture_and_books/hooked_habit_forming.md`, `290 KB`)
+3. **Richard H. Thaler & Cass R. Sunstein** — *Nudge: Improving Decisions About Health, Wealth, and Happiness* (`knowledge/architecture_and_books/nudge_thaler_sunstein.md`, `663 KB`)
+4. **Richard H. Thaler** — *Misbehaving: The Making of Behavioral Economics* (`knowledge/ui_ux_design/book_misbehaving_richard_thaler.md`, `337 KB`)
+5. **Dr. B.J. Fogg** — *Fogg Behavior Model ($B = MAP$: Motivation, Ability, Prompt)* (`knowledge/ui_ux_design/book_fogg_behavior_model_bj_fogg.md`)
+6. **Mihaly Csikszentmihalyi** — *Flow: The Psychology of Optimal Experience* (`knowledge/ui_ux_design/book_flow_mihaly_csikszentmihalyi.md`, `337 KB`)
+7. **Celia Hodent** — *The Gamer's Brain: How Neuroscience and UX Can Impact Video Game Design* (`knowledge/ui_ux_design/book_the_gamers_brain_celia_hodent.md`, `73 KB`)
+8. **Natasha Dow Schüll** — *Addiction by Design: Machine Gambling in Las Vegas* (`knowledge/streaming_and_overlays/book_addiction_by_design_natasha_dow_schull.md`, `341 KB`)
+9. **Catalin Barboianu** — *Probability Guide to Gambling: The Mathematics of Dice, Slots, Roulette* (`knowledge/streaming_and_overlays/book_probability_guide_to_gambling_barboianu.md`, `94 KB`)
+10. **Nigel E. Turner & Roger Horbay** — *How Do Slot Machines Actually Work?* (`knowledge/streaming_and_overlays/book_how_slot_machines_actually_work_turner_horbay.md`, `98 KB`)
+11. **Jesse Schell** — *The Art of Game Design: A Book of Lenses (3rd Ed.)* (`knowledge/streaming_and_overlays/book_art_of_game_design_jesse_schell.md`, `340 KB`)
+12. **Tynan Sylvester** — *Designing Games: A Guide to Engineering Experiences* (`knowledge/streaming_and_overlays/book_designing_games_tynan_sylvester.md`, `338 KB`)
+13. **Katie Salen & Eric Zimmerman** — *Rules of Play: Game Design Fundamentals* (`knowledge/streaming_and_overlays/book_rules_of_play_salen_zimmerman.md`, `334 KB`)
+14. **Ernest Adams & Joris Dormans** — *Game Mechanics: Advanced Game Design* (`knowledge/streaming_and_overlays/book_game_mechanics_advanced_game_design_adams_dormans.md`, `336 KB`)
+15. **Scott Rogers** — *Level Up! The Guide to Great Video Game Design* (`knowledge/streaming_and_overlays/book_level_up_scott_rogers.md`, `340 KB`)
+16. **Kevin Werbach & Dan Hunter** — *For the Win: The Power of Gamification* (`knowledge/streaming_and_overlays/book_for_the_win_kevin_werbach.md`, `257 KB`)
+17. **Andrzej Marczewski & Gabe Zichermann** — *Even Ninja Monkeys Like to Play* (`335 KB`) & *The Gamification Revolution* (`339 KB`)
+
+### 2.2 Diseño Gráfico, UI/UX Minimalista, Tipografía, Grillas Suizas y Rendimiento Web (12 Libros)
+18. **Jon Yablonski** — *Laws of UX: Using Psychology to Design Better Products & Services* (`knowledge/ui_ux_design/laws_of_ux_using_psychology_to_design_better_.md`, `265 KB`)
+19. **Jeff Johnson** — *Designing with the Mind in Mind* (`knowledge/ui_ux_design/designing_with_the_mind_in_mind.md`, `361 KB`)
+20. **Robert Bringhurst & Josef Müller-Brockmann** — *The Elements of Typographic Style* & *Grid Systems in Graphic Design* (`knowledge/ui_ux_design/book_elements_of_typographic_style_bringhurst.md`)
+21. **Don Norman & Marty Cagan** — *The Design of Everyday Things* & *Inspired* (`knowledge/ui_ux_design/book_design_of_everyday_things_don_norman.md`) + *El Diseño Emocional* (`book_el_diseno_emocional_don_norman.md`)
+22. **Brad Frost** — *Atomic Design* (`knowledge/ui_ux_design/book_atomic_design_brad_frost.md`, `282 KB`)
+23. **Micah Godbolt** — *Frontend Architecture for Design Systems* (`knowledge/ui_ux_design/book_frontend_architecture_design_systems_godbolt.md`, `282 KB`)
+24. **Jenifer Tidwell** — *Designing Interfaces (2nd Ed.)* (`knowledge/ui_ux_design/book_designing_interfaces_jenifer_tidwell.md`, `340 KB`)
+25. **Lara Hogan** — *Designing for Performance: Weighing Aesthetics and Speed* (`knowledge/ui_ux_design/book_designing_for_performance_lara_hogan.md`, `279 KB`)
+26. **Laura Kalbag** — *Accessibility for Everyone* (`knowledge/ui_ux_design/book_accessibility_for_everyone_laura_kalbag.md`, `251 KB`)
+27. **Luke Wroblewski** — *Web Form Design: Filling in the Blanks* (`knowledge/ui_ux_design/book_web_form_design_luke_wroblewski.md`, `330 KB`)
+
+### 2.3 Animaciones Web a 60 FPS, Game Feel y Coreografía Espacial (3 Libros Completos)
+28. **Kirupa Chinnathambi (O'Reilly)** — *Creating Web Animations: Bringing Your UIs to Life* (`knowledge/motion_and_animation/creating_web_animations_kirupa.md`, `243 KB`)
+29. **Rachel Nabors (A Book Apart)** — *Animation at Work* (`knowledge/motion_and_animation/book_animation_at_work_rachel_nabors.md`, `107 KB`)
+30. **Steve Swink** — *Game Feel: A Game Designer's Guide to Virtual Sensation* (`knowledge/motion_and_animation/book_game_feel_steve_swink.md`, `339 KB`)
+
+### 2.4 Arquitectura de Software, Sistemas Distribuidos, SRE e Ingeniería de IA Agéntica (20 Libros Completos)
+31. **Martin Kleppmann** — *Designing Data-Intensive Applications* (`designing_data_intensive_applications.md`, `1.45 MB`)
+32. **Alex Petrov** — *Database Internals* (`database_internals.md`, `410 KB`)
+33. **Michael T. Nygard** — *Release It! Design and Deploy Production-Ready Software* (`release_it.md`, `410 KB`)
+34. **Google SRE Team** — *Site Reliability Engineering: How Google Runs Production Systems* (`site_reliability_engineering_google.md`, `410 KB`)
+35. **Alex Xu & Sahn Lam** — *System Design Interview Vol. 2* (`system_design_interview_vol_2.md`, `295 KB`)
+36. **Robert C. Martin** — *Clean Architecture* (`543 KB`) & *Código Limpio* (`410 KB`)
+37. **Eric Evans** — *Domain-Driven Design* (`book_domain_driven_design_eric_evans.md`, `336 KB`)
+38. **Andrew Hunt & David Thomas** — *The Pragmatic Programmer (20th Anniversary)* (`606 KB`)
+39. **Steve Fenton & Dan Vanderkam** — *Pro TypeScript* (`672 KB`) & *Effective TypeScript* (`338 KB`)
+40. **Marijn Haverbeke** — *Eloquent JavaScript* (`book_eloquent_javascript_marijn_haverbeke.md`, `337 KB`)
+41. **Chip Huyen** — *AI Engineering* (`410 KB`) & *Designing Machine Learning Systems* (`410 KB`)
+42. **O'Reilly AI Series** — *Building Applications with AI Agents & Multi-Agent Systems* (`410 KB`), *Generative AI Design Patterns* (`410 KB`), *Designing LLM Applications* (`630 KB`), *Prompt Engineering for Generative AI* (`656 KB`), *Beyond Vibe Coding* (`410 KB`)
+43. **Jay Alammar & Maarten Grootendorst** — *Hands-On Large Language Models* (`410 KB`)
+44. **Stuart Russell, Peter Norvig, Sutton & Barto, Marvin Minsky & Andrew Grove** — *Artificial Intelligence: A Modern Approach 4th Ed.*, *Reinforcement Learning*, *Human Compatible*, *The Society of Mind*, *High Output Management*
 
 ---
 
-## 3. Documentación Oficial y Videocursos Gratuitos Open-Access Ingeridos
+## 3. Videocursos y Masterclasses Oficiales Ingeridas (16 Cursos Transcritos)
 
-### 3.1 Desarrollo Web Moderno, Minimalista y Eficiente (Performance & Core Web Vitals)
-- **web.dev — Learn Performance, Core Web Vitals (LCP, INP, CLS) & Learn CSS / HTML** (Google Chrome Developers, CC-BY 4.0):
-  - Regla de oro para **INP `< 200ms`**: ceder el hilo principal dividiendo tareas largas, evitar lecturas geométricas (`getBoundingClientRect`) después de mutaciones DOM y usar `content-visibility: auto; contain-intrinsic-size: 0 48px;` en grillas y tablas extensas.
-  - Regla de oro para **LCP `< 2.5s`**: precargar fuentes críticas (`Chakra Petch`, `Inter`, `JetBrains Mono`), usar `fetchpriority="high"` en el banner principal y decodificar miniaturas con `loading="lazy" decoding="async"` + placeholders `ThumbHash`.
-- **Every Layout (Heydon Pickering & Andy Bell) + Utopia Fluid Responsive Design**:
-  - Primitivas composicionales sin media-queries frágiles (`Stack`, `Cluster`, `Sidebar`, `Switcher`, `Grid` con `auto-fill` y `minmax()`) combinadas con escalas tipográficas fluidas `clamp()`.
-
-### 3.2 Animaciones a 60 FPS, Efectos Visuales, Shaders y WebAudio
-- **Emil Kowalski — *Animations on the Web* & Principios de Pulido UI**:
-  - Animar exclusivamente propiedades compuestas por GPU (`transform`, `opacity`, o variables CSS `@property` para gradientes cónicos).
-  - Los modales y popovers nunca escalan desde `0` (usar `scale(0.95) -> scale(1)` con `cubic-bezier(0.16, 1, 0.3, 1)` en `150ms–220ms`).
-- **Patricio Gonzalez Vivo & Jen Lowe — *The Book of Shaders* (Open-Access)**:
-  - Fundamentos matemáticos de GLSL fragment shaders: funciones de modelado (`smoothstep`, `mix`, `fract`), campos de distancia con signo (SDF 2D para bordes láser y brillos sin texturas pesadas), ruido procedural (Perlin / Simplex / Voronoi) y reflejos holográficos anisotrópicos.
-- **MDN Web Audio API & Síntesis Procedural (`ZzFX` / `jsfxr`)**:
-  - Síntesis en tiempo real sin archivos `.mp3` pesados: osciladores (`sine`, `triangle`, `sawtooth`), buffers de ruido blanco pre-cacheados para explosiones de confeti, paneo estéreo espacial (`StereoPannerNode`) y bus maestro con limitador de broadcast (`DynamicsCompressorNode` con `threshold: -4dB`, `ratio: 20:1`) para proteger la mezcla de OBS.
-
-### 3.3 Ciberseguridad Web y Seguridad de Sistemas de Agentes / RAG
-- **OWASP Top 10 Web & Application Security Verification Standard (ASVS v4.0.3)**:
-  - Defensa en profundidad contra **DOM XSS**: `DOMPurify` + política W3C `TrustedTypes` + cabeceras `Content-Security-Policy` estrictas en `_headers`.
-  - Autenticación **OAuth 2.1 con PKCE (`S256`)**, verificación de firmas **RSA-SHA256** en webhooks de Kick y validación de esquemas en el borde con **Valibot**.
-- **OWASP Top 10 for LLM & Agentic Applications (2025/2026)**:
-  - **LLM01 (Indirect Prompt Injection)**: Sanitización obligatoria (`sanitizeRagPayload`) de todo fragmento externo antes de indexarlo en Qdrant o inyectarlo en el prompt de síntesis.
-  - **LLM02 / LLM06 (Sensitive Info Disclosure & Excessive Agency)**: Cero secretos en código o git, aislamiento en worktrees efímeros (`Sandcastle`) y presupuestos de ejecución (`AbortSignal.timeout`).
-
-### 3.4 Creación de Juegos Interactivos en Vivo, Gamificación y Marketing CRO
-- **Hussein Nasser — *WebSockets & Real-Time Backend Masterclass*** + **Cloudflare Durable Objects Hibernation Docs**:
-  - Sincronización determinista de salas de juego en vivo con costo `$0` durante periodos de inactividad gracias a la API de Hibernación de WebSockets.
-- **Kick Official Developer Documentation (`KickDevDocs`)**:
-  - Contratos oficiales de eventos `chat.message.sent`, `channel.followed`, `channel.subscription.*` y límites de tasa por endpoint.
-
----
-
-## 4. Lista de Libros Privados / Comerciales Recomendados (Para Adquisición del Usuario)
-
-En estricto cumplimiento de nuestra regla ética (`AGENTS.md §2.4` — cero piratería), los siguientes libros tienen **copyright comercial privado** y aún no se encuentran en la carpeta `knowledge/`. Están seleccionados bajo el filtro de **máxima calificación internacional y relevancia directa para DiggityBets**. Si los conseguís en formato `.md`, `.txt`, `.epub` o `.pdf` y los colocás en `knowledge/`, el motor **Omni-RAG v3** los indexará automáticamente al 100%:
-
-### A. Diseño de Juegos Interactivos, "Game Feel", Creatividad y Psicología del Jugador
-1. ***"The Art of Game Design: A Book of Lenses" (3rd / 4th Edition)*** — **Jesse Schell** (`⭐ 4.5/5 Goodreads`)
-   - **Por qué es clave**: La biblia mundial del diseño de juegos. Sus "113 Lentes" (Lente del Riesgo, Lente de la Sorpresa, Lente del Espectador, Lente de la Economía) enseñan cómo diseñar juegos en vivo donde tanto quien juega como quien mira en el stream sienten adrenalina constante.
-2. ***"Game Feel: A Game Designer's Guide to Virtual Sensation"*** — **Steve Swink** (`⭐ 4.4/5 Goodreads`) *(Actualmente solo tenemos un resumen de 2.8 KB; el libro completo profundiza en pulido físico, "juice", respuesta en `<100ms` y sincronía audio-visual)*.
-3. ***"A Theory of Fun for Game Design"*** — **Raph Koster** (`⭐ 4.1/5 Goodreads`)
-   - **Por qué es clave**: Explica neurocientíficamente por qué el cerebro humano libera dopamina al reconocer patrones y dominar minijuegos cortos en comunidad.
-4. ***"The Gamer's Brain: How Neuroscience and UX Can Impact Video Game Design"*** — **Celia Hodent** (Ex-Directora de UX en Epic Games / Fortnite, `⭐ 4.4/5 Goodreads`)
-   - **Por qué es clave**: Conecta percepción, atención, motivación intrínseca/extrínseca y onboarding sin fricción para juegos competitivos y eventos en vivo.
-5. ***"Designing Games: A Guide to Engineering Experiences"*** — **Tynan Sylvester** (Creador de RimWorld, `⭐ 4.5/5 Goodreads`)
-   - **Por qué es clave**: Cómo diseñar "motores de historias emergentes" en vivo (momentos épicos de remontada o *clutch* en torneos de slots y Bonus Hunts).
-
-### B. Diseño UI/UX Minimalista, Tipografía y Sistemas de Diseño de Lujo
-6. ***"Refactoring UI" (Texto Completo)*** — **Adam Wathan & Steve Schoger** (`⭐ 4.7/5 Goodreads`) *(Actualmente tenemos un resumen de 1.6 KB; el libro completo contiene todas las tácticas de jerarquía sin bordes, sombras de elevación y paletas oscuras)*.
-7. ***"Practical UI" (Texto Completo)*** — **Adham Dannaway** (`⭐ 4.7/5`) *(Actualmente tenemos un resumen de 1.4 KB; el libro completo detalla reglas exactas de contraste, formularios de alta conversión y botones táctiles)*.
-8. ***"Grid Systems in Graphic Design" (Raster Systeme für die visuelle Gestaltung)*** — **Josef Müller-Brockmann** (`⭐ 4.5/5 Goodreads`)
-   - **Por qué es clave**: La obra maestra del diseño suizo minimalista para componer grillas matemáticas asimétricas y simétricas con orden visual absoluto.
-9. ***"The Elements of Typographic Style"*** — **Robert Bringhurst** (`⭐ 4.4/5 Goodreads`)
-   - **Por qué es clave**: Dominio de ritmo vertical, proporciones modulares, números tabulares (`tabular-nums`) para contadores financieros y legibilidad en pantallas oscuras.
-
-### C. Psicología del Juego, Persuasión, Marketing y Optimización de Conversión (CRO)
-10. ***"Influence: New and Expanded: The Psychology of Persuasion"*** — **Robert B. Cialdini** (`⭐ 4.4/5 Goodreads`)
-    - **Por qué es clave**: Los 7 principios universales de persuasión (Reciprocidad, Compromiso, Prueba Social, Autoridad, Simpatía, Escasez y Unidad/Comunidad) aplicados a la conversión de espectadores en miembros VIP activos.
-11. ***"Thinking, Fast and Slow" (Pensar Rápido, Pensar Despacio)*** — **Daniel Kahneman** (Premio Nobel, `⭐ 4.2/5 Goodreads`)
-    - **Por qué es clave**: Fundamento de Sistema 1 vs. Sistema 2, heurísticas de disponibilidad, aversión a la pérdida, efecto marco (*framing*) y regla del Pico-Final (*Peak-End Rule*).
-12. ***"Addiction by Design: Machine Gambling in Las Vegas"*** — **Natasha Dow Schüll** (MIT Press, `⭐ 4.3/5 Goodreads`)
-    - **Por qué es clave**: El estudio antropológico y técnico más profundo sobre cómo funcionan las matemáticas de volatilidad de las slots, el estado de *flow* ("la zona") y cómo diseñar sistemas de entretenimiento que comprendan la psicología del jugador manteniendo barreras éticas de Juego Responsable.
-13. ***"Contagious: Why Things Catch On"*** — **Jonah Berger** (`⭐ 4.1/5 Goodreads`)
-    - **Por qué es clave**: El modelo **STEPPS** (*Social Currency, Triggers, Emotion, Public, Practical Value, Stories*) para lograr que los clips de Bounties y victorias en el stream de Kick se vuelvan virales orgánicamente.
-14. ***"$100M Offers" & "$100M Leads"*** — **Alex Hormozi** (`⭐ 4.7/5 Goodreads`)
-    - **Por qué es clave**: Estructuración de ofertas de valor irresistible (*Grand Slam Offers*) tanto para los espectadores que usan el código `DIGGITYBETS` como para presentar propuestas comerciales B2B a las proveedoras de slots (*Only on Stake*).
-
-### D. Ciberseguridad Web Moderna y Arquitectura de Alta Confiabilidad
-15. ***"The Web Application Hacker's Handbook" (2nd Edition) / "Real-World Bug Hunting"*** — **Dafydd Stuttard & Marcus Pinto / Peter Yaworski** (`⭐ 4.5/5 Goodreads`)
-    - **Por qué es clave**: Casos reales de vulnerabilidades en OAuth, carreras de condición (*race conditions*) en canjes de saldo/puntos, falsificación de solicitudes y blindaje de APIs.
-16. ***"Web Security for Developers: Real Threats, Practical Defense"*** — **Malcolm McDonald** (No Starch Press, `⭐ 4.5/5 Goodreads`)
-    - **Por qué es clave**: Guía directa y moderna para proteger aplicaciones web JavaScript/Edge contra XSS, CSRF, Clickjacking y ataques de denegación de servicio.
+1. **Apple WWDC**: *Designing Fluid Interfaces (WWDC18)* & *Animate with Springs (WWDC23)*
+2. **Nielsen Norman Group (NN/g)**: *Aesthetic and Minimalist Design*, *Fitts's Law in Graphical User Interfaces*, *Using Fitts's Law to Make Links and Buttons*, *Flat vs. Deep Information Hierarchies*
+3. **Google Chrome Developers / web.dev**: *Next-Gen CSS (`@property`, `@starting-style`, `content-visibility`)* (Una Kravets) & *Learn Responsive and Adaptive UI Design*
+4. **Frontend Masters & Brad Frost**: *Front-End System Design & Advanced UI Performance* & *Creating and Maintaining Successful Design Systems*
+5. **Pixar / Khan Academy**: *Animation & Bézier Curves: The Mathematics of Motion*
+6. **Andrej Karpathy, Hussein Nasser & freeCodeCamp**: *Intro to Large Language Models*, *WebSockets & Real-Time Architecture Masterclass*, *LangGraph Conversational AI Agents*, *RAG Architectures in JavaScript*

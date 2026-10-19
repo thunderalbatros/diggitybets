@@ -77,17 +77,17 @@ const GROQ_API_KEY = env.GROQ_API_KEY || '';
  * Ensures 100% cross-lingual recall across Spanish queries and English books.
  */
 const BILINGUAL_THESAURUS = [
-  { match: /\b(juego|juegos|interactivo|interactivos|espectadores|vivo|crowd|chat)\b/i, expand: 'CANON_LIVE_INTERACTIVE_STREAM_GAMES_AND_CROWD_PLAY_2026 crowd play interactive live stream games kick spectators mines crash koth predictor' },
-  { match: /\b(gamificacion|gamificación|octalysis|psicologia|psicología|recompensa|recompensas|habito|hábito)\b/i, expand: 'CANON_GAMIFICATION_PSYCHOLOGY_CRO_AND_STREAM_MARKETING_2026 actionable_gamification hooked_habit_forming octalysis core drives variable reward trigger investment zeigarnik' },
-  { match: /\b(marketing|conversion|conversión|cro|afiliado|afiliados|persuasion|persuasión|aversion|pérdida|nudge)\b/i, expand: 'CANON_GAMIFICATION_PSYCHOLOGY_CRO_AND_STREAM_MARKETING_2026 nudge_thaler_sunstein cialdini social proof scarcity loss aversion endowed progress bounty sponsor' },
-  { match: /\b(bounty|bountys|bounties|challange|challenges|stake|multiplicador|bet_id)\b/i, expand: 'CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026 POPULAR_SLOTS_ONLY_ON_STAKE_TIERS only on stake bounty tiers multiplier verification' },
-  { match: /\b(animacion|animaciones|animación|fluidez|60fps|60-fps|escala|modal|kowalski|spring|gpu|obs)\b/i, expand: 'CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB CANON_BOOK_DESIGNING_FOR_PERFORMANCE_LARA_HOGAN modal entrance scale 0.95 composite transform opacity waapi obs cpu budget' },
-  { match: /\b(shader|shaders|glsl|holografico|holográfico|3d|levitacion|láser|laser|audio|webaudio|zzfx|trompeta)\b/i, expand: 'CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026 CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026 glsl sdf conic-gradient dynamicscompressor zzfx stereo panner' },
-  { match: /\b(ciberseguridad|seguridad|vulnerabilidad|vulnerabilidades|xss|csp|dompurify|trustedtypes|oauth|pkce|fraude|bot)\b/i, expand: 'CANON_CYBERSECURITY_DEVSECOPS_2026 CYBERSECURITY_MASTER_PROTOCOL ANTI_BOT_STEALTH_GUIDE owasp xss dompurify trustedtypes csp oauth 2.1 pkce thumbmarkjs turnstile' },
+  { match: /\b(juego|juegos|interactivo|interactivos|espectadores|vivo|crowd|chat|mines|crash)\b/i, expand: 'CANON_LIVE_INTERACTIVE_STREAM_GAMES_AND_CROWD_PLAY_2026 crowd play interactive live stream games kick spectators mines crash koth predictor book_art_of_game_design_jesse_schell' },
+  { match: /\b(gamificacion|gamificación|octalysis|psicologia|psicología|recompensa|recompensas|habito|hábito|dopamina|flow)\b/i, expand: 'CANON_GAMIFICATION_PSYCHOLOGY_CRO_AND_STREAM_MARKETING_2026 actionable_gamification hooked_habit_forming octalysis core drives variable reward trigger investment zeigarnik book_flow_mihaly_csikszentmihalyi' },
+  { match: /\b(marketing|conversion|conversión|cro|afiliado|afiliados|persuasion|persuasión|aversion|pérdida|nudge|fogg)\b/i, expand: 'CANON_GAMIFICATION_PSYCHOLOGY_CRO_AND_STREAM_MARKETING_2026 nudge_thaler_sunstein cialdini social proof scarcity loss aversion endowed progress bounty sponsor book_fogg_behavior_model_bj_fogg' },
+  { match: /\b(bounty|bountys|bounties|challange|challenges|stake|multiplicador|bet_id|slot|slots|rtp|volatilidad)\b/i, expand: 'CANON_STAKE_CHALLENGES_BOUNTY_SYSTEM_AND_FAST_MEDIA_PIPELINE_2026 POPULAR_SLOTS_ONLY_ON_STAKE_TIERS only on stake bounty tiers multiplier verification book_probability_guide_to_gambling_barboianu' },
+  { match: /\b(animacion|animaciones|animación|fluidez|60fps|60-fps|escala|modal|kowalski|spring|gpu|obs|game\s*feel|bezier)\b/i, expand: 'CANON_EMIL_KOWALSKI_ANIMATIONS_ON_THE_WEB CANON_BOOK_DESIGNING_FOR_PERFORMANCE_LARA_HOGAN modal entrance scale 0.95 composite transform opacity waapi obs cpu budget creating_web_animations_kirupa book_game_feel_steve_swink' },
+  { match: /\b(shader|shaders|glsl|holografico|holográfico|3d|levitacion|láser|laser|audio|webaudio|zzfx|trompeta)\b/i, expand: 'CANON_2D_3D_GRAPHICS_SHADERS_AND_AESTHETICS_2026 CANON_HOLO_SHADERS_3D_PACK_CHOREOGRAPHY_AND_WEBAUDIO_SFX_2026 glsl sdf conic-gradient dynamicscompressor zzfx stereo panner VAULT_3D_PBR_AND_CINEMATOGRAPHY_GUIDE' },
+  { match: /\b(ciberseguridad|seguridad|vulnerabilidad|vulnerabilidades|xss|csp|dompurify|trustedtypes|oauth|pkce|fraude|bot|criptografia|criptografía)\b/i, expand: 'CANON_CYBERSECURITY_DEVSECOPS_2026 CYBERSECURITY_MASTER_PROTOCOL ANTI_BOT_STEALTH_GUIDE owasp xss dompurify trustedtypes csp oauth 2.1 pkce thumbmarkjs turnstile VAULT_REAL_WORLD_CRYPTOGRAPHY_DAVID_WONG' },
   { match: /\b(provably\s*fair|hmac|sha256|commit-reveal|sorteo|equidad|semilla|seed)\b/i, expand: 'fair-draws provably-fair-games CANON_LIVE_INTERACTIVE_STREAM_GAMES_AND_CROWD_PLAY_2026 hmac-sha256 serverSeed clientSeed nonce commit-reveal' },
-  { match: /\b(libro|libros|curso|cursos|documentacion|documentación|catalogo|catálogo|fuentes)\b/i, expand: 'CURATED_MASTER_BOOKS_COURSES_AND_DOCS_CATALOG_2026 CANON_BOOKS_SOFTWARE_FACTORIES_AND_AI_ENGINEERING CANON_COURSES_AGENTIC_AI_AND_SYSTEMS' },
-  { match: /\b(diseño|minimalista|jerarquia|jerarquía|contraste|tipografia|tipografía|layout|grilla|ux|ui)\b/i, expand: 'DESIGN_MASTERY_2026 CANON_EVERY_LAYOUT_CSS_ALGORITHMS laws_of_ux_using_psychology_to_design_better_ CANON_UX_HUMAN_EXPERIENCE_ACCESSIBILITY_2026 90/8/2 apca wcag' },
-  { match: /\b(base de datos|sqlite|d1|durable objects|websocket|hibernation|cloudflare|arquitectura)\b/i, expand: 'designing_data_intensive_applications clean_architecture KWS_EDGE_AUDIO_STREAMING_SOTA durable objects sqlite wal indexes hibernation' }
+  { match: /\b(libro|libros|curso|cursos|documentacion|documentación|catalogo|catálogo|fuentes|mudanza)\b/i, expand: 'CURATED_MASTER_BOOKS_COURSES_AND_DOCS_CATALOG_2026 CANON_BOOKS_SOFTWARE_FACTORIES_AND_AI_ENGINEERING CANON_COURSES_AGENTIC_AI_AND_SYSTEMS' },
+  { match: /\b(diseño|minimalista|jerarquia|jerarquía|contraste|tipografia|tipografía|layout|grilla|ux|ui|fitts|aurea|áurea|bringhurst)\b/i, expand: 'DESIGN_MASTERY_2026 CANON_EVERY_LAYOUT_CSS_ALGORITHMS laws_of_ux_using_psychology_to_design_better_ CANON_UX_HUMAN_EXPERIENCE_ACCESSIBILITY_2026 90/8/2 apca wcag book_elements_of_typographic_style_bringhurst' },
+  { match: /\b(base de datos|sqlite|d1|durable objects|websocket|hibernation|cloudflare|arquitectura|sre|resiliencia|agentes)\b/i, expand: 'designing_data_intensive_applications clean_architecture KWS_EDGE_AUDIO_STREAMING_SOTA durable objects sqlite wal indexes hibernation database_internals release_it' }
 ];
 
 export function expandQueryBilingual(query) {
@@ -214,17 +214,30 @@ function createDocumentChunks(filePath) {
     fileName.startsWith('POPULAR_') ||
     fileName.startsWith('CYBERSECURITY_') ||
     fileName.startsWith('ANTI_BOT_') ||
+    fileName.startsWith('KWS_') ||
+    fileName.startsWith('AGENT_') ||
     fileName === 'INDEX'
   );
-  const isCanon = rel.startsWith('knowledge/') || rel.startsWith('.agents/skills/');
-  const category = isHighPriorityCanon ? 'canon-treatise' : (isCanon ? 'canon' : 'general');
+  const isVaultOrMasterclass = rel.startsWith('knowledge/') && (
+    fileName.startsWith('VAULT_') ||
+    fileName.startsWith('MASTERCLASS_') ||
+    fileName.startsWith('course_') ||
+    fileName.startsWith('websockets_') ||
+    fileName.startsWith('next_gen_')
+  );
+  const isSkill = rel.startsWith('.agents/skills/');
+  const isCanon = rel.startsWith('knowledge/') || isSkill;
+  const category = isHighPriorityCanon
+    ? 'canon-treatise'
+    : (isVaultOrMasterclass || isSkill ? 'canon-vault' : (isCanon ? 'canon-book' : 'general'));
 
   // Extract optional LEC-015 Scope Anchor
   const scopeMatch = cleanText.match(/\*\*Alcance:\*\*\s*([^\n]+)/i);
   const scopeHeader = scopeMatch ? ` [Scope: ${scopeMatch[1].trim().slice(0, 110)}]` : '';
 
+  const maxChunkChars = category === 'canon-book' ? 3800 : 1900;
   const sections = cleanText.split(/\n(?=#{1,3}\s+)/);
-  if (cleanText.length <= 1900 && sections.length <= 1) {
+  if (cleanText.length <= maxChunkChars && sections.length <= 1) {
     return [{
       id: rel,
       source: `local://${rel}`,
@@ -243,8 +256,8 @@ function createDocumentChunks(filePath) {
     const trimmedSec = sec.trim();
     if (trimmedSec.length < 45) return;
 
-    if (trimmedSec.length > 2000) {
-      const subBlocks = splitLongBlock(trimmedSec, 1900, 180);
+    if (trimmedSec.length > maxChunkChars + 100) {
+      const subBlocks = splitLongBlock(trimmedSec, maxChunkChars, 180);
       subBlocks.forEach((sub, subIdx) => {
         const partNum = subIdx + 1;
         chunks.push({
@@ -284,8 +297,8 @@ const CACHE_FILE = path.join(CACHE_DIR, 'rag_index_cache.json');
 function prepareChunksForFastSearch(chunks) {
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
-    if (!c._titleLower) c._titleLower = (c.title || '').toLowerCase();
-    if (!c._textLower) c._textLower = (c.text || '').toLowerCase();
+    if (!c._titleLower) c._titleLower = `${c.title || ''} ${c.section || ''}`.toLowerCase();
+    if (!c._searchBuf) c._searchBuf = `${c._titleLower} ${(c.snippet || '').toLowerCase()}`;
   }
 }
 
@@ -299,15 +312,33 @@ function buildMiniSearchInstance(chunks) {
       boost: { title: 4, section: 2.5, text: 1 },
       boostDocument: (docId, term, doc) => {
         if (!doc) return 1.0;
-        if (doc.category === 'canon-treatise') return 3.2;
-        if (doc.category === 'canon') return 2.0;
+        if (doc.category === 'canon-treatise') return 3.6;
+        if (doc.category === 'canon-vault') return 2.4;
+        if (doc.category === 'canon-book') return 1.8;
         return 1.0;
       },
       fuzzy: 0.15,
       prefix: true
     }
   });
-  mini.addAll(chunks);
+  // Index treatises, vaults, skills, and up to 12 lead sections per full book in MiniSearch for <200ms cold start
+  // (runLocalSemanticVectorRanker scans 100% of all book chunks in <12ms)
+  const fileCounts = new Map();
+  const miniChunks = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const c = chunks[i];
+    if (c.category === 'canon-treatise' || c.category === 'canon-vault') {
+      miniChunks.push(c);
+    } else {
+      const base = String(c.source || c.id).split('#')[0];
+      const count = fileCounts.get(base) || 0;
+      if (count < 12) {
+        fileCounts.set(base, count + 1);
+        miniChunks.push(c);
+      }
+    }
+  }
+  mini.addAll(miniChunks);
   return mini;
 }
 
@@ -326,7 +357,7 @@ export function getOrBuildMiniSearchIndex(force = false) {
       if (now - stats.mtimeMs < 1_800_000) {
         const raw = fs.readFileSync(CACHE_FILE, 'utf8');
         const chunks = JSON.parse(raw);
-        if (Array.isArray(chunks) && chunks.length > 0 && chunks.length < 30000) {
+        if (Array.isArray(chunks) && chunks.length > 0 && chunks.length < 150000) {
           const mini = buildMiniSearchInstance(chunks);
           cachedIndex = { mini, chunks };
           lastIndexTime = now;
@@ -374,10 +405,29 @@ export function getOrBuildMiniSearchIndex(force = false) {
 }
 
 /**
- * Local Dense Token + Coverage Vector Scorer
- * Uses pre-lowercased buffers for <12ms execution across 13,000+ chunks.
+ * Per-file diversity filter so no single huge book monopolizes a ranking engine's top K
  */
-function runLocalSemanticVectorRanker(chunks, queryString, limit = 15) {
+function capResultsPerFile(items, maxPerFile = 2, limit = 20) {
+  const counts = new Map();
+  const out = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const base = String(item.source || item.id).split('#')[0];
+    const c = counts.get(base) || 0;
+    if (c < maxPerFile) {
+      counts.set(base, c + 1);
+      out.push(item);
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * Local Dense Token + Coverage Vector Scorer
+ * Uses pre-lowercased buffers for <12ms execution across all chunks.
+ */
+function runLocalSemanticVectorRanker(chunks, queryString, limit = 20) {
   const tokens = queryString
     .toLowerCase()
     .replace(/[^\p{L}\p{N}_./-]+/gu, ' ')
@@ -385,29 +435,30 @@ function runLocalSemanticVectorRanker(chunks, queryString, limit = 15) {
     .filter(t => t.length >= 2);
   if (tokens.length === 0) return [];
 
-  const uniqueTokens = [...new Set(tokens)].slice(0, 18);
+  const uniqueTokens = [...new Set(tokens)].slice(0, 22);
+  const tLen = uniqueTokens.length;
   const scored = [];
 
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
     const titleLower = c._titleLower || '';
-    const textLower = c._textLower || '';
+    const searchBuf = c._searchBuf || '';
     let score = 0;
     let matchedTerms = 0;
 
-    for (let j = 0; j < uniqueTokens.length; j++) {
+    for (let j = 0; j < tLen; j++) {
       const tok = uniqueTokens[j];
-      const inTitle = titleLower.includes(tok);
-      const inText = inTitle || textLower.includes(tok);
-      if (inText) {
+      if (searchBuf.includes(tok)) {
         matchedTerms++;
-        score += inTitle ? 4.0 : 1.0;
+        score += titleLower.includes(tok) ? 4.0 : 1.2;
       }
     }
 
     if (matchedTerms > 0) {
-      const coverage = matchedTerms / uniqueTokens.length;
-      const categoryMult = c.category === 'canon-treatise' ? 2.5 : (c.category === 'canon' ? 1.4 : 0.9);
+      const coverage = matchedTerms / tLen;
+      const categoryMult = c.category === 'canon-treatise'
+        ? 3.2
+        : (c.category === 'canon-vault' ? 1.8 : (c.category === 'canon-book' ? 1.4 : 0.9));
       const finalScore = (score * (1 + coverage)) * categoryMult;
       scored.push({
         id: c.id,
@@ -421,7 +472,7 @@ function runLocalSemanticVectorRanker(chunks, queryString, limit = 15) {
   }
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit);
+  return capResultsPerFile(scored, 2, limit);
 }
 
 /**
@@ -509,15 +560,15 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
   // Engine A: Local Lexical Search via MiniSearch BM25 (concise query for <10ms execution)
   if (indexData.mini) {
     try {
-      const conciseTerms = significantTerms.slice(0, 8).join(' ') || qClean;
+      const conciseTerms = significantTerms.slice(0, 6).join(' ') || qClean;
       const searchRes = indexData.mini.search(conciseTerms, {
         combineWith: 'OR',
-        fuzzy: significantTerms.length <= 4 ? 0.15 : false,
-        prefix: true,
+        fuzzy: significantTerms.length <= 3 ? 0.15 : false,
+        prefix: significantTerms.length <= 4,
         boost: { title: 4, section: 2.5, text: 1 }
       });
 
-      const bm25Results = searchRes.slice(0, 20).map(r => ({
+      const bm25Results = capResultsPerFile(searchRes, 2, 20).map(r => ({
         id: r.id,
         source: r.source,
         title: r.title,
