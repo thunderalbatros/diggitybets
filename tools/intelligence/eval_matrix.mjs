@@ -62,7 +62,8 @@ export async function runEvalMatrix() {
     { q: "topologia equipos multi-agente 10 escuadrones team topologies skelton pais anthropic", expectedKeyword: "skelton" },
     { q: "renderingng chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" },
     { q: "game programming patterns nystrom object pool dirty flag rauschmayer es2025 shiffman", expectedKeyword: "nystrom" },
-    { q: "ebookfoundation web browser engineering panchekha harrelson use the index luke winand fuzzing book", expectedKeyword: "panchekha" }
+    { q: "ebookfoundation web browser engineering panchekha harrelson use the index luke winand fuzzing book", expectedKeyword: "panchekha" },
+    { q: "qasimhbti definitive guide sqlite vdbe varnish cache stampede matters computational arndt akf scale cube", expectedKeyword: "vdbe" }
   ];
 
   let ragScore = 100;
