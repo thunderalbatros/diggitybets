@@ -49,7 +49,11 @@ export async function runEvalMatrix() {
     { q: "shaders glsl bordes laser webaudio dynamicscompressor zzfx", expectedKeyword: "zzfx" },
     { q: "diseño minimalista jerarquia 90/8/2 leyes de ux contraste apca", expectedKeyword: "90/8/2" },
     { q: "cloudflare durable objects websocket hibernation sqlite", expectedKeyword: "hibernation" },
-    { q: "catalogo maestro libros documentacion oficial videocursos", expectedKeyword: "curated_master_books" }
+    { q: "catalogo maestro libros documentacion oficial videocursos", expectedKeyword: "curated_master_books" },
+    { q: "tipografia matematica bringhurst grilla suiza proporcion aurea", expectedKeyword: "bringhurst" },
+    { q: "probabilidad matematica slots rtp volatilidad barboianu", expectedKeyword: "barboianu" },
+    { q: "game feel steve swink kirupa creating web animations springs wwdc", expectedKeyword: "swink" },
+    { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" }
   ];
 
   let ragScore = 100;
