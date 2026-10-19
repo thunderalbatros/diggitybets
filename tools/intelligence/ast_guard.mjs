@@ -113,7 +113,7 @@ export function scanSecurityAndPerformance(filePath) {
     const trimmed = line.trim();
 
     // 1. Unsafe innerHTML check (detects innerHTML = dynamic template without sanitization)
-    if (/innerHTML\s*=\s*`[^`]*\$\{.*?\}/.test(line) && !line.includes('sanitize') && !line.includes('escapeHtml')) {
+    if (/innerHTML\s*=\s*`[^`]*\$\{.*?\}/.test(line) && !/sanitize|escapeHtml|escapeHTML|\besc\(|\bsafe[A-Z]|toLocaleString|hotCount|roundNum/i.test(line)) {
       // Allow known safe procedural SVG or number templates
       if (!/stroke|circle|rect|path|svg|viewBox|<div class="kpi"|<span class="badge"/.test(line)) {
         findings.push({

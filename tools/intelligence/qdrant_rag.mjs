@@ -64,6 +64,7 @@ export function sanitizeRagPayload(value) {
 export async function listCollections() {
   if (!QDRANT_HOST) throw new Error('QDRANT_HOST is not configured in .env');
   const res = await fetch(`${QDRANT_HOST}/collections`, {
+    signal: AbortSignal.timeout(3500),
     headers: { 'api-key': QDRANT_API_KEY }
   });
   if (!res.ok) throw new Error(`Qdrant error: ${res.statusText}`);
@@ -73,6 +74,7 @@ export async function listCollections() {
 export async function getCollectionInfo(collectionName = DEFAULT_COLLECTION) {
   if (!QDRANT_HOST) throw new Error('QDRANT_HOST is not configured in .env');
   const res = await fetch(`${QDRANT_HOST}/collections/${encodeURIComponent(collectionName)}`, {
+    signal: AbortSignal.timeout(3500),
     headers: { 'api-key': QDRANT_API_KEY }
   });
   if (!res.ok) throw new Error(`Qdrant error: ${res.statusText}`);
@@ -83,6 +85,7 @@ export async function searchPoints(vector, collectionName = DEFAULT_COLLECTION, 
   if (!QDRANT_HOST) throw new Error('QDRANT_HOST is not configured in .env');
   const res = await fetch(`${QDRANT_HOST}/collections/${encodeURIComponent(collectionName)}/points/search`, {
     method: 'POST',
+    signal: AbortSignal.timeout(3500),
     headers: {
       'api-key': QDRANT_API_KEY,
       'Content-Type': 'application/json'
@@ -104,6 +107,7 @@ export async function upsertPoints(points, collectionName = DEFAULT_COLLECTION) 
     : [];
   const res = await fetch(`${QDRANT_HOST}/collections/${encodeURIComponent(collectionName)}/points`, {
     method: 'PUT',
+    signal: AbortSignal.timeout(3500),
     headers: {
       'api-key': QDRANT_API_KEY,
       'Content-Type': 'application/json'

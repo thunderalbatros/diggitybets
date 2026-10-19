@@ -1720,6 +1720,13 @@ class TournamentPredictionController {
     setTimeout(pollRemoteTourneyState, 1200);
     setInterval(pollRemoteTourneyState, 4000);
   }
+
+  checkTourneyAccessState() {
+    this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
+    this.isLocked = localStorage.getItem('hunthub_tourney_pred_locked') === 'true';
+    this.renderBracket();
+    this.renderStandings();
+  }
 }
 
 window.tournamentPrediction = new TournamentPredictionController();

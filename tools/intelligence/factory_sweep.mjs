@@ -10,6 +10,7 @@
  * =============================================================================
  */
 
+import { fileURLToPath } from 'node:url';
 import { runPreFlightChecks } from './instincts_engine.mjs';
 import { runAstAudit } from './ast_guard.mjs';
 import { runEvalMatrix } from './eval_matrix.mjs';
@@ -28,7 +29,7 @@ export async function runFactorySweep() {
 
   // Step 1: Pre-Flight Invariants
   console.log(`[SWEEP STEP 1/4] Verifying Architectural Invariants...`);
-  const preflightOk = runPreFlightChecks();
+  const preflightOk = await runPreFlightChecks();
   report.steps.preflight = { passed: preflightOk };
   if (!preflightOk) report.passed = false;
 
@@ -56,7 +57,7 @@ export async function runFactorySweep() {
   return report;
 }
 
-if (process.argv[1] === import.meta.url) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runFactorySweep().then(res => {
     process.exit(res.passed ? 0 : 1);
   });
