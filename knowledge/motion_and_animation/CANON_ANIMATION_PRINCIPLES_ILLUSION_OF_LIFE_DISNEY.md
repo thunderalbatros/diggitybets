@@ -1,51 +1,55 @@
+> **Alcance:** Literatura canónica y tratados técnicos de animación a 60 FPS, shaders GPU, física de resortes (spring physics), arte técnico 3D y micro-interacciones fluidas para sitios web modernos y overlays OBS.
+
 ---
-version: 1.1.0
+version: 1.0.0
 tipo: research
 tags:
-  - web-application
-  - animation
-  - waapi
-  - motion-design
-  - ui-ux
+  - yendo-mobile
+  - architecture
+  - en-progreso
 autores: [RESEARCHER_AGENT, MANAGER_AGENT]
-ultima_revision: 2026-10-17
+ultima_revision: 2026-08-27
 ---
 
-# 🎬 Tratado Canónico: Los 12 Principios de Animación Aplicados a la Web
+# 🎬 Tratado Canónico: Los 12 Principios de Animación Aplicados a UI
 ### Basado en: *The Illusion of Life: Disney Animation* (Thomas & Johnston) & *The Animator's Survival Kit* (Richard Williams)
 **Autores:** Frank Thomas & Ollie Johnston / Richard Williams
+**Archivos Fuente:** `unsorted/The illusion of life_ Disney animation.pdf` (577 páginas) y `unsorted/the-animators-survival-kit-richard-williams.pdf` (392 páginas)
 
 ---
 
-## 1. De los Estudios Disney a las Interfaces Web Modernas
+## 1. De los Estudios Disney a las Interfaces React Native Modernas
 
-En 1981, los legendarios animadores de Disney Frank Thomas y Ollie Johnston publicaron *The Illusion of Life*, codificando los **12 Principios Básicos de Animación** desarrollados para dar vida, credibilidad física y dinamismo a creaciones visuales.
+En 1981, los legendarios animadores de Disney Frank Thomas y Ollie Johnston publicaron *The Illusion of Life*, codificando los **12 Principios Básicos de Animación** desarrollados para dar vida, credibilidad física y empatía emocional a dibujos inanimados.
 
-En el diseño de aplicaciones web modernas y overlays de streaming, estos 12 principios son la diferencia entre una página estática y aburrida, y una experiencia web viva, reactiva y atractiva para los espectadores.
+En la ingeniería de interfaces táctiles móviles modernas, estos 12 principios son la diferencia entre una aplicación estática y muerta, y una experiencia digital viva, orgánica y fluida.
 
 ---
 
-## 2. Los 12 Principios Traducidos a Web Animations API y CSS
+## 2. Los 12 Principios Traducidos a React Native Reanimated
 
-| Principio Tradicional | Definición Clásica | Traducción Técnica a Código Web en HuntHub |
+| Principio Tradicional | Definición Clásica | Traducción Técnica a Código Reanimated en Yendo |
 | :--- | :--- | :--- |
-| **1. Squash and Stretch (Aplastamiento y Estiramiento)** | Da la ilusión de peso y flexibilidad física a un objeto al moverse o colisionar. | **Micro-tap en Botones:** Al hacer clic, el botón se comprime a `scale(0.97)` y al soltar rebota suavemente a `scale(1.0)`. |
-| **2. Anticipation (Anticipación)** | Prepara al ojo del espectador para una acción inminente. | **Giro de Ruleta:** Antes de acelerar hacia adelante, el carrete hace un micro-retroceso de 2px anticipando la inercia del giro. |
-| **3. Staging (Puesta en Escena)** | Presenta una idea de forma que sea inequívocamente clara para la vista. | **Modal de Ganador:** Oscurecimiento del fondo con `backdrop-filter: blur(8px)` para concentrar la atención en la tarjeta del ganador. |
-| **4. Straight Ahead vs. Pose to Pose** | Técnicas de dibujo secuencial. | **Keyframes Interpolados:** Definir estados inicial y final en CSS/WAAPI y dejar que el motor del navegador calcule las posiciones intermedias a 60 FPS. |
-| **5. Follow Through & Overlapping Action** | Las partes secundarias continúan moviéndose tras frenar el cuerpo principal. | **Cascada de Tarjetas (Stagger):** Al cargar listas o brackets, cada tarjeta entra con un retraso escalonado de 40ms respecto a la anterior (`animation-delay`). |
-| **6. Slow In and Slow Out (Frenado y Aceleración)** | Movimiento orgánico con aceleración suave, nunca lineal. | **Curvas Bézier Cúbicas:** Prohibido usar `transition: linear` para movimientos orgánicos. Usar `cubic-bezier(0.22, 1, 0.36, 1)`. |
-| **7. Arcs (Arcos)** | La mayoría de las trayectorias físicas siguen curvas parabólicas. | **Lluvia de Monedas:** Las monedas de premio caen describiendo arcos de parábola física con gravedad simulada en Canvas 2D. |
-| **8. Secondary Action (Acción Secundaria)** | Añade más dimensión y complementa la acción principal. | **Resplandor en Ruleta:** Mientras las tarjetas giran horizontalmente, el puntero central vibra verticalmente al compás de los ticks de audio. |
-| **9. Timing (Sincronización)** | El número de fotogramas dedicados a una acción define su velocidad y peso. | **Ventana Óptima Web (150-300ms):** Micro-interacciones entre 150 y 250ms; transiciones de pantalla no mayores a 400ms para no entorpecer el flujo. |
-| **10. Exaggeration (Exageración)** | Acentuar una acción para hacerla más expresiva y divertida. | **Micro-celebración de victoria:** Al ganar una ronda o torneo, la interfaz despliega partículas doradas y fanfarria triunfal. |
-| **11. Solid Drawing (Dibujo Sólido)** | Crear sensación de volumen, peso y espacio tridimensional. | **Bordes y Capas (Border-over-shadow):** Bordes sutiles de 1px con translucidez (`rgba(255,255,255,0.08)`) y capas de profundidad CSS. |
-| **12. Appeal (Carisma / Atractivo)** | La cualidad que hace que el usuario disfrute la interacción. | **Estética Cohesiva:** La sincronía entre las animaciones de tarjetas, la tipografía Chakra Petch y el audio procedural crea una experiencia inmersiva. |
+| **1. Squash and Stretch (Aplastamiento y Estiramiento)** | Da la ilusión de peso y flexibilidad física a un objeto al moverse o colisionar. | **Micro-tap en Cards:** Al tocar un evento, la tarjeta se comprime ligeramente (`scale: 0.96`) y al soltar rebota a `scale: 1.0` con volumen constante. |
+| **2. Anticipation (Anticipación)** | Prepara al ojo del espectador para una acción inminente. | **Pull-to-refresh:** Antes de que la lista salte con nuevos eventos, el indicador del Carpincho se agacha anticipando el salto. |
+| **3. Staging (Puesta en Escena)** | Presenta una idea de forma que sea inequívocamente clara para la vista. | **Modal de Check-in:** Oscurecimiento del fondo con desenfoque Skia (`BlurMask`) para concentrar el 100% de la atención en el pase biométrico. |
+| **4. Straight Ahead vs. Pose to Pose** | Técnicas de dibujo secuencial. | **Keyframes Interpolados:** Definir estados clave (reposo, activo, presionado) y dejar que los resortes físicos calculen los frames intermedios en tiempo real. |
+| **5. Follow Through & Overlapping Action** | Las partes secundarias del cuerpo continúan moviéndose tras frenar el cuerpo principal. | **Cascada de Tarjetas (Stagger Effect):** Al cargar el feed, cada tarjeta entra con un retraso escalonado de 40ms respecto a la anterior, creando una ola orgánica. |
+| **6. Slow In and Slow Out (Frenado y Aceleración)** | Movimiento orgánico con aceleración suave, nunca lineal. | **Curvas Bézier Cúbicas y Resortes:** Prohibido usar `Easing.linear`. Usar `Easing.bezier(0.25, 0.1, 0.25, 1)` o resortes amortiguados. |
+| **7. Arcs (Arcos)** | La mayoría de las acciones humanas siguen trayectorias parabólicas o curvas. | **Navegación de Pantalla:** La transición de una miniatura a pantalla completa se despliega siguiendo una curva espacial suave, no una línea recta rígida. |
+| **8. Secondary Action (Acción Secundaria)** | Añade más dimensión y complementa la acción principal. | **Partículas en Check-in Exitoso:** Mientras la tarjeta se confirma, un resplandor luminoso secundario pulsa suavemente en los bordes. |
+| **9. Timing (Sincronización)** | El número de fotogramas dedicados a una acción define su velocidad y peso. | **Ventana Áurea Móvil (200-350ms):** Cualquier animación menor a 150ms es imperceptible; mayor a 400ms se siente lenta y fastidia al usuario. |
+| **10. Exaggeration (Exageración)** | Acentuar una acción para hacerla más expresiva y divertida. | **Reacciones del Carpincho:** Al desbloquear un beneficio de squad, la mascota festeja con un salto caricaturesco que desborda optimismo. |
+| **11. Solid Drawing (Dibujo Sólido)** | Crear sensación de volumen, peso y espacio tridimensional. | **Capas de Profundidad (Z-Index + Elevation):** Uso de sombras naturales en dark mode con tinte ambiental del fondo en lugar de negros opacos planos. |
+| **12. Appeal (Carisma / Atractivo)** | La cualidad que hace que el usuario simpatice y quiera volver a interactuar. | **Personalidad General:** La sincronía entre el Carpincho, la música del venue y la interfaz crea una estética premium canchera única en Buenos Aires. |
 
 ---
 
 ## Relaciones de Contexto
+- [[YENDO_DNA]]
+- [[YENDO_LIBRARY]]
+- [[Biblia_Maestra_Visual_3D_Motion_Yendo]]
+- [[Reanimated]]
+- [[React Native Skia]]
 - [[CANON_GAME_FEEL_VIRTUAL_SENSATION_SWINK]]
-- [[SOTA_UI_GAMIFICATION_3D_MOTION_TOOLKIT]]
-- [[CANON_DESIGN_SYSTEMS_ALLA_KHOLMATOVA]]
-- [[fair-draws]]
+- [[Capybara Mascot]]
