@@ -58,7 +58,9 @@ export async function runEvalMatrix() {
     { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" },
     { q: "refactoring ui wathan schoger practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" },
     { q: "darwin godel machine textgrad speculative rag vertex context caching skillsmith", expectedKeyword: "textgrad" },
-    { q: "auditoria visual automatizada cto hitl vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" }
+    { q: "auditoria visual automatizada cto hitl vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" },
+    { q: "topologia equipos multi-agente 10 escuadrones team topologies skelton pais anthropic", expectedKeyword: "skelton" },
+    { q: "renderingng chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" }
   ];
 
   let ragScore = 100;

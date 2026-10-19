@@ -241,6 +241,7 @@ function createDocumentChunks(filePath) {
   if (!cleanText) return [];
 
   const CORE_PROJECT_TREATISES = new Set([
+    'CANON_ELITE_MULTI_AGENT_WEB_SOFTWARE_FACTORY_TOPOLOGY_2026',
     'CANON_WEB_DESIGN_COMPOSITION_SHADERS_AND_MOTION_2026',
     'CANON_AUTOMATED_VISUAL_QA_VLM_CRITIC_AND_CTO_HITL_GATE_2026',
     'CANON_SELF_EVOLVING_SOFTWARE_FACTORY_AND_SPECULATIVE_RAG_2026',
@@ -530,6 +531,8 @@ function buildMiniSearchInstance(chunks) {
     }
   }
   mini.addAll(miniChunks);
+  mini._fastChunks = miniChunks;
+  mini._fastIds = new Set(miniChunks.map(c => c.id));
   return mini;
 }
 
@@ -861,12 +864,16 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
   const rankedLists = [];
   const indexData = getOrBuildMiniSearchIndex();
 
-  // Engine A1: Native C-Compiled SQLite FTS5 over 100% of all ~20,000 chunks (<3ms)
+  // Engine A1: Native C-Compiled SQLite FTS5 over 100% of all ~21,600 chunks (<10ms)
+  let ftsDeepChunks = [];
   if (indexData.sqliteDb) {
     const ftsTerms = [...significantTerms.slice(0, 6), ...bilingualExpansion.split(/\s+/).slice(0, 3)];
     const ftsResults = querySqliteFts5(indexData.sqliteDb, indexData.chunkMap, ftsTerms, 20);
     if (ftsResults.length > 0) {
       rankedLists.push(ftsResults);
+      if (indexData.chunkMap) {
+        ftsDeepChunks = ftsResults.map(r => indexData.chunkMap.get(r.id)).filter(Boolean);
+      }
     }
   }
 
@@ -893,9 +900,16 @@ export async function queryKnowledge(query, limit = 8, options = {}) {
     } catch (_) {}
   }
 
-  // Engine B: Single-Pass Bitmask Exact IDF + LightRAG Dual-Level Ranker
+  // Engine B: Single-Pass Bitmask Exact IDF + LightRAG Dual-Level Ranker (<15ms over Canon Pool + Deep FTS5 Hits)
+  const fastChunks = indexData.mini?._fastChunks || indexData.chunks;
+  const fastIds = indexData.mini?._fastIds;
+  let semanticPool = fastChunks;
+  if (fastIds && ftsDeepChunks.length > 0) {
+    const extra = ftsDeepChunks.filter(c => c && !fastIds.has(c.id));
+    if (extra.length > 0) semanticPool = [...fastChunks, ...extra];
+  }
   const semanticResults = runLocalSemanticVectorRanker(
-    indexData.chunks,
+    semanticPool,
     searchQuery,
     20
   );

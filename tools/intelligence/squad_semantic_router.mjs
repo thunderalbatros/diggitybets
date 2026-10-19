@@ -21,35 +21,45 @@
 
 const SQUAD_DOMAINS = {
   ui_ux_design: {
-    squad: 'Squad 4 — Frontend, UI/UX, Psychology & CRO',
+    squad: 'Squad 4 — Design Systems, OKLCH Tokens, Typography & Frontend Architect',
     folderPrefix: 'knowledge/ui_ux_design/',
     keywords: [
-      'ui', 'ux', 'diseño', 'design', 'minimalista', '90/8/2', 'apca', 'wcag', 'accesibilidad',
-      'tipografia', 'bringhurst', 'grilla', 'grid', 'aurea', 'golden', 'fogg', 'b=map',
-      'thaler', 'misbehaving', 'nudge', 'kahneman', 'ariely', 'octalysis', 'gamificacion',
-      'gamification', 'hooked', 'cialdini', 'conversion', 'cro', 'afiliados', 'wathan',
-      'schoger', 'refactoring', 'dannaway', 'kholmatova', 'norman', 'fitts', 'hick'
+      'ui', 'ux', 'diseño', 'design', 'minimalista', '90/8/2', 'apca', 'oklch', 'dtcg', 'wcag',
+      'accesibilidad', 'tipografia', 'bringhurst', 'butterick', 'grilla', 'grid', 'aurea', 'golden',
+      'wathan', 'schoger', 'refactoring', 'dannaway', 'kholmatova', 'norman', 'fitts', 'hick',
+      'utopia', 'clamp', 'de-boxing', 'arnheim', 'gestalt', 'albers'
+    ]
+  },
+  gamification_and_cro: {
+    squad: 'Squad 8 — Interactive Crowd-Play Games, Gamification (Octalysis) & CRO Psychology',
+    folderPrefix: 'knowledge/ui_ux_design/',
+    keywords: [
+      'fogg', 'b=map', 'thaler', 'misbehaving', 'nudge', 'kahneman', 'ariely', 'octalysis',
+      'gamificacion', 'gamification', 'hooked', 'cialdini', 'conversion', 'cro', 'afiliados',
+      'crowd', 'crowd play', 'schell', 'sylvester', 'werbach', 'marczewski', 'zichermann'
     ]
   },
   motion_and_animation: {
-    squad: 'Squad 5 — Visual, 60-FPS Motion, Shaders & WebAudio',
+    squad: 'Squad 5 — Creative Tech, 60-FPS Motion, Shaders, WebAudio & OBS Overlays',
     folderPrefix: 'knowledge/motion_and_animation/',
     keywords: [
       'animacion', 'animaciones', 'animation', 'animations', '60fps', 'kowalski', 'spring',
-      'springs', 'waapi', 'bezier', 'shader', 'shaders', 'glsl', 'webgpu', 'threejs',
-      'pbr', 'foil', 'holo', 'laser', 'webaudio', 'zzfx', 'dynamicscompressor', 'audio',
-      'swink', 'game feel', 'kirupa', 'nabors', 'disney', 'illusion of life', 'wwdc',
-      'atropos', 'parallax', 'compositor', 'will-change'
+      'springs', 'waapi', 'bezier', 'linear()', 'starting-style', 'interpolate-size', 'gsap',
+      'flip', 'devouring details', 'freiberg', 'shader', 'shaders', 'glsl', 'sdf', 'quilez',
+      'webgpu', 'threejs', 'tsl', 'pbr', 'foil', 'holo', 'laser', 'webaudio', 'zzfx',
+      'dynamicscompressor', 'audio', 'swink', 'game feel', 'kirupa', 'nabors', 'disney',
+      'illusion of life', 'wwdc', 'atropos', 'parallax', 'compositor', 'will-change'
     ]
   },
-  cybersecurity: {
-    squad: 'Squad 6 — Cybersecurity, Anti-Fraud & Cryptography',
+  cybersecurity_and_visual_qa: {
+    squad: 'Squad 6 — Adversarial Security, 5-Gate Visual QA & VLM Critic',
     folderPrefix: 'knowledge/cybersecurity/',
     keywords: [
       'ciberseguridad', 'cybersecurity', 'security', 'seguridad', 'xss', 'dompurify',
       'trustedtypes', 'csp', 'csrf', 'oauth', 'pkce', 'webhook', 'rsa', 'sha256',
       'hmac', 'cryptography', 'criptografia', 'anti-bot', 'thumbmark', 'turnstile',
-      'sybil', 'owasp', 'asvs', 'shostack', 'stride', 'wong', 'anderson'
+      'sybil', 'owasp', 'asvs', 'shostack', 'stride', 'wong', 'anderson', 'hitl',
+      'vlm', 'playwright', 'lighthouse', 'pa11y', 'break-ui', 'uxbench', 'uiguard'
     ]
   },
   streaming_and_overlays: {
@@ -58,19 +68,20 @@ const SQUAD_DOMAINS = {
     keywords: [
       'kick', 'pusher', 'overlay', 'overlays', 'obs', 'cpu', 'slot', 'slots', 'stake',
       'rtp', 'volatilidad', 'volatility', 'barboianu', 'bounty', 'bountys', 'bounties',
-      'bet_id', 'multiplicador', 'crowd', 'crowd play', 'sorteo', 'giveaway', 'custody',
-      'custodia', 'loyalty', 'puntos', 'chat', 'schell', 'sylvester', 'werbach'
+      'bet_id', 'multiplicador', 'sorteo', 'giveaway', 'custody', 'custodia', 'loyalty',
+      'puntos', 'chat'
     ]
   },
   architecture_and_books: {
-    squad: 'Squad 2 — Architecture, Edge Backend & Agentic RAG',
+    squad: 'Squad 2 & Squad 9 — Edge Backend, Self-Evolving Meta-Coach & Omni-RAG v5',
     folderPrefix: 'knowledge/architecture_and_books/',
     keywords: [
       'cloudflare', 'worker', 'workers', 'durable', 'objects', 'hibernation', 'websocket',
       'sqlite', 'fts5', 'rag', 'lightrag', 'hipporag', 'rerank', 'cross-encoder', 'onnx',
       'qdrant', 'minisearch', 'clean architecture', 'codigo limpio', 'kleppmann', 'petrov',
       'sre', 'nygard', 'typescript', 'valibot', 'harness', 'agent', 'agents', 'karpathy',
-      'langgraph', 'curated_master_books', 'catalogo'
+      'langgraph', 'curated_master_books', 'catalogo', 'textgrad', 'dspy', 'skillsmith',
+      'speculative rag', 'context caching', 'skelton', 'pais', 'team topologies', 'anthropic'
     ]
   }
 };
