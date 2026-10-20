@@ -75,11 +75,23 @@ class BattleOverlayApp {
   }
 
   loadSavedState() {
+    const demoNames = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21'
+    ]);
     try {
       const saved = localStorage.getItem('hunthub_battle_state');
       if (saved) {
-        this.handleStateUpdate(JSON.parse(saved));
-        return;
+        const parsed = JSON.parse(saved);
+        if (parsed) {
+          const uA = String(parsed.playerA?.username || parsed.playerA?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+          const uB = String(parsed.playerB?.username || parsed.playerB?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+          if (demoNames.has(uA)) parsed.playerA = null;
+          if (demoNames.has(uB)) parsed.playerB = null;
+          if (!parsed.playerA && !parsed.playerB && parsed.status === 'READY') parsed.status = 'LOBBY';
+          this.handleStateUpdate(parsed);
+          return;
+        }
       }
     } catch {}
     // Default empty state
@@ -572,67 +584,103 @@ class BattleOverlayApp {
   initWebSocket() {
     const urlParams = new URLSearchParams(window.location.search);
     const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
-    if (!isLocalHost && !urlParams.has('port')) return;
     const port = urlParams.get('port') || '3001';
-    const wsUrl = `ws://127.0.0.1:${port}/`;
 
-    try {
-      this.ws = new WebSocket(wsUrl);
+    if (isLocalHost || urlParams.has('port')) {
+      const wsUrl = `ws://127.0.0.1:${port}/`;
+      try {
+        this.ws = new WebSocket(wsUrl);
 
-      this.ws.onopen = () => {
-        console.log('[Battle Overlay] Connected to HuntHub Server on ' + wsUrl);
-        this.reconnectAttempts = 0;
-        // Request current battle state
-        this.ws.send(JSON.stringify({ action: 'get_battle_state' }));
-      };
+        this.ws.onopen = () => {
+          console.log('[Battle Overlay] Connected to HuntHub Server on ' + wsUrl);
+          this.reconnectAttempts = 0;
+          this.ws.send(JSON.stringify({ action: 'get_battle_state' }));
+        };
 
-      this.ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'battle_update' || payload.type === 'battle_resolved') {
-            this.handleStateUpdate(payload.state);
-          } else if (payload.type === 'koth_cashout') {
-            this.handleKothCashout(payload);
-          } else if (payload.type === 'koth_continue') {
-            this.handleKothContinue(payload);
-          } else if (payload.action === 'battle_state') {
-            this.handleStateUpdate(payload.state);
-          } else if (payload.targetOverlay === 'overlay-battle' && payload.state) {
-            this.handleStateUpdate(payload.state);
+        this.ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'battle_update' || payload.type === 'battle_resolved') {
+              this.handleStateUpdate(payload.state);
+            } else if (payload.type === 'koth_cashout') {
+              this.handleKothCashout(payload);
+            } else if (payload.type === 'koth_continue') {
+              this.handleKothContinue(payload);
+            } else if (payload.action === 'battle_state') {
+              this.handleStateUpdate(payload.state);
+            } else if (payload.targetOverlay === 'overlay-battle' && payload.state) {
+              this.handleStateUpdate(payload.state);
+            }
+          } catch (e) {
+            console.warn('[Battle Overlay] Error parsing message:', e);
           }
-        } catch (e) {
-          console.warn('[Battle Overlay] Error parsing message:', e);
-        }
-      };
+        };
 
-      this.ws.onerror = () => {
-        // Will trigger onclose
-      };
+        this.ws.onerror = () => {};
 
-      this.ws.onclose = () => {
-        this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
-        const timeout = Math.min(30000, 1000 * Math.pow(1.6, this.reconnectAttempts));
-        setTimeout(() => this.initWebSocket(), timeout);
-      };
-    } catch (e) {
-      setTimeout(() => this.initWebSocket(), 5000);
+        this.ws.onclose = () => {
+          this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+          const timeout = Math.min(30000, 1000 * Math.pow(1.6, this.reconnectAttempts));
+          setTimeout(() => this.initWebSocket(), timeout);
+        };
+      } catch (e) {}
     }
 
-    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source (Works on Cloudflare Edge & Local)
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
-      setInterval(async () => {
+      this._lastBattleSig = '';
+      const pollBattleEdge = async () => {
         if (document.hidden) return;
         try {
-          const res = await fetch(`http://127.0.0.1:${port}/api/sync/state`);
-          if (!res.ok) return;
-          const data = await res.json();
-          const battleState = data?.overlays?.battle;
-          if (battleState && JSON.stringify(battleState) !== JSON.stringify(this.currentState)) {
-            this.handleStateUpdate(battleState);
+          let data = null;
+          if (isLocalHost) {
+            try {
+              const localRes = await fetch(`http://127.0.0.1:${port}/api/sync/state`, { cache: 'no-store' });
+              if (localRes.ok) data = await localRes.json();
+            } catch (_) {}
+          }
+          if (!data) {
+            const res = await fetch('/api/sync/state', { cache: 'no-store' });
+            if (res.ok) data = await res.json();
+          }
+          if (!data) return;
+
+          const battleEvt = data?.overlayEvents?.['overlay-battle'];
+          if (battleEvt && (battleEvt.action === 'koth_cashout' || battleEvt.type === 'koth_cashout')) {
+            const sig = 'cashout_' + (battleEvt.ts || battleEvt.timestamp || '');
+            if (sig !== this._lastBattleSig) {
+              this._lastBattleSig = sig;
+              this.handleKothCashout(battleEvt);
+              return;
+            }
+          }
+
+          const battleState =
+            data?.battleState ||
+            battleEvt?.state ||
+            (battleEvt?.playerA !== undefined || battleEvt?.status ? battleEvt : null) ||
+            data?.overlays?.battle ||
+            null;
+          if (battleState) {
+            const sig = JSON.stringify({
+              status: battleState.status,
+              gameMode: battleState.gameMode,
+              winner: battleState.winner,
+              currentStreak: battleState.currentStreak,
+              playerA: battleState.playerA,
+              playerB: battleState.playerB
+            });
+            if (sig !== this._lastBattleSig) {
+              this._lastBattleSig = sig;
+              try { localStorage.setItem('hunthub_battle_state', JSON.stringify(battleState)); } catch (_) {}
+              this.handleStateUpdate(battleState);
+            }
           }
         } catch {}
-      }, 1500);
+      };
+      pollBattleEdge();
+      setInterval(pollBattleEdge, 1400);
     }
   }
 
@@ -939,15 +987,11 @@ class BattleOverlayApp {
           : `${winnerObj.slotName || 'Casino Slot'} · Type !continue or !cashout`;
       }
       if (this.modalStat) {
+        const cleanWinner = String(winnerName || 'Winner').replace(/^@/, '');
         if (isKothChampion) {
-          this.modalStat.textContent = `Congratulations @${winnerName} you won $20!`;
-        } else if (state.gameMode === 'SPINS') {
-          this.modalStat.textContent = `🏆 WINNER! ($${prizeSecured} Secured — Next Win: $${(streak + 1) * 5})`;
+          this.modalStat.textContent = `Congratulations @${cleanWinner} has won the battle! ($20 MAX PRIZE)`;
         } else {
-          const mult = Number(winnerObj.multiplier || 0);
-          this.modalStat.textContent = mult > 0
-            ? `Multiplier: ${mult.toFixed(2)}x · $${prizeSecured} Secured`
-            : `WINNER! · $${prizeSecured} Secured`;
+          this.modalStat.textContent = `Congratulations @${cleanWinner} has won the battle! ($${prizeSecured} Secured)`;
         }
       }
       this.modal.classList.add('active');
@@ -1031,41 +1075,7 @@ class BattleOverlayApp {
   }
 
   checkDemoMode() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') === '1' || params.get('demo') === 'true') {
-      console.log('[Battle Overlay] Demo mode enabled via URL param');
-      this.handleStateUpdate({
-        id: 'demo_battle_1',
-        status: 'READY',
-        betAmount: 20,
-        prizeText: '$100.00 CASH PRIZE',
-        playerA: {
-          userId: 'u1',
-          kickId: 101,
-          username: 'LuckyStriker',
-          displayName: 'LuckyStriker',
-          avatar: '',
-          slotName: 'Wanted Dead or a Wild',
-          slotProvider: 'Hacksaw Gaming',
-          slotImage: '',
-          winAmount: 245.50,
-          multiplier: 12.28,
-        },
-        playerB: {
-          userId: 'u2',
-          kickId: 102,
-          username: 'VegasKing',
-          displayName: 'VegasKing',
-          avatar: '',
-          slotName: 'Gates of Olympus 1000',
-          slotProvider: 'Pragmatic Play',
-          slotImage: '',
-          winAmount: 180.00,
-          multiplier: 9.00,
-        },
-        winner: null,
-      });
-    }
+    // Demo mode disabled in production so only real stream chatters appear
   }
 }
 

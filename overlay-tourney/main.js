@@ -449,48 +449,95 @@ class TourneyOverlayApp {
     const urlParams = new URLSearchParams(window.location.search);
     const port = urlParams.get('port') || '3001';
     const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-    if (!isLocalHost && !urlParams.get('port')) {
-      return;
-    }
-    const wsUrl = `ws://127.0.0.1:${port}/`;
 
-    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
-    try {
-      fetch(`http://127.0.0.1:${port}/api/sync/state`).catch(() => {});
-    } catch (_) {}
+    if (isLocalHost || urlParams.get('port')) {
+      const wsUrl = `ws://127.0.0.1:${port}/`;
+      try {
+        fetch(`http://127.0.0.1:${port}/api/sync/state`).catch(() => {});
+      } catch (_) {}
 
-    try {
-      this.ws = new WebSocket(wsUrl);
+      try {
+        this.ws = new WebSocket(wsUrl);
 
-      this.ws.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.ws.send(JSON.stringify({ action: 'get_tourney_state' }));
-      };
+        this.ws.onopen = () => {
+          this.reconnectAttempts = 0;
+          this.ws.send(JSON.stringify({ action: 'get_tourney_state' }));
+        };
 
-      this.ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'tournament_update' && payload.state) {
-            this.handleStateUpdate(payload.state);
-          } else if (payload.action === 'tourney_state' && payload.state) {
-            this.handleStateUpdate(payload.state);
-          } else if (payload.type === 'overlay_sync_event' && payload.event && payload.event.target === 'overlay-tourney' && payload.event.state) {
-            this.handleStateUpdate(payload.event.state);
+        this.ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'tournament_update' && payload.state) {
+              this.handleStateUpdate(payload.state);
+            } else if (payload.action === 'tourney_state' && payload.state) {
+              this.handleStateUpdate(payload.state);
+            } else if (payload.type === 'overlay_sync_event' && payload.event && payload.event.target === 'overlay-tourney' && payload.event.state) {
+              this.handleStateUpdate(payload.event.state);
+            }
+          } catch (e) {
+            console.warn('[Tourney Overlay] Error parsing message:', e);
           }
-        } catch (e) {
-          console.warn('[Tourney Overlay] Error parsing message:', e);
-        }
-      };
+        };
 
-      this.ws.onerror = () => {};
+        this.ws.onerror = () => {};
 
-      this.ws.onclose = () => {
-        const timeout = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 8000);
-        this.reconnectAttempts++;
-        setTimeout(() => this.initWebSocket(), timeout);
+        this.ws.onclose = () => {
+          const timeout = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 8000);
+          this.reconnectAttempts++;
+          setTimeout(() => this.initWebSocket(), timeout);
+        };
+      } catch (e) {
+        setTimeout(() => this.initWebSocket(), 3000);
+      }
+    }
+
+    // Cross-process Cloudflare Edge & Local HTTP /api/sync/state polling for OBS Browser Source
+    if (!this._edgePollStarted) {
+      this._edgePollStarted = true;
+      this._lastTourneySig = '';
+      const pollTourneyEdge = async () => {
+        if (document.hidden) return;
+        try {
+          let data = null;
+          if (isLocalHost) {
+            try {
+              const localRes = await fetch(`http://127.0.0.1:${port}/api/sync/state`, { cache: 'no-store' });
+              if (localRes.ok) data = await localRes.json();
+            } catch (_) {}
+          }
+          if (!data) {
+            const res = await fetch('/api/sync/state', { cache: 'no-store' });
+            if (res.ok) data = await res.json();
+          }
+          if (!data) return;
+
+          const tourneyEvt = data?.overlayEvents?.['overlay-tourney'];
+          const remoteState =
+            data?.tourneyState ||
+            tourneyEvt?.state ||
+            (tourneyEvt?.matches ? tourneyEvt : null) ||
+            data?.overlays?.tourney?.state ||
+            data?.overlays?.tourney ||
+            null;
+
+          if (remoteState && remoteState.matches) {
+            const sig = JSON.stringify({
+              status: remoteState.status,
+              mode: remoteState.mode,
+              matches: remoteState.matches,
+              champion: remoteState.champion
+            });
+            if (sig !== this._lastTourneySig) {
+              const isFirstLoad = !this._lastTourneySig;
+              this._lastTourneySig = sig;
+              try { localStorage.setItem('hunthub_tourney_state', JSON.stringify(remoteState)); } catch (_) {}
+              this.handleStateUpdate(remoteState, isFirstLoad);
+            }
+          }
+        } catch (_) {}
       };
-    } catch (e) {
-      setTimeout(() => this.initWebSocket(), 3000);
+      pollTourneyEdge();
+      setInterval(pollTourneyEdge, 1400);
     }
   }
 
@@ -498,55 +545,36 @@ class TourneyOverlayApp {
     if (this.modal) {
       this.modal.classList.remove('active');
     }
-    // 1. Check localStorage first
+    const demoNames = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21'
+    ]);
     try {
       const saved = localStorage.getItem('hunthub_tourney_state');
       if (saved) {
         const state = JSON.parse(saved);
-        this.handleStateUpdate(state, true);
-        return;
+        if (state && !state.isDemo) {
+          const norm = this.normalizeState(state);
+          const hasDemo = (norm.matches || []).some(m => {
+            const u1 = String(m.player1?.username || m.player1?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+            const u2 = String(m.player2?.username || m.player2?.displayName || '').trim().toLowerCase().replace(/^@/, '');
+            return demoNames.has(u1) || demoNames.has(u2);
+          });
+          if (!hasDemo) {
+            this.handleStateUpdate(norm, true);
+            return;
+          }
+        }
+        localStorage.removeItem('hunthub_tourney_state');
       }
     } catch {}
 
-    // 2. Fallback to clean IN_PROGRESS bracket (NEVER FINISHED on load so no unsolicited winner popup appears!)
-    const defaultDemo = this.getDefaultDemoState();
-    this.handleStateUpdate(defaultDemo, true);
+    const empty = this.getEmptyTournamentState();
+    this.handleStateUpdate(empty, true);
   }
 
   getDefaultDemoState() {
-    const participants = [
-      { id: 'p1', kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', slotName: 'Wanted Dead or a Wild', slotImage: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format', seed: 1, isDemo: true },
-      { id: 'p2', kickId: 102, username: 'VegasKing', displayName: 'VegasKing', slotName: 'Gates of Olympus 1000', slotImage: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format', seed: 8, isDemo: true },
-      { id: 'p3', kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', slotName: 'San Quentin xWays', slotImage: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format', seed: 4, isDemo: true },
-      { id: 'p4', kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', slotName: 'Sugar Rush 1000', slotImage: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format', seed: 5, isDemo: true },
-      { id: 'p5', kickId: 105, username: 'Strike777', displayName: 'Strike777', slotName: 'RIP City', slotImage: 'https://mediumrare.imgix.net/34d643b7d8c0b23e734742e5d1c32eb6beb29ee34a69e7cd97486db6c125a2db?w=360&auto=format', seed: 2, isDemo: true },
-      { id: 'p6', kickId: 106, username: 'BigBassBob', displayName: 'BigBassBob', slotName: 'Big Bass Splash', slotImage: 'https://mediumrare.imgix.net/98801318d067e57c3d22f9453d970d5278bf253365600c4d93841b9c994bf82a?w=360&auto=format', seed: 7, isDemo: true },
-      { id: 'p7', kickId: 107, username: 'NeonWolf', displayName: 'NeonWolf', slotName: 'Chaos Crew 2', slotImage: 'https://mediumrare.imgix.net/6cc2e6228b274e48ff6045944b153810db7131ad61d90cabce5aa35176c639e9?w=360&auto=format', seed: 3, isDemo: true },
-      { id: 'p8', kickId: 108, username: 'RoyalFlush', displayName: 'RoyalFlush', slotName: 'Le Bandit', slotImage: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format', seed: 6, isDemo: true },
-    ];
-
-    const matches = [
-      { id: 'm1', round: 1, matchNumber: 1, player1: participants[0], player2: participants[1], score1: 0, score2: 0, winner: null, status: 'RUNNING' },
-      { id: 'm2', round: 1, matchNumber: 2, player1: participants[2], player2: participants[3], score1: 0, score2: 0, winner: null, status: 'PENDING' },
-      { id: 'm3', round: 1, matchNumber: 3, player1: participants[4], player2: participants[5], score1: 0, score2: 0, winner: null, status: 'PENDING' },
-      { id: 'm4', round: 1, matchNumber: 4, player1: participants[6], player2: participants[7], score1: 0, score2: 0, winner: null, status: 'PENDING' },
-      { id: 'm5', round: 2, matchNumber: 5, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
-      { id: 'm6', round: 2, matchNumber: 6, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
-      { id: 'm7', round: 3, matchNumber: 7, player1: null, player2: null, score1: 0, score2: 0, winner: null, status: 'PENDING' },
-    ];
-
-    return {
-      id: 'demo_tourney_default',
-      title: '8-BRACKET SLOT CHAMPIONSHIP',
-      status: 'IN_PROGRESS',
-      mode: 'BONUS_BUY',
-      isDemo: true,
-      betPerRound: 10,
-      prizeText: '1st: $150 · 2nd: $50',
-      participants,
-      matches,
-      champion: null,
-    };
+    return this.getEmptyTournamentState();
   }
 
   handleStateUpdate(rawState, isInitialLoad = false) {

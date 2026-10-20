@@ -45,6 +45,7 @@ class BonusHuntOverlayApp {
     this.initAudio();
     this.initBroadcastChannel();
     this.initWebSocket();
+    this.initKickDirectGuesses();
     this.loadInitialDemo();
   }
 
@@ -269,13 +270,37 @@ class BonusHuntOverlayApp {
     const bestWin = opened.length > 0 ? [...opened].sort((a, b) => b.payout - a.payout)[0] : null;
     const luckyWin = opened.length > 0 ? [...opened].sort((a, b) => b.multiplier - a.multiplier)[0] : null;
 
+    let guesses = Array.isArray(this.liveGuesses) ? [...this.liveGuesses] : [];
+    try {
+      const g1 = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
+      const g2 = JSON.parse(localStorage.getItem('hunthub_bh_guesses') || '[]');
+      [...(Array.isArray(g1) ? g1 : []), ...(Array.isArray(g2) ? g2 : [])].forEach(g => {
+        const u = String(g?.user || g?.username || '').trim().replace(/^@/, '');
+        const amt = Number(g?.amount || g?.guess || 0);
+        if (u && amt > 0) {
+          const idx = guesses.findIndex(x => x.username.toLowerCase() === u.toLowerCase());
+          if (idx >= 0) guesses[idx].guess = amt;
+          else guesses.push({ username: u, guess: amt });
+        }
+      });
+    } catch (_) {}
+
+    let closestGuess = null;
+    if (guesses.length > 0) {
+      const refBalance = winnings > 0 ? winnings : startCost;
+      const sortedG = guesses
+        .map(g => ({ username: g.username, guess: g.guess, diff: Math.abs(g.guess - refBalance) }))
+        .sort((a, b) => a.diff - b.diff);
+      closestGuess = sortedG[0];
+    }
+
     return {
       id: 'hunt_live',
       title: 'COMMUNITY BONUS HUNT',
       startCost,
       status: totalBonuses === 0 ? 'WAITING' : (remainingBonuses === 0 ? 'FINISHED' : 'OPENING'),
       bonuses,
-      guesses: [],
+      guesses,
       metrics: {
         startCost,
         totalBonuses,
@@ -288,7 +313,8 @@ class BonusHuntOverlayApp {
         reqAverageX,
         reqAvgDollars,
         bestWin,
-        luckyWin
+        luckyWin,
+        closestGuess
       }
     };
   }
@@ -311,13 +337,13 @@ class BonusHuntOverlayApp {
           const res = await fetch(syncUrl, { cache: 'no-store' });
           if (!res.ok) return;
           const data = await res.json();
-          const bhEvt = data?.overlayEvents?.['overlay-bonushunt'];
+          const bhEvt = data?.overlayEvents?.['overlay-bonushunt'] || data?.bonushuntState;
           if (bhEvt && Array.isArray(bhEvt.slots) && Number(bhEvt.ts || 0) > this._lastEdgeTs) {
             this._lastEdgeTs = Number(bhEvt.ts || Date.now());
             this.handleStateUpdate(this.buildStateFromHuntSlots(bhEvt.slots));
             return;
           }
-          const huntState = data?.overlays?.bonushunt;
+          const huntState = data?.bonushuntState?.bonuses ? data.bonushuntState : data?.overlays?.bonushunt;
           if (huntState && JSON.stringify(huntState) !== JSON.stringify(this.currentState)) {
             this.handleStateUpdate(huntState);
           }
@@ -417,142 +443,50 @@ class BonusHuntOverlayApp {
     this.handleStateUpdate(this.buildStateFromHuntSlots([]));
   }
 
-  getDefaultDemoState() {
-    const resolveImg = (name, provider) => {
-      if (window.SlotResolver && typeof window.SlotResolver.resolve === 'function') {
-        const r = window.SlotResolver.resolve(name, '../');
-        if (r && r.image) return r.image;
-      }
-      if (window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function') {
-        return window.SlotResolver.generateDataUriCard(name, provider);
-      }
-      return '';
-    };
-    const bonuses = [
-      {
-        id: 'b1',
-        slotName: 'Wanted Dead or a Wild',
-        slotProvider: 'Hacksaw Gaming',
-        slotImage: resolveImg('Wanted Dead or a Wild', 'Hacksaw Gaming'),
-        callerUsername: 'LuckyStriker',
-        callerKickId: 101,
-        betSize: 1.0,
-        payout: 245.5,
-        multiplier: 245.5,
-        status: 'OPENED',
-      },
-      {
-        id: 'b2',
-        slotName: 'Gates of Olympus 1000',
-        slotProvider: 'Pragmatic Play',
-        slotImage: resolveImg('Gates of Olympus 1000', 'Pragmatic Play'),
-        callerUsername: 'VegasKing',
-        callerKickId: 102,
-        betSize: 1.0,
-        payout: 38.0,
-        multiplier: 38.0,
-        status: 'OPENED',
-      },
-      {
-        id: 'b3',
-        slotName: 'San Quentin xWays',
-        slotProvider: 'Nolimit City',
-        slotImage: resolveImg('San Quentin xWays', 'Nolimit City'),
-        callerUsername: 'SlotQueen',
-        callerKickId: 103,
-        betSize: 0.4,
-        payout: 120.0,
-        multiplier: 300.0,
-        status: 'OPENED',
-      },
-      {
-        id: 'b4',
-        slotName: 'Sugar Rush 1000',
-        slotProvider: 'Pragmatic Play',
-        slotImage: resolveImg('Sugar Rush 1000', 'Pragmatic Play'),
-        callerUsername: 'SpinMaster',
-        callerKickId: 104,
-        betSize: 1.0,
-        payout: 79.5,
-        multiplier: 79.5,
-        status: 'OPENED',
-      },
-      {
-        id: 'b5',
-        slotName: 'Rip City',
-        slotProvider: 'Hacksaw Gaming',
-        slotImage: resolveImg('Rip City', 'Hacksaw Gaming'),
-        callerUsername: 'Strike777',
-        callerKickId: 105,
-        betSize: 1.0,
-        payout: 0,
-        multiplier: 0,
-        status: 'OPENING',
-      },
-      {
-        id: 'b6',
-        slotName: 'Big Bass Splash',
-        slotProvider: 'Pragmatic Play',
-        slotImage: resolveImg('Big Bass Splash', 'Pragmatic Play'),
-        callerUsername: 'BigBassBob',
-        callerKickId: 106,
-        betSize: 1.0,
-        payout: 0,
-        multiplier: 0,
-        status: 'PENDING',
-      },
-      {
-        id: 'b7',
-        slotName: 'Cookout',
-        slotProvider: 'Colorful Play',
-        slotImage: resolveImg('Cookout', 'Colorful Play'),
-        callerUsername: 'NeonWolf',
-        callerKickId: 107,
-        betSize: 1.0,
-        payout: 0,
-        multiplier: 0,
-        status: 'PENDING',
-      },
-      {
-        id: 'b8',
-        slotName: 'Le Bandit',
-        slotProvider: 'Hacksaw Gaming',
-        slotImage: resolveImg('Le Bandit', 'Hacksaw Gaming'),
-        callerUsername: 'RoyalFlush',
-        callerKickId: 108,
-        betSize: 1.0,
-        payout: 0,
-        multiplier: 0,
-        status: 'PENDING',
-      },
-    ];
+  initKickDirectGuesses() {
+    this.liveGuesses = [];
+    const connectPusher = () => {
+      try {
+        const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            event: 'pusher:subscribe',
+            data: { auth: '', channel: 'chatrooms.86765775.v2' }
+          }));
+        };
+        ws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
+            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+            const rawText = String(d?.content || '').trim();
+            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+            if (!sender || !rawText.startsWith('!')) return;
 
-    return {
-      id: 'hunt_demo',
-      title: 'COMMUNITY BONUS HUNT #12',
-      startCost: 500,
-      status: 'OPENING',
-      bonuses,
-      guesses: [
-        { username: 'LuckyStriker', kickId: 101, amount: 620, timestamp: Date.now() },
-        { username: 'VegasKing', kickId: 102, amount: 480, timestamp: Date.now() },
-      ],
-      metrics: {
-        startCost: 500,
-        totalBonuses: 8,
-        openedBonuses: 4,
-        remainingBonuses: 4,
-        winnings: 483.0,
-        endingBalance: 483.0,
-        profit: -17.0,
-        runAverageX: 109.77,
-        reqAverageX: 2.83,
-        reqAvgDollars: 4.25,
-        bestWin: bonuses[0],
-        luckyWin: bonuses[2],
-        closestGuess: { username: 'VegasKing', guess: 480, diff: 3.0 },
-      },
+            const parts = rawText.split(/\s+/);
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ').trim();
+            if (cmd === '!guess' || cmd === '!gtb') {
+              const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
+              if (!isNaN(numVal) && numVal > 0) {
+                const idx = this.liveGuesses.findIndex(g => g.username.toLowerCase() === sender.toLowerCase());
+                if (idx >= 0) this.liveGuesses[idx].guess = numVal;
+                else this.liveGuesses.push({ username: sender, guess: numVal });
+                if (this.topGuessUserEl) {
+                  this.topGuessUserEl.textContent = `@${sender} guessed $${numVal.toFixed(2)} (${this.liveGuesses.length} total)`;
+                }
+              }
+            }
+          } catch (_) {}
+        };
+        ws.onclose = () => setTimeout(connectPusher, 6000);
+      } catch (_) {}
     };
+    connectPusher();
+  }
+
+  getDefaultDemoState() {
+    return this.buildStateFromHuntSlots([]);
   }
 
   handleStateUpdate(state) {

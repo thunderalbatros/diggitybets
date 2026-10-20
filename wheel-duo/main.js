@@ -18,26 +18,25 @@ class DuoWheelApp {
     this.battleTarget = 'A'; // 'A' or 'B'
     this.tourneyCount = 0;
 
-    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || localStorage.getItem('hunthub_demo_users_purged_live_v2') === 'true';
+    const demoUsernames = new Set([
+      'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
+      'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
+      'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
+      'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar'
+    ]);
     let savedPool = null;
     try {
       savedPool = JSON.parse(localStorage.getItem('hunthub_duo_pool_v2') || 'null');
     } catch {}
     if (Array.isArray(savedPool)) {
-      const demoUsernames = new Set([
-        'luckystriker', 'vegasking', 'slotqueen', 'spinmaster', 'strike777',
-        'bigbassbob', 'neonwolf', 'royalflush', 'nachogamer', 'slotking21',
-        'diggityfan', 'cryptospin', 'aguskick', 'valen99', 'stakehunter',
-        'kickviewer01', 'charlybets', 'zeusmax_21', 'slothunter_ar'
-      ]);
       this.pool = savedPool.filter(p => {
         const u = String(p.chatter || p.user || '').trim().toLowerCase().replace(/^@/, '');
-        return u && !demoUsernames.has(u);
+        const hasDemoAvatar = String(p.avatar || '').includes('ui-avatars.com');
+        return u && !demoUsernames.has(u) && !hasDemoAvatar;
       });
+      try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     } else {
-      const isObs = window.location.search.includes('obs=1');
-      const isExplicitDemo = window.location.search.includes('demo=1');
-      this.pool = (purged || (isObs && !isExplicitDemo)) ? [] : this.getDefaultPool();
+      this.pool = [];
     }
     this.trackEl = document.getElementById('reel-track');
     this.containerEl = document.getElementById('reel-container');
@@ -49,6 +48,7 @@ class DuoWheelApp {
     this.toastTitle = document.getElementById('toast-title');
     this.toastChatter = document.getElementById('toast-chatter');
     this.toastSlot = document.getElementById('toast-slot');
+    this.toastAnnouncement = document.getElementById('toast-announcement');
     this.currentSpinId = null;
 
     try {
@@ -59,6 +59,7 @@ class DuoWheelApp {
     this.initAudio();
     this.initChannels();
     this.initWebSocket();
+    this.initKickDirectListener();
     this.initInteractivity();
     this.renderTrack();
     this.setMode(this.mode);
@@ -408,63 +409,67 @@ class DuoWheelApp {
   }
 
   initWebSocket() {
-    const wsUrl = 'ws://127.0.0.1:3001/';
-    try {
-      this.ws = new WebSocket(wsUrl);
-      this.ws.onopen = () => {
-        if (this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({ action: 'get_duo_queues' }));
-        }
-      };
-      this.ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.action === 'spin_duo') {
-            this.spin(payload.mode, payload.spinId, payload.winner);
-          } else if (payload.action === 'duo_mode_changed' && payload.mode) {
-            this.setMode(payload.mode);
-          } else if (payload.type === 'battle_state' && payload.data) {
-            this.syncTargetFromBattleState(payload.data);
-          } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
-            const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
-            if (Array.isArray(q)) {
-              this.pool = q.map((item) => ({
-                chatter: item.username,
-                avatar: item.avatar || '',
-                slot: item.slotName,
-                provider: item.slotProvider,
-                icon: '🎰',
-              }));
-              if (!this.isSpinning) this.renderTrack();
-            }
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (isLocalHost) {
+      const wsUrl = 'ws://127.0.0.1:3001/';
+      try {
+        this.ws = new WebSocket(wsUrl);
+        this.ws.onopen = () => {
+          if (this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ action: 'get_duo_queues' }));
           }
-        } catch {}
-      };
-      this.ws.onclose = () => {
-        setTimeout(() => this.initWebSocket(), 2500);
-      };
-      this.ws.onerror = () => {};
-    } catch {}
+        };
+        this.ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.action === 'spin_duo') {
+              this.spin(payload.mode, payload.spinId, payload.winner);
+            } else if (payload.action === 'duo_mode_changed' && payload.mode) {
+              this.setMode(payload.mode);
+            } else if (payload.type === 'battle_state' && payload.data) {
+              this.syncTargetFromBattleState(payload.data);
+            } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
+              const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
+              if (Array.isArray(q)) {
+                this.pool = q.map((item) => ({
+                  chatter: item.username,
+                  avatar: item.avatar || '',
+                  slot: item.slotName,
+                  provider: item.slotProvider,
+                  icon: '🎰',
+                }));
+                if (!this.isSpinning) this.renderTrack();
+              }
+            }
+          } catch {}
+        };
+        this.ws.onclose = () => {
+          setTimeout(() => this.initWebSocket(), 5000);
+        };
+        this.ws.onerror = () => {};
+      } catch {}
+    }
 
     // Cross-process HTTP fallback for OBS Browser Source (Works locally and on remote streamer PCs)
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
-      this._lastEventTs = 0;
+      this._lastEventTs = Date.now() - 2000;
       setInterval(async () => {
+        if (document.hidden) return;
         try {
           let res = null;
-          // 1. Try local hub first (if core is running locally on streamer PC)
-          try {
-            res = await fetch('http://127.0.0.1:3001/api/sync/state');
-          } catch (_) {}
+          if (isLocalHost) {
+            try {
+              res = await fetch('http://127.0.0.1:3001/api/sync/state', { cache: 'no-store' });
+            } catch (_) {}
+          }
 
-          // 2. If not local (streamer running OBS remotely on another PC), fetch from Cloudflare Edge
           let data = null;
           if (res && res.ok) {
             data = await res.json();
           } else {
             try {
-              const cloudRes = await fetch('/api/wheel/duo/queues');
+              const cloudRes = await fetch('/api/wheel/duo/queues', { cache: 'no-store' });
               if (cloudRes.ok) {
                 const cloudData = await cloudRes.json();
                 data = {
@@ -485,7 +490,7 @@ class DuoWheelApp {
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
             if (duoQueues.mode && (duoQueues.mode === 'battle' || duoQueues.mode === 'tourney') && this.mode !== duoQueues.mode) {
-              this.setMode(duoQueues.mode);
+              this.setMode(duoQueues.mode, true);
             }
             const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
             if (Array.isArray(q)) {
@@ -500,20 +505,79 @@ class DuoWheelApp {
               const newJoined = mapped.map((p) => p.chatter + ':' + p.slot).join('|');
               if (curJoined !== newJoined) {
                 this.pool = mapped;
+                try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
                 this.renderTrack();
               }
             }
           }
           const evt = data?.overlays?.lastOverlayEvent;
-          if (evt && evt.ts && evt.ts > this._lastEventTs) {
+          if (evt && evt.ts && evt.ts > this._lastEventTs && (Date.now() - evt.ts) < 15000) {
             this._lastEventTs = evt.ts;
             if ((evt.targetOverlay === 'wheel-duo' || !evt.targetOverlay) && (evt.action === 'spin' || evt.type === 'spin')) {
-              this.spin(evt.mode, evt.spinId, evt.winner);
+              this.spin(evt.mode, evt.spinId, evt.winner, evt.targetCorner, evt.targetSeed);
             }
           }
         } catch {}
       }, 1500);
     }
+  }
+
+  initKickDirectListener() {
+    let chatroomId = 86765775; // DiggityBets official Kick chatroom
+    const connectPusher = () => {
+      try {
+        const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            event: 'pusher:subscribe',
+            data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
+          }));
+        };
+        ws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
+            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+            const rawText = String(d?.content || '').trim();
+            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+            const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+            if (!sender || !rawText.startsWith('!')) return;
+
+            const parts = rawText.split(/\s+/);
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ').trim();
+            if (cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') {
+              const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
+              const slotQuery = arg || 'Wanted Dead or a Wild';
+              const resolved = this.resolveSlotDetails(slotQuery);
+              this.addQueueEntry({
+                username: sender,
+                chatter: sender,
+                avatar,
+                slotName: resolved.name || slotQuery,
+                slot: resolved.name || slotQuery,
+                provider: resolved.provider || 'Casino'
+              }, targetMode);
+              fetch('/api/wheel/duo/queues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  mode: targetMode,
+                  username: sender,
+                  avatar,
+                  slotName: resolved.name || slotQuery,
+                  slotProvider: resolved.provider || 'Casino'
+                })
+              }).catch(() => {});
+            }
+          } catch (_) {}
+        };
+        ws.onclose = () => {
+          setTimeout(connectPusher, 6000);
+        };
+      } catch (_) {}
+    };
+    connectPusher();
   }
 
   initInteractivity() {
@@ -569,16 +633,7 @@ class DuoWheelApp {
   }
 
   getDefaultPool() {
-    return [
-      { chatter: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', icon: '🤠' },
-      { chatter: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic Play', icon: '⚡' },
-      { chatter: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie Studio', icon: '⚔️' },
-      { chatter: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic Play', icon: '🍬' },
-      { chatter: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw Gaming', icon: '🦝' },
-      { chatter: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic Play', icon: '🎣' },
-      { chatter: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic Play', icon: '🦈' },
-      { chatter: 'RoyalFlush', slot: 'RIP City', provider: 'Hacksaw Gaming', icon: '🐱' },
-    ];
+    return [];
   }
 
   getDeterministicAvatarGradient(username) {
@@ -754,19 +809,28 @@ class DuoWheelApp {
     }
 
     if (!this.pool || this.pool.length === 0) {
-      const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || localStorage.getItem('hunthub_demo_users_purged_live_v2') === 'true';
-      if (purged) {
+      if (forcedWinner) {
+        const targetName = String(typeof forcedWinner === 'string' ? forcedWinner : (forcedWinner.username || forcedWinner.chatter || '')).trim().replace(/^@/, '');
+        if (targetName) {
+          this.pool = [{
+            chatter: targetName,
+            slot: (typeof forcedWinner === 'object' && (forcedWinner.slotName || forcedWinner.slot)) || 'Wanted Dead or a Wild',
+            provider: (typeof forcedWinner === 'object' && (forcedWinner.slotProvider || forcedWinner.provider)) || 'Casino',
+            icon: '🎰'
+          }];
+          this.renderTrack();
+        }
+      }
+      if (!this.pool || this.pool.length === 0) {
         if (this.directSpinBtn) {
           this.directSpinBtn.disabled = false;
           this.directSpinBtn.innerHTML = '<span>⚠️</span> POOL EMPTY';
           setTimeout(() => {
-            if (this.directSpinBtn) this.directSpinBtn.innerHTML = '<span>⚡</span> SPIN DUO';
+            if (this.directSpinBtn) this.directSpinBtn.innerHTML = '<span>🎰</span> SPIN DUO WHEEL';
           }, 2000);
         }
         return;
       }
-      this.pool = this.getDefaultPool();
-      this.renderTrack();
     }
 
     this.currentSpinId = spinId || ('spin_duo_' + Date.now());
@@ -899,6 +963,9 @@ class DuoWheelApp {
       : `SEEDED INTO 8-BRACKET TOURNAMENT (SEED ${assignedSeed}/8)!`;
     this.toastChatter.textContent = `@${winner.chatter}`;
     this.toastSlot.textContent = slotDetails.name || winner.slot;
+    if (this.toastAnnouncement) {
+      this.toastAnnouncement.textContent = `Congratulations @${String(winner.chatter).replace(/^@/, '')} has been picked!`;
+    }
     this.toastEl.classList.add('active');
 
     // Remove winner from pool so the same player cannot be selected twice

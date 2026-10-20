@@ -80,20 +80,31 @@ class BonusHuntController {
   }
 
   loadInitialGuesses() {
-    const saved = localStorage.getItem('hunthub_hunt_guesses');
-    if (saved !== null) {
-      try { 
-        const parsed = JSON.parse(saved);
+    const mergedMap = new Map();
+    ['hunthub_hunt_guesses', 'hunthub_bh_guesses'].forEach((key) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) || '[]');
         if (Array.isArray(parsed)) {
-          const filtered = parsed.filter(g => !this.isDemoUser(g.user || g.username));
-          if (filtered.length !== parsed.length) {
-            localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(filtered));
-          }
-          return filtered;
+          parsed.forEach((g) => {
+            const u = String(g?.user || g?.username || '').trim();
+            const val = Number(g?.guess ?? g?.amount ?? 0);
+            if (!u || this.isDemoUser(u) || !val || isNaN(val) || val <= 0) return;
+            const cleanKey = u.toLowerCase().replace(/^@/, '');
+            mergedMap.set(cleanKey, {
+              user: u.startsWith('@') ? u : `@${u}`,
+              guess: val,
+              amount: val,
+              time: g.time || new Date(g.ts || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+          });
         }
-      } catch (e) {}
+      } catch (_) {}
+    });
+    const list = Array.from(mergedMap.values());
+    if (list.length > 0) {
+      try { localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(list)); } catch (_) {}
     }
-    return [];
+    return list;
   }
 
   loadInitialSlotRequests() {
@@ -602,6 +613,22 @@ class BonusHuntController {
     });
 
     podiumCard.style.display = 'block';
+
+    if (winners.length > 0 && typeof window.announceStreamWinner === 'function') {
+      const topWinner = String(winners[0].user || '').replace(/^@/, '');
+      window.announceStreamWinner({
+        eventType: 'gtb',
+        tier: 'grand',
+        type: 'BONUSHUNT_GTB_WIN',
+        category: 'GUESS THE BALANCE · #1 WINNER',
+        ribbon: '💎 GTB CLOSEST PREDICTION',
+        icon: '💎',
+        username: topWinner,
+        slotName: `Guessed $${Number(winners[0].guess || 0).toFixed(2)}`,
+        statValue: `ACTUAL $${totalPaid.toFixed(2)}`,
+        prize: `DIFF $${Number(winners[0].delta || 0).toFixed(2)} · +500 $DIG`
+      });
+    }
 
     // Play Victorious Trumpet Fanfare
     if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
@@ -1144,6 +1171,23 @@ class BonusHuntController {
       } else {
         this.isSpinning = false;
         this.showSlotRequestWinnerCard(winner);
+
+        if (typeof window.announceStreamWinner === 'function') {
+          const cleanSrUser = String(winner.user || winner.caller || 'Viewer').replace(/^@/, '');
+          window.announceStreamWinner({
+            eventType: 'picked',
+            tier: 'partial',
+            type: 'SR_WHEEL_PICKED',
+            category: 'SLOT REQUESTS ROULETTE · !SR WINNER',
+            ribbon: '🎰 !SR SLOT REQUEST PICKED',
+            icon: '🎰',
+            username: cleanSrUser,
+            slotName: winner.name,
+            slotImg: winner.img || winner.image || '',
+            statValue: winner.provider || 'SLOT REQUEST',
+            prize: `Picked on !sr Wheel (${winner.name})!`
+          });
+        }
 
         // Remove selected winner from active pool so next spin picks a fresh request
         const removeIdx = this.slotRequests.findIndex(

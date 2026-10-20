@@ -334,6 +334,10 @@
     const cleanUser = String(winnerEntry.user || 'Viewer').trim().replace(/^@/, '');
     const meta = resolveSlotMeta(winnerEntry.name, winnerEntry);
 
+    const topTagEl = document.getElementById('sr-winner-top-tag');
+    if (topTagEl) {
+      topTagEl.textContent = `🎉 Congratulations @${cleanUser} has been picked!`;
+    }
     if (winnerUserEl) winnerUserEl.textContent = `@${cleanUser}`;
     if (winnerProviderEl) winnerProviderEl.textContent = meta.provider || 'OFFICIAL SLOT';
     if (winnerSlotTitleEl) winnerSlotTitleEl.textContent = meta.name;
@@ -515,7 +519,67 @@
     } catch (_) {}
   }
 
+  // 4. Direct Kick Centrifugo WebSocket Listener for !sr / !slot
+  function connectKickDirectSr() {
+    try {
+      const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          event: 'pusher:subscribe',
+          data: { auth: '', channel: 'chatrooms.86765775.v2' }
+        }));
+      };
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
+          const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+          const rawText = String(d?.content || '').trim();
+          const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+          const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+          if (!sender || !rawText.startsWith('!')) return;
+
+          const parts = rawText.split(/\s+/);
+          const cmd = parts[0].toLowerCase();
+          const arg = parts.slice(1).join(' ').trim();
+          if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+            if (avatar) avatarCache.set(sender.toLowerCase(), avatar);
+            const meta = resolveSlotMeta(arg);
+            const existingIdx = requests.findIndex(r => String(r.user || '').toLowerCase().replace(/^@/, '') === sender.toLowerCase());
+            const entry = {
+              id: Date.now() + Math.random(),
+              name: meta.name || arg,
+              provider: meta.provider || 'OFFICIAL SLOT',
+              img: meta.img || '',
+              user: `@${sender}`
+            };
+            if (existingIdx >= 0) {
+              requests[existingIdx] = entry;
+            } else {
+              requests.push(entry);
+            }
+            try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(requests)); } catch (_) {}
+            wheelBufferDirty = true;
+            if (!isSpinning) drawWheel(wheelRotation);
+            fetch('/api/overlay/celebration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                targetOverlay: 'overlay-slotrequests',
+                type: 'SYNC_QUEUE',
+                queue: requests,
+                ts: Date.now()
+              })
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      };
+      ws.onclose = () => setTimeout(connectKickDirectSr, 6000);
+    } catch (_) {}
+  }
+
   // Initial Boot
   loadLocalQueue();
+  connectKickDirectSr();
   setInterval(pollEdgeState, 1400);
 })();

@@ -41,6 +41,7 @@ class CelebrationOverlayApp {
     this.avatarImgEl = document.getElementById('winner-avatar-img');
     this.tierRibbonEl = document.getElementById('winner-tier-ribbon');
     this.usernameEl = document.getElementById('winner-username');
+    this.announcementBannerEl = document.getElementById('winner-announcement-banner');
     this.slotImgEl = document.getElementById('winner-slot-img');
     this.slotLabelEl = document.getElementById('winner-slot-label');
     this.slotNameEl = document.getElementById('winner-slot-name');
@@ -667,6 +668,25 @@ class CelebrationOverlayApp {
 
     if (this.usernameEl) {
       this.scrambleText(this.usernameEl, formattedUser, isGrand ? 680 : 380);
+    }
+    if (this.announcementBannerEl) {
+      let msg = data.announcementText || '';
+      if (!msg) {
+        if (rawType.includes('PREDICTION') || rawCat.includes('PREDICTION')) {
+          msg = `Congratulations ${formattedUser} has won the prediction!`;
+        } else if (rawType.includes('GTB') || rawCat.includes('GUESS') || rawCat.includes('GTB')) {
+          msg = `Congratulations ${formattedUser} has won the gtb!`;
+        } else if (rawType.includes('GIVEAWAY') || rawType.includes('RAFFLE') || rawCat.includes('GIVEAWAY') || rawCat.includes('RAFFLE')) {
+          msg = `Congratulations ${formattedUser} has won the giveaway!`;
+        } else if (isTourney) {
+          msg = `Congratulations ${formattedUser} has won the tourney!`;
+        } else if (rawType.includes('BATTLE') || rawType.includes('KOTH') || rawCat.includes('BATTLE') || rawCat.includes('HILL')) {
+          msg = `Congratulations ${formattedUser} has won the battle!`;
+        } else {
+          msg = `Congratulations ${formattedUser} has been picked!`;
+        }
+      }
+      this.announcementBannerEl.textContent = msg;
     }
     if (this.slotNameEl) this.slotNameEl.textContent = slotName;
     if (this.slotImgEl) {

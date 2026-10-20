@@ -529,10 +529,14 @@
       spawnSideConfettiCannons();
       const modal = $('#resultModal');
       const resName = $('#resultName');
+      const resClaim = $('#resultClaimText');
       const resAvatar = $('#resultAvatar');
       const resInitials = $('#resultAvatarInitials');
       if (modal && resName) {
         decryptTextReveal(resName, formattedWinner, 680);
+        if (resClaim) {
+          resClaim.textContent = `Congratulations ${formattedWinner} has been picked!`;
+        }
         if (avatars[winner]) {
           resAvatar.src = avatars[winner];
           resAvatar.style.display = 'block';
@@ -948,88 +952,154 @@
   }
 
   function connect() {
-    if (typeof window.StreamerbotClient === 'undefined') {
-      connectDirectWs();
-      return;
+    const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+
+    // Load saved active chatters from localStorage if available
+    try {
+      const savedChatters = JSON.parse(localStorage.getItem('hunthub_active_chatters_v1') || '[]');
+      if (Array.isArray(savedChatters)) {
+        savedChatters.forEach(c => {
+          const u = String(c.user || c.username || c.login || '').trim().replace(/^@/, '');
+          if (u) registerActiveChatter(u, u, c.avatar || '', Date.now());
+        });
+      }
+    } catch (_) {}
+
+    // Direct Kick Centrifugo WebSocket listener for real-time organic chatters
+    function connectKickPusher() {
+      try {
+        const kws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        kws.onopen = () => {
+          kws.send(JSON.stringify({
+            event: 'pusher:subscribe',
+            data: { auth: '', channel: 'chatrooms.86765775.v2' }
+          }));
+          setStatus('● Connected to Kick Live Chat', '#00e676');
+          if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
+        };
+        kws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
+            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+            const rawText = String(d?.content || '').trim();
+            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+            const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+            if (!sender) return;
+            const stripped = rawText.replace(/\[emote:\d+:[^\]]+\]/g, ' ').replace(/:[a-zA-Z0-9_\-]+:/g, ' ').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
+            if (stripped.length >= 2) {
+              registerActiveChatter(sender, sender, avatar, Date.now());
+            }
+          } catch (_) {}
+        };
+        kws.onclose = () => setTimeout(connectKickPusher, 6000);
+      } catch (_) {}
     }
+    connectKickPusher();
 
-    // StreamerbotClient for subscriptions, events, and RPC
-    client = new StreamerbotClient({
-      host: CFG.host,
-      port: CFG.port,
-      endpoint: CFG.endpoint,
-      password: CFG.password || undefined,
-      autoReconnect: true,
-      retries: -1,
-      onData: onMessage,
-      onConnect: () => {
-        connected = true;
-        setStatus('● Connected to Streamer.bot', '#00e676');
-        if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
-        else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
-        syncInitialChatters();
-      },
-      onDisconnect: () => {
-        connected = false;
-        if (!IN_OBS || DEBUG) {
-          estadoEl.style.opacity = '1';
-          setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
-        }
-      },
-      onError: (err) => console.warn('[Giveaway] WebSocket error:', err)
-    });
+    if (isLocalHost) {
+      if (typeof window.StreamerbotClient === 'undefined') {
+        connectDirectWs();
+      } else {
+        client = new StreamerbotClient({
+          host: CFG.host,
+          port: CFG.port,
+          endpoint: CFG.endpoint,
+          password: CFG.password || undefined,
+          autoReconnect: true,
+          retries: -1,
+          onData: onMessage,
+          onConnect: () => {
+            connected = true;
+            setStatus('● Connected to Streamer.bot', '#00e676');
+            if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
+            else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
+            syncInitialChatters();
+          },
+          onDisconnect: () => {
+            connected = false;
+            if (!IN_OBS || DEBUG) {
+              estadoEl.style.opacity = '1';
+              setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
+            }
+          },
+          onError: (err) => console.warn('[Giveaway] WebSocket error:', err)
+        });
 
-    client.on('General.Custom', (evt) => onMessage(evt));
-    client.on('Custom.Event', (evt) => onMessage(evt));
-    client.on('Custom.CodeEvent', (evt) => onMessage(evt));
-    client.on('Raw.Action', (evt) => onMessage(evt));
-    client.on('Kick.ChatMessage', ({ data }) => harvestChat(data));
+        client.on('General.Custom', (evt) => onMessage(evt));
+        client.on('Custom.Event', (evt) => onMessage(evt));
+        client.on('Custom.CodeEvent', (evt) => onMessage(evt));
+        client.on('Raw.Action', (evt) => onMessage(evt));
+        client.on('Kick.ChatMessage', ({ data }) => harvestChat(data));
+      }
+
+      // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) on localhost
+      function connectHubWs() {
+        try {
+          const hubPort = params.get('hubPort') || '3001';
+          const hubHost = window.location.hostname || '127.0.0.1';
+          hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
+          hubWs.onmessage = (ev) => {
+            try {
+              const payload = JSON.parse(ev.data);
+              if (payload.action === 'spin_csgo' || payload.type === 'csgo_spin') {
+                localDemo(payload.winner, payload.participantes || payload.pool);
+                return;
+              }
+              onMessage(payload);
+            } catch {}
+          };
+          hubWs.onopen = () => {
+            if (!connected) setStatus('● Connected to HuntHub Core', '#00e676');
+          };
+          hubWs.onclose = () => {
+            setTimeout(connectHubWs, 5000);
+          };
+          hubWs.onerror = () => {};
+        } catch {}
+      }
+      connectHubWs();
+    }
 
     // Periodic prune of inactive chatters every 15s to keep standby fresh
     setInterval(() => {
       if (!busy) updateStandbyWithRealChatters();
     }, 15000);
 
-    // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) with auto-reconnect for OBS Browser Source
-    function connectHubWs() {
-      try {
-        const hubPort = params.get('hubPort') || '3001';
-        const hubHost = window.location.hostname || '127.0.0.1';
-        hubWs = new WebSocket(`ws://${hubHost}:${hubPort}`);
-        hubWs.onmessage = (ev) => {
-          try {
-            const payload = JSON.parse(ev.data);
-            if (payload.action === 'spin_csgo' || payload.type === 'csgo_spin') {
-              if (payload.demo) localDemo(payload.winner);
-              else localDemo(payload.winner);
-              return;
-            }
-            onMessage(payload);
-          } catch {}
-        };
-        hubWs.onopen = () => {
-          if (!connected) setStatus('● Connected to HuntHub Core (ws://127.0.0.1:3001)', '#00e676');
-        };
-        hubWs.onclose = () => {
-          setTimeout(connectHubWs, 2500);
-        };
-        hubWs.onerror = () => {};
-      } catch {}
-    }
-    connectHubWs();
-
-    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
-    let lastSyncedEventTs = 0;
+    // Cross-process HTTP /api/sync/state & /api/wheel/csgo/active-pool fallback (Works on Cloudflare Edge & Local)
+    let lastSyncedEventTs = Date.now() - 2000;
     setInterval(async () => {
+      if (document.hidden) return;
       try {
-        const res = await fetch('http://127.0.0.1:3001/api/sync/state');
-        if (!res.ok) return;
-        const data = await res.json();
-        const evt = data?.overlays?.lastOverlayEvent;
-        if (evt && evt.ts && evt.ts > lastSyncedEventTs) {
-          lastSyncedEventTs = evt.ts;
-          if (evt.targetOverlay === 'wheel-csgo') {
-            localDemo(evt.winner);
+        let data = null;
+        if (isLocalHost) {
+          try {
+            const localRes = await fetch('http://127.0.0.1:3001/api/sync/state', { cache: 'no-store' });
+            if (localRes.ok) data = await localRes.json();
+          } catch (_) {}
+        }
+        if (!data) {
+          const res = await fetch('/api/sync/state', { cache: 'no-store' });
+          if (res.ok) data = await res.json();
+        }
+        if (!data) return;
+
+        if (Array.isArray(data.activeChatters)) {
+          data.activeChatters.forEach(c => {
+            const u = String(c.user || c.username || '').trim().replace(/^@/, '');
+            if (u) registerActiveChatter(u, u, c.avatar || '', Date.now());
+          });
+        }
+
+        const evt =
+          data?.overlayEvents?.['wheel-csgo'] ||
+          data?.overlays?.lastOverlayEvent ||
+          null;
+        const evtTs = Number(evt?.ts || evt?.timestamp || 0);
+        if (evt && evtTs > lastSyncedEventTs && (Date.now() - evtTs) < 15000) {
+          if (!evt.targetOverlay || evt.targetOverlay === 'wheel-csgo') {
+            lastSyncedEventTs = evtTs;
+            localDemo(evt.winner, evt.participantes || evt.pool);
           }
         }
       } catch {}
@@ -1042,15 +1112,34 @@
     if (btnDemo) btnDemo.disabled = !enabled;
   }
 
-  function localDemo(forcedWinner) {
-    const names = ['LuckyChatter', 'VegasPro', 'SpinKing', 'JackpotAce', 'Strike777', 'SlotMaster', 'DiamondKing', 'NeonWolf', 'RoyalFlush', 'BigBassBob'];
-    if (forcedWinner && !names.some((n) => n.toLowerCase() === String(forcedWinner).toLowerCase())) {
-      names.push(String(forcedWinner));
+  function localDemo(forcedWinner, poolOverride) {
+    let names = [];
+    if (Array.isArray(poolOverride) && poolOverride.length > 0) {
+      names = poolOverride.map(p => String(typeof p === 'string' ? p : (p.user || p.username || '')).trim().replace(/^@/, '')).filter(Boolean);
+    }
+    if (names.length === 0) {
+      names = Array.from(activeChatters.values()).map(c => c.display || c.login).filter(Boolean);
+    }
+    if (names.length === 0) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('hunthub_active_chatters_v1') || '[]');
+        if (Array.isArray(saved)) {
+          names = saved.map(c => String(c.user || c.username || '').trim().replace(/^@/, '')).filter(Boolean);
+        }
+      } catch (_) {}
+    }
+    const cleanWinner = forcedWinner ? String(forcedWinner).trim().replace(/^@/, '') : '';
+    if (cleanWinner && !names.some((n) => n.toLowerCase() === cleanWinner.toLowerCase())) {
+      names.push(cleanWinner);
+    }
+    if (names.length === 0) {
+      setStatus('⚠️ No active chatters in pool yet', '#ffb700');
+      return;
     }
     const logins = names.map((n) => n.toLowerCase());
     const nombres = Object.fromEntries(names.map((n) => [n.toLowerCase(), n]));
-    const winLogin = forcedWinner ? String(forcedWinner).toLowerCase() : logins[Math.floor(Math.random() * logins.length)];
-    onMessage({ evento: 'sorteo', id: 'local-' + Date.now(), demo: true, participantes: logins, ganador: winLogin, nombres, avatares: {} });
+    const winLogin = cleanWinner ? cleanWinner.toLowerCase() : logins[Math.floor(Math.random() * logins.length)];
+    onMessage({ evento: 'sorteo', id: 'live-' + Date.now(), demo: false, participantes: logins, ganador: winLogin, nombres, avatares: { ...avatars } });
   }
 
   async function trigger(demo, forcedWinner) {
@@ -1081,10 +1170,30 @@
   try {
     const bus = new BroadcastChannel('giveaway_bus');
     bus.onmessage = (ev) => {
-      if (ev.data?.type === 'test_spin') localDemo(ev.data?.winner);
-      else if (ev.data?.type === 'spin') trigger(false, ev.data?.winner);
+      if (ev.data?.type === 'test_spin' || ev.data?.type === 'spin') {
+        localDemo(ev.data?.winner, ev.data?.participantes || ev.data?.pool);
+      }
     };
   } catch (e) {}
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'hunthub_csgo_spin_cmd' && e.newValue) {
+      try {
+        const d = JSON.parse(e.newValue);
+        localDemo(d.winner, d.participantes || d.pool);
+      } catch (_) {}
+    } else if (e.key === 'hunthub_active_chatters_v1' && e.newValue) {
+      try {
+        const list = JSON.parse(e.newValue);
+        if (Array.isArray(list)) {
+          list.forEach(c => {
+            const u = String(c.user || c.username || '').trim().replace(/^@/, '');
+            if (u) registerActiveChatter(u, u, c.avatar || '', Date.now());
+          });
+        }
+      } catch (_) {}
+    }
+  });
 
   /* ---------------- Startup ---------------- */
   if (document.readyState === 'loading') {
