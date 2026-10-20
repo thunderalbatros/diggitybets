@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HuntHub — Deterministic Component Testbench Sandbox</title>
+  <link rel="stylesheet" href="/site/css/style.css" />
+  <style>
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      caret-color: transparent !important;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #0b0c12;
+      color: #f3f5f9;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    .testbench-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+    .tb-stage {
+      padding: 20px;
+      border-radius: 14px;
+      background: #11131d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .tb-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+    }
+    .tb-brand {
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #53fc18;
+      font-size: 15px;
+    }
+    .tb-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(83, 252, 24, 0.12);
+      color: #53fc18;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .tb-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #161927;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .tb-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+    .tb-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9ba3b8;
+    }
+    .tb-btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #53fc18;
+      color: #080a0f;
+      font-weight: 800;
+      font-size: 13px;
+      text-align: center;
+    }
+    .tb-hud {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #131622;
+      border: 1px solid rgba(83, 252, 24, 0.25);
+    }
+    .tb-stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #8c95aa;
+    }
+    .tb-stat-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: #f3f5f9;
+      font-variant-numeric: tabular-nums;
+    }
+    [data-dynamic-mask="true"] {
+      background: #232738 !important;
+      color: transparent !important;
+      border-radius: 4px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="testbench-grid" aria-label="Component Testbench Sandbox">
+    <!-- 1. Site Topbar Component -->
+    <section class="tb-stage" data-testbench="site-topbar" aria-label="Topbar Sandbox">
+      <header class="tb-topbar site-topbar">
+        <span class="tb-brand">DIGGITYBETS // HUNTHUB</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="tb-pill" data-dynamic-mask="true">12,450 $DIG</span>
+          <span class="tb-pill" style="background:rgba(255,184,0,0.15);color:#ffb800;">+18 FREE PLAY</span>
+        </div>
+      </header>
+    </section>
+
+    <!-- 2. Game Card Component -->
+    <section class="tb-stage" data-testbench="game-card" aria-label="Game Card Sandbox">
+      <article class="tb-card game-card">
+        <div class="tb-card-meta">
+          <span>PRAGMATIC PLAY</span>
+          <span style="color:#53fc18;font-weight:700;">RTP 96.50%</span>
+        </div>
+        <h2 class="tb-card-title">Gates of Olympus 1000</h2>
+        <div class="tb-card-meta">
+          <span>Max Win: 15,000x</span>
+          <span>Tier S Bounty</span>
+        </div>
+        <div class="tb-btn">PREDICT MULTIPLIER (FREE)</div>
+      </article>
+    </section>
+
+    <!-- 3. Raffle Modal Component -->
+    <section class="tb-stage" data-testbench="raffle-modal" aria-label="Raffle Modal Sandbox">
+      <div class="tb-card raffle-modal" role="dialog" aria-label="Provably Fair Raffle">
+        <div class="tb-card-meta">
+          <span>COMMIT-REVEAL HMAC-SHA256</span>
+          <span style="color:#ffb800;">ZERO CUSTODY</span>
+        </div>
+        <h2 class="tb-card-title">Sunday Streamer Giveaway</h2>
+        <p style="margin:0;font-size:12px;color:#9ba3b8;">100% Free entry via Kick chat command. Prizes delivered out-of-band by streamer.</p>
+        <div class="tb-btn">VERIFY FAIRNESS SEED</div>
+      </div>
+    </section>
+
+    <!-- 4. HUD Bar Component -->
+    <section class="tb-stage" data-testbench="hud-bar" aria-label="Bonus Hunt HUD Sandbox">
+      <div class="tb-hud hud-bar">
+        <div>
+          <div class="tb-stat-label">BONUSES</div>
+          <div class="tb-stat-val">24 / 24</div>
+        </div>
+        <div>
+          <div class="tb-stat-label">BREAK-EVEN</div>
+          <div class="tb-stat-val">84.50x</div>
+        </div>
+        <div>
+          <div class="tb-stat-label">LIVE CLOCK</div>
+          <div class="tb-stat-val" data-dynamic-mask="true">00:42:19</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

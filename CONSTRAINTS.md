@@ -1,30 +1,29 @@
-# CONSTRAINTS.md — HuntHub & DiggityBets Enforced Quality Contract
+# CONSTRAINTS.md — HuntHub & DiggityBets Immutable Quality & Operational Floors (2026)
 
-> **Pattern:** `addyosmani/agent-skills` (`constraint-driven-development` + `floor-guard`) & `addyosmani/web-quality-skills`  
-> **Enforcement:** Checked mechanically via `node tools/audit/floor_and_aeo_guard.mjs` and `node tools/audit/security_and_motion_audit.mjs`.  
-> **Floor Rule:** Tightening a threshold is silent; loosening a threshold, deleting a test, adding a checker suppression (`@ts-ignore`, `eslint-disable`), or leaving an empty `catch` without rationale blocks the build (`exit 1`).
+> **Constitutional Lock Notice:** This file is cryptographically sealed via `SHA-256` in `.agents/memory/constitution_lock.json` and enforced by `tools/intelligence/constitution_guard.mjs`. Agents are strictly forbidden from lowering any numeric threshold below to pass tests (*Anti-Reward-Hacking Law*).
 
 ---
 
-## 1. Numeric Quality Floors
+## 1. Financial & Licensing Floors (Non-Negotiable)
+- **Total Budget (`COST_USD_MAX`)**: `0.00 USD / 0.00 ARS` permanently.
+- **Credit Card Requirement**: `FORBIDDEN` (`0` services requiring credit card).
+- **Allowed Open-Source Licenses**: `MIT`, `Apache-2.0`, `BSD-2-Clause`, `BSD-3-Clause`, `ISC`, `CC0-1.0`, `OFL-1.1`.
 
-| Dimension | Metric / Target | Threshold | Verification Command |
-| :--- | :--- | :--- | :--- |
-| **OBS Overlay CPU Budget** | Per-Browser-Source CPU on HP 250 G8 | `<= 5% CPU` | `node tools/audit/security_and_motion_audit.mjs` |
-| **Control Panel Interactivity (INP)** | Interaction to Next Paint (`#control-panel`) | `<= 150 ms` | Live `#cp-webvitals-pill` (`PerformanceObserver`) |
-| **Visual Stability (CLS)** | Cumulative Layout Shift (`180x236` Slot Cards) | `<= 0.05` | `node tools/audit/floor_and_aeo_guard.mjs` |
-| **Largest Contentful Paint (LCP)** | Initial Viewport Render (`diggitybets.vip`) | `<= 2500 ms` | `node tools/audit/floor_and_aeo_guard.mjs` |
-| **OBS Overlays Bundled in `dist/`** | Required Production Overlay Directories | `>= 8 overlays` | `node tools/build_dist.mjs` |
-| **Agentic SEO (AEO) Score** | `robots.txt` + `llms.txt` + `AGENTS.md` + Meta | `100 / 100` | `node tools/audit/floor_and_aeo_guard.mjs` |
-| **XSS & Link Security** | `window.escapeHTML` + `rel="noopener noreferrer"` | `100% pass` | `node tools/audit/security_and_motion_audit.mjs` |
-| **Hosting & Dependency Cost** | Permanent Free Tier (Zero Credit Card) | `USD 0.00` | `docs/COST_AUDIT.md` |
+## 2. Compliance & Responsible Gambling Floors
+- **Age Gate (`+18` / `18+`)**: Mandatory visible disclaimer in `index.html` (`100%`).
+- **Spectator Fund Custody (`SPECTATOR_CUSTODY_MAX`)**: `0` (100% Free-to-Play virtual `$DIG` points; zero real-money deposits, buy-ins, or crypto custody).
 
----
+## 3. Performance, Hardware & Payload Floors (HP 250 G8 + OBS Studio)
+- **OBS Browser Source CPU Impact (`OBS_CPU_MAX_PCT`)**: `<= 5.0%` CPU in OBS Studio, `60 FPS` (`<= 16.6ms` frame budget).
+- **Cloudflare Production Payload (`DIST_MAX_MB`)**: `<= 50.0 MB` total in `dist/`.
+- **Cumulative Layout Shift (`CLS_MAX`)**: `0.000`.
+- **Horizontal Overflow (`SCROLL_X_MAX_PX`)**: `0 px` across `1920x1080`, `1440x900`, `768x1024`, and `390x844`.
+- **Master WebAudio Limiter Ceiling (`AUDIO_CEILING_DBFS`)**: `-4.0 dBFS` (`DynamicsCompressorNode` 20:1 ratio).
 
-## 2. The Five Forbidden Floor-Lowering Moves (Addy Osmani Floor Guard)
-
-1. **Weakened Threshold:** Editing any numeric target in `CONSTRAINTS.md` to make it easier to pass without explicit human authorization.
-2. **Weakened or Skipped Tests:** Adding `.skip` / `.only` to tests, deleting test files, or removing assertions to turn a red suite green.
-3. **Silenced Checkers:** Adding `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, or bypassing `node --check` syntax validation.
-4. **Unfinished Stubs in Production:** Shipping `TODO:`, `FIXME:`, `throw new Error('Not implemented')`, or hardcoded fake demo users (`LuckyStriker`, `VegasKing`, etc.) as default live state.
-5. **Unregistered Overlays:** Creating an OBS overlay directory without registering it in `overlayDirs` inside `tools/build_dist.mjs`.
+## 4. Code Integrity, RAG & Visual PQC Floors (`eval_matrix.mjs`)
+- **AST Missing Methods (`AST_MISSING_METHODS_MAX`)**: `0`.
+- **AST Security Blockers (`AST_SECURITY_BLOCKERS_MAX`)**: `0`.
+- **Omni-RAG v5 Hit@5 Recall (`RAG_HIT_AT_5_MIN_PCT`)**: `>= 95.0%` across all Golden Queries (`< 350ms` per query).
+- **Ragas Context Precision@3 (`RAG_CONTEXT_PRECISION_MIN`)**: `>= 0.80`.
+- **Visual Snapshot Diff Ratio (`VISUAL_MAX_DIFF_PIXEL_RATIO`)**: `<= 0.01` (`1.0%`) with `animations: 'disabled'`.
+- **Overall Eval Matrix Composite Score (`EVAL_COMPOSITE_MIN`)**: `>= 95.0 / 100.0` (`S+ Elite`).

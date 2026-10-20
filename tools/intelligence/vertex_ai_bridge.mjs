@@ -355,9 +355,175 @@ Respond in structured Markdown with:
   }
 }
 
+/**
+ * Phase 2A: Vertex AI Explicit Context Caching (`ai.caches.create`)
+ * Caches the foundational Software Factory Canon in Vertex AI KV-Cache (TTL 3600s)
+ * to save 75%-90% input token cost and reduce TTFT to <200ms.
+ */
+const CACHE_META_PATH = path.join(ROOT, '.agents', 'memory', 'vertex_context_cache.json');
+
+export async function ensureCanonContextCache(ttlSeconds = 3600) {
+  try {
+    if (fs.existsSync(CACHE_META_PATH)) {
+      const saved = JSON.parse(fs.readFileSync(CACHE_META_PATH, 'utf8'));
+      if (saved.expiresAt && new Date(saved.expiresAt).getTime() > Date.now() + 60000) {
+        return saved;
+      }
+    }
+  } catch (_) {}
+
+  const ai = await getVertexClient();
+  if (!ai || !ai.caches?.create) {
+    return { active: false, reason: 'Vertex AI caches API unavailable in current environment' };
+  }
+
+  const canonFiles = [
+    'AGENTS.md',
+    'CONSTRAINTS.md',
+    'knowledge/INDEX.md',
+    'knowledge/DESIGN_MASTERY_2026.md',
+    'knowledge/architecture_and_books/CANON_SELF_EVOLVING_SOFTWARE_FACTORY_AND_SPECULATIVE_RAG_2026.md'
+  ];
+
+  const blocks = [];
+  for (const rel of canonFiles) {
+    const full = path.join(ROOT, rel);
+    if (fs.existsSync(full)) {
+      blocks.push(`=== CANON FILE: ${rel} ===\n${fs.readFileSync(full, 'utf8').slice(0, 48000)}`);
+    }
+  }
+  const combinedCanon = blocks.join('\n\n');
+
+  try {
+    const cacheObj = await ai.caches.create({
+      model: GEMINI_MODEL,
+      config: {
+        displayName: 'hunthub_software_factory_canon_v2026',
+        systemInstruction: 'You are the Principal Architect of the HuntHub Self-Evolving Web Software Factory.',
+        contents: [{ role: 'user', parts: [{ text: combinedCanon }] }],
+        ttl: `${ttlSeconds}s`
+      }
+    });
+
+    const meta = {
+      active: true,
+      name: cacheObj.name || 'hunthub_software_factory_canon_v2026',
+      model: GEMINI_MODEL,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+      cachedChars: combinedCanon.length
+    };
+    fs.mkdirSync(path.dirname(CACHE_META_PATH), { recursive: true });
+    fs.writeFileSync(CACHE_META_PATH, JSON.stringify(meta, null, 2) + '\n', 'utf8');
+    return meta;
+  } catch (err) {
+    return { active: false, reason: err.message };
+  }
+}
+
+/**
+ * Phase 2B: Ragas Deterministic Metrics (Context Precision@3 & Grounded Faithfulness)
+ * Computes mathematical retrieval precision and lexical groundedness without LLM latency.
+ */
+export function computeRagasMetrics(query, hits = [], expectedKeyword = '') {
+  if (!hits || hits.length === 0) {
+    return { contextPrecisionAt3: 0, faithfulness: 0 };
+  }
+
+  const kw = (expectedKeyword || '').toLowerCase().trim();
+  const queryTokens = (query || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}_/-]+/gu, ' ')
+    .split(/\s+/)
+    .filter(t => t.length >= 3);
+
+  const topK = hits.slice(0, 3);
+  let relevantSoFar = 0;
+  let weightedPrecisionSum = 0;
+
+  topK.forEach((h, idx) => {
+    const hay = `${h.title || ''} ${h.source || ''} ${h.text || ''}`.toLowerCase();
+    const tokenHits = queryTokens.filter(t => hay.includes(t)).length;
+    const isRel =
+      (kw && hay.includes(kw)) ||
+      tokenHits >= Math.max(2, Math.floor(queryTokens.length * 0.35));
+    if (isRel) {
+      relevantSoFar++;
+      weightedPrecisionSum += relevantSoFar / (idx + 1);
+    }
+  });
+
+  const contextPrecisionAt3 = relevantSoFar > 0
+    ? Number((weightedPrecisionSum / relevantSoFar).toFixed(3))
+    : 0;
+
+  const combinedTopText = topK.map(h => `${h.title || ''} ${h.source || ''} ${h.text || ''}`.toLowerCase()).join(' ');
+  const matchedTokens = queryTokens.filter(t => combinedTopText.includes(t) || (kw && combinedTopText.includes(kw)));
+  const faithfulness = queryTokens.length > 0
+    ? Number(Math.min(1.0, (matchedTokens.length + (kw && combinedTopText.includes(kw) ? 1 : 0)) / Math.max(1, queryTokens.length)).toFixed(3))
+    : 1.0;
+
+  return { contextPrecisionAt3, faithfulness };
+}
+
+/**
+ * Phase 2C: Speculative RAG (Google Research ICLR 2025: M=3 Parallel Drafters + 1 Verifier)
+ * Partitions retrieved chunks into M=3 orthogonal perspectives, generates 3 parallel drafts,
+ * and scores each draft's grounded faithfulness against its source chunks.
+ */
+export async function speculativeRagSynthesize(query, hits = []) {
+  if (!hits || hits.length === 0) {
+    return { answer: null, bestDraftIndex: -1, faithfulness: 0, drafts: [] };
+  }
+
+  const subsets = [[], [], []];
+  hits.slice(0, 9).forEach((h, idx) => {
+    subsets[idx % 3].push(h);
+  });
+  const activeSubsets = subsets.filter(s => s.length > 0);
+
+  const draftPromises = activeSubsets.map(async (subset, pIdx) => {
+    const ctxText = subset
+      .map((c, i) => `[Doc ${pIdx + 1}.${i + 1}: ${c.source || c.title}]\n${(c.text || c.snippet || '').slice(0, 900)}`)
+      .join('\n\n');
+
+    const sys = `You are Speculative RAG Drafter #${pIdx + 1}. Synthesize a concise, strictly grounded technical answer using ONLY the provided chunks. Cite [Doc X.Y] inline.`;
+    const usr = `Query: "${query}"\n\nEvidence Chunks:\n${ctxText}`;
+
+    const llmText = await generateWithVertex(usr, sys);
+    const draftText = llmText || subset.map(c => `[${c.source || c.title}]: ${(c.text || '').slice(0, 320)}`).join('\n');
+
+    // Deterministic Verifier Groundedness Score
+    const sourceVocab = new Set(
+      ctxText.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(/\s+/).filter(w => w.length >= 4)
+    );
+    const draftWords = draftText.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(/\s+/).filter(w => w.length >= 4);
+    const groundedWords = draftWords.filter(w => sourceVocab.has(w));
+    const groundedness = draftWords.length > 0 ? Number((groundedWords.length / draftWords.length).toFixed(3)) : 0;
+
+    return {
+      perspective: pIdx + 1,
+      sources: subset.map(c => c.source || c.title),
+      draft: draftText,
+      groundedness
+    };
+  });
+
+  const drafts = await Promise.all(draftPromises);
+  drafts.sort((a, b) => b.groundedness - a.groundedness);
+  const winner = drafts[0];
+
+  return {
+    answer: winner?.draft || null,
+    bestDraftIndex: winner?.perspective || 1,
+    faithfulness: winner?.groundedness || 0,
+    drafts
+  };
+}
+
 // CLI Diagnostics
 if (process.argv[1]?.endsWith('vertex_ai_bridge.mjs')) {
-  console.log(`\n🔍 Checking GCP Vertex AI Connection...`);
+  console.log(`\n🔍 Checking GCP Vertex AI Connection & Speculative RAG Bridge...`);
   console.log(`  Project: ${GCP_PROJECT}`);
   console.log(`  Location: ${GCP_LOCATION}`);
   console.log(`  Model: ${GEMINI_MODEL}`);

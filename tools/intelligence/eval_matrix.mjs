@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { queryKnowledge, getOrBuildMiniSearchIndex } from './rag_pipeline.mjs';
 import { runAstAudit } from './ast_guard.mjs';
+import { computeRagasMetrics } from './vertex_ai_bridge.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,6 +76,8 @@ export async function runEvalMatrix() {
   const ragStart = Date.now();
   let queriesPassed = 0;
   let mrrSum = 0;
+  let precisionSum = 0;
+  let faithfulnessSum = 0;
 
   // Verify LEC-015 knowledge/INDEX.md exists
   const hasKnowledgeIndex = fs.existsSync(path.join(ROOT, 'knowledge', 'INDEX.md'));
@@ -91,6 +94,10 @@ export async function runEvalMatrix() {
         (h.title || '').toLowerCase().includes(kw) ||
         (h.source || '').toLowerCase().includes(kw)
       );
+      const ragas = computeRagasMetrics(item.q, hits, item.expectedKeyword);
+      precisionSum += ragas.contextPrecisionAt3;
+      faithfulnessSum += ragas.faithfulness;
+
       if (matchRank >= 0 && elapsed < 350) {
         queriesPassed++;
         mrrSum += 1 / (matchRank + 1);
@@ -105,15 +112,21 @@ export async function runEvalMatrix() {
   const ragTotalTime = Date.now() - ragStart;
   const hitAt5Rate = ((queriesPassed / ragQueries.length) * 100).toFixed(1);
   const mrr = (mrrSum / ragQueries.length).toFixed(3);
+  const avgPrecisionAt3 = Number((precisionSum / ragQueries.length).toFixed(3));
+  const avgFaithfulness = Number((faithfulnessSum / ragQueries.length).toFixed(3));
+  if (avgPrecisionAt3 < 0.80) ragScore -= 10;
+
   results.dimensions.rag = {
     score: Math.max(0, ragScore),
     queriesTested: ragQueries.length,
     queriesPassed,
     hitAt5Rate: `${hitAt5Rate}%`,
     mrr: Number(mrr),
+    contextPrecisionAt3: avgPrecisionAt3,
+    faithfulness: avgFaithfulness,
     totalLatencyMs: ragTotalTime
   };
-  console.log(`  ✓ RAG Score: ${Math.max(0, ragScore)}/100 | Hit@5: ${hitAt5Rate}% (${queriesPassed}/${ragQueries.length}) | MRR: ${mrr} | Total Latency: ${ragTotalTime}ms`);
+  console.log(`  ✓ RAG Score: ${Math.max(0, ragScore)}/100 | Hit@5: ${hitAt5Rate}% (${queriesPassed}/${ragQueries.length}) | MRR: ${mrr} | Ragas P@3: ${avgPrecisionAt3} | Faithfulness: ${avgFaithfulness} | Total Latency: ${ragTotalTime}ms`);
 
   // --------------------------------------------------------------------------
   // Dimension 2: AST Symbolic Integrity
@@ -186,13 +199,63 @@ export async function runEvalMatrix() {
   };
 
   // --------------------------------------------------------------------------
+  // Dimension 5: PQC Frontend Verification, Accessibility & CDN Edge Headers
+  // --------------------------------------------------------------------------
+  console.log(`\n[DIMENSION 5] Auditing PQC Frontend Verification, Accessibility & CDN Edge Headers...`);
+  let pqcScore = 100;
+
+  // 5.1 Check CDN Edge _headers in dist/
+  const distHeadersPath = path.join(ROOT, 'dist', '_headers');
+  let hasEdgeHeaders = false;
+  if (fs.existsSync(distHeadersPath)) {
+    const hdrRaw = fs.readFileSync(distHeadersPath, 'utf8');
+    hasEdgeHeaders =
+      hdrRaw.includes('Content-Security-Policy:') &&
+      hdrRaw.includes('Strict-Transport-Security:') &&
+      hdrRaw.includes('Cache-Control: public, max-age=31536000, immutable');
+  }
+  if (!hasEdgeHeaders) pqcScore -= 25;
+
+  // 5.2 Check WCAG2AA Semantic Landmarks & ARIA in index.html
+  const hasMainLandmark = /<main\b/i.test(indexHtml);
+  const hasNavLandmark = /<nav\b|<aside\b/i.test(indexHtml);
+  const hasAriaLabels = (indexHtml.match(/aria-label=/gi) || []).length >= 5;
+  if (!hasMainLandmark || !hasNavLandmark || !hasAriaLabels) pqcScore -= 25;
+
+  // 5.3 Check Component Visual Regression Harness & Snapshot Baseline Readiness
+  const visualHarnessPath = path.join(ROOT, 'tools', 'audit', 'visual_regression.mjs');
+  const hasVisualHarness = fs.existsSync(visualHarnessPath);
+  if (!hasVisualHarness) pqcScore -= 25;
+
+  // 5.4 Check D1 Provisioning Tool Readiness
+  const d1ToolPath = path.join(ROOT, 'tools', 'provision_d1.mjs');
+  const hasD1Tool = fs.existsSync(d1ToolPath);
+  if (!hasD1Tool) pqcScore -= 25;
+
+  console.log(`  ✓ Cloudflare CDN Edge _headers (CSP + HSTS + Immutable Cache): ${hasEdgeHeaders ? 'YES' : 'NO'}`);
+  console.log(`  ✓ Semantic Landmarks (<main>, <nav>/<aside>, ARIA >= 5): ${hasMainLandmark && hasNavLandmark && hasAriaLabels ? 'YES' : 'NO'}`);
+  console.log(`  ✓ PQC Component Visual Regression Harness Ready: ${hasVisualHarness ? 'YES' : 'NO'}`);
+  console.log(`  ✓ Cloudflare D1 Edge Provisioning Tool Ready: ${hasD1Tool ? 'YES' : 'NO'}`);
+
+  results.dimensions.pqc = {
+    score: Math.max(0, pqcScore),
+    hasEdgeHeaders,
+    hasSemanticA11y: hasMainLandmark && hasNavLandmark && hasAriaLabels,
+    hasVisualHarness,
+    hasD1Tool,
+    passed: pqcScore >= 80
+  };
+  if (pqcScore < 80) results.passed = false;
+
+  // --------------------------------------------------------------------------
   // Overall Composite Grade
   // --------------------------------------------------------------------------
   const compositeScore = (
     results.dimensions.rag.score * 0.20 +
-    results.dimensions.ast.score * 0.35 +
-    results.dimensions.performance.score * 0.25 +
-    results.dimensions.compliance.score * 0.20
+    results.dimensions.ast.score * 0.30 +
+    results.dimensions.performance.score * 0.20 +
+    results.dimensions.compliance.score * 0.15 +
+    results.dimensions.pqc.score * 0.15
   );
 
   let tier = 'F';

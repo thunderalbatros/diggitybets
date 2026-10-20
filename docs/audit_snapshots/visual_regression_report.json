@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-10-20T04:15:32.825Z",
+  "passed": true,
+  "totalSnapshots": 12,
+  "maxObservedDiffRatio": 0,
+  "maxAllowedDiffRatio": 0.01,
+  "comparisons": [
+    {
+      "component": "game-card",
+      "viewport": "desktop-1440x900",
+      "width": 322,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 77924,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "raffle-modal",
+      "viewport": "desktop-1440x900",
+      "width": 322,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 77924,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "hud-bar",
+      "viewport": "desktop-1440x900",
+      "width": 322,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 77924,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "site-topbar",
+      "viewport": "desktop-1440x900",
+      "width": 322,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 77924,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "game-card",
+      "viewport": "tablet-768x1024",
+      "width": 348,
+      "height": 206,
+      "diffPixels": 0,
+      "totalPixels": 71688,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "raffle-modal",
+      "viewport": "tablet-768x1024",
+      "width": 348,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 84216,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "hud-bar",
+      "viewport": "tablet-768x1024",
+      "width": 348,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 84216,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "site-topbar",
+      "viewport": "tablet-768x1024",
+      "width": 348,
+      "height": 206,
+      "diffPixels": 0,
+      "totalPixels": 71688,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "game-card",
+      "viewport": "mobile-390x844",
+      "width": 342,
+      "height": 206,
+      "diffPixels": 0,
+      "totalPixels": 70452,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "raffle-modal",
+      "viewport": "mobile-390x844",
+      "width": 342,
+      "height": 242,
+      "diffPixels": 0,
+      "totalPixels": 82764,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "hud-bar",
+      "viewport": "mobile-390x844",
+      "width": 342,
+      "height": 113,
+      "diffPixels": 0,
+      "totalPixels": 38646,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    },
+    {
+      "component": "site-topbar",
+      "viewport": "mobile-390x844",
+      "width": 342,
+      "height": 130,
+      "diffPixels": 0,
+      "totalPixels": 44460,
+      "diffRatio": 0,
+      "maxAllowedRatio": 0.01,
+      "passed": true
+    }
+  ]
+}
