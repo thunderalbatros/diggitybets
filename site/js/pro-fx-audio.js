@@ -274,10 +274,12 @@ class ProAudioFXEngine {
     }
 
     // 3 Inharmonic tone components per coin
-    [ratios[0], ratios[1], ratios[3]].forEach((ratio, idx) => {
+    const safeRatios = Array.isArray(ratios) && ratios.length >= 3 ? ratios : [1.0, 1.483, 2.546];
+    [safeRatios[0] || 1.0, safeRatios[1] || 1.483, safeRatios[2] || 2.546].forEach((ratio, idx) => {
       const osc = ctx.createOscillator();
       osc.type = idx === 0 ? 'sine' : (idx === 1 ? 'triangle' : 'sawtooth');
-      osc.frequency.setValueAtTime(baseFreq * ratio, time);
+      const safeFreq = Number.isFinite(baseFreq * ratio) ? baseFreq * ratio : baseFreq;
+      osc.frequency.setValueAtTime(safeFreq, time);
       osc.connect(clusterGain);
       osc.start(time);
       osc.stop(time + duration);

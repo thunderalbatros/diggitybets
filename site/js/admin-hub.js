@@ -120,9 +120,12 @@ class AdminHubController {
   }
 
   getAdminHeaders(extra = {}) {
+    const adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
+    const userToken = localStorage.getItem('hunthub_user_token') || adminToken;
     return {
       'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
-      'x-admin-token': localStorage.getItem('hunthub_admin_token') || '',
+      'x-admin-token': adminToken,
+      'x-user-token': userToken,
       ...extra
     };
   }
@@ -253,13 +256,16 @@ class AdminHubController {
   isStreamerUser(username) {
     if (!username) return false;
     const clean = username.trim().toLowerCase().replace('@', '');
-    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky';
+    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky' || clean === 'diggitybot' || clean === 'diggity_bot';
   }
 
   checkAdminAccess() {
     const currentKickUser = localStorage.getItem('hunthub_kick_username') || '';
-    const isAdmin = this.isStreamerUser(currentKickUser);
+    const isAdmin = this.isStreamerUser(currentKickUser) || localStorage.getItem('hunthub_is_admin') === 'true';
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
+    if (isAdmin) {
+      localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+    }
 
     const navTab = document.getElementById('nav-tab-admin');
     const navTabControl = document.getElementById('nav-tab-control');
@@ -337,6 +343,8 @@ class AdminHubController {
     if (!p || !a || p === a) return true;
     const isSampleOrOwner = (u) => (
       u === 'diggitybets' ||
+      u === 'diggitybot' ||
+      u === 'diggity_bot' ||
       u === 'tomas' ||
       u === 'tarkansky' ||
       u === 'viewer' ||
@@ -2230,7 +2238,10 @@ class AdminHubController {
       } catch (_) {}
     }
     try {
-      fetch('/api/tourney/reset', { method: 'POST' }).catch(() => {});
+      fetch('/api/tourney/reset', {
+        method: 'POST',
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' })
+      }).catch(() => {});
     } catch (_) {}
     this.renderTournamentAdmin();
     this.updateWheelTargetUI();
@@ -3256,15 +3267,15 @@ class AdminHubController {
       if (this.battleMode === 'SPINS') {
         fetch('/api/battle/resolve-spins', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ winnerSlot })
-        });
+        }).catch(() => {});
       } else {
         fetch('/api/battle/resolve', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ winnerSlot })
-        });
+        }).catch(() => {});
       }
     } catch (_) {}
 
@@ -3648,12 +3659,18 @@ class AdminHubController {
           return Boolean(clean) && !this.demoUsernames.has(clean);
         };
         if (Array.isArray(data.tourneyQueue)) {
-          this.tourneyQueue = data.tourneyQueue.filter(e => isCleanUser(e?.username || e?.chatter));
+          const filteredT = data.tourneyQueue.filter(e => isCleanUser(e?.username || e?.chatter));
+          if (filteredT.length > 0 || this.tourneyQueue.length === 0) {
+            this.tourneyQueue = filteredT;
+          }
           const tCount = document.getElementById('cp-tourney-q-count');
           if (tCount) tCount.textContent = String(this.tourneyQueue.length);
         }
         if (Array.isArray(data.battleQueue)) {
-          this.battleQueue = data.battleQueue.filter(e => isCleanUser(e?.username || e?.chatter));
+          const filteredB = data.battleQueue.filter(e => isCleanUser(e?.username || e?.chatter));
+          if (filteredB.length > 0 || this.battleQueue.length === 0) {
+            this.battleQueue = filteredB;
+          }
           const bCount = document.getElementById('cp-battle-q-count');
           if (bCount) bCount.textContent = String(this.battleQueue.length);
         }
@@ -3719,6 +3736,21 @@ class AdminHubController {
     this.updateWheelTargetUI();
     this.renderTournamentAdmin();
 
+    const activeQueue = this.duoMode === 'tourney' ? this.tourneyQueue : this.battleQueue;
+    if (Array.isArray(activeQueue)) {
+      this.duoPool = activeQueue.map(e => {
+        const meta = this.resolveSlotMeta(e.slotName || e.slot);
+        return {
+          chatter: String(e.username || e.chatter || '').replace(/^@/, ''),
+          slot: meta.name,
+          provider: e.slotProvider || meta.provider,
+          imageUrl: e.imageUrl || meta.image,
+          icon: '🎰'
+        };
+      });
+      try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
+    }
+
     const nextSeed = this.getNextTourneySeedSlot();
     try {
       localStorage.setItem('hunthub_tourney_seed_count', String(nextSeed.seed - 1));
@@ -3731,13 +3763,20 @@ class AdminHubController {
         tourneyCount: nextSeed.seed - 1,
         ts: Date.now()
       });
+      this.channelDuo.postMessage({
+        action: 'set_pool',
+        pool: this.duoPool,
+        type: 'sync_pool',
+        items: this.duoPool,
+        mode: this.duoMode
+      });
     }
     fetch('/api/wheel/duo/mode', {
       method: 'POST',
       headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ mode: this.duoMode })
     }).catch(() => {});
-    this.syncDuoQueues(true);
+    this.syncDuoQueues(false);
     this.renderDuoQueue();
     if (!fromRemote && window.sonner) {
       window.sonner.toast({
@@ -4529,11 +4568,6 @@ class AdminHubController {
       this.setCornerFighter('B', '', '');
       this.setWheelTargetCorner('B');
     } else {
-      const currentA = (document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
-      if (currentA && currentA === cleanUser.toLowerCase()) {
-        // Never allow Player A to be duplicated into Player B
-        return;
-      }
       this.setCornerFighter('B', cleanUser, slotName);
     }
     this.pushCornersToOverlay();
@@ -4544,12 +4578,6 @@ class AdminHubController {
     const slotA = (document.getElementById('cp-battle-slot-a')?.value || '').trim();
     let userB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
     let slotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
-
-    if (userA && userB && userA.toLowerCase() === userB.toLowerCase()) {
-      userB = '';
-      slotB = '';
-      this.setCornerFighter('B', '', '');
-    }
 
     const metaA = (userA && slotA) ? this.resolveSlotMeta(slotA) : { name: '', provider: '', image: '' };
     const metaB = (userB && slotB) ? this.resolveSlotMeta(slotB) : { name: '', provider: '', image: '' };
@@ -4687,6 +4715,7 @@ class AdminHubController {
     if (!cleanUser) return;
 
     this._lastLocalDuoMutationAt = Date.now();
+    const isStreamerTest = this.isStreamerUser(cleanUser);
     const queueEntry = {
       username: cleanUser,
       chatter: cleanUser,
@@ -4698,32 +4727,60 @@ class AdminHubController {
       addedAt: Date.now()
     };
 
+    const matchDifferentFilter = (e) => {
+      const u = String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '');
+      const s = String(e.slotName || e.slot || '').toLowerCase();
+      if (isStreamerTest) {
+        return !(u === cleanUser.toLowerCase() && s === meta.name.toLowerCase());
+      }
+      return u !== cleanUser.toLowerCase();
+    };
+
     if (mode === 'tourney') {
-      this.tourneyQueue = this.tourneyQueue.filter(e => String(e.username || e.chatter || '').toLowerCase() !== cleanUser.toLowerCase());
+      this.tourneyQueue = this.tourneyQueue.filter(matchDifferentFilter);
       this.tourneyQueue.push(queueEntry);
       const tCount = document.getElementById('cp-tourney-q-count');
       if (tCount) tCount.textContent = String(this.tourneyQueue.length);
     } else {
-      this.battleQueue = this.battleQueue.filter(e => String(e.username || e.chatter || '').toLowerCase() !== cleanUser.toLowerCase());
+      this.battleQueue = this.battleQueue.filter(matchDifferentFilter);
       this.battleQueue.push(queueEntry);
       const bCount = document.getElementById('cp-battle-q-count');
       if (bCount) bCount.textContent = String(this.battleQueue.length);
     }
 
-    if (mode === this.duoMode || mode === 'battle') {
-      this.duoPool = this.duoPool.filter(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') !== cleanUser.toLowerCase());
-      this.duoPool.unshift({
-        chatter: cleanUser,
-        slot: meta.name,
-        provider: meta.provider,
-        imageUrl: meta.image,
-        icon: '🎰'
-      });
-      try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
-      this.renderDuoQueue();
-      if (this.channelDuo) {
-        this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool, type: 'sync_pool', items: this.duoPool });
+    // Automatically switch Duo Wheel mode when a command for the other mode arrives
+    if (mode !== this.duoMode) {
+      this.setDuoMode(mode, true);
+    }
+
+    this.duoPool = this.duoPool.filter(p => {
+      const u = String(p.chatter || '').toLowerCase().replace(/^@/, '');
+      const s = String(p.slot || '').toLowerCase();
+      if (isStreamerTest) {
+        return !(u === cleanUser.toLowerCase() && s === meta.name.toLowerCase());
       }
+      return u !== cleanUser.toLowerCase();
+    });
+    this.duoPool.unshift({
+      chatter: cleanUser,
+      slot: meta.name,
+      provider: meta.provider,
+      imageUrl: meta.image,
+      icon: '🎰'
+    });
+    try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
+    this.renderDuoQueue();
+    if (this.channelDuo) {
+      this.channelDuo.postMessage({ action: 'set_mode', mode: this.duoMode, ts: Date.now() });
+      this.channelDuo.postMessage({
+        action: 'set_pool',
+        pool: this.duoPool,
+        type: 'sync_pool',
+        items: this.duoPool,
+        mode: this.duoMode,
+        battleQueue: this.battleQueue,
+        tourneyQueue: this.tourneyQueue
+      });
     }
 
     this.pushDuoQueuesToEdge();
@@ -4837,14 +4894,6 @@ class AdminHubController {
         let pBName = String(savedBattle.playerB?.username || savedBattle.playerB?.displayName || savedBattle.playerB?.name || '').trim().replace(/^@/, '');
         let pBSlot = savedBattle.playerB?.slotName || savedBattle.playerB?.slot || '';
 
-        if (pAName && pBName && pAName.toLowerCase() === pBName.toLowerCase()) {
-          pBName = '';
-          pBSlot = '';
-          savedBattle.playerB = null;
-          savedBattle.status = 'LOBBY';
-          localStorage.setItem('hunthub_battle_state', JSON.stringify(savedBattle));
-        }
-
         if (pAName && !this.demoUsernames.has(pAName.toLowerCase()) && uAEl && !uAEl.value) {
           this.setCornerFighter('A', pAName, pASlot);
         }
@@ -4865,7 +4914,7 @@ class AdminHubController {
     if (!curUserA) {
       this.setCornerFighter('A', '', '');
     }
-    if (!curUserB || (curUserA && curUserA.toLowerCase().replace(/^@/, '') === curUserB.toLowerCase().replace(/^@/, ''))) {
+    if (!curUserB) {
       this.setCornerFighter('B', '', '');
     }
 
@@ -5375,7 +5424,7 @@ class AdminHubController {
     const isDemo = (u) => {
       const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
       if (!clean) return true;
-      if (['viewer', 'streamer', 'diggitybets', 'tarkansky', 'stakeautocapture', 'stakecompanionext', 'vaultpack'].includes(clean)) return false;
+      if (['viewer', 'streamer', 'diggitybets', 'diggitybot', 'diggity_bot', 'tarkansky', 'stakeautocapture', 'stakecompanionext', 'vaultpack'].includes(clean)) return false;
       if (clean.startsWith('altfarmer') || clean.startsWith('stakefarmer')) return true;
       return this.demoUsernames.has(clean);
     };
@@ -5562,8 +5611,10 @@ class AdminHubController {
     if (!cleanUser || !text) return;
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const logEl = document.getElementById('cp-live-chat-log');
-    if (logEl) {
+    const targets = ['cp-live-chat-log', 'live-chat-messages', 'chat-sim-feed'];
+    targets.forEach((id) => {
+      const logEl = document.getElementById(id);
+      if (!logEl) return;
       const entry = document.createElement('div');
       entry.style.cssText = isCommand
         ? 'padding: 3px 6px; margin-bottom: 2px; border-radius: 4px; background: rgba(83, 252, 24, 0.08); border-left: 2px solid #53fc18;'
@@ -5582,24 +5633,35 @@ class AdminHubController {
       while (logEl.children.length > 80) {
         logEl.removeChild(logEl.lastChild);
       }
-    }
+    });
   }
 
   async initLiveKickChatBridge() {
     let chatroomId = 86765775; // Verified diggitybets Kick chatroom ID
+    let chatChannels = ['chatrooms.86765775.v2'];
     window.hunthubStreamLive = false;
     let realtimeConfig = null;
 
     const refreshStreamStatus = async () => {
       try {
         const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 4000);
+        const t = setTimeout(() => controller.abort(), 5000);
         const res = await fetch('/api/kick/stream-status', { signal: controller.signal });
         clearTimeout(t);
         if (res.ok) {
           const data = await res.json();
           if (data?.chatroomId) chatroomId = Number(data.chatroomId);
-          if (data?.realtime) realtimeConfig = data.realtime;
+          if (data?.realtime) {
+            realtimeConfig = data.realtime;
+            if (Array.isArray(data.realtime.channels) && data.realtime.channels.length > 0) {
+              chatChannels = data.realtime.channels;
+            } else if (data.realtime.channel) {
+              chatChannels = [data.realtime.channel];
+            }
+          }
+          if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
+            try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
+          }
           window.hunthubStreamLive = Boolean(data?.isStreamLive);
           if (window.hunthubStreamLive) {
             this.purgeDemoUsersForLiveStream('api_stream_live');
@@ -5617,6 +5679,7 @@ class AdminHubController {
           const data = await res.json();
           if (data?.chatroom?.id) {
             chatroomId = Number(data.chatroom.id);
+            chatChannels = [`chatrooms.${chatroomId}.v2`];
           }
           window.hunthubStreamLive = Boolean(data?.livestream && data.livestream.is_live !== false);
           if (window.hunthubStreamLive) {
@@ -5630,10 +5693,85 @@ class AdminHubController {
     if (this._streamStatusPoll) clearInterval(this._streamStatusPoll);
     this._streamStatusPoll = setInterval(refreshStreamStatus, 120_000);
 
+    const handleIncomingKickMessage = (msgData) => {
+      if (!msgData || typeof msgData !== 'object') return;
+      const sender = String(msgData?.sender?.username || msgData?.sender?.slug || '').trim();
+      const content = String(msgData?.content || '').trim();
+      const avatar = msgData?.sender?.profile_pic || msgData?.sender?.profilepic || '';
+      if (!sender || !content) return;
+
+      // Deduplicate identical messages across Centrifugo + Pusher + LocalHub within 2.0s
+      const msgKey = msgData.id ? String(msgData.id) : `${sender.toLowerCase()}:${content}`;
+      const now = Date.now();
+      if (!this._seenKickMsgMap) this._seenKickMsgMap = new Map();
+      const prevTs = this._seenKickMsgMap.get(msgKey) || 0;
+      if (now - prevTs < 2000) return;
+      this._seenKickMsgMap.set(msgKey, now);
+      if (this._seenKickMsgMap.size > 200) {
+        for (const [k, t] of this._seenKickMsgMap.entries()) {
+          if (now - t > 10000) this._seenKickMsgMap.delete(k);
+        }
+      }
+
+      const cleanSender = sender.replace(/^@/, '').toLowerCase();
+      if (!this.demoUsernames.has(cleanSender)) {
+        this.purgeDemoUsersForLiveStream('live_kick_chat_message');
+      }
+      const badges = Array.isArray(msgData?.sender?.identity?.badges) ? msgData.sender.identity.badges : [];
+      const isSubBadge = badges.some(b => {
+        const t = String(b?.type || '').toLowerCase();
+        return t === 'subscriber' || t === 'founder' || t === 'sub_gifter' || t === 'vip';
+      });
+      if (isSubBadge) {
+        this.subscriberUsers.add(cleanSender);
+      }
+
+      this.recentChatters.set(sender, { user: sender, avatar, ts: now });
+      try {
+        const activeArr = Array.from(this.recentChatters.values());
+        localStorage.setItem('hunthub_active_chatters_v1', JSON.stringify(activeArr));
+      } catch (_) {}
+      this.renderActiveChatters();
+      this.pushActiveChattersToEdge();
+
+      if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
+        window.userStore.recordVerifiedKickChatActivity(sender, content);
+      }
+
+      if (content.startsWith('!')) {
+        this.processLiveChatCommand(sender, content);
+      } else {
+        this.logLiveChatActivityToDOM(sender, content, false);
+      }
+    };
+
+    const extractKickChatMsg = (packet) => {
+      if (!packet || typeof packet !== 'object') return null;
+      let pubData = packet?.push?.pub?.data ?? packet?.pub?.data ?? packet?.result?.data ?? (packet?.event ? packet : null);
+      if (typeof pubData === 'string') {
+        try { pubData = JSON.parse(pubData); } catch (_) { return null; }
+      }
+      if (!pubData || typeof pubData !== 'object') return null;
+      if (pubData.data) {
+        if (pubData.event && !String(pubData.event).includes('ChatMessageEvent') && pubData.event !== 'message') {
+          return null;
+        }
+        return typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+      }
+      if (typeof pubData.content === 'string' && pubData.sender) {
+        return pubData;
+      }
+      return null;
+    };
+
     const connectLiveSocket = async () => {
       if (this._kickPingInterval) {
         clearInterval(this._kickPingInterval);
         this._kickPingInterval = null;
+      }
+      if (this._kickWatchdogInterval) {
+        clearInterval(this._kickWatchdogInterval);
+        this._kickWatchdogInterval = null;
       }
 
       const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
@@ -5642,7 +5780,6 @@ class AdminHubController {
         try {
           const localWs = new WebSocket('ws://127.0.0.1:3001/');
           localWs.onopen = () => {
-            console.log('[AdminHub] Connected to Local Stream Hub (ws://127.0.0.1:3001/)');
             this.localHubWs = localWs;
             const statusEl = document.getElementById('cp-kick-ws-status');
             if (statusEl) {
@@ -5655,22 +5792,7 @@ class AdminHubController {
             try {
               const data = JSON.parse(evt.data);
               if (data.type === 'chat_message' && data.data) {
-                const m = data.data;
-                const u = m.sender?.username || m.sender?.slug || m.sender;
-                const c = String(m.content || '').trim();
-                if (u && c) {
-                  this.recentChatters.set(u, { user: u, ts: Date.now() });
-                  if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
-                    window.userStore.recordVerifiedKickChatActivity(u, c);
-                  }
-                  this.renderActiveChatters();
-                  this.pushActiveChattersToEdge();
-                  if (c.startsWith('!')) {
-                    this.processLiveChatCommand(u, c);
-                  } else {
-                    this.logLiveChatActivityToDOM(u, c, false);
-                  }
-                }
+                handleIncomingKickMessage(data.data);
               } else if (data.action === 'wheel_duo_queues' || data.action === 'duo_queues') {
                 const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
                 if (Array.isArray(q)) {
@@ -5688,100 +5810,110 @@ class AdminHubController {
         } catch (_) {}
       }
 
-      // If we don't have realtimeConfig or token, fetch
+      // Engine A: Kick Realtime Centrifugo v6 (Primary — wss://realtime.us-west-2.platform.kick.com/connection/websocket)
       if (!realtimeConfig || !realtimeConfig.token) {
         await refreshStreamStatus();
       }
+      if (realtimeConfig && realtimeConfig.token) {
+        try {
+          if (this.kickCentrifugoWs && (this.kickCentrifugoWs.readyState === WebSocket.OPEN || this.kickCentrifugoWs.readyState === WebSocket.CONNECTING)) {
+            try { this.kickCentrifugoWs.close(); } catch (_) {}
+          }
+          const cwsUrl = realtimeConfig.wsUrl || 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+          const cws = new WebSocket(cwsUrl);
+          this.kickCentrifugoWs = cws;
+          let lastCentrifugoActivity = Date.now();
 
-      const token = realtimeConfig?.token;
-      const wsUrl = realtimeConfig?.wsUrl || 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
-      const channelName = realtimeConfig?.channel || `chatrooms.${chatroomId}.v2`;
+          cws.onopen = () => {
+            lastCentrifugoActivity = Date.now();
+            cws.send(JSON.stringify({ id: 1, connect: { token: realtimeConfig.token } }));
+            const statusEl = document.getElementById('cp-kick-ws-status');
+            if (statusEl) {
+              statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (Centrifugo v6 · Room #${chatroomId})`;
+              statusEl.style.color = '#53fc18';
+            }
+          };
 
-      if (!token) {
-        setTimeout(connectLiveSocket, 5000);
-        return;
+          cws.onmessage = (evt) => {
+            lastCentrifugoActivity = Date.now();
+            try {
+              if (!evt.data) return;
+              const rawText = typeof evt.data === 'string' ? evt.data : String(evt.data);
+              const lines = rawText.split('\n');
+              for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (!line) continue;
+                // Centrifugo server ping {} -> reply {} pong immediately (never send proactive {} on timer!)
+                if (line === '{}') {
+                  if (cws.readyState === WebSocket.OPEN) cws.send('{}');
+                  continue;
+                }
+                const packet = JSON.parse(line);
+                if (packet.id === 1 && packet.connect) {
+                  chatChannels.forEach((ch, idx) => {
+                    if (cws.readyState === WebSocket.OPEN) {
+                      cws.send(JSON.stringify({ id: idx + 2, subscribe: { channel: ch } }));
+                    }
+                  });
+                  continue;
+                }
+                const msgData = extractKickChatMsg(packet);
+                if (msgData) handleIncomingKickMessage(msgData);
+              }
+            } catch (_) {}
+          };
+
+          this._kickWatchdogInterval = setInterval(() => {
+            if (Date.now() - lastCentrifugoActivity > 45000) {
+              try { cws.close(); } catch (_) {}
+            }
+          }, 12000);
+
+          cws.onclose = () => {
+            if (this._kickWatchdogInterval) {
+              clearInterval(this._kickWatchdogInterval);
+              this._kickWatchdogInterval = null;
+            }
+            realtimeConfig = null;
+            setTimeout(connectLiveSocket, 3500);
+          };
+        } catch (_) {}
       }
 
+      // Engine B: Kick Public Pusher v7 (Secondary Parallel Listener — zero token needed)
+      const pusherUrl = 'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false';
       try {
-        const ws = new WebSocket(wsUrl);
+        if (this.kickPusherWs && (this.kickPusherWs.readyState === WebSocket.OPEN || this.kickPusherWs.readyState === WebSocket.CONNECTING)) {
+          try { this.kickPusherWs.close(); } catch (_) {}
+        }
+        const ws = new WebSocket(pusherUrl);
         this.kickPusherWs = ws;
 
         ws.onopen = () => {
-          ws.send(JSON.stringify({
-            id: 1,
-            connect: { token: token }
-          }));
+          chatChannels.forEach((ch) => {
+            ws.send(JSON.stringify({
+              event: 'pusher:subscribe',
+              data: { auth: '', channel: ch }
+            }));
+          });
+          const statusEl = document.getElementById('cp-kick-ws-status');
+          if (statusEl && !statusEl.textContent.includes('Centrifugo')) {
+            statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+            statusEl.style.color = '#53fc18';
+          }
+          this._kickPingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            }
+          }, 25000);
         };
 
         ws.onmessage = (evt) => {
           try {
             if (!evt.data) return;
-            const text = typeof evt.data === 'string' ? evt.data : '';
-            if (text === '{}') {
-              ws.send('{}');
-              return;
-            }
-            const packet = JSON.parse(text);
-
-            // Centrifugo connect response -> subscribe to chatroom channel
-            if (packet.id === 1 && packet.connect) {
-              ws.send(JSON.stringify({
-                id: 2,
-                subscribe: { channel: channelName }
-              }));
-              const statusEl = document.getElementById('cp-kick-ws-status');
-              if (statusEl) {
-                statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
-                statusEl.style.color = '#53fc18';
-              }
-              this._kickPingInterval = setInterval(() => {
-                if (ws.readyState === WebSocket.OPEN) {
-                  ws.send('{}');
-                }
-              }, 20000);
-              return;
-            }
-
-            // Extract ChatMessageEvent from Centrifugo publication or legacy Pusher
-            let pubData = null;
-            if (packet.push && packet.push.pub && packet.push.pub.data) {
-              pubData = packet.push.pub.data;
-            } else if (packet.pub && packet.pub.data) {
-              pubData = packet.pub.data;
-            } else if (packet.event === 'App\\Events\\ChatMessageEvent' && packet.data) {
-              pubData = packet;
-            }
-
-            if (pubData && pubData.event === 'App\\Events\\ChatMessageEvent' && pubData.data) {
-              const msgData = typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
-              const sender = msgData?.sender?.username || 'Chatter';
-              const content = String(msgData?.content || '').trim();
-              if (sender) {
-                const cleanSender = sender.trim().replace(/^@/, '').toLowerCase();
-                if (!this.demoUsernames.has(cleanSender)) {
-                  this.purgeDemoUsersForLiveStream('live_kick_chat_message');
-                }
-                const badges = Array.isArray(msgData?.sender?.identity?.badges) ? msgData.sender.identity.badges : [];
-                const isSubBadge = badges.some(b => {
-                  const t = String(b?.type || '').toLowerCase();
-                  return t === 'subscriber' || t === 'founder' || t === 'sub_gifter' || t === 'vip';
-                });
-                if (isSubBadge) {
-                  this.subscriberUsers.add(cleanSender);
-                }
-                this.recentChatters.set(sender, { user: sender, ts: Date.now() });
-                this.renderActiveChatters();
-                this.pushActiveChattersToEdge();
-                if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
-                  window.userStore.recordVerifiedKickChatActivity(sender, content);
-                }
-              }
-              if (content.startsWith('!')) {
-                this.processLiveChatCommand(sender, content);
-              } else {
-                this.logLiveChatActivityToDOM(sender, content, false);
-              }
-            }
+            const packet = JSON.parse(typeof evt.data === 'string' ? evt.data : '');
+            const msgData = extractKickChatMsg(packet);
+            if (msgData) handleIncomingKickMessage(msgData);
           } catch (_) {}
         };
 
@@ -5790,12 +5922,8 @@ class AdminHubController {
             clearInterval(this._kickPingInterval);
             this._kickPingInterval = null;
           }
-          realtimeConfig = null; // force token refresh on reconnect
-          setTimeout(connectLiveSocket, 5000);
         };
-      } catch (_) {
-        setTimeout(connectLiveSocket, 6000);
-      }
+      } catch (_) {}
     };
 
     connectLiveSocket();

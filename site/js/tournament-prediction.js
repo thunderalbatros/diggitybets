@@ -8,11 +8,11 @@
  * 100% English, vector slot cards, zero external dependencies.
  */
 
-const PEPE_EZ_URL = 'https://i.pinimg.com/1200x/07/a3/b5/07a3b592ab0b733e6eb87e0767b1feeb.jpg';
+const PEPE_EZ_URL = '/site/images/emotes/pepe-ez.jpg';
 const PEPE_EZ_FALLBACK = '/site/images/emotes/pepe-ez.jpg';
-const PEPE_SAD_URL = 'https://spng.pngfind.com/pngs/s/427-4276796_post-pepe-sad-hd-png-download.png';
+const PEPE_SAD_URL = '/site/images/emotes/pepe-sad.png';
 const PEPE_SAD_FALLBACK = '/site/images/emotes/pepe-sad.png';
-const PEPE_CHAMP_URL = 'https://asset-metadata-service-production.s3.amazonaws.com/asset_icons/44e2af7dc08142ae0846bd8ef01b99eee53bf5564d161fd19e2ac75fad0fa99d.png';
+const PEPE_CHAMP_URL = '/site/images/emotes/pepe-champ.png';
 const PEPE_CHAMP_FALLBACK = '/site/images/emotes/pepe-champ.png';
 
 class TournamentPredictionController {
@@ -169,7 +169,13 @@ class TournamentPredictionController {
           winner: null,
           status: 'PENDING'
         };
-        normalizedMatches[id] = { ...found };
+        normalizedMatches[id] = {
+          ...found,
+          player1: found.player1 || found.playerA || null,
+          player2: found.player2 || found.playerB || null,
+          score1: found.score1 ?? found.playerA?.mult ?? 0,
+          score2: found.score2 ?? found.playerB?.mult ?? 0
+        };
       });
     } else if (state.matches && typeof state.matches === 'object') {
       matchIds.forEach((id, idx) => {
@@ -183,7 +189,13 @@ class TournamentPredictionController {
           winner: null,
           status: 'PENDING'
         };
-        normalizedMatches[id] = { ...found };
+        normalizedMatches[id] = {
+          ...found,
+          player1: found.player1 || found.playerA || null,
+          player2: found.player2 || found.playerB || null,
+          score1: found.score1 ?? found.playerA?.mult ?? 0,
+          score2: found.score2 ?? found.playerB?.mult ?? 0
+        };
       });
     } else {
       return null;
@@ -389,7 +401,7 @@ class TournamentPredictionController {
     if (reactionType === 'champ') {
       return `
         <span class="pepe-reaction-badge champ" title="Grand Champion Pick!">
-          <img class="pepe-reaction-img" src="${PEPE_CHAMP_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_CHAMP_FALLBACK}';" alt="Champ Pepe">
+          <img class="pepe-reaction-img" src="${PEPE_CHAMP_URL}" data-fallback-src="${PEPE_CHAMP_FALLBACK}" alt="Champ Pepe">
           <span>👑 CHAMP</span>
         </span>
       `;
@@ -397,7 +409,7 @@ class TournamentPredictionController {
     if (reactionType === 'ez') {
       return `
         <span class="pepe-reaction-badge ez" title="Predicted Winner — FLEX EZ!">
-          <img class="pepe-reaction-img" src="${PEPE_EZ_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_EZ_FALLBACK}';" alt="Pepe EZ">
+          <img class="pepe-reaction-img" src="${PEPE_EZ_URL}" data-fallback-src="${PEPE_EZ_FALLBACK}" alt="Pepe EZ">
           <span>FLEX EZ</span>
         </span>
       `;
@@ -405,7 +417,7 @@ class TournamentPredictionController {
     if (reactionType === 'sad') {
       return `
         <span class="pepe-reaction-badge sad" title="Predicted Loser — Sadge">
-          <img class="pepe-reaction-img" src="${PEPE_SAD_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_SAD_FALLBACK}';" alt="Sad Pepe">
+          <img class="pepe-reaction-img" src="${PEPE_SAD_URL}" data-fallback-src="${PEPE_SAD_FALLBACK}" alt="Sad Pepe">
           <span>SADGE</span>
         </span>
       `;
@@ -451,7 +463,7 @@ class TournamentPredictionController {
 
     return `
       <div class="${rowClasses}" data-slot-id="${esc(entry.id)}" data-target="${esc(targetKey)}" data-match-id="${esc(matchId)}">
-        <img class="slot-mini-thumb lazy" src="${esc(entry.img)}" alt="${esc(entry.slotName)}" loading="lazy" decoding="async" style="width: 38px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0;">
+        <img class="slot-mini-thumb" src="${esc(entry.img)}" data-fallback-src="/site/images/slots/wanted-dead-or-a-wild.svg" alt="${esc(entry.slotName)}" loading="lazy" decoding="async" style="width: 38px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0;">
         <div class="slot-mini-meta">
           <div class="slot-mini-user">
             <span style="color: ${isSelected ? '#53fc18' : '#ffffff'};">${esc(entry.username)}</span>
@@ -640,11 +652,11 @@ class TournamentPredictionController {
             </div>
             ${predictedChamp ? `
               <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                <img class="champ-pepe-hero-img" src="${PEPE_CHAMP_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_CHAMP_FALLBACK}';" alt="Champion Pepe">
+                <img class="champ-pepe-hero-img" src="${PEPE_CHAMP_URL}" data-fallback-src="${PEPE_CHAMP_FALLBACK}" alt="Champion Pepe">
                 <div style="text-align: left; min-width: 0;">
                   <div style="font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #53fc18; display: flex; align-items: center; gap: 6px;">
                     <span>${esc(predictedChamp.username)}</span>
-                    <img src="${PEPE_EZ_URL}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PEPE_EZ_FALLBACK}';" alt="EZ" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
+                    <img src="${PEPE_EZ_URL}" data-fallback-src="${PEPE_EZ_FALLBACK}" alt="EZ" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
                   </div>
                   <div style="font-family: var(--font-display); font-size: 13px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     ${esc(predictedChamp.slotName)}
@@ -734,6 +746,18 @@ class TournamentPredictionController {
           if (slotId === this.slots[6]?.id || slotId === this.slots[7]?.id) this.predictions.semi2_b = slotId;
         }
 
+        if (target === 'champion') {
+          const mMatches = this.liveTourneyState?.matches || {};
+          const currentGfA = this.getEntry(this.predictions.final_a) || this.findEntryByRawPlayer(mMatches.m7?.player1);
+          const currentGfB = this.getEntry(this.predictions.final_b) || this.findEntryByRawPlayer(mMatches.m7?.player2);
+          if (!this.predictions.final_a && currentGfA && slotId === currentGfA.id) {
+            this.predictions.final_a = slotId;
+          }
+          if (!this.predictions.final_b && currentGfB && slotId === currentGfB.id) {
+            this.predictions.final_b = slotId;
+          }
+        }
+
         this.predictions[target] = slotId;
 
         // Reset downstream selections if branch changes
@@ -753,21 +777,25 @@ class TournamentPredictionController {
           }
         }
 
-        if (window.ProAudioFX) {
-          if (target === 'champion' && typeof window.ProAudioFX.playBoosterRarityReveal === 'function') {
-            window.ProAudioFX.playBoosterRarityReveal('radiant-prism');
-          } else if (typeof window.ProAudioFX.playWinArpeggio === 'function') {
-            window.ProAudioFX.playWinArpeggio();
+        try {
+          if (window.ProAudioFX) {
+            if (target === 'champion' && typeof window.ProAudioFX.playBoosterRarityReveal === 'function') {
+              window.ProAudioFX.playBoosterRarityReveal('radiant-prism');
+            } else if (typeof window.ProAudioFX.playWinArpeggio === 'function') {
+              window.ProAudioFX.playWinArpeggio();
+            }
+          } else if (window.soundEngine) {
+            if (target === 'champion' && typeof window.soundEngine.playWin === 'function') {
+              window.soundEngine.playWin();
+            } else if (typeof window.soundEngine.playChip === 'function') {
+              window.soundEngine.playChip();
+            }
           }
-        } else if (window.soundEngine) {
-          if (target === 'champion' && typeof window.soundEngine.playWin === 'function') {
-            window.soundEngine.playWin();
-          } else if (typeof window.soundEngine.playChip === 'function') {
-            window.soundEngine.playChip();
+          if (target === 'champion' && typeof window.fireCasinoConfetti === 'function') {
+            window.fireCasinoConfetti({ particleCount: 45 });
           }
-        }
-        if (target === 'champion' && typeof window.fireCasinoConfetti === 'function') {
-          window.fireCasinoConfetti({ particleCount: 45 });
+        } catch (audioErr) {
+          console.warn('[TourneyPrediction] Audio/confetti feedback non-fatal error:', audioErr);
         }
 
         this.savePrediction();

@@ -16,7 +16,7 @@ class OAuthEngine {
       kick: {
         clientId: window.HUNT_CONFIG?.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM',
         authUrl: 'https://id.kick.com/oauth/authorize',
-        scope: 'user:read',
+        scope: 'user:read chat:write',
         redirectUri: `${redirectBase}/api/auth/callback`
       }
     };
@@ -27,6 +27,32 @@ class OAuthEngine {
   init() {
     this.handleCallback();
     this.checkInitialAdmin();
+    this.restoreAdminSessionFromEdge();
+  }
+
+  async restoreAdminSessionFromEdge() {
+    try {
+      const existingUserToken = localStorage.getItem('hunthub_user_token') || '';
+      const existingAdminToken = localStorage.getItem('hunthub_admin_token') || '';
+      const headers = {};
+      if (existingUserToken) headers['x-user-token'] = existingUserToken;
+      if (existingAdminToken) headers['x-admin-token'] = existingAdminToken;
+      const res = await fetch('/api/auth/session', {
+        headers,
+        credentials: 'same-origin'
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.authenticated) {
+        if (data.userToken) localStorage.setItem('hunthub_user_token', data.userToken);
+        if (data.isAdmin && data.adminToken) {
+          localStorage.setItem('hunthub_admin_token', data.adminToken);
+          localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+          localStorage.setItem('hunthub_is_admin', 'true');
+          this.updateAdminDeckUI(true);
+        }
+      }
+    } catch (_) {}
   }
 
   escapeAttr(str) {
@@ -40,7 +66,7 @@ class OAuthEngine {
 
   isAuthorizedStreamer(username) {
     const clean = String(username || '').trim().toLowerCase().replace(/^@/, '');
-    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky';
+    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky' || clean === 'diggitybot' || clean === 'diggity_bot';
   }
 
   checkInitialAdmin() {
@@ -51,7 +77,11 @@ class OAuthEngine {
       this.updateAdminDeckUI(false);
       return;
     }
-    const isAdmin = this.isAuthorizedStreamer(storedUser) && localStorage.getItem('hunthub_streamer_admin_unlocked') === 'true';
+    const isStreamer = this.isAuthorizedStreamer(storedUser);
+    if (isStreamer) {
+      localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+    }
+    const isAdmin = isStreamer || (localStorage.getItem('hunthub_streamer_admin_unlocked') === 'true' && localStorage.getItem('hunthub_is_admin') === 'true');
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     this.updateAdminDeckUI(isAdmin);
   }
@@ -344,7 +374,8 @@ class OAuthEngine {
           code,
           code_verifier: codeVerifier,
           redirect_uri: effectiveRedirect,
-          kick_username: usernameHint
+          kick_username: usernameHint,
+          client_id: this.config.kick.clientId
         })
       });
 
@@ -357,13 +388,19 @@ class OAuthEngine {
             code,
             code_verifier: codeVerifier,
             redirect_uri: effectiveRedirect,
-            kick_username: usernameHint
+            kick_username: usernameHint,
+            client_id: this.config.kick.clientId
           })
         });
       }
 
       if (!response.ok) {
-        throw new Error(`Edge exchange error: ${response.status}`);
+        let errInfo = '';
+        try {
+          const errJson = await response.json();
+          errInfo = errJson.kick_details || errJson.error || '';
+        } catch (_) {}
+        throw new Error(errInfo ? `Kick exchange error: ${errInfo}` : `Edge exchange error: ${response.status}`);
       }
 
       const userData = await response.json();
@@ -375,10 +412,13 @@ class OAuthEngine {
 
     } catch (err) {
       console.warn('[OAuthEngine] Edge token exchange failed:', err);
+      const isSecretMissing = String(err?.message || '').toLowerCase().includes('client') || String(err?.message || '').includes('401');
       if (window.sonner) {
         window.sonner.toast({
           title: 'Kick Login Failed ❌',
-          message: 'Could not verify authorization code. Please try logging in again.',
+          message: isSecretMissing
+            ? 'Kick rejected authorization. Make sure KICK_CLIENT_SECRET is configured in Cloudflare Worker.'
+            : (err?.message || 'Could not verify authorization code. Please try again.'),
           type: 'danger'
         });
       }
@@ -396,8 +436,9 @@ class OAuthEngine {
     const cleanUsername = rawUsername.trim().toLowerCase().replace('@', '');
     const kickIdNum = Number(user.kick_id || user.id || 0);
 
-    // Streamer Admin Verification: username 'diggitybets' / 'tarkansky' or kick_id 88254585
-    const isAdmin = Boolean(user.isAdmin || ((this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585) && user.verified));
+    // Streamer Admin Verification: username 'diggitybets' / 'tarkansky' / 'diggitybot' or kick_id 88254585
+    const isStreamer = this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585;
+    const isAdmin = Boolean(user.isAdmin || isStreamer || (isStreamer && user.verified));
 
     localStorage.setItem('hunthub_kick_username', formattedUsername);
     localStorage.setItem('hunthub_is_sub', user.isSub ? 'true' : 'false');
@@ -409,8 +450,6 @@ class OAuthEngine {
       localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
       if (user.adminToken) {
         localStorage.setItem('hunthub_admin_token', user.adminToken);
-      } else {
-        localStorage.removeItem('hunthub_admin_token');
       }
     } else {
       localStorage.removeItem('hunthub_streamer_admin_unlocked');
