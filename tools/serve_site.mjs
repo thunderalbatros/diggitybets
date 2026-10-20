@@ -129,7 +129,214 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Mock API endpoints for local testing & visual audit
+  // Local in-memory sync state for local testing & visual audit
+  if (!globalThis.__LOCAL_SYNC__) {
+    globalThis.__LOCAL_SYNC__ = {
+      celebrationEvent: null,
+      overlayEvents: {},
+      battleState: null,
+      tourneyState: null,
+      bonushuntState: null,
+      slotRequests: [],
+      activeChatters: [],
+      chatAnnouncements: [],
+      duoQueues: { battleQueue: [], tourneyQueue: [], mode: 'battle', counts: { battle: 0, tourney: 0 }, updatedAt: 0 },
+      updatedAt: 0
+    };
+  }
+  const syncMem = globalThis.__LOCAL_SYNC__;
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, x-device-fingerprint'
+    });
+    res.end();
+    return;
+  }
+
+  if (cleanUrl === '/api/wheel/duo/queues') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (Array.isArray(parsed.battleQueue)) syncMem.duoQueues.battleQueue = parsed.battleQueue;
+          if (Array.isArray(parsed.tourneyQueue)) syncMem.duoQueues.tourneyQueue = parsed.tourneyQueue;
+          if (parsed.mode) syncMem.duoQueues.mode = parsed.mode;
+          syncMem.duoQueues.counts = {
+            battle: syncMem.duoQueues.battleQueue.length,
+            tourney: syncMem.duoQueues.tourneyQueue.length
+          };
+          syncMem.duoQueues.updatedAt = Date.now();
+        } catch (_) {}
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: true, ...syncMem.duoQueues }));
+      });
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify(syncMem.duoQueues));
+    return;
+  }
+
+  if (cleanUrl === '/api/wheel/duo/spin' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let parsed = {};
+      try { parsed = JSON.parse(body || '{}'); } catch (_) {}
+      syncMem.duoQueues.lastSpin = {
+        action: 'spin',
+        targetOverlay: 'wheel-duo',
+        mode: parsed.mode || syncMem.duoQueues.mode || 'battle',
+        spinId: parsed.spinId || ('local_spin_' + Date.now()),
+        winner: parsed.winner || null,
+        targetCorner: parsed.targetCorner || 'A',
+        targetSeed: parsed.targetSeed || null,
+        ts: Date.now()
+      };
+      syncMem.duoQueues.updatedAt = Date.now();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: true, ...syncMem.duoQueues.lastSpin }));
+    });
+    return;
+  }
+
+  if (cleanUrl === '/api/kick/chat/announce' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let parsed = {};
+      try { parsed = JSON.parse(body || '{}'); } catch (_) {}
+      const cleanUser = '@' + String(parsed.username || parsed.winner || 'Viewer').trim().replace(/^@+/, '');
+      const eventType = String(parsed.eventType || parsed.type || 'picked').trim().toLowerCase();
+      const message = parsed.message || `Congratulations ${cleanUser} has ${eventType === 'picked' ? 'been picked' : 'won the ' + eventType}!`;
+      const ann = {
+        id: 'ann_' + Date.now(),
+        username: cleanUser,
+        eventType,
+        message,
+        slotName: parsed.slotName || '',
+        prize: parsed.prize || '',
+        ts: Date.now()
+      };
+      syncMem.chatAnnouncements.push(ann);
+      if (parsed.celebration) {
+        syncMem.celebrationEvent = { ...parsed.celebration, announcementText: message, timestamp: Date.now() };
+        syncMem.overlayEvents['overlay-celebration'] = syncMem.celebrationEvent;
+      }
+      syncMem.updatedAt = Date.now();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, announcement: ann, celebrationEvent: syncMem.celebrationEvent }));
+    });
+    return;
+  }
+
+  if (cleanUrl === '/api/kick/chat/announcements') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ ok: true, announcements: syncMem.chatAnnouncements, updatedAt: syncMem.updatedAt }));
+    return;
+  }
+
+  if (cleanUrl === '/api/overlay/celebration') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          const ev = parsed.celebration || parsed.data || parsed;
+          syncMem.celebrationEvent = { ...ev, timestamp: ev.timestamp || ev.ts || Date.now() };
+          syncMem.overlayEvents['overlay-celebration'] = syncMem.celebrationEvent;
+          syncMem.updatedAt = Date.now();
+        } catch (_) {}
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: true, celebrationEvent: syncMem.celebrationEvent }));
+      });
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({
+      success: true,
+      celebrationEvent: syncMem.celebrationEvent,
+      overlayEvents: syncMem.overlayEvents,
+      chatAnnouncements: syncMem.chatAnnouncements,
+      updatedAt: syncMem.updatedAt
+    }));
+    return;
+  }
+
+  if (cleanUrl === '/api/sync/state') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (parsed.overlayEvent) {
+            const key = parsed.overlayEvent.target || parsed.overlayEvent.type || 'default';
+            syncMem.overlayEvents[key] = parsed.overlayEvent;
+          }
+          if (parsed.celebrationEvent) syncMem.celebrationEvent = parsed.celebrationEvent;
+          if (parsed.battleState || parsed.battle) syncMem.battleState = parsed.battleState || parsed.battle;
+          if (parsed.tourneyState || parsed.tourney) syncMem.tourneyState = parsed.tourneyState || parsed.tourney;
+          if (parsed.bonushuntState || parsed.bonushunt) syncMem.bonushuntState = parsed.bonushuntState || parsed.bonushunt;
+          if (Array.isArray(parsed.slotRequests)) syncMem.slotRequests = parsed.slotRequests;
+          if (Array.isArray(parsed.activeChatters)) syncMem.activeChatters = parsed.activeChatters;
+          syncMem.updatedAt = Date.now();
+        } catch (_) {}
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: true, updatedAt: syncMem.updatedAt }));
+      });
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({
+      users: [],
+      stake_verification_requests: [],
+      store_redemptions: [],
+      raffle_tickets: [],
+      alt_clusters: [],
+      celebrationEvent: syncMem.celebrationEvent,
+      overlayEvents: syncMem.overlayEvents,
+      battle: syncMem.battleState,
+      battleState: syncMem.battleState,
+      tourney: syncMem.tourneyState,
+      tourneyState: syncMem.tourneyState,
+      bonushunt: syncMem.bonushuntState,
+      bonushuntState: syncMem.bonushuntState,
+      slotRequests: syncMem.slotRequests,
+      activeChatters: syncMem.activeChatters,
+      chatAnnouncements: syncMem.chatAnnouncements,
+      duoQueues: syncMem.duoQueues,
+      updatedAt: syncMem.updatedAt
+    }));
+    return;
+  }
+
+  if (cleanUrl === '/api/wheel/csgo/active-pool') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (Array.isArray(parsed.chatters)) syncMem.activeChatters = parsed.chatters;
+          syncMem.updatedAt = Date.now();
+        } catch (_) {}
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ windowSeconds: 900, count: syncMem.activeChatters.length, chatters: syncMem.activeChatters }));
+      });
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ windowSeconds: 900, count: syncMem.activeChatters.length, chatters: syncMem.activeChatters }));
+    return;
+  }
+
   if (cleanUrl === '/api/hunt/spotlight') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end(JSON.stringify({ active: false, username: null }));
@@ -150,7 +357,7 @@ const server = http.createServer((req, res) => {
 
   if (cleanUrl.startsWith('/api/battle/')) {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    res.end(JSON.stringify({ success: true }));
+    res.end(JSON.stringify({ success: true, state: syncMem.battleState }));
     return;
   }
 

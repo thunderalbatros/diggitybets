@@ -67,8 +67,12 @@ class AdminHubController {
     // King of the Hill (KotH) State & Duo Wheel Corner Target ('A' = Blue Corner, 'B' = Red Corner)
     this.wheelTargetCorner = 'A';
     this._processedDuoSpinIds = new Set();
-    this._demoUsersPurgedForLive = false;
+    this._processedAnnounceKeys = new Set();
+    this._demoUsersPurgedForLive = true;
+    this._lastLocalDuoMutationAt = 0;
+    this._lastChatterSyncAt = 0;
     this.kothCelebrationTimer = null;
+    this.battleQueue = [];
     this.tourneyQueue = [];
     this.kothState = {
       active: true,
@@ -138,11 +142,15 @@ class AdminHubController {
     this.initLiveKickChatBridge();
     this.bindObsCopyButtons();
 
-    // Auto-clean demo users on startup if not already purged
-    if (localStorage.getItem('hunthub_demo_users_purged_live_v3') !== 'true') {
-      this.purgeDemoUsersForLiveStream('init_clean_live_v3', true);
-      try { localStorage.setItem('hunthub_demo_users_purged_live_v3', 'true'); } catch (_) {}
+    // Always enforce 0% demo users for live stream readiness
+    try { localStorage.setItem('hunthub_demo_users_purged', 'true'); } catch (_) {}
+    if (localStorage.getItem('hunthub_demo_users_purged_live_v4') !== 'true') {
+      this.purgeDemoUsersForLiveStream('init_clean_live_v4', true);
+      try { localStorage.setItem('hunthub_demo_users_purged_live_v4', 'true'); } catch (_) {}
     }
+
+    // Expose global winner announcer for Bonus Hunt, Slot Request Wheel & Predictions
+    window.announceStreamWinner = (opts) => this.announceStreamWinner(opts);
 
     // Bind manual Clean All Demo Users button
     const btnCleanDemo = document.getElementById('btn-admin-clean-demo-users');
@@ -869,17 +877,51 @@ class AdminHubController {
       }
     } catch (_) {}
 
-    // Fallback if local offline
+    // Fallback to real local raffle ledger or real active Kick chatters (never demo users)
     if (!result || !result.winner) {
-      const participants = ['@CharlyBets', '@CharlyBets', '@ZeusMax_21', '@SlotHunter_AR', '@CharlyBets'];
-      const winner = participants[Math.floor(Math.random() * participants.length)];
+      let realParticipants = [];
+      try {
+        const savedRaffle = JSON.parse(localStorage.getItem(this.storageKeyTickets) || 'null');
+        if (savedRaffle && Array.isArray(savedRaffle.participants)) {
+          savedRaffle.participants.forEach((p) => {
+            const u = String(p.kick_username || p.username || '').trim().replace(/^@/, '');
+            const count = Math.max(1, Number(p.tickets_count || p.tickets || 1));
+            if (u && !this.demoUsernames.has(u.toLowerCase())) {
+              for (let i = 0; i < count; i++) realParticipants.push(`@${u}`);
+            }
+          });
+        }
+      } catch (_) {}
+
+      if (realParticipants.length === 0 && this.recentChatters.size > 0) {
+        realParticipants = Array.from(this.recentChatters.values())
+          .map(c => '@' + String(c.user || '').trim().replace(/^@/, ''))
+          .filter(u => u.length > 1 && !this.demoUsernames.has(u.slice(1).toLowerCase()));
+      }
+
+      if (realParticipants.length === 0) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🎲 ROLL SUNDAY WINNER LIVE (PROVABLY FAIR) 🏆';
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'No Giveaway Participants Yet',
+            message: 'Wait for real viewers to acquire raffle tickets or speak in live Kick chat before rolling.',
+            type: 'gold'
+          });
+        }
+        return;
+      }
+
+      const winner = realParticipants[Math.floor(Math.random() * realParticipants.length)];
       result = {
         winner,
-        ticketNumber: 7,
-        totalTickets: 28,
+        ticketNumber: Math.floor(Math.random() * realParticipants.length) + 1,
+        totalTickets: realParticipants.length,
         serverSeed: 'seed_' + Date.now(),
         clientSeed: 'kick_sunday_stream',
-        hmacDigest: 'a3f9e4...'
+        hmacDigest: 'pf_' + Date.now().toString(16)
       };
     }
 
@@ -901,6 +943,19 @@ class AdminHubController {
         nameEl.textContent = result.winner;
         modal.style.display = 'flex';
       }
+
+      this.announceStreamWinner({
+        eventType: 'giveaway',
+        tier: 'grand',
+        type: 'GIVEAWAY_WIN',
+        category: 'SUNDAY RAFFLE & GIVEAWAY · WINNER',
+        ribbon: '🎁 OFFICIAL GIVEAWAY WINNER',
+        icon: '🎁',
+        username: result.winner,
+        slotName: 'Live Stream Giveaway',
+        statValue: `TICKET #${result.ticketNumber || 1}`,
+        prize: `Congratulations @${String(result.winner).replace(/^@/, '')} has won the giveaway!`
+      });
 
       if (btn) {
         btn.disabled = false;
@@ -1574,14 +1629,29 @@ class AdminHubController {
         }
 
         let guesses = [];
-        try { guesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]'); } catch (e) {}
+        try {
+          const g1 = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
+          const g2 = JSON.parse(localStorage.getItem('hunthub_bh_guesses') || '[]');
+          const merged = new Map();
+          [...(Array.isArray(g1) ? g1 : []), ...(Array.isArray(g2) ? g2 : [])].forEach((g) => {
+            const u = String(g.user || g.username || '').trim().replace(/^@/, '');
+            const val = Number(g.guess ?? g.amount ?? 0);
+            if (u && !this.demoUsernames.has(u.toLowerCase()) && val > 0) {
+              merged.set(u.toLowerCase(), { user: `@${u}`, guess: val });
+            }
+          });
+          guesses = Array.from(merged.values());
+        } catch (e) {}
 
         if (guesses.length === 0) {
-          guesses = [
-            { user: '@NachoGamer', guess: 1620 },
-            { user: '@SlotKing21', guess: 1840 },
-            { user: '@DiggityFan', guess: 1450 }
-          ];
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'No !guess Entries Yet',
+              message: 'Wait for viewers to type !guess <amount> in live Kick chat or submit on the website.',
+              type: 'gold'
+            });
+          }
+          return;
         }
 
         let closest = guesses[0];
@@ -1600,10 +1670,23 @@ class AdminHubController {
           display.textContent = `🏆 WINNER: ${closest.user} (Guess: $${closest.guess.toFixed(2)} | Diff: $${minDiff.toFixed(2)})`;
         }
 
+        this.announceStreamWinner({
+          eventType: 'gtb',
+          tier: 'grand',
+          type: 'GTB_WIN',
+          category: 'GUESS THE BALANCE (GTB) · WINNER',
+          ribbon: '💎 GUESS THE BALANCE CHAMPION',
+          icon: '💎',
+          username: closest.user,
+          slotName: 'Bonus Hunt GTB',
+          statValue: `$${closest.guess.toFixed(2)} (Δ $${minDiff.toFixed(2)})`,
+          prize: `Congratulations @${String(closest.user).replace(/^@/, '')} has won the gtb!`
+        });
+
         if (window.sonner) {
           window.sonner.toast({
             title: 'Guess The Balance Resolved! 🏆',
-            message: `${closest.user} won with a guess of $${closest.guess.toFixed(2)}!`,
+            message: `Congratulations ${closest.user} has won the gtb! (Guess: $${closest.guess.toFixed(2)})`,
             type: 'gold'
           });
         }
@@ -1902,11 +1985,16 @@ class AdminHubController {
           }
 
           if (parsed.matches.m1) {
-            // Sanitize any legacy pre-baked demo state that had status === 'FINISHED' & champion === '@SlotQueen'
-            if (parsed.status === 'FINISHED' && parsed.champion && parsed.champion.username === '@SlotQueen' && parsed.matches?.m7?.score1 === 890.5) {
-              const cleanDemo = this.createDemoTourneyState(this.tourneyMode);
-              this.saveTourneyState(cleanDemo, false);
-              return cleanDemo;
+            const hasDemoInBracket = Boolean(parsed.isDemo) || ['m1', 'm2', 'm3', 'm4'].some((mKey) => {
+              const m = parsed.matches?.[mKey];
+              const u1 = String(m?.player1?.username || '').trim().toLowerCase().replace(/^@/, '');
+              const u2 = String(m?.player2?.username || '').trim().toLowerCase().replace(/^@/, '');
+              return (u1 && this.demoUsernames.has(u1)) || (u2 && this.demoUsernames.has(u2));
+            });
+            if (hasDemoInBracket) {
+              const cleanEmpty = this.createEmptyTourneyState(this.tourneyMode);
+              this.saveTourneyState(cleanEmpty, false);
+              return cleanEmpty;
             }
             parsed.gameMode = this.tourneyMode || parsed.gameMode || parsed.mode || 'BONUS_BUY';
             parsed.mode = parsed.gameMode;
@@ -1916,8 +2004,7 @@ class AdminHubController {
       }
     } catch (_) {}
 
-    const purged = localStorage.getItem('hunthub_demo_users_purged') === 'true' || Boolean(window.hunthubStreamLive);
-    const initial = purged ? this.createEmptyTourneyState(this.tourneyMode) : this.createDemoTourneyState(this.tourneyMode);
+    const initial = this.createEmptyTourneyState(this.tourneyMode);
     this.saveTourneyState(initial, false);
     return initial;
   }
@@ -2079,9 +2166,17 @@ class AdminHubController {
           this.channelTourney.postMessage({ action: 'state_update', state, ts: state.ts });
         } catch (_) {}
       }
+      try {
+        fetch('/api/tourney/state', {
+          method: 'POST',
+          headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ state })
+        }).catch(() => {});
+      } catch (_) {}
       this.relayOverlaySyncEvent({
         target: 'overlay-tourney',
         type: 'TOURNEY_STATE',
+        data: { state },
         state,
         ts: state.ts
       });
@@ -2299,25 +2394,66 @@ class AdminHubController {
       } catch (_) {}
     }
 
-    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS!
+    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS + Chat Announcement!
     const isGrandFinal = matchId === 'm7';
     const statLabel = state.gameMode === 'SPINS'
       ? (isGrandFinal ? 'CHAMPION · SPINS WIN' : 'ROUND WIN · SPINS')
       : `${Math.max(Number(m.score1) || 0, Number(m.score2) || 0).toFixed(2)}x`;
     const nextRoundName = (matchId === 'm5' || matchId === 'm6') ? 'GRAND FINAL' : 'SEMIFINALS';
+    const cleanWinnerHandle = String(winningPlayer.username || '').replace(/^@/, '');
 
-    this.triggerStreamCelebrationOverlay({
-      tier: isGrandFinal ? 'grand' : 'partial',
-      type: isGrandFinal ? 'TOURNEY_CHAMPION' : 'TOURNEY_MATCH_WIN',
-      category: isGrandFinal ? '8-BRACKET TOURNAMENT CHAMPION' : `8-BRACKET TOURNEY · ${matchId.toUpperCase()} WINNER`,
-      ribbon: isGrandFinal ? '🏆 GRAND TOURNAMENT CHAMPION' : `⚡ ADVANCES TO ${nextRoundName}`,
-      icon: isGrandFinal ? '👑' : '🏆',
-      username: winningPlayer.username,
-      slotName: winningPlayer.slotName,
-      slotImg: winningPlayer.slotImage,
-      statValue: statLabel,
-      prize: isGrandFinal ? '👑 1ST PLACE TOURNAMENT CHAMPION!' : `ADVANCES TO ${nextRoundName}`
-    });
+    if (isGrandFinal) {
+      this.announceStreamWinner({
+        eventType: 'tourney',
+        tier: 'grand',
+        type: 'TOURNEY_CHAMPION',
+        category: '8-BRACKET TOURNAMENT CHAMPION',
+        ribbon: '🏆 GRAND TOURNAMENT CHAMPION',
+        icon: '👑',
+        username: winningPlayer.username,
+        slotName: winningPlayer.slotName,
+        slotImg: winningPlayer.slotImage,
+        statValue: statLabel,
+        prize: `Congratulations @${cleanWinnerHandle} has won the tourney!`
+      });
+
+      // If a viewer won the 8-Bracket Prediction contest, announce them right after!
+      if (window.tournamentPrediction && typeof window.tournamentPrediction.resolveTopPredictionWinner === 'function') {
+        const predWinner = window.tournamentPrediction.resolveTopPredictionWinner();
+        if (predWinner && predWinner.username) {
+          setTimeout(() => {
+            this.announceStreamWinner({
+              eventType: 'prediction',
+              tier: 'grand',
+              type: 'PREDICTION_CHAMPION',
+              category: '8-BRACKET PREDICTION · #1 WINNER',
+              ribbon: '🔮 BRACKET PREDICTION WINNER',
+              icon: '🔮',
+              username: predWinner.username,
+              slotName: winningPlayer.slotName || '8-Bracket Pick Tree',
+              slotImg: winningPlayer.slotImage,
+              statValue: `${predWinner.score || 1}/7 HITS`,
+              prize: `Congratulations @${String(predWinner.username).replace(/^@/, '')} has won the prediction!`
+            });
+          }, 5500);
+        }
+      }
+    } else {
+      this.announceStreamWinner({
+        eventType: 'picked',
+        customMessage: `Congratulations @${cleanWinnerHandle} has won ${matchId.toUpperCase()} and advances to ${nextRoundName}!`,
+        tier: 'partial',
+        type: 'TOURNEY_MATCH_WIN',
+        category: `8-BRACKET TOURNEY · ${matchId.toUpperCase()} WINNER`,
+        ribbon: `⚡ ADVANCES TO ${nextRoundName}`,
+        icon: '🏆',
+        username: winningPlayer.username,
+        slotName: winningPlayer.slotName,
+        slotImg: winningPlayer.slotImage,
+        statValue: statLabel,
+        prize: `ADVANCES TO ${nextRoundName}`
+      });
+    }
 
     this.renderTournamentAdmin();
     this.updateWheelTargetUI();
@@ -3070,11 +3206,29 @@ class AdminHubController {
       });
     }
 
-    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS (zero audio/confetti inside Control Panel)
+    const resolveEvt = {
+      target: 'overlay-battle',
+      action: 'resolve_battle',
+      type: 'resolve_battle',
+      winner: winnerSlot,
+      winningName: `@${winUserClean}`,
+      losingName,
+      kothStreak: this.kothState.streak,
+      ts: Date.now()
+    };
+    this.relayOverlaySyncEvent(resolveEvt);
+    fetch('/api/battle/resolve', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(resolveEvt)
+    }).catch(() => {});
+
+    // Trigger 1920x1080 Transparent Winner Celebration Overlay in OBS + Live Chat Winner Announcement
     const streakNum = this.kothState.active ? (this.kothState.streak || 1) : 1;
     const prizeUsd = Math.min(20, streakNum * 5);
     const isMaxPrize = streakNum >= 4;
-    this.triggerStreamCelebrationOverlay({
+    this.announceStreamWinner({
+      eventType: 'battle',
       tier: isMaxPrize ? 'grand' : 'partial',
       type: isMaxPrize ? 'KOTH_CHAMPION' : 'BATTLE_WIN',
       category: isMaxPrize ? 'KING OF THE HILL · $20 MAX CHAMPION' : `1V1 BATTLE WINNER · STREAK ${streakNum}/4`,
@@ -3180,12 +3334,13 @@ class AdminHubController {
     try {
       fetch('/api/battle/koth/decision', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ decision: 'continue' })
-      });
+      }).catch(() => {});
     } catch (_) {}
 
     const contEvt = {
+      target: 'overlay-battle',
       action: 'koth_continue',
       type: 'koth_continue',
       king: kingName,
@@ -3196,6 +3351,7 @@ class AdminHubController {
     try { localStorage.setItem('hunthub_koth_event', JSON.stringify(contEvt)); } catch (_) {}
     if (this.channelBattle) this.channelBattle.postMessage(contEvt);
     try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(contEvt); } catch (_) {}
+    this.relayOverlaySyncEvent(contEvt);
     window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: contEvt }));
 
     this.showKothBanner(`⚔️ @${kingName} chose !continue (Streak ${this.kothState.streak}/4)! Spin Duo Wheel to pick Red Corner (Player B).`, 'cyan');
@@ -3217,14 +3373,16 @@ class AdminHubController {
     const resolvedRetireSlot = this.resolveSlotMeta(retiredSlot);
     const streak = Math.max(1, this.kothState.streak || 1);
     const prizeAmount = Math.min(20, streak * 5);
-    const announcement = `Congratulations @${retired} you won $${prizeAmount}`;
+    const announcement = `Congratulations @${retired} has won the battle!`;
 
     if (retired && retired !== 'Winner') {
       this.awardKothGrandPrize(retired, prizeAmount, streak);
     }
 
-    // Trigger Special Grand Celebration Overlay in OBS when !cashout is executed!
-    this.triggerStreamCelebrationOverlay({
+    // Trigger Special Grand Celebration Overlay in OBS + Chat Announcement when !cashout is executed!
+    this.announceStreamWinner({
+      eventType: 'battle',
+      customMessage: `Congratulations @${retired} has won the battle! ($${prizeAmount} Cashout)`,
       tier: 'grand',
       type: 'KOTH_CASHOUT',
       category: '1V1 KING OF THE HILL · !CASHOUT WINNER',
@@ -3237,17 +3395,18 @@ class AdminHubController {
       prize: `💰 CASHOUT PRIZE: $${prizeAmount.toFixed(2)} USD!`
     });
 
-    this.showKothBanner(`💰 ${announcement}! (${streak}/4 Wins — Both corners cleared for new contenders)`, 'gold');
+    this.showKothBanner(`💰 ${announcement} ($${prizeAmount} · ${streak}/4 Wins — Both corners cleared for new contenders)`, 'gold');
 
     try {
       fetch('/api/battle/koth/decision', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ decision: 'retire' })
-      });
+      }).catch(() => {});
     } catch (_) {}
 
     const retireEvt = {
+      target: 'overlay-battle',
       action: 'koth_retire',
       type: 'koth_cashout',
       retiredKing: retired,
@@ -3259,6 +3418,7 @@ class AdminHubController {
     try { localStorage.setItem('hunthub_koth_event', JSON.stringify(retireEvt)); } catch (_) {}
     if (this.channelBattle) this.channelBattle.postMessage(retireEvt);
     try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(retireEvt); } catch (_) {}
+    this.relayOverlaySyncEvent(retireEvt);
     window.dispatchEvent(new CustomEvent('hunthub:battle-celebration', { detail: retireEvt }));
 
     // Clear both corners and reset wheel target to Player A (Blue Corner)
@@ -3266,7 +3426,7 @@ class AdminHubController {
 
     if (window.sonner) {
       window.sonner.toast({
-        title: `💰 ${announcement}!`,
+        title: `💰 ${announcement}`,
         message: `Cards A & B cleared. Ready to spin for new Player A (Blue Corner) and Player B (Red Corner).`,
         type: 'gold'
       });
@@ -3322,31 +3482,24 @@ class AdminHubController {
 
     if (btnRestoreDuo) {
       btnRestoreDuo.onclick = () => {
-        this._demoUsersPurgedForLive = false;
-        try { localStorage.removeItem('hunthub_demo_users_purged'); } catch (_) {}
-        this.duoPool = [
-          { chatter: 'LuckyStriker', user: 'LuckyStriker', slot: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', icon: '🤠' },
-          { chatter: 'VegasKing', user: 'VegasKing', slot: 'Gates of Olympus 1000', provider: 'Pragmatic Play', icon: '⚡' },
-          { chatter: 'SlotQueen', user: 'SlotQueen', slot: 'Waylanders Forge', provider: 'Valkyrie Studio', icon: '⚔️' },
-          { chatter: 'SpinMaster', user: 'SpinMaster', slot: 'Sugar Rush 1000', provider: 'Pragmatic Play', icon: '🍬' },
-          { chatter: 'Strike777', user: 'Strike777', slot: 'Le Bandit', provider: 'Hacksaw Gaming', icon: '🦝' },
-          { chatter: 'BigBassBob', user: 'BigBassBob', slot: 'Big Bass Splash', provider: 'Pragmatic Play', icon: '🎣' },
-          { chatter: 'NeonWolf', user: 'NeonWolf', slot: 'Sharks!', provider: 'Pragmatic Play', icon: '🦈' },
-          { chatter: 'RoyalFlush', user: 'RoyalFlush', slot: 'RIP City', provider: 'Hacksaw Gaming', icon: '🐱' }
-        ];
-        try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
-        this.renderDuoQueue();
-        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
-        if (window.sonner) window.sonner.toast({ title: 'Duo Pool Restored 🎲', message: '8 pairs queued.', type: 'cyan' });
+        this.syncDuoQueues(true);
+        if (window.sonner) window.sonner.toast({ title: 'Live Queue Synced 🔄', message: 'Synchronized with live Kick chat queue.', type: 'cyan' });
       };
     }
 
     if (btnClearDuo) {
       btnClearDuo.onclick = () => {
         this.duoPool = [];
+        if (this.duoMode === 'tourney') {
+          this.tourneyQueue = [];
+        } else {
+          this.battleQueue = [];
+        }
+        this._lastLocalDuoMutationAt = Date.now();
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
-        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool, type: 'sync_pool', items: this.duoPool });
+        this.pushDuoQueuesToEdge();
       };
     }
 
@@ -3365,6 +3518,7 @@ class AdminHubController {
       btnClearCooldowns.onclick = () => {
         this.recentChatters.clear();
         this.renderActiveChatters();
+        this.pushActiveChattersToEdge(true);
         if (window.sonner) window.sonner.toast({ title: 'Cooldowns Cleared 🔄', message: 'Chatter history reset.', type: 'default' });
       };
     }
@@ -3381,39 +3535,68 @@ class AdminHubController {
     }
 
     // Phase 4: Periodic sync of Duo-Wheel queues with server live state
-    this.syncDuoQueues();
-    setInterval(() => this.syncDuoQueues(), 4000);
+    this.syncDuoQueues(true);
+    setInterval(() => this.syncDuoQueues(false), 4000);
   }
 
-  async syncDuoQueues() {
+  pushDuoQueuesToEdge() {
+    this._lastLocalDuoMutationAt = Date.now();
+    const payload = {
+      mode: this.duoMode,
+      battleQueue: Array.isArray(this.battleQueue) ? this.battleQueue : [],
+      tourneyQueue: Array.isArray(this.tourneyQueue) ? this.tourneyQueue : [],
+      ts: Date.now()
+    };
+    fetch('/api/wheel/duo/queues', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  }
+
+  async syncDuoQueues(force = false) {
+    if (!force && this._lastLocalDuoMutationAt && (Date.now() - this._lastLocalDuoMutationAt) < 5000) {
+      return;
+    }
     try {
+      const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
       let res = null;
-      try {
-        res = await fetch('http://127.0.0.1:3001/api/wheel/duo/queues', { mode: 'cors' });
-      } catch (_) {}
+      if (isLocal) {
+        try {
+          res = await fetch('http://127.0.0.1:3001/api/wheel/duo/queues', { mode: 'cors' });
+        } catch (_) {}
+      }
       if (!res || !res.ok) {
         res = await fetch('/api/wheel/duo/queues');
       }
       if (res && res.ok) {
         const data = await res.json();
+        const isCleanUser = (u) => {
+          const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
+          return Boolean(clean) && !this.demoUsernames.has(clean);
+        };
         if (Array.isArray(data.tourneyQueue)) {
-          this.tourneyQueue = data.tourneyQueue;
+          this.tourneyQueue = data.tourneyQueue.filter(e => isCleanUser(e?.username || e?.chatter));
           const tCount = document.getElementById('cp-tourney-q-count');
           if (tCount) tCount.textContent = String(this.tourneyQueue.length);
         }
         if (Array.isArray(data.battleQueue)) {
-          this.battleQueue = data.battleQueue;
+          this.battleQueue = data.battleQueue.filter(e => isCleanUser(e?.username || e?.chatter));
           const bCount = document.getElementById('cp-battle-q-count');
           if (bCount) bCount.textContent = String(this.battleQueue.length);
         }
-        const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
+        const q = this.duoMode === 'tourney' ? this.tourneyQueue : this.battleQueue;
         if (Array.isArray(q)) {
-          this.duoPool = q.map(e => ({
-            chatter: e.username,
-            slot: e.slotName,
-            provider: e.slotProvider,
-            icon: '🎰'
-          }));
+          this.duoPool = q.map(e => {
+            const meta = this.resolveSlotMeta(e.slotName || e.slot);
+            return {
+              chatter: String(e.username || e.chatter || '').replace(/^@/, ''),
+              slot: meta.name,
+              provider: e.slotProvider || meta.provider,
+              imageUrl: e.imageUrl || meta.image,
+              icon: '🎰'
+            };
+          });
           try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
           this.renderDuoQueue();
         }
@@ -3479,10 +3662,10 @@ class AdminHubController {
     }
     fetch('/api/wheel/duo/mode', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ mode: this.duoMode })
     }).catch(() => {});
-    this.syncDuoQueues();
+    this.syncDuoQueues(true);
     this.renderDuoQueue();
     if (!fromRemote && window.sonner) {
       window.sonner.toast({
@@ -3608,20 +3791,36 @@ class AdminHubController {
     // Dispatch spin to Cloudflare edge so remote OBS instances in USA spin in sync
     fetch('/api/wheel/duo/spin', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(spinPayload)
     }).catch(() => {});
 
+    this.relayOverlaySyncEvent({
+      target: 'wheel-duo',
+      type: 'spin',
+      ...spinPayload
+    });
+
     // Remove winner from local pool immediately so they cannot be picked twice!
     const cleanWinnerUser = String(winner.chatter || '').trim().toLowerCase().replace(/^@/, '');
+    this._lastLocalDuoMutationAt = Date.now();
     this.duoPool = this.duoPool.filter(item => String(item.chatter || '').trim().toLowerCase().replace(/^@/, '') !== cleanWinnerUser);
+    if (isTourneyMode) {
+      this.tourneyQueue = this.tourneyQueue.filter(e => String(e.username || '').trim().toLowerCase().replace(/^@/, '') !== cleanWinnerUser);
+      const tCount = document.getElementById('cp-tourney-q-count');
+      if (tCount) tCount.textContent = String(this.tourneyQueue.length);
+    } else {
+      this.battleQueue = this.battleQueue.filter(e => String(e.username || '').trim().toLowerCase().replace(/^@/, '') !== cleanWinnerUser);
+      const bCount = document.getElementById('cp-battle-q-count');
+      if (bCount) bCount.textContent = String(this.battleQueue.length);
+    }
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
     this.renderDuoQueue();
 
     // Remove winner from backend queue as well
     fetch('/api/wheel/duo/remove', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ mode: this.duoMode, username: cleanWinnerUser })
     }).catch(() => {});
 
@@ -3638,20 +3837,46 @@ class AdminHubController {
         // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
         this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot, spinId);
         this.updateWheelTargetUI();
+        this.announceStreamWinner({
+          eventType: 'picked',
+          tier: 'partial',
+          type: 'WHEEL_PICKED',
+          category: `1V1 BATTLE · ${targetCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'} PICKED`,
+          ribbon: `🎡 ${targetCorner === 'A' ? 'PLAYER A (BLUE)' : 'PLAYER B (RED)'} SELECTED`,
+          icon: '🎡',
+          username: winner.chatter,
+          slotName: winner.slot,
+          slotImg: winner.imageUrl,
+          statValue: `CORNER ${targetCorner}`,
+          prize: `Picked on Dual Wheel (${winner.slot})!`
+        });
         if (window.sonner) {
           window.sonner.toast({
             title: `Winner ${targetCorner === 'A' ? 'A (Blue Corner)' : 'B (Red Corner)'} Selected! 🎰`,
-            message: `@${winner.chatter} + "${winner.slot}" assigned to ${targetCorner === 'A' ? 'Player A (Blue)' : 'Player B (Red)'} and removed from wheel pool!`,
+            message: `Congratulations @${winner.chatter} has been picked! ("${winner.slot}")`,
             type: targetCorner === 'A' ? 'cyan' : 'gold'
           });
         }
       } else {
         // Auto-assign winner to 8-Bracket Tournament Seed (1/8 .. 8/8) and wrap to 1/8 after 8/8
         this.assignWheelWinnerToTourneySeed(winner.chatter, winner.slot, spinId, targetSeed);
+        this.announceStreamWinner({
+          eventType: 'picked',
+          tier: 'partial',
+          type: 'WHEEL_PICKED',
+          category: `8-BRACKET TOURNEY · SEED ${targetSeed}/8 PICKED`,
+          ribbon: `🏆 SEED ${targetSeed}/8 SELECTED`,
+          icon: '🏆',
+          username: winner.chatter,
+          slotName: winner.slot,
+          slotImg: winner.imageUrl,
+          statValue: `SEED #${targetSeed}`,
+          prize: `Picked for 8-Bracket Tourney (${winner.slot})!`
+        });
         if (window.sonner) {
           window.sonner.toast({
             title: `🏆 Seed ${targetSeed}/8 Filled! (${nextSeedInfo?.label || 'Bracket'})`,
-            message: `@${winner.chatter} (${winner.slot}) placed into 8-Bracket Tournament${targetSeed >= 8 ? ' — All 8/8 filled! Counter reset to Seed 1/8.' : '!'}`,
+            message: `Congratulations @${winner.chatter} has been picked! (${winner.slot})`,
             type: 'gold'
           });
         }
@@ -3662,28 +3887,29 @@ class AdminHubController {
   renderActiveChatters() {
     const listEl = document.getElementById('admin-chatters-list');
     const countEl = document.getElementById('admin-chatters-count');
-    if (!listEl) return;
+    const cpCountEl = document.getElementById('cp-active-chatters-count');
 
-    // Seed realistic chatters if map empty and demo users have not been purged
-    if (this.recentChatters.size === 0 && !this._demoUsersPurgedForLive && localStorage.getItem('hunthub_demo_users_purged') !== 'true') {
-      const now = Date.now();
-      this.recentChatters.set('NachoGamer', { user: 'NachoGamer', ts: now - 12000 });
-      this.recentChatters.set('SlotKing21', { user: 'SlotKing21', ts: now - 28000 });
-      this.recentChatters.set('DiggityFan', { user: 'DiggityFan', ts: now - 45000 });
-      this.recentChatters.set('CryptoSpin', { user: 'CryptoSpin', ts: now - 62000 });
-      this.recentChatters.set('AgusKick', { user: 'AgusKick', ts: now - 75000 });
+    // Prune any demo usernames and chatters older than 30 minutes
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    for (const [k, v] of this.recentChatters.entries()) {
+      const clean = String(k || '').trim().replace(/^@/, '').toLowerCase();
+      if (!clean || this.demoUsernames.has(clean) || (v?.ts && v.ts < cutoff)) {
+        this.recentChatters.delete(k);
+      }
     }
 
     const arr = Array.from(this.recentChatters.values());
     if (countEl) countEl.textContent = arr.length.toString();
+    if (cpCountEl) cpCountEl.textContent = `${arr.length} active`;
+    if (!listEl) return;
 
     if (arr.length === 0) {
-      listEl.innerHTML = `<span style="font-size: 11px; color: #64748b;">No active chatters in last 90s.</span>`;
+      listEl.innerHTML = `<span style="font-size: 11px; color: #64748b;">Waiting for live chat activity on kick.com/diggitybets...</span>`;
       return;
     }
 
     listEl.innerHTML = arr.map(c => {
-      const secAgo = Math.floor((Date.now() - c.ts) / 1000);
+      const secAgo = Math.max(0, Math.floor((Date.now() - c.ts) / 1000));
       return `
         <div style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
           <span style="font-weight: 700; color: #ffffff; font-size: 11px;">@${this.escapeHTML(c.user)}</span>
@@ -3693,7 +3919,36 @@ class AdminHubController {
     }).join('');
   }
 
+  pushActiveChattersToEdge(force = false) {
+    const now = Date.now();
+    if (!force && this._lastChatterSyncAt && (now - this._lastChatterSyncAt) < 3000) return;
+    this._lastChatterSyncAt = now;
+    const pool = Array.from(this.recentChatters.values())
+      .map(c => String(c.user || '').trim().replace(/^@/, ''))
+      .filter(u => u && !this.demoUsernames.has(u.toLowerCase()));
+    fetch('/api/wheel/csgo/active-pool', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ pool, activeChatters: pool })
+    }).catch(() => {});
+  }
+
   spinCSGOWheel(demo = false) {
+    const arr = Array.from(this.recentChatters.values())
+      .map(c => String(c.user || '').trim().replace(/^@/, ''))
+      .filter(u => u && !this.demoUsernames.has(u.toLowerCase()));
+
+    if (arr.length === 0) {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: 'No Active Chatters Yet',
+          message: 'Wait for real viewers to chat on kick.com/diggitybets (or type !join) before spinning.',
+          type: 'danger'
+        });
+      }
+      return;
+    }
+
     const btn = document.getElementById('btn-spin-csgo-wheel');
     const cpBtn = document.getElementById('cp-btn-spin-csgo');
     if (btn) {
@@ -3705,12 +3960,27 @@ class AdminHubController {
       cpBtn.textContent = '🎯 SPINNING CS:GO...';
     }
 
-    const arr = Array.from(this.recentChatters.values());
-    const winner = arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)].user : 'LuckyChatter';
+    const winner = arr[Math.floor(Math.random() * arr.length)];
+    const spinTs = Date.now();
 
     if (this.channelGiveaway) {
-      this.channelGiveaway.postMessage({ type: demo ? 'test_spin' : 'spin', winner, ts: Date.now() });
+      this.channelGiveaway.postMessage({
+        type: demo ? 'test_spin' : 'spin',
+        winner,
+        ganador: { nombre: winner },
+        participantes: arr.map(u => ({ nombre: u })),
+        ts: spinTs
+      });
     }
+
+    this.relayOverlaySyncEvent({
+      target: 'wheel-csgo',
+      type: demo ? 'test_spin' : 'spin',
+      winner,
+      ganador: { nombre: winner },
+      participantes: arr,
+      ts: spinTs
+    });
 
     setTimeout(() => {
       if (btn) {
@@ -3725,23 +3995,30 @@ class AdminHubController {
       // Assign Spotlight Recommender in Bonus Hunt
       const callerInput = document.getElementById('admin-hunt-caller-input');
       if (callerInput && !demo) callerInput.value = `@${winner}`;
+      const cpBhUser = document.getElementById('cp-bh-user');
+      if (cpBhUser && !demo) cpBhUser.value = `@${winner}`;
+
+      this.announceStreamWinner({
+        eventType: 'picked',
+        tier: 'partial',
+        type: 'CSGO_WHEEL_PICKED',
+        category: 'CS:GO ACTIVE CHATTER WHEEL · WINNER PICKED',
+        ribbon: '🎯 SPOTLIGHT CHATTER PICKED',
+        icon: '🎯',
+        username: winner,
+        slotName: 'CS:GO Chatter Wheel',
+        statValue: 'PICKED 🎯',
+        prize: `Congratulations @${winner} has been picked!`
+      });
 
       if (window.sonner) {
         window.sonner.toast({
-          title: demo ? 'CS:GO Demo Spin Done 🧪' : 'Spotlight Recommender Chosen! 🎯',
-          message: `@${winner} picked live on CS:GO Wheel!`,
+          title: 'Spotlight Chatter Picked! 🎯',
+          message: `Congratulations @${winner} has been picked!`,
           type: 'gold'
         });
       }
-    }, 4500);
-
-    this.relayOverlaySyncEvent({
-      target: 'wheel-csgo',
-      type: demo ? 'test_spin' : 'spin',
-      winner,
-      participantes: arr.map(c => c.user),
-      ts: Date.now()
-    });
+    }, 6850);
   }
 
   spinSlotWheel(demo = false) {
@@ -3759,15 +4036,37 @@ class AdminHubController {
       cpBtn.textContent = '🎰 SPINNING SLOTS...';
     }
 
+    const slots = window.HUNTHUB_CURATED_SLOTS || [];
+    const pool = cat === 'all' ? slots : slots.filter(s => s.category === cat);
+    const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : { name: 'Gates of Olympus 1000', provider: 'Pragmatic Play' };
+    const resolvedMeta = this.resolveSlotMeta(chosen.name);
+    const winnerSlotObj = {
+      id: chosen.id || chosen.name,
+      name: resolvedMeta.name,
+      nombre: resolvedMeta.name,
+      provider: chosen.provider || resolvedMeta.provider,
+      proveedor: chosen.provider || resolvedMeta.provider,
+      image: resolvedMeta.image
+    };
+    const spinTs = Date.now();
+
     if (this.channelSlotWheel) {
-      this.channelSlotWheel.postMessage({ type: demo ? 'test_spin' : 'spin', category: cat, ts: Date.now() });
+      this.channelSlotWheel.postMessage({
+        type: demo ? 'test_spin' : 'spin',
+        category: cat,
+        winner: winnerSlotObj,
+        ganador: winnerSlotObj,
+        ts: spinTs
+      });
     }
 
     this.relayOverlaySyncEvent({
       target: 'wheel-slots',
       type: demo ? 'test_spin' : 'spin',
       category: cat,
-      ts: Date.now()
+      winner: winnerSlotObj,
+      ganador: winnerSlotObj,
+      ts: spinTs
     });
 
     setTimeout(() => {
@@ -3780,30 +4079,150 @@ class AdminHubController {
         cpBtn.textContent = '🎰 SPIN SLOT ROULETTE';
       }
 
-      const slots = window.HUNTHUB_CURATED_SLOTS || [];
-      const pool = cat === 'all' ? slots : slots.filter(s => s.category === cat);
-      const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : { name: 'Gates of Olympus 1000' };
-
       // Set input in bonus hunt search
       const huntSearch = document.getElementById('admin-hunt-slot-search');
-      if (huntSearch && !demo) huntSearch.value = chosen.name;
+      if (huntSearch && !demo) huntSearch.value = resolvedMeta.name;
+      const cpBhSlot = document.getElementById('cp-bh-slot');
+      if (cpBhSlot && !demo) cpBhSlot.value = resolvedMeta.name;
+
+      const activeCaller = (document.getElementById('cp-bh-user')?.value || document.getElementById('admin-hunt-caller-input')?.value || '').trim().replace(/^@/, '');
+      const announceUser = activeCaller || resolvedMeta.name;
+
+      this.announceStreamWinner({
+        eventType: 'picked',
+        tier: 'partial',
+        type: 'SLOT_WHEEL_PICKED',
+        category: 'RANDOM SLOT ROULETTE · SLOT PICKED',
+        ribbon: '🎰 SLOT ROULETTE WINNER',
+        icon: '🎰',
+        username: announceUser,
+        slotName: resolvedMeta.name,
+        slotImg: resolvedMeta.image,
+        statValue: resolvedMeta.provider || 'SLOT PICK',
+        prize: `Selected Slot: ${resolvedMeta.name}`
+      });
 
       if (window.sonner) {
         window.sonner.toast({
           title: 'Slot Wheel Selected! 🎰',
-          message: `${chosen.name} (${chosen.provider || cat.toUpperCase()})`,
+          message: `Congratulations @${announceUser} has been picked! (${resolvedMeta.name})`,
           type: 'gold'
         });
       }
-    }, 5000);
+    }, 6850);
+  }
+
+  formatWinnerAnnouncementText(eventType, username, customMessage = '') {
+    const cleanUser = String(username || 'Winner').trim().replace(/^@/, '') || 'Winner';
+    if (customMessage) return String(customMessage).trim();
+    const norm = String(eventType || 'picked').trim().toLowerCase();
+    if (norm === 'battle' || norm === 'battle_win' || norm === 'koth_champion' || norm === 'koth_cashout') {
+      return `Congratulations @${cleanUser} has won the battle!`;
+    }
+    if (norm === 'tourney' || norm === 'tournament' || norm === 'tourney_champion') {
+      return `Congratulations @${cleanUser} has won the tourney!`;
+    }
+    if (norm === 'gtb' || norm === 'guess' || norm === 'bonushunt_gtb') {
+      return `Congratulations @${cleanUser} has won the gtb!`;
+    }
+    if (norm === 'prediction' || norm === 'pred') {
+      return `Congratulations @${cleanUser} has won the prediction!`;
+    }
+    if (norm === 'giveaway' || norm === 'raffle') {
+      return `Congratulations @${cleanUser} has won the giveaway!`;
+    }
+    return `Congratulations @${cleanUser} has been picked!`;
+  }
+
+  announceStreamWinner(opts = {}) {
+    const cleanUser = String(opts.username || 'Winner').trim().replace(/^@/, '') || 'Winner';
+    const eventType = String(opts.eventType || opts.type || 'picked').trim().toLowerCase();
+    const message = this.formatWinnerAnnouncementText(eventType, cleanUser, opts.customMessage || opts.announcementText || '');
+    const now = Date.now();
+
+    // Prevent duplicate double-triggers within 3.5 seconds for the exact same winner & eventType
+    const dedupKey = `${eventType}:${cleanUser.toLowerCase()}`;
+    if (this._lastWinnerAnnounceKey === dedupKey && this._lastWinnerAnnounceTs && (now - this._lastWinnerAnnounceTs) < 3500) {
+      return null;
+    }
+    this._lastWinnerAnnounceKey = dedupKey;
+    this._lastWinnerAnnounceTs = now;
+
+    // 1. Trigger 1920x1080 Celebration Overlay in OBS + On-Screen Banner
+    this.triggerStreamCelebrationOverlay({
+      ...opts,
+      username: cleanUser,
+      announcementText: message
+    });
+
+    // 2. Append to Website & Control Panel Live Chat Window immediately
+    const annObj = {
+      id: 'ann_' + now,
+      eventType,
+      username: `@${cleanUser}`,
+      slotName: opts.slotName || '',
+      prize: opts.prize || '',
+      message,
+      ts: now
+    };
+    this.appendChatAnnouncementToDOM(annObj);
+
+    // 3. Broadcast to Kick.com Official Chat Bot + Cloudflare Edge D1 Sync
+    fetch('/api/kick/chat/announce', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        eventType,
+        username: cleanUser,
+        slotName: opts.slotName || '',
+        prize: opts.prize || '',
+        customMessage: message
+      })
+    }).catch(() => {});
+
+    return annObj;
+  }
+
+  appendChatAnnouncementToDOM(ann) {
+    if (!ann || !ann.message) return;
+    const timeStr = new Date(ann.ts || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    // A) Control Panel Live Chat Log (#cp-live-chat-log)
+    const logEl = document.getElementById('cp-live-chat-log');
+    if (logEl) {
+      const entry = document.createElement('div');
+      entry.style.cssText = 'padding: 5px 8px; margin-bottom: 4px; border-radius: 6px; background: linear-gradient(90deg, rgba(255, 215, 0, 0.18), rgba(83, 252, 24, 0.10)); border-left: 3px solid #ffd700; font-weight: 700;';
+      const timeSpan = document.createElement('span');
+      timeSpan.style.color = '#94a3b8';
+      timeSpan.textContent = `[${timeStr}] `;
+      const botBadge = document.createElement('strong');
+      botBadge.style.color = '#ffd700';
+      botBadge.textContent = '🤖 DIGGITY BOT: ';
+      const msgSpan = document.createElement('span');
+      msgSpan.style.color = '#53fc18';
+      msgSpan.textContent = ann.message;
+      entry.append(timeSpan, botBadge, msgSpan);
+      logEl.prepend(entry);
+    }
+
+    // B) Public Website Live Chat / Activity Feed (#live-chat-messages, #chat-sim-feed)
+    ['live-chat-messages', 'chat-sim-feed'].forEach((id) => {
+      const feedEl = document.getElementById(id);
+      if (!feedEl) return;
+      const row = document.createElement('div');
+      row.style.cssText = 'padding: 6px 10px; margin: 4px 0; border-radius: 8px; background: linear-gradient(90deg, rgba(255, 215, 0, 0.16), rgba(83, 252, 24, 0.08)); border: 1px solid rgba(255, 215, 0, 0.45); font-size: 12px; font-weight: 800; color: #ffd700;';
+      row.textContent = `🏆 ${ann.message}`;
+      feedEl.prepend(row);
+    });
   }
 
   triggerStreamCelebrationOverlay(opts = {}) {
-    const rawUser = String(opts.username || 'DiggityWinner').trim().replace(/^@/, '') || 'DiggityWinner';
+    const rawUser = String(opts.username || 'Winner').trim().replace(/^@/, '') || 'Winner';
     const rawSlot = String(opts.slotName || 'Wanted Dead or a Wild').trim();
     const meta = this.resolveSlotMeta(rawSlot);
     const now = Date.now();
     const isGrandType = opts.tier === 'grand' || opts.type === 'TOURNEY_CHAMPION' || opts.type === 'KOTH_CHAMPION' || opts.type === 'KOTH_CASHOUT';
+    const announcementText = opts.announcementText || this.formatWinnerAnnouncementText(opts.eventType || opts.type || 'picked', rawUser);
     const payload = {
       tier: opts.tier || (isGrandType ? 'grand' : 'partial'),
       type: opts.type || 'BATTLE_WIN',
@@ -3815,7 +4234,8 @@ class AdminHubController {
       slotName: meta.name,
       slotImg: opts.slotImg || meta.image,
       statValue: opts.statValue || 'VICTORY',
-      prize: opts.prize || 'ROUND WINNER',
+      prize: opts.prize || announcementText,
+      announcementText,
       timestamp: now,
       ts: now
     };
@@ -4121,6 +4541,21 @@ class AdminHubController {
       chBus.postMessage({ action: 'battle_update', type: 'battle_update', state: statePayload, ...statePayload });
     } catch (_) {}
     window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: statePayload }));
+
+    // Sync to Cloudflare Edge D1 so the streamer's OBS in the USA updates immediately
+    this.relayOverlaySyncEvent({
+      target: 'overlay-battle',
+      type: 'BATTLE_SYNC',
+      action: 'battle_update',
+      data: { state: statePayload },
+      state: statePayload,
+      ts: statePayload.ts
+    });
+    fetch('/api/battle/state', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ state: statePayload })
+    }).catch(() => {});
   }
 
   clearBothBattleCorners() {
@@ -4140,7 +4575,7 @@ class AdminHubController {
     if (multB) multB.value = '';
 
     this.pushCornersToOverlay();
-    const resetEvt = { action: 'reset_battle', type: 'RESET_BATTLE', ts: Date.now() };
+    const resetEvt = { target: 'overlay-battle', action: 'reset_battle', type: 'RESET_BATTLE', ts: Date.now() };
     if (this.channelBattle) {
       this.channelBattle.postMessage(resetEvt);
     }
@@ -4148,8 +4583,9 @@ class AdminHubController {
       const chBus = new BroadcastChannel('hunthub_battle_bus');
       chBus.postMessage(resetEvt);
     } catch (_) {}
+    this.relayOverlaySyncEvent(resetEvt);
     window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: resetEvt }));
-    try { fetch('/api/battle/reset', { method: 'POST' }); } catch (_) {}
+    try { fetch('/api/battle/reset', { method: 'POST', headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }) }).catch(() => {}); } catch (_) {}
 
     this.renderKothDeck();
     this.syncCondensedControlPanelUI();
@@ -4178,11 +4614,28 @@ class AdminHubController {
     const meta = this.resolveSlotMeta(slotName);
     if (!cleanUser) return;
 
+    this._lastLocalDuoMutationAt = Date.now();
+    const queueEntry = {
+      username: cleanUser,
+      chatter: cleanUser,
+      slotName: meta.name,
+      slot: meta.name,
+      slotProvider: meta.provider,
+      provider: meta.provider,
+      imageUrl: meta.image,
+      addedAt: Date.now()
+    };
+
     if (mode === 'tourney') {
-      this.tourneyQueue = this.tourneyQueue.filter(e => String(e.username || '').toLowerCase() !== cleanUser.toLowerCase());
-      this.tourneyQueue.push({ username: cleanUser, slotName: meta.name, slotProvider: meta.provider, imageUrl: meta.image });
+      this.tourneyQueue = this.tourneyQueue.filter(e => String(e.username || e.chatter || '').toLowerCase() !== cleanUser.toLowerCase());
+      this.tourneyQueue.push(queueEntry);
       const tCount = document.getElementById('cp-tourney-q-count');
       if (tCount) tCount.textContent = String(this.tourneyQueue.length);
+    } else {
+      this.battleQueue = this.battleQueue.filter(e => String(e.username || e.chatter || '').toLowerCase() !== cleanUser.toLowerCase());
+      this.battleQueue.push(queueEntry);
+      const bCount = document.getElementById('cp-battle-q-count');
+      if (bCount) bCount.textContent = String(this.battleQueue.length);
     }
 
     if (mode === this.duoMode || mode === 'battle') {
@@ -4197,9 +4650,11 @@ class AdminHubController {
       try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
       this.renderDuoQueue();
       if (this.channelDuo) {
-        this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool });
+        this.channelDuo.postMessage({ action: 'set_pool', pool: this.duoPool, type: 'sync_pool', items: this.duoPool });
       }
     }
+
+    this.pushDuoQueuesToEdge();
   }
 
   handleDuoBroadcast(data) {
@@ -4219,6 +4674,7 @@ class AdminHubController {
       const s = data.winner.slot || data.winner.slotName || '';
       if (u) {
         const cleanU = u.toLowerCase().replace(/^@/, '');
+        this._lastLocalDuoMutationAt = Date.now();
         if (Array.isArray(data.pool)) {
           this.duoPool = data.pool;
         } else {
@@ -4230,9 +4686,33 @@ class AdminHubController {
         const isTourneySpin = data.mode === 'tourney' || (this.duoMode === 'tourney' && data.mode !== 'battle');
         if (isTourneySpin) {
           this.assignWheelWinnerToTourneySeed(u, s, data.spinId, data.seed);
+          this.announceStreamWinner({
+            eventType: 'picked',
+            tier: 'partial',
+            type: 'WHEEL_PICKED',
+            category: `8-BRACKET TOURNEY · SEED ${data.seed || 1}/8 PICKED`,
+            ribbon: `🏆 SEED ${data.seed || 1}/8 SELECTED`,
+            icon: '🏆',
+            username: u,
+            slotName: s,
+            statValue: `SEED #${data.seed || 1}`,
+            prize: `Picked for 8-Bracket Tourney (${s})!`
+          });
         } else {
           const target = data.targetCorner || (document.getElementById('cp-battle-user-a')?.value ? 'B' : 'A');
           this.assignWheelWinnerToCorner(target, u, s, data.spinId);
+          this.announceStreamWinner({
+            eventType: 'picked',
+            tier: 'partial',
+            type: 'WHEEL_PICKED',
+            category: `1V1 BATTLE · ${target === 'A' ? 'BLUE CORNER' : 'RED CORNER'} PICKED`,
+            ribbon: `🎡 ${target === 'A' ? 'PLAYER A (BLUE)' : 'PLAYER B (RED)'} SELECTED`,
+            icon: '🎡',
+            username: u,
+            slotName: s,
+            statValue: `CORNER ${target}`,
+            prize: `Picked on Dual Wheel (${s})!`
+          });
         }
       }
     }
@@ -4252,6 +4732,7 @@ class AdminHubController {
       const s = data.player.slotName || data.player.slot || '';
       if (u) {
         const cleanU = String(u).toLowerCase().replace(/^@/, '');
+        this._lastLocalDuoMutationAt = Date.now();
         this.duoPool = this.duoPool.filter(item => String(item.chatter || '').toLowerCase().replace(/^@/, '') !== cleanU);
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
@@ -4292,10 +4773,10 @@ class AdminHubController {
           localStorage.setItem('hunthub_battle_state', JSON.stringify(savedBattle));
         }
 
-        if (pAName && uAEl && !uAEl.value) {
+        if (pAName && !this.demoUsernames.has(pAName.toLowerCase()) && uAEl && !uAEl.value) {
           this.setCornerFighter('A', pAName, pASlot);
         }
-        if (pBName && uBEl && !uBEl.value) {
+        if (pBName && !this.demoUsernames.has(pBName.toLowerCase()) && uBEl && !uBEl.value) {
           this.setCornerFighter('B', pBName, pBSlot);
         } else if (!pBName) {
           this.setCornerFighter('B', '', '');
@@ -4510,8 +4991,16 @@ class AdminHubController {
     if (btnDuoClear) {
       btnDuoClear.onclick = () => {
         this.duoPool = [];
+        if (this.duoMode === 'tourney') {
+          this.tourneyQueue = [];
+        } else {
+          this.battleQueue = [];
+        }
+        this._lastLocalDuoMutationAt = Date.now();
+        try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
         this.renderDuoQueue();
-        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: [] });
+        if (this.channelDuo) this.channelDuo.postMessage({ action: 'set_pool', pool: [], type: 'sync_pool', items: [] });
+        this.pushDuoQueuesToEdge();
       };
     }
 
@@ -4588,7 +5077,8 @@ class AdminHubController {
       btnTestCelebrationPartial.onclick = () => {
         const testUser = (document.getElementById('cp-battle-user-a')?.value || this.kothState.king || '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
         const testSlot = (document.getElementById('cp-battle-slot-a')?.value || this.kothState.kingSlot || 'Wanted Dead or a Wild').trim();
-        this.triggerStreamCelebrationOverlay({
+        this.announceStreamWinner({
+          eventType: 'picked',
           tier: 'partial',
           type: 'BATTLE_WIN',
           category: '1V1 BATTLE · ROUND WINNER',
@@ -4601,8 +5091,8 @@ class AdminHubController {
         });
         if (window.sonner) {
           window.sonner.toast({
-            title: '🎺 Partial Win Celebration Sent to OBS!',
-            message: `Short animation (~4.2s) triggered for @${testUser} on /overlay-celebration/index.html?obs=1.`,
+            title: '🎺 Winner Announcement Sent to OBS & Chat!',
+            message: `Celebration + Chat Bot message triggered for @${testUser}.`,
             type: 'cyan'
           });
         }
@@ -4613,7 +5103,8 @@ class AdminHubController {
       btnTestCelebration.onclick = () => {
         const testUser = (document.getElementById('cp-battle-user-a')?.value || this.kothState.king || '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
         const testSlot = (document.getElementById('cp-battle-slot-a')?.value || this.kothState.kingSlot || 'Gates of Olympus 1000').trim();
-        this.triggerStreamCelebrationOverlay({
+        this.announceStreamWinner({
+          eventType: 'battle',
           tier: 'grand',
           type: 'KOTH_CHAMPION',
           category: 'KING OF THE HILL · GRAND CHAMPION',
@@ -4626,8 +5117,8 @@ class AdminHubController {
         });
         if (window.sonner) {
           window.sonner.toast({
-            title: '👑 Special Grand Celebration Sent to OBS!',
-            message: `Special animation (~8.5s) triggered for @${testUser} on /overlay-celebration/index.html?obs=1.`,
+            title: '👑 Grand Winner Announcement Sent to OBS & Chat!',
+            message: `Grand Celebration + Chat Bot message triggered for @${testUser}.`,
             type: 'gold'
           });
         }
@@ -4640,7 +5131,7 @@ class AdminHubController {
     const userInput = document.getElementById('cp-chat-user-input');
     if (btnSendCmd && cmdInput) {
       const sendNow = () => {
-        const u = (userInput ? userInput.value : '@KickViewer').trim().replace(/^@/, '') || 'KickViewer';
+        const u = (userInput ? userInput.value : '@diggitybets').trim().replace(/^@/, '') || 'diggitybets';
         const c = cmdInput.value.trim();
         if (!c) return;
         this.processLiveChatCommand(u, c);
@@ -4806,6 +5297,7 @@ class AdminHubController {
       localStorage.setItem('hunthub_demo_users_purged', 'true');
       localStorage.setItem('hunthub_demo_users_purged_live_v2', 'true');
       localStorage.setItem('hunthub_demo_users_purged_live_v3', 'true');
+      localStorage.setItem('hunthub_demo_users_purged_live_v4', 'true');
     } catch (_) {}
 
     const isDemo = (u) => {
@@ -4948,6 +5440,11 @@ class AdminHubController {
         const realGuesses = savedGuesses.filter(g => !isDemo(g.user || g.username));
         localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(realGuesses));
       }
+      const savedBhGuesses = JSON.parse(localStorage.getItem('hunthub_bh_guesses') || '[]');
+      if (Array.isArray(savedBhGuesses)) {
+        const realBhGuesses = savedBhGuesses.filter(g => !isDemo(g.user || g.username));
+        localStorage.setItem('hunthub_bh_guesses', JSON.stringify(realBhGuesses));
+      }
       if (window.bonusHunt && Array.isArray(window.bonusHunt.guesses)) {
         window.bonusHunt.guesses = window.bonusHunt.guesses.filter(g => !isDemo(g.user || g.username));
         if (typeof window.bonusHunt.renderGuesses === 'function') window.bonusHunt.renderGuesses();
@@ -4985,6 +5482,35 @@ class AdminHubController {
       });
     }
     console.log(`[AdminHub] Cleaned demo users (${reason}).`);
+  }
+
+  logLiveChatActivityToDOM(username, content, isCommand = false) {
+    const cleanUser = String(username || 'Viewer').trim().replace(/^@/, '');
+    const text = String(content || '').trim();
+    if (!cleanUser || !text) return;
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const logEl = document.getElementById('cp-live-chat-log');
+    if (logEl) {
+      const entry = document.createElement('div');
+      entry.style.cssText = isCommand
+        ? 'padding: 3px 6px; margin-bottom: 2px; border-radius: 4px; background: rgba(83, 252, 24, 0.08); border-left: 2px solid #53fc18;'
+        : 'padding: 2px 6px; margin-bottom: 2px; opacity: 0.9;';
+      const timeSpan = document.createElement('span');
+      timeSpan.style.color = '#64748b';
+      timeSpan.textContent = `[${timeStr}] `;
+      const userStrong = document.createElement('strong');
+      userStrong.style.color = isCommand ? '#53fc18' : '#38bdf8';
+      userStrong.textContent = `@${cleanUser}: `;
+      const textSpan = document.createElement('span');
+      textSpan.style.color = isCommand ? '#ffffff' : '#cbd5e1';
+      textSpan.textContent = text;
+      entry.append(timeSpan, userStrong, textSpan);
+      logEl.prepend(entry);
+      while (logEl.children.length > 80) {
+        logEl.removeChild(logEl.lastChild);
+      }
+    }
   }
 
   async initLiveKickChatBridge() {
@@ -5038,40 +5564,54 @@ class AdminHubController {
         this._kickPingInterval = null;
       }
 
-      // Priority 1: Connect to Local Stream Hub on 127.0.0.1:3001 (Streamer notebook, 0 CORS, instant chat & queue relay)
-      try {
-        const localWs = new WebSocket('ws://127.0.0.1:3001/');
-        localWs.onopen = () => {
-          console.log('[AdminHub] Connected to Local Stream Hub (ws://127.0.0.1:3001/)');
-          this.localHubWs = localWs;
-          const statusEl = document.getElementById('cp-kick-ws-status');
-          if (statusEl) {
-            statusEl.textContent = `🟢 LOCAL STREAM HUB ONLINE (ws://127.0.0.1:3001 · Room #${chatroomId})`;
-            statusEl.style.color = '#00ff88';
-          }
-          localWs.send(JSON.stringify({ action: 'get_duo_queues' }));
-        };
-        localWs.onmessage = (evt) => {
-          try {
-            const data = JSON.parse(evt.data);
-            if (data.type === 'chat_message' && data.data) {
-              const m = data.data;
-              this.processLiveChatCommand(m.sender?.username || m.sender?.slug || m.sender, m.content);
-            } else if (data.action === 'wheel_duo_queues' || data.action === 'duo_queues') {
-              const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
-              if (Array.isArray(q)) {
-                this.duoPool = q.map(e => ({
-                  chatter: e.username,
-                  slot: e.slotName,
-                  provider: e.slotProvider,
-                  icon: '🎰'
-                }));
-                this.renderDuoQueue();
-              }
+      const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+      // Priority 1 (only when running local server): Connect to Local Stream Hub on 127.0.0.1:3001
+      if (isLocal) {
+        try {
+          const localWs = new WebSocket('ws://127.0.0.1:3001/');
+          localWs.onopen = () => {
+            console.log('[AdminHub] Connected to Local Stream Hub (ws://127.0.0.1:3001/)');
+            this.localHubWs = localWs;
+            const statusEl = document.getElementById('cp-kick-ws-status');
+            if (statusEl) {
+              statusEl.textContent = `🟢 LOCAL STREAM HUB ONLINE (ws://127.0.0.1:3001 · Room #${chatroomId})`;
+              statusEl.style.color = '#00ff88';
             }
-          } catch (_) {}
-        };
-      } catch (_) {}
+            localWs.send(JSON.stringify({ action: 'get_duo_queues' }));
+          };
+          localWs.onmessage = (evt) => {
+            try {
+              const data = JSON.parse(evt.data);
+              if (data.type === 'chat_message' && data.data) {
+                const m = data.data;
+                const u = m.sender?.username || m.sender?.slug || m.sender;
+                const c = String(m.content || '').trim();
+                if (u && c) {
+                  this.recentChatters.set(u, { user: u, ts: Date.now() });
+                  this.renderActiveChatters();
+                  this.pushActiveChattersToEdge();
+                  if (c.startsWith('!')) {
+                    this.processLiveChatCommand(u, c);
+                  } else {
+                    this.logLiveChatActivityToDOM(u, c, false);
+                  }
+                }
+              } else if (data.action === 'wheel_duo_queues' || data.action === 'duo_queues') {
+                const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
+                if (Array.isArray(q)) {
+                  this.duoPool = q.map(e => ({
+                    chatter: e.username,
+                    slot: e.slotName,
+                    provider: e.slotProvider,
+                    icon: '🎰'
+                  }));
+                  this.renderDuoQueue();
+                }
+              }
+            } catch (_) {}
+          };
+        } catch (_) {}
+      }
 
       // If we don't have realtimeConfig or token, fetch
       if (!realtimeConfig || !realtimeConfig.token) {
@@ -5083,7 +5623,6 @@ class AdminHubController {
       const channelName = realtimeConfig?.channel || `chatrooms.${chatroomId}.v2`;
 
       if (!token) {
-        // Fallback: try to reconnect in 5s
         setTimeout(connectLiveSocket, 5000);
         return;
       }
@@ -5093,7 +5632,6 @@ class AdminHubController {
         this.kickPusherWs = ws;
 
         ws.onopen = () => {
-          // Centrifugo connection handshake
           ws.send(JSON.stringify({
             id: 1,
             connect: { token: token }
@@ -5118,9 +5656,9 @@ class AdminHubController {
               }));
               const statusEl = document.getElementById('cp-kick-ws-status');
               if (statusEl) {
-                statusEl.textContent = `LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+                statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+                statusEl.style.color = '#53fc18';
               }
-              // Send keepalive ping every 20 seconds
               this._kickPingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {
                   ws.send('{}');
@@ -5157,12 +5695,16 @@ class AdminHubController {
                   this.subscriberUsers.add(cleanSender);
                 }
                 this.recentChatters.set(sender, { user: sender, ts: Date.now() });
+                this.renderActiveChatters();
+                this.pushActiveChattersToEdge();
                 if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
                   window.userStore.recordVerifiedKickChatActivity(sender, content);
                 }
               }
               if (content.startsWith('!')) {
                 this.processLiveChatCommand(sender, content);
+              } else {
+                this.logLiveChatActivityToDOM(sender, content, false);
               }
             }
           } catch (_) {}
@@ -5189,31 +5731,28 @@ class AdminHubController {
     const text = String(rawMessage || '').trim();
     if (!text.startsWith('!')) return;
 
+    // Deduplicate identical command from same user within 1.5s (in case both localWs and Centrifugo fire)
+    const cmdDedupKey = `${cleanUser.toLowerCase()}:${text.toLowerCase()}`;
+    const now = Date.now();
+    if (this._lastChatCmdKey === cmdDedupKey && this._lastChatCmdTs && (now - this._lastChatCmdTs) < 1500) {
+      return;
+    }
+    this._lastChatCmdKey = cmdDedupKey;
+    this._lastChatCmdTs = now;
+
     if (cleanUser && !this.demoUsernames.has(cleanUser.toLowerCase())) {
       this.purgeDemoUsersForLiveStream('live_chat_command');
+      this.recentChatters.set(cleanUser, { user: cleanUser, ts: now });
+      this.renderActiveChatters();
+      this.pushActiveChattersToEdge();
     }
 
-    const logEl = document.getElementById('cp-live-chat-log');
-    if (logEl) {
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = document.createElement('div');
-      const timeSpan = document.createElement('span');
-      timeSpan.style.color = '#64748b';
-      timeSpan.textContent = `[${timeStr}] `;
-      const userStrong = document.createElement('strong');
-      userStrong.style.color = '#53fc18';
-      userStrong.textContent = `@${cleanUser}: `;
-      const textSpan = document.createElement('span');
-      textSpan.style.color = '#fff';
-      textSpan.textContent = text;
-      entry.append(timeSpan, userStrong, textSpan);
-      logEl.prepend(entry);
-    }
+    this.logLiveChatActivityToDOM(cleanUser, text, true);
 
-    // Forward to backend /api/chat/command if running local/server hub
+    // Forward to backend /api/chat/command
     fetch('/api/chat/command', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ username: cleanUser, content: text })
     }).catch(() => {});
 
@@ -5272,12 +5811,18 @@ class AdminHubController {
             const bc = new BroadcastChannel('hunthub_sr_wheel');
             bc.postMessage({ type: 'SYNC_QUEUE', queue: list, ts: Date.now() });
           }
+          this.relayOverlaySyncEvent({
+            target: 'overlay-slotrequests',
+            type: 'SYNC_QUEUE',
+            queue: list,
+            ts: Date.now()
+          });
         } catch (_) {}
       }
       return;
     }
 
-    if (cmd === '!tourney') {
+    if (cmd === '!tourney' || cmd === '!tournament') {
       const slotName = arg || 'Gates of Olympus 1000';
       this.addDuoEntry(cleanUser, slotName, 'tourney');
       if (window.sonner) {
@@ -5290,21 +5835,22 @@ class AdminHubController {
       return;
     }
 
-    if (cmd === '!guess') {
+    if (cmd === '!guess' || cmd === '!gtb') {
       const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
       if (!isNaN(numVal) && numVal > 0) {
-        if (window.bonusHuntTracker && typeof window.bonusHuntTracker.submitChatGuess === 'function') {
-          window.bonusHuntTracker.submitChatGuess(cleanUser, numVal);
-        } else {
-          try {
-            const guesses = JSON.parse(localStorage.getItem('hunthub_bh_guesses') || '[]');
-            const filtered = guesses.filter(g => String(g.user || '').toLowerCase() !== cleanUser.toLowerCase());
-            filtered.unshift({ user: `@${cleanUser}`, amount: numVal, ts: Date.now() });
-            localStorage.setItem('hunthub_bh_guesses', JSON.stringify(filtered));
-            const gCountEl = document.getElementById('cp-bh-guess-count');
-            if (gCountEl) gCountEl.textContent = String(filtered.length);
-          } catch (_) {}
+        const tracker = window.bonusHunt || window.bonusHuntTracker;
+        if (tracker && typeof tracker.submitChatGuess === 'function') {
+          tracker.submitChatGuess(cleanUser, numVal);
         }
+        try {
+          const guesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
+          const filtered = guesses.filter(g => String(g.user || g.username || '').toLowerCase().replace(/^@/, '') !== cleanUser.toLowerCase());
+          filtered.unshift({ user: `@${cleanUser}`, username: cleanUser, amount: numVal, guess: numVal, ts: Date.now() });
+          localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(filtered));
+          localStorage.setItem('hunthub_bh_guesses', JSON.stringify(filtered));
+          const gCountEl = document.getElementById('cp-bh-guess-count');
+          if (gCountEl) gCountEl.textContent = String(filtered.length);
+        } catch (_) {}
         if (window.sonner) {
           window.sonner.toast({
             title: `💎 !guess Registered (@${cleanUser})`,
@@ -5312,6 +5858,20 @@ class AdminHubController {
             type: 'green'
           });
         }
+      }
+      return;
+    }
+
+    if (cmd === '!join' || cmd === '!enter' || cmd === '!ticket' || cmd === '!giveaway') {
+      this.recentChatters.set(cleanUser, { user: cleanUser, ts: Date.now() });
+      this.renderActiveChatters();
+      this.pushActiveChattersToEdge(true);
+      if (window.sonner) {
+        window.sonner.toast({
+          title: `🎟️ !join Registered (@${cleanUser})`,
+          message: `@${cleanUser} added to CS:GO / Giveaway active pool!`,
+          type: 'green'
+        });
       }
       return;
     }

@@ -587,42 +587,41 @@
   }
 
   function connect() {
-    if (typeof window.StreamerbotClient === 'undefined') {
-      connectDirectWs();
-    } else {
-      client = new StreamerbotClient({
-        host: CFG.host,
-        port: CFG.port,
-        endpoint: CFG.endpoint,
-        password: CFG.password || undefined,
-        autoReconnect: true,
-        retries: -1,
-        onData: onMessage,
-        onConnect: () => {
-          connected = true;
-          setStatus('● Connected to Streamer.bot', '#00e676');
-          if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
-          else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
-        },
-        onDisconnect: () => {
-          connected = false;
-          if (!IN_OBS || DEBUG) {
-            estadoEl.style.opacity = '1';
-            setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
-          }
-        },
-        onError: (err) => console.warn('[SlotWheel] WebSocket error:', err)
-      });
-
-      client.on('General.Custom', (evt) => onMessage(evt));
-      client.on('Custom.Event', (evt) => onMessage(evt));
-      client.on('Custom.CodeEvent', (evt) => onMessage(evt));
-      client.on('Raw.Action', (evt) => onMessage(evt));
-    }
-
-    // Connect to HuntHub Core WebSocket hub (ws://127.0.0.1:3001) + /api/sync/state
     const isLocalHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
     if (isLocalHost) {
+      if (typeof window.StreamerbotClient === 'undefined') {
+        connectDirectWs();
+      } else {
+        client = new StreamerbotClient({
+          host: CFG.host,
+          port: CFG.port,
+          endpoint: CFG.endpoint,
+          password: CFG.password || undefined,
+          autoReconnect: true,
+          retries: -1,
+          onData: onMessage,
+          onConnect: () => {
+            connected = true;
+            setStatus('● Connected to Streamer.bot', '#00e676');
+            if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
+            else setTimeout(() => { if (!DEBUG) estadoEl.style.opacity = '0.35'; }, 3000);
+          },
+          onDisconnect: () => {
+            connected = false;
+            if (!IN_OBS || DEBUG) {
+              estadoEl.style.opacity = '1';
+              setStatus('○ Reconnecting to Streamer.bot…', '#ffb700');
+            }
+          },
+          onError: (err) => console.warn('[SlotWheel] WebSocket error:', err)
+        });
+
+        client.on('General.Custom', (evt) => onMessage(evt));
+        client.on('Custom.Event', (evt) => onMessage(evt));
+        client.on('Custom.CodeEvent', (evt) => onMessage(evt));
+        client.on('Raw.Action', (evt) => onMessage(evt));
+      }
+
       let hubReconnectAttempts = 0;
       const connectHubWs = () => {
         try {
@@ -635,7 +634,7 @@
               if (payload.type === 'overlay_sync_event' && payload.event) {
                 if (payload.event.target === 'wheel-slots') {
                   if (payload.event.category) currentCategory = payload.event.category;
-                  localSpin(currentCategory);
+                  localSpin(currentCategory, payload.event.winner || payload.event.ganador);
                   return;
                 }
               }
@@ -656,7 +655,31 @@
         } catch {}
       };
       connectHubWs();
+    } else {
+      setStatus('● Connected to DiggityBets Cloud Sync', '#00e676');
+      if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
     }
+
+    // Cross-process Cloudflare Edge & Local Sync Polling for OBS Browser Source
+    let lastEdgeEventTs = Date.now() - 2000;
+    setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/sync/state', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const evt =
+          data?.overlayEvents?.['wheel-slots'] ||
+          (data?.overlays?.lastOverlayEvent?.targetOverlay === 'wheel-slots' ? data.overlays.lastOverlayEvent : null);
+        const evtTs = Number(evt?.ts || evt?.timestamp || 0);
+        if (evt && evtTs > lastEdgeEventTs && (Date.now() - evtTs) < 15000) {
+          lastEdgeEventTs = evtTs;
+          const cat = evt.category || currentCategory;
+          if (evt.category) currentCategory = evt.category;
+          localSpin(cat, evt.winner || evt.ganador);
+        }
+      } catch (_) {}
+    }, 1500);
   }
 
   /* ---------------- Interactive Controls ---------------- */
@@ -665,10 +688,10 @@
     if (btnDemo) btnDemo.disabled = !enabled;
   }
 
-  function localSpin(cat = currentCategory) {
+  function localSpin(cat = currentCategory, forcedWinner = null) {
     Sfx.ensure();
     const pool = getSlotsForCategory(cat);
-    const winner = pool[Math.floor(Math.random() * pool.length)];
+    const winner = forcedWinner || pool[Math.floor(Math.random() * pool.length)];
     onMessage({
       evento: 'sorteo_slot',
       id: 'local-' + Date.now(),
@@ -677,11 +700,11 @@
     });
   }
 
-  async function triggerAction() {
+  async function triggerAction(forcedWinner = null) {
     Sfx.ensure();
     if (busy) return;
-    if (!connected) {
-      localSpin(currentCategory);
+    if (!connected || forcedWinner) {
+      localSpin(currentCategory, forcedWinner);
       return;
     }
     try {
@@ -689,7 +712,7 @@
       if (res && res.status && res.status !== 'ok') throw new Error(res.error || res.status);
       setStatus('● Slot spin requested', '#00e676');
     } catch (e) {
-      localSpin(currentCategory);
+      localSpin(currentCategory, forcedWinner);
     }
   }
 
@@ -708,24 +731,36 @@
   document.body.addEventListener('pointerdown', () => Sfx.ensure(), { once: true });
 
   // Public helper
-  window.spinSlot = (cat) => localSpin(cat || currentCategory);
+  window.spinSlot = (cat, winner) => localSpin(cat || currentCategory, winner);
 
   // BroadcastChannel listener (for OBS Custom Dock communication & Master Admin)
   try {
     const handleBus = (ev) => {
       const d = ev.data || {};
       const cat = d.category || currentCategory;
+      const win = d.winner || d.ganador || null;
       if (d.type === 'spin' || d.action === 'spin') {
         if (d.category) currentCategory = d.category;
-        if (d.demo) localSpin(cat);
+        if (d.demo || win) localSpin(cat, win);
         else triggerAction();
       } else if (d.type === 'test') {
-        localSpin(cat);
+        localSpin(cat, win);
       }
     };
     new BroadcastChannel('slot_wheel_bus').onmessage = handleBus;
     new BroadcastChannel('hunthub_slot_wheel').onmessage = handleBus;
   } catch (e) {}
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'hunthub_slot_wheel_cmd' && e.newValue) {
+      try {
+        const d = JSON.parse(e.newValue);
+        const cat = d.category || currentCategory;
+        if (d.category) currentCategory = d.category;
+        localSpin(cat, d.winner || d.ganador || null);
+      } catch (_) {}
+    }
+  });
 
   /* ---------------- Startup ---------------- */
   function startup() {

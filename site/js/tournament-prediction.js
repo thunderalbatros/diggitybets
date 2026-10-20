@@ -782,6 +782,19 @@ class TournamentPredictionController {
       this.isLocked = true;
       localStorage.setItem('hunthub_tourney_pred_locked', 'true');
       this.savePrediction();
+      try {
+        const cleanU = String(currentUser).replace(/^@/, '').trim() || 'Viewer';
+        const comm = JSON.parse(localStorage.getItem('hunthub_tourney_community_preds') || '[]');
+        const filtered = Array.isArray(comm) ? comm.filter(c => String(c.username || '').replace(/^@/, '').toLowerCase() !== cleanU.toLowerCase()) : [];
+        filtered.push({
+          username: `@${cleanU}`,
+          isSub: localStorage.getItem('hunthub_is_sub') === 'true',
+          predictions: { ...this.predictions },
+          championPick: this.predictions.champion,
+          lockedAt: Date.now()
+        });
+        localStorage.setItem('hunthub_tourney_community_preds', JSON.stringify(filtered));
+      } catch (_) {}
 
       if (window.soundEngine) {
         if (typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
@@ -811,14 +824,36 @@ class TournamentPredictionController {
   // ==========================================
   // LIVE TRANSPARENCY STANDINGS & PODIUM
   // ==========================================
-  renderStandings() {
-    const panel = document.getElementById('tourney-standings-panel');
-    if (!panel) return;
-
+  computeLiveStandingsList() {
     const currentUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@You';
     const isUserSub = localStorage.getItem('hunthub_is_sub') === 'true';
 
     let list = [...this.communityStandings];
+    try {
+      const savedComm = JSON.parse(localStorage.getItem('hunthub_tourney_community_preds') || '[]');
+      if (Array.isArray(savedComm)) {
+        savedComm.forEach(entry => {
+          if (!entry || !entry.username) return;
+          const { hits, resolved } = entry.predictions
+            ? this.computeCorrectHitsForPredictions(entry.predictions)
+            : { hits: Number(entry.score || 0), resolved: 7 };
+          const score = resolved > 0 ? hits : Number(entry.score || 0);
+          const accuracy = resolved > 0 ? Number(((hits / resolved) * 100).toFixed(1)) : Number(entry.accuracy || 100.0);
+          const uName = entry.username.startsWith('@') ? entry.username : `@${entry.username}`;
+          const row = {
+            username: uName,
+            isSub: Boolean(entry.isSub),
+            championPick: entry.championPick || entry.predictions?.champion || null,
+            score,
+            accuracy,
+            status: resolved > 0 ? `${hits}/${resolved} Live Hits 🔥` : 'Locked & Ready ⭐'
+          };
+          const idx = list.findIndex(x => String(x.username || '').toLowerCase() === uName.toLowerCase());
+          if (idx >= 0) list[idx] = row;
+          else list.push(row);
+        });
+      }
+    } catch (_) {}
 
     if (this.isLocked && this.predictions.champion) {
       const { hits, resolved } = this.computeCorrectHitsForPredictions(this.predictions);
@@ -832,13 +867,29 @@ class TournamentPredictionController {
         accuracy,
         status: resolved > 0 ? `${hits}/${resolved} Live Hits 🔥` : 'Locked & Ready ⭐'
       };
-      const existing = list.findIndex(x => x.username === userEntry.username);
+      const existing = list.findIndex(x => String(x.username || '').toLowerCase() === userEntry.username.toLowerCase());
       if (existing >= 0) list[existing] = userEntry;
       else list.push(userEntry);
     }
 
-    // Sort descending by score
-    list.sort((a, b) => b.score - a.score);
+    list.sort((a, b) => b.score - a.score || b.accuracy - a.accuracy);
+    return list;
+  }
+
+  resolveTopPredictionWinner() {
+    const list = this.computeLiveStandingsList();
+    if (!list || list.length === 0) return null;
+    const top = list[0];
+    if (!top || !top.username || String(top.username).replace(/^@/, '').toLowerCase() === 'you') return null;
+    return top;
+  }
+
+  renderStandings() {
+    const panel = document.getElementById('tourney-standings-panel');
+    if (!panel) return;
+
+    const currentUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@You';
+    const list = this.computeLiveStandingsList();
 
     if (list.length === 0) {
       panel.innerHTML = `
@@ -1685,6 +1736,7 @@ class TournamentPredictionController {
 
     // Edge sync polling for remote spectators on diggitybets.vip/#tournament
     this._lastEdgeTourneyHash = '';
+    this._lastEdgeBattleHash = '';
     const pollRemoteTourneyState = async () => {
       if (document.hidden) return;
       try {
@@ -1692,20 +1744,21 @@ class TournamentPredictionController {
         if (!res.ok) return;
         const data = await res.json();
         const remoteTourney =
+          data?.tourneyState ||
           data?.overlayEvents?.['overlay-tourney']?.state ||
           data?.overlayEvents?.['overlay-tourney'] ||
           data?.overlays?.tourney?.state ||
           data?.overlays?.tourney ||
           null;
         if (remoteTourney && remoteTourney.matches) {
-          const hash = JSON.stringify(remoteTourney.matches) + '|' + (remoteTourney.champion || '') + '|' + (remoteTourney.status || '');
+          const hash = JSON.stringify(remoteTourney.matches) + '|' + JSON.stringify(remoteTourney.champion || '') + '|' + (remoteTourney.status || '');
           if (hash !== this._lastEdgeTourneyHash) {
             this._lastEdgeTourneyHash = hash;
             try {
               localStorage.setItem('hunthub_tourney_state', JSON.stringify(remoteTourney));
               const hasSeeds = ['m1', 'm2', 'm3', 'm4'].some(k => {
                 const m = remoteTourney.matches[k];
-                return m && ((m.p1 && m.p1.name && m.p1.name !== 'TBD') || (m.p2 && m.p2.name && m.p2.name !== 'TBD'));
+                return m && ((m.player1 && m.player1.username && m.player1.username !== 'TBD') || (m.player2 && m.player2.username && m.player2.username !== 'TBD') || (m.p1 && m.p1.name && m.p1.name !== 'TBD') || (m.p2 && m.p2.name && m.p2.name !== 'TBD'));
               });
               if (hasSeeds || remoteTourney.status === 'IN_PROGRESS' || remoteTourney.status === 'FINISHED') {
                 localStorage.setItem('hunthub_tourney_active', 'true');
@@ -1713,6 +1766,19 @@ class TournamentPredictionController {
             } catch (_) {}
             this.syncWithTourneyState(remoteTourney);
             this.checkTourneyAccessState();
+          }
+        }
+        const remoteBattle =
+          data?.battleState ||
+          data?.overlayEvents?.['overlay-battle']?.state ||
+          data?.overlayEvents?.['overlay-battle'] ||
+          null;
+        if (remoteBattle && (remoteBattle.playerA !== undefined || remoteBattle.status)) {
+          const bHash = JSON.stringify(remoteBattle);
+          if (bHash !== this._lastEdgeBattleHash) {
+            this._lastEdgeBattleHash = bHash;
+            try { localStorage.setItem('hunthub_battle_state', bHash); } catch (_) {}
+            this.renderKoth(remoteBattle);
           }
         }
       } catch (_) {}
