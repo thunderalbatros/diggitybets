@@ -3605,6 +3605,13 @@ class AdminHubController {
       localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify(spinPayload));
     } catch (_) {}
 
+    // Dispatch spin to Cloudflare edge so remote OBS instances in USA spin in sync
+    fetch('/api/wheel/duo/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(spinPayload)
+    }).catch(() => {});
+
     // Remove winner from local pool immediately so they cannot be picked twice!
     const cleanWinnerUser = String(winner.chatter || '').trim().toLowerCase().replace(/^@/, '');
     this.duoPool = this.duoPool.filter(item => String(item.chatter || '').trim().toLowerCase().replace(/^@/, '') !== cleanWinnerUser);

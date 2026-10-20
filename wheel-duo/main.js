@@ -446,20 +446,47 @@ class DuoWheelApp {
       this.ws.onerror = () => {};
     } catch {}
 
-    // Cross-process HTTP /api/sync/state fallback for OBS Browser Source
+    // Cross-process HTTP fallback for OBS Browser Source (Works locally and on remote streamer PCs)
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
       this._lastEventTs = 0;
       setInterval(async () => {
         try {
-          const res = await fetch('http://127.0.0.1:3001/api/sync/state');
-          if (!res.ok) return;
-          const data = await res.json();
+          let res = null;
+          // 1. Try local hub first (if core is running locally on streamer PC)
+          try {
+            res = await fetch('http://127.0.0.1:3001/api/sync/state');
+          } catch (_) {}
+
+          // 2. If not local (streamer running OBS remotely on another PC), fetch from Cloudflare Edge
+          let data = null;
+          if (res && res.ok) {
+            data = await res.json();
+          } else {
+            try {
+              const cloudRes = await fetch('/api/wheel/duo/queues');
+              if (cloudRes.ok) {
+                const cloudData = await cloudRes.json();
+                data = {
+                  overlays: {
+                    duoQueues: cloudData,
+                    lastOverlayEvent: cloudData.lastSpin || null
+                  }
+                };
+              }
+            } catch (_) {}
+          }
+
+          if (!data) return;
+
           if (data?.battle) {
             this.syncTargetFromBattleState(data.battle);
           }
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
+            if (duoQueues.mode && (duoQueues.mode === 'battle' || duoQueues.mode === 'tourney') && this.mode !== duoQueues.mode) {
+              this.setMode(duoQueues.mode);
+            }
             const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
             if (Array.isArray(q)) {
               const mapped = q.map((item) => ({
@@ -480,7 +507,7 @@ class DuoWheelApp {
           const evt = data?.overlays?.lastOverlayEvent;
           if (evt && evt.ts && evt.ts > this._lastEventTs) {
             this._lastEventTs = evt.ts;
-            if (evt.targetOverlay === 'wheel-duo' && evt.action === 'spin') {
+            if ((evt.targetOverlay === 'wheel-duo' || !evt.targetOverlay) && (evt.action === 'spin' || evt.type === 'spin')) {
               this.spin(evt.mode, evt.spinId, evt.winner);
             }
           }
