@@ -1,6 +1,6 @@
 ---
 name: cto-hitl-visual-gate
-description: Enforces the 5-Stage Automated Pre-HITL Visual Quality Gate (AST + Playwright 4-Viewport Geometry & break-ui + CDP 60-FPS Telemetry + Lighthouse/Pa11y/APCA/UXBench + VLM Vision Critic) and generates the standardized CTO HITL Visual Sign-Off Packet before requesting human visual approval.
+description: "Enforces the 5-Stage Automated Pre-HITL Visual Quality Gate (AST + Playwright 4-Viewport Geometry & break-ui + CDP 60-FPS."
 ---
 
 # 👑 CTO HITL Visual Gate — Protocolo de 5 Compuertas Automatizadas Pre-Aprobación

@@ -1,6 +1,6 @@
 ---
 name: vanilla-motion-choreography
-description: Architectural bridge for extracting React/Framer/MagicUI animation patterns into lightweight (<80 lines) pure Vanilla JS and CSS variables.
+description: "Architectural bridge for extracting React/Framer/MagicUI animation patterns into lightweight (<80 lines) pure Vanilla JS and CSS."
 ---
 
 # Vanilla Motion Choreography (React to Vanilla Bridge)

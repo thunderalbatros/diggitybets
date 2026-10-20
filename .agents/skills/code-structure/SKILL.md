@@ -1,6 +1,6 @@
 ---
 name: code-structure
-description: Use when deciding what belongs in actions vs shared services, when multiple workflows duplicate operational logic, or when refactoring repeated operational blocks across domain flows.
+description: "Use when deciding what belongs in actions vs shared services, when multiple workflows duplicate operational logic, or when."
 ---
 
 # Service Layer Architecture

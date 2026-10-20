@@ -1,0 +1,64 @@
+tier,name,kick_slug,kick_followers_2026-10-20,official_site,depth_stars,kick_link_evidence,features_seen,stack,palette_or_notes,casino_partner,evidence
+S,Roshtein,roshtein,420356,roshtein.com,3,Kick Connect (reportado; no verificado en DOM),store|exchange (Kick points->Rosh Coins)|events|roshback|RoshPlay in-site casino|slot verifier|raffles|bonus hunt,Next.js (_next),light-violet accents + Kick/Twitch brand colors,Stake (+ RoshPlay social casino),HTML+Kick API+reader
+S,ClassyBeef,classybeef,238073,classybeef.com,3,Soft (search summary),store|raffles|leaderboards|giveaways|race|redeem|videos|stream|giveaway counter,Next.js + api.classybeef.com + GA,yellow #ffd737 on black,Stake (.com/.us/.eu),HTML+reader+Kick links API
+S,Cheesur,cheesur,209425,cheesur.vip,1,No,Thrill $25K monthly leaderboard,Next.js + Cloudflare,minimal landing,Thrill,HTML
+S,AyeZee,ayezee,182404,ayezee.tv,3,Sign In + Coins (screenshot),store|bonus hunts|hunt tracker|Thrill leaderboard ($150K)|raffles|winners|music|Coins leaderboard,Next.js + Typekit + Vercel,black #0d0d0d + gold #a17f33/#ba923b,Thrill,HTML+screenshot+Kick links API
+S-lite,N3on,n3on,938183,n3on.jackstreams.com,1,No (vendor-hosted),$25K leaderboard,Jack Streams vendor,not fetched,Jack.social (code N3ON),Kick bio only
+A,Schneckyirl,schneckyirl,59793,schneckyirl.com,?,?,site unreachable at test (HTTP 522),n/a,n/a,Stake,Kick bio; site 522
+A,Keithlocks,keithlocks,57527,keithlocks.com,2,No,Stake+Stake Exclusives wager leaderboards ($70K),Vite SPA + Cloudflare + Inter,purple #7c3aed/pink #db2777,Stake,HTML
+A,Tyceno,tyceno,54531,tyceno.gg,3,Connect (6 mentions),shop|raffles|challenges|daily wheel|vault|blackjack|keno|originals (chicken/wheel/dice)|bonuses|leaderboard,Next.js + Vercel + GA,gold #c79a55 + Kick green #53fc18; font BBH Bartle,Stake,HTML
+A,BlondeRabbit,blonderabbit,46032,blonderabbit.com,2,No,Stake API wager leaderboards ($59K)|raffles,Vite SPA + Oswald/Inter,violet #8b5cf6 on #0a0a0f,Stake,HTML
+A,X7Dave,x7dave,42057,x7dave.com,2,No,hunt tracker|raffles|giveaways (AyeZee template twin),Next.js + Typekit + Vercel,dark + blue #1e96bc,(AyeZee network),HTML
+A,AndyPSX (PSXRewards),andypsx,38396,andypsx.com,3,Login (Spanish UI),leaderboard|games (slots by provider in-site)|bonus|shop|bonus hunt|daily reward|live.andypsx.com,Next.js + GA + Cloudflare,dark #181a27 + orange #f97316 + cyan #06b6d4 + gold #e0b46e,Gamdom,HTML
+A,SweetFlips,sweetflips,37020,sweetflips.gg,1,No,Crypto Vega $100K leaderboard|events,Next.js,yellow #f7c44a + blue #1bb2ff,CryptoVega+Luxdrop,HTML
+B,VikingSlots,vikingslots,24890,vikingrewards.gg,?,?,site timed out,n/a,n/a,Thrill,Kick bio
+B,CasinoDaddy,casinodaddy,24601,aboutslots.com,0,No,casino review/bonus portal+forum (no loyalty),Next.js + GA,gold #ffcf5c,Affiliate reviews,HTML
+B,HighStakesHugs,highstakeshugs,22834,getdgn.com,3,Kick x125 mentions,store|bonus hunt|challenges|tournaments|leaderboard|games (dice/mines/keno/crash),Next.js + GA,dark navy #1c1f2e/#abbadb,GETDGN,HTML
+B,TheGambler1999,thegambler1999,22753,thegambler.pro,2,/login,shop|giveaways|leaderboard|videos,Nuxt + Cloudflare + Rajdhani,gold #f5c044 + green #3be07e,Gamdom,HTML
+B,Auslots,auslots,21831,zesty.bet,?,?,TLS failure at test,n/a,n/a,Zesty,Kick bio
+B,Bombet,bombet,21566,bombet.tv,1,No,landing (SPA shell),Vite SPA + Poppins,dark #0b1220,Roobet,HTML
+B,Aitchislots,aitchiislots,21373,aitchrewards.com,1,No,Degen.com rewards,Vite SPA,black + green #00ff6a,Degen.com,HTML
+B,Jamie,jamie,21312,jamierewards.gg,3,Kick x89 mentions,hunt tracker|challenges|store|leaderboards (+chatters)|raffles|wager milestones|$50K monthly,Next.js + Cloudflare,dark #16171d,Stake,HTML
+B,WRewards,wrewards,20619,wrewards.com,1,login-gated,raffles|leaderboards (shell),Next.js + Cloudflare,n/a,Gamdom,HTML
+B,LadyLuckSlots,ladyluckslots,19976,ladyluckslotsrewards.com,0,No,placeholder page,Vite SPA,n/a,Stake,HTML
+B,Bennyslots,bennyslots,16538,benny.gg,?,?,HTTP 522 at test,n/a,n/a,Stake,Kick bio
+B,SpinLife,spinlife,15442,spinlife.tv,2,login x16,store|raffles|leaderboard|guess the balance|points,WordPress + GA,orange #ec6608,jack.social,HTML
+B,GazzGambles,gazzgambles,13648,gazz.gg,1,No,leaderboards|giveaways|stream,Next.js,dark green + Kick green #53fc18,Shuffle,HTML
+B,CheekyGamblers,cheekygamblers,12333,cheekygamblers.com,?,?,HTTP 522 at test,n/a,n/a,?,Kick bio
+B,DeltaGambles,deltagambles,11957,deltagambles.com,1,No,Stake leaderboard ($50K),Vite SPA + Onest,lime #a3e635 on #07100f,Stake,HTML
+B,BigJuanWins,bigjuanwins,11343,bigjuan.org,1,No,leaderboard,static,gold #d4a843 on dark green; Oswald+DM Sans,Stake,HTML
+B,RiskyDegens,riskydegens,10004,riskydegens.com,1,No,Roobet weekly leaderboard|giveaways,Next.js,violet #7c3aed,Roobet,HTML
+B,GWA Slots,gwa_slots,10008,gwaslots.com,1,No,giveaways|store (shell),Vite SPA + Tailwind,neon pink/yellow on #04030a,?,HTML
+C,DEVL,devl,9885,devlrewards.com,1,connect,rewards hub (SPA shell),Vite SPA + Inter/Orbitron,n/a,Thrill,HTML
+C,HabibiBetz,habibibetz,9397,floos.gg,3,No,leaderboard|giveaways|bonus|hunt tracker|tournaments|daily chest|store|challenges (Arabic),Next.js + GA,dark #0a0d12 + green #22c55e + amber #fbbf24,?,HTML
+C,CamNeverWins,camneverwins,9044,camneverwins.com,1,No,Rainbet leaderboard single page,Vercel static,dark #0a0a0f,Rainbet,HTML
+C,JoshyGambles,joshygambles,8421,joshy.gg,2,Discord auth,rewards|leaderboard|challenges|how-to-sign-up,SvelteKit,violet + gold #edbb22,Roobet,HTML
+C,DailyGambling,dailygambling,8404,slotessentials.com + botrix,1,No,Roobet/Packdraw $50K monthly,WordPress/BotRix,n/a,Roobet,Kick bio+HTML
+C,KayzGamble,kayzgamble,8001,kayz.gg,1,No,leaderboard|rewards,Next.js,cyan #00f0ff on #040e26,Roobet,HTML
+C,Toaster,toaster,7338,toaster.gg,2,login,leaderboards|raffles|giveaways|coins,Next.js + Outfit,n/a,Stake,HTML
+C,LameGambles,lamegambles,6820,lame.gg,2,No,leaderboard|raffles|milestones|bonuses|shop,Next.js + Satoshi,cyan #04d9fe on #0a0e15,Stake,HTML
+C,ReachAces,reachaces,6577,reachaces.com,3,Sign in with Kick (/api/auth/login),leaderboard|rewards|weekly raffles|giveaways|guess the balance|bonus hunt|1v1|slot tournaments|store|house games (blackjack/roulette/keno),static + Outfit/Figtree,dark glow,Stake,HTML+screenshot
+C,RoroGambles,rorogambles,6354,rorogambles.com,?,?,thin page,n/a,n/a,?,HTML
+C,XtraGambles,xtragambles,6230,xtragambles.com,?,?,HTTP 429 at test,n/a,n/a,?,Kick bio
+C,TroyStake,troystake,5387,troyrewards.com,0,No,SPA shell,Vite SPA + Inter,n/a,Stake,HTML
+C,RoosterCatt,roostercatt,5288,roostercat.gg,2,login,giveaways|raffles|slot challenges,Vite SPA + Cloudflare,dark #0a0a0a + green #2ea043,Stake+Bandit.camp,HTML
+C,CousinGambler,cousingambler,5200,cousingambler.com,1,No,Castle leaderboard,Cloudflare,gold #f5c542 + Kick green; Playfair+Bungee,Castle,HTML
+C,JackedGambles,jackedgambles,5132,jackedgambles.com,1,login,leaderboard|bounties|creator,Next.js,red #fd1b53 on #0b0006,?,HTML
+C,LukeTheDegen,lukethedegen,4941,lukerewards.vip,2,/login,bonuses|leaderboard|double weekly|milestones|lossback|mines|keno|slots,Nuxt,mint #5bffa8 on #0f212e; Cabinet Grotesk+Satoshi,Stake+Moon,HTML
+C,MrTreeGambling,mrtreegambling,4827,mrtreerewards.com,1,No,leaderboard|jackpot|rakeback|VIP,Next.js,gold #ffc966 on #09090b,rain.gg etc.,HTML
+C,TokyoGambling,tokyogambling,4751,tokyorewards.com,1,Discord auth,raffles|leaderboard|cliprally,Cloudflare + Inter,burgundy-beige,Stake,HTML
+C,Blakjac21,blakjac21,4788,blakjac21.com,3,Sign in with Kick (/api/auth/login),ReachAces template twin (store/raffles/house games),static + Inter/Teko,dark,Stake,HTML
+C,FruitySlots,fruityslots,3707,fruityslots.com,0,No,reviews+demos (WordPress),WordPress + Outfit,yellow #ffbb00,UK affiliate,HTML
+C,ZenGambling,zengambling,3413,zengambling.com,2,No,leaderboard|raffles|wager milestones|rank rewards|lossback|calculator,Next.js + PP Neue Corp Wide,violet #a855f7 on #0e0814,Stake,HTML
+C,Fortunate,fortunexd1,3277,fortunesrewards.com,2,No,store|raffles|points|leaderboard,Next.js,violet #8b4bff + amber,?,HTML
+C,MimeGamba,mimegamba,2589,mimegamba.com,1,login,leaderboards (58 mentions),Next.js,sky + pink on #0a0c0a,?,HTML
+C,WagerClub,wagerciub,2483,wagerclub.gg,1,No,leaderboard|giveaways|guess,custom + Archivo,Kick green #53fc18 + blue,BetPanda,HTML
+C,KlaxisDope,klaxisdope,2324,klaxis.live,2,No,daily gift|raffle|store|keno|blackjack|$2500 leaderboard,Next.js + IBM Plex Mono/Manrope,Kick green #53fc18 on #0d1520,Metaspins,HTML
+D,LetsGiveItASpin,letsgiveitaspin,637,casinogrounds.com/streamers/letsgiveitaspin,0,No,CasinoGrounds profile,n/a,n/a,none,HTML
+D,SlotSpinner,slotspinner,631,none,0,No,Discord only,n/a,n/a,?,Kick API
+D,HideousSlots,hideousslots,173,hideousslots.com,0,No,review/affiliate (WordPress),WordPress + Rubik,navy #0c155c,UK affiliate,HTML
+GIANT-NO-PORTAL,Trainwreckstv,trainwreckstv,666415,none,0,No,no loyalty portal in bio,n/a,n/a,Stake (co-founder),Kick API
+GIANT-NO-PORTAL,AdinRoss,adinross,2640825,none (brandrisk merch),0,No,merch only,n/a,n/a,mixed,Kick API
+GIANT-NO-PORTAL,Ac7ionman,ac7ionman,238385,none (powerchat.live),0,No,tips only,n/a,n/a,Stake.us,Kick API
+GIANT-NO-PORTAL,Xposed,xposed,186934,none (roobet.com/xposed + consolekings.com),0,No,xposed.ca is parked (redirect /lander),n/a,n/a,Roobet,Kick API+HTML
+GIANT-NO-PORTAL,Sam,sam,118116,none,0,No,Stake codes only (identity not confirmed),n/a,n/a,Stake,Kick API

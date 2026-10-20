@@ -1,13 +1,6 @@
 ---
 name: design
-description: >
-  Designs modular high-level architectures from functional requirements and produces design
-  documents for each module. Use when designing a new system, creating architecture documentation,
-  or producing module-level design specs with integration contracts and test specifications.
-argument-hint: "[path/to/functional-requirements.md]"
-skills:
-  - balanced-coupling
-allowed-tools: Read, Write, Edit, AskUserQuestion, TaskCreate, TaskUpdate
+description: "Designs modular high-level architectures from functional requirements and produces design documents for each module."
 ---
 
 # High-Level Design

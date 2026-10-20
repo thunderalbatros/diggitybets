@@ -1,7 +1,6 @@
 ---
 name: webmcp-and-stagehand
-description: "Hybrid deterministic Playwright + Stagehand v1.5 primitives (act, extract, observe), self-healing DOM selector caching (memory/selector_cache.json), and WebMCP browser tool manifest generation (browserbase/skills webmcp-gen)."
-license: MIT
+description: "Hybrid deterministic Playwright + Stagehand v1.5 primitives (act, extract, observe), self-healing DOM selector caching."
 ---
 
 # WebMCP & Stagehand Hybrid Browser Automation Skill

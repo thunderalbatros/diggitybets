@@ -1,7 +1,6 @@
 ---
 name: tom-swe-modeling
-description: "Theory of Mind (ToM-SWE, ICLR 2026) 3-Tier User & Architectural Mental Modeling and Sleeptime Compute consultation. Use before starting ambiguous or multi-file tasks to align with the CTO's explicit and implicit preferences, hardware constraints, and stream invariants."
-license: MIT
+description: "Theory of Mind (ToM-SWE, ICLR 2026) 3-Tier User & Architectural Mental Modeling and Sleeptime Compute consultation."
 ---
 
 # ToM-SWE — 3-Tier User & Architectural Mental Modeling Skill

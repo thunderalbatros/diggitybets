@@ -1,6 +1,6 @@
 ---
 name: continuous-learning-instincts
-description: Sistema de memoria continua e instintos operacionales inspirado en affaan-m/ECC (Continuous Learning v2). Permite a los agentes consultar heurísticas de alta confianza (0.0-1.0), reforzar patrones probados y registrar nuevos instintos sin inflar la ventana de contexto.
+description: "Sistema de memoria continua e instintos operacionales inspirado en affaan-m/ECC (Continuous Learning v2)."
 ---
 
 # 🧬 SKILL: Aprendizaje Continuo e Instintos Operacionales (ECC Pattern)

@@ -1,6 +1,6 @@
 ---
 name: moderation-guard
-description: Protocolo de protección y cumplimiento de cuenta en Kick. Úsalo al gestionar canales en modo followers-only, verificar y ejecutar el follow real antes de escribir en chat, procesar errores HTTP 403 (cuarentena permanente), y prevenir sanciones sobre la cuenta respetando las reglas de cada canal y el ToS de Kick.
+description: "Protocolo de protección y cumplimiento de cuenta en Kick."
 ---
 
 # 🛡️ Moderation Guard (Protección de Cuenta y Anti-Ban)

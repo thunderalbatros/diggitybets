@@ -1,6 +1,6 @@
 ---
 name: kb-retrieval
-description: Cómo consultar y mantener el cerebro híbrido Supercharged Omni-RAG v5 (SQLite FTS5 en C + MiniSearch + IDF/LightRAG Dual-Level + Squad Semantic Router + AST CodeGraph & Obsidian Wikilink PageRank + ONNX Q8 Cross-Encoder + Context7 MCP). Úsalo cuando necesites documentación técnica oficial, libros completos, masterclasses, mapa de llamadas del código o decisiones arquitectónicas en lugar de adivinar.
+description: "Cómo consultar y mantener el cerebro híbrido Supercharged Omni-RAG v5 (SQLite FTS5 en C + MiniSearch + IDF/LightRAG Dual-Level +."
 ---
 
 # Knowledge Base — Supercharged Omni-RAG v5 (Software Factory Brain)

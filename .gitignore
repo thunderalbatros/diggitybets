@@ -13,7 +13,8 @@ node_modules/
 core/node_modules/
 tools/audit/node_modules/
 
-# Local Streamer.bot Runtime & Binaries (Archived in legacy/streamerbot-desktop/)
+# Local Streamer.bot Runtime & Binaries (Isolated in Streamer.bot-App/)
+Streamer.bot-App/
 legacy/
 *.dll
 *.exe

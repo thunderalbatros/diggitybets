@@ -162,3 +162,30 @@ dialog[open],
 .u-tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* ========================================================
+   10. LUXURY CASINO THEMES (Tier S DNA)
+   ======================================================== */
+[data-theme="cyber-emerald"],
+.theme-cyber-emerald {
+  --kick-green: oklch(84.2% 0.265 145);     /* Emerald #3be07e */
+  --kick-glow: oklch(84.2% 0.265 145 / 0.24);
+  --gold: oklch(86.5% 0.175 88);            /* Warm Gold #f5c044 */
+  --gold-glow: oklch(86.5% 0.175 88 / 0.22);
+}
+
+[data-theme="electric-violet"],
+.theme-electric-violet {
+  --kick-green: oklch(72.5% 0.275 305);     /* Royal Violet #9147ff */
+  --kick-glow: oklch(72.5% 0.275 305 / 0.25);
+  --cyan: oklch(76.2% 0.215 255);           /* Electric Blue #586aea */
+  --border-kick: oklch(72.5% 0.275 305 / 0.35);
+}
+
+[data-theme="obsidian-gold"],
+.theme-obsidian-gold {
+  --kick-green: oklch(86.5% 0.195 90);      /* Radiant Gold #ffd737 */
+  --kick-glow: oklch(86.5% 0.195 90 / 0.24);
+  --gold: oklch(78.5% 0.155 85);            /* Deep Gold #c79a55 */
+  --border-kick: oklch(86.5% 0.195 90 / 0.32);
+}

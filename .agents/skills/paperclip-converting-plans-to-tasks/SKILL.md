@@ -1,8 +1,6 @@
 ---
 name: paperclip-converting-plans-to-tasks
-description: >
-  Decide whether Paperclip work needs delegation, and connect justified tasks
-  with owners and real dependencies. Use when turning an authorized plan into work.
+description: "Decide whether Paperclip work needs delegation, and connect justified tasks with owners and real dependencies."
 ---
 
 # Plans to tasks

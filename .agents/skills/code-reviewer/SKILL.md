@@ -1,8 +1,6 @@
 ---
 name: code-reviewer
-description: Expert code review specialist from ECC. Proactively reviews code for correctness, security, performance, and maintainability with confidence-based filtering (>80% threshold).
-metadata:
-  origin: ECC
+description: "Expert code review specialist from ECC."
 ---
 
 # 🔍 ECC Code Reviewer

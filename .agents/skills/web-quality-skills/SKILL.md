@@ -1,6 +1,6 @@
 ---
 name: web-quality-skills
-description: Measurement-first Web Quality and Core Web Vitals optimization (LCP, INP, CLS) based on addyosmani/web-quality-skills and addyosmani/critical. Enforces the Metric-Honesty Rule, CSS layout containment, and Page Visibility throttling.
+description: "Measurement-first Web Quality and Core Web Vitals optimization (LCP, INP, CLS) based on addyosmani/web-quality-skills and."
 ---
 
 # Web Quality & Core Web Vitals (`addyosmani/web-quality-skills`)

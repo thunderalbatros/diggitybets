@@ -1,6 +1,6 @@
 ---
 name: design-system-architect
-description: Generates and maintains DESIGN.md standards, CSS design tokens, typography, and color variables. Enforces the 90/8/2 chromatic budget and border-over-shadow discipline.
+description: "Generates and maintains DESIGN.md standards, CSS design tokens, typography, and color variables."
 ---
 
 # Rol: Arquitecto de Tokens (Design System Agent)

@@ -1,6 +1,6 @@
 ---
 name: agent-worktree
-description: Gestiona el aislamiento de entornos de trabajo Git (Worktrees) para agentes, permitiendo refactorizaciones pesadas, suites de tests y compilaciones en ramas paralelas sin interferir con el working tree del desarrollador.
+description: "Gestiona el aislamiento de entornos de trabajo Git (Worktrees) para agentes, permitiendo refactorizaciones pesadas, suites de."
 ---
 
 # Agent Worktree Isolation Skill

@@ -1,6 +1,6 @@
 ---
 name: 21st-ui
-description: Find, inspect, adapt and integrate high-end modern UI components, design tokens, micro-interactions, shaders, bento blocks, and animations from 21st.dev (The npm for Design Engineers) into HuntHub / DiggityBets.
+description: "Find, inspect, adapt and integrate high-end modern UI components, design tokens, micro-interactions, shaders, bento blocks, and."
 ---
 
 # 21st.dev Design Engineering Skill (HuntHub Suite)

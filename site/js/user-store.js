@@ -250,6 +250,7 @@ class UserStoreController {
 
     const tixEl = document.getElementById('raffle-user-tickets');
     if (tixEl) tixEl.textContent = this.raffleTickets;
+    this.syncRaffleTicketsFromServer();
 
     this.updateStoreCatalogUI();
 
@@ -265,6 +266,22 @@ class UserStoreController {
     if (window.dispatchEvent) {
       window.dispatchEvent(new CustomEvent('hunthub:auth-updated', { detail: { username: this.username } }));
     }
+  }
+
+  async syncRaffleTicketsFromServer() {
+    if (!this.username) return;
+    try {
+      const res = await fetch(`/api/raffles/my-tickets?username=${encodeURIComponent(this.username)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.userTicketCount === 'number') {
+          this.raffleTickets = data.userTicketCount;
+          localStorage.setItem('hunthub_raffle_tickets', this.raffleTickets.toString());
+          const tixEl = document.getElementById('raffle-user-tickets');
+          if (tixEl) tixEl.textContent = this.raffleTickets;
+        }
+      }
+    } catch (_) {}
   }
 
   syncTopbarRoleBadge() {

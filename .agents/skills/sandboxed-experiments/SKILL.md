@@ -1,6 +1,6 @@
 ---
 name: sandboxed-experiments
-description: Protocolo de experimentos y pruebas en sandboxes aislados basado en Matt Pocock Sandcastle (@ai-hero/sandcastle). Obliga a los agentes a ejecutar spikes, benchmarks, pruebas de concepto y modificaciones riesgosas en git-worktrees efímeros sin alterar el entorno principal de producción.
+description: "Protocolo de experimentos y pruebas en sandboxes aislados basado en Matt Pocock Sandcastle (@ai-hero/sandcastle)."
 ---
 
 # 🏰 SKILL: Experimentos y Pruebas en Sandboxes Aislados (Patrón Matt Pocock Sandcastle)

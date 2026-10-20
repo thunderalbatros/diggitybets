@@ -1,6 +1,6 @@
 ---
 name: finops-context-budget
-description: Disciplina de presupuesto de contexto y coste para el equipo de desarrollo web de HuntHub. Úsalo antes de leer archivos, lanzar agentes o llamar a un LLM. Aplica cuando la tarea requiera explorar el repositorio, inyectar documentación o elegir modelo.
+description: "Disciplina de presupuesto de contexto y coste para el equipo de desarrollo web de HuntHub."
 ---
 
 # FinOps — Presupuesto de Contexto y Coste

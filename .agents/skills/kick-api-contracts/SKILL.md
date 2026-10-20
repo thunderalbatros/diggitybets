@@ -1,6 +1,6 @@
 ---
 name: kick-api-contracts
-description: Contratos técnicos inmutables de la API oficial de Kick y OAuth 2.1 PKCE. Úsalo al implementar envío de chat, autenticación, refresh de token, o al interpretar eventos del WebSocket de Pusher. También cuando un mensaje no aparece en el chat.
+description: "Contratos técnicos inmutables de la API oficial de Kick y OAuth 2.1 PKCE."
 ---
 
 # Kick API — Contratos Vinculantes

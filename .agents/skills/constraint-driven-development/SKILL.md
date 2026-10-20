@@ -1,6 +1,6 @@
 ---
 name: constraint-driven-development
-description: Establishes and enforces HuntHub's numeric quality bar in CONSTRAINTS.md and stops agents from quietly lowering it (Addy Osmani agent-skills pattern). Use before shipping any feature, refactor, or overlay change, or when running floor-guard checks.
+description: "Establishes and enforces HuntHub's numeric quality bar in CONSTRAINTS.md and stops agents from quietly lowering it (Addy Osmani."
 ---
 
 # Constraint-Driven Development & Floor Guard (`addyosmani/agent-skills`)

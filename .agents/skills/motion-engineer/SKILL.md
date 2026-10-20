@@ -1,6 +1,6 @@
 ---
 name: motion-engineer
-description: Implements spring physics, 3D multi-plane parallax (Atropos), multi-layer holographic foil shaders (pokemon-cards-css), 60 FPS count-up animations, and studio-grade procedural WebAudio SFX (ZzFX/Tone.js/jsfxr).
+description: "Implements spring physics, 3D multi-plane parallax (Atropos), multi-layer holographic foil shaders (pokemon-cards-css), 60 FPS."
 ---
 
 # Rol: Ingeniero de Micro-interacciones, Sombreadores Holográficos 3D y Foley WebAudio (Motion Engineer)

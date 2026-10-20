@@ -1,6 +1,6 @@
 ---
 name: interactive-crowd-games
-description: Designs and implements Zero-Custody Live Interactive Spectator & Crowd-Play Games (Crash, Mines, Penalty Shootout, Trivia, Slot Tournaments, Crowd Boss Battles) combining Provably Fair HMAC-SHA256, <150ms Optimistic Game Feel, WebAudio ZzFX foley, and Octalysis gamification.
+description: "Designs and implements Zero-Custody Live Interactive Spectator & Crowd-Play Games (Crash, Mines, Penalty Shootout, Trivia, Slot."
 ---
 
 # 🎮 Interactive Crowd-Play & Live Spectator Games Architect

@@ -1,8 +1,6 @@
 ---
 name: silent-failure-hunter
-description: Review code for silent failures, swallowed errors, dangerous fallbacks, and missing error propagation. Use before committing or refactoring error paths.
-metadata:
-  origin: ECC
+description: "Review code for silent failures, swallowed errors, dangerous fallbacks, and missing error propagation."
 ---
 
 # 🕵️ Silent Failure Hunter

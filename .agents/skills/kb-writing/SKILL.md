@@ -1,6 +1,6 @@
 ---
 name: kb-writing
-description: Higiene de escritura e ingesta en la base de conocimiento (Qdrant). Úsalo SIEMPRE antes de crear o editar cualquier documento de knowledge/, memory/ o docs/ que vaya a ser ingerido al RAG, y cuando la puerta kb:eval caiga tras una ingesta. Institucionaliza la lección LEC-015 (anclas de alcance + eval obligatoria).
+description: "Higiene de escritura e ingesta en la base de conocimiento (Qdrant)."
 ---
 
 # ✍️ KB Writing — Higiene de Ingesta al RAG

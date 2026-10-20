@@ -1,7 +1,6 @@
 ---
 name: ui-test
-description: "Diff-driven adversarial UI testing, Stagehand self-healing DOM selector verification, Surgical Path-Based Governance, and Oxc Rust AST linting (<50ms). Inspired by browserbase/skills (ui-test) and browserbase/stagehand. Use before shipping any UI, overlay, or backend change."
-license: MIT
+description: "Diff-driven adversarial UI testing, Stagehand self-healing DOM selector verification, Surgical Path-Based Governance, and Oxc."
 ---
 
 # UI Test — Diff-Driven Adversarial UI & Stagehand Selector Verification Skill

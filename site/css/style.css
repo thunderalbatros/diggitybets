@@ -7252,7 +7252,13 @@ footer.site-footer {
 
 /* 4. Hardware Isolated Hover Lift for Cards (Without Layout Reflow) */
 .module-card,
-.bh-stat-card {
+.bh-stat-card,
+.game-card,
+.reward-card,
+.profile-card,
+.store-card,
+.raffle-card,
+.slot-card {
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
   contain: layout style paint;
 }

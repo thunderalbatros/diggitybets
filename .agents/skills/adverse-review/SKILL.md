@@ -1,6 +1,6 @@
 ---
 name: adverse-review
-description: Multi-agent adversarial code review based on addyosmani/adverse. Evaluates non-trivial changes through three competing personas (Auditor, Adversary, Pragmatist), runs cross-examination, and synthesizes a ranked report. Use before shipping non-trivial features, security-sensitive logic, or multi-file refactors.
+description: "Multi-agent adversarial code review based on addyosmani/adverse."
 ---
 
 # Adverse — Multi-Agent Adversarial Code Review (`addyosmani/adverse`)

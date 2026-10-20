@@ -1,6 +1,6 @@
 ---
 name: provider-fallback
-description: Patrón de resiliencia multi-proveedor para IA, OCR y embeddings. Úsalo al integrar cualquier servicio externo, cuando un proveedor falle por rate-limit o calidad, o al diseñar componentes que deban sobrevivir a una caída. Garantiza que el sistema 24/7 nunca se detenga.
+description: "Patrón de resiliencia multi-proveedor para IA, OCR y embeddings."
 ---
 
 # Provider Fallback — Resiliencia por Capas

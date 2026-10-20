@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Help developers using coding agents retain solution knowledge by quizzing them on the current codebase one question at a time, grading each response against the implementation, and explaining incorrect answers. Use when a user asks "Do I know this codebase?", "quiz me on this codebase", "grill me", wants to verify or refresh their mental model of a repository, or wants to catch knowledge drift after delegating implementation work to coding agents.
+description: "Help developers using coding agents retain solution knowledge by quizzing them on the current codebase one question at a time,."
 ---
 
 # Grill Me

@@ -1511,6 +1511,13 @@ export default {
             INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
           `).bind(id, userRow.id || id, username, voucherTitle, effectiveCost, initialStatus, now).run();
+          if (titleLower.includes('raffle')) {
+            const ticketId = crypto.randomUUID();
+            await env.DB.prepare(`
+              INSERT INTO raffle_tickets (id, user_id, kick_username, raffle_id, ticket_number, created_at)
+              VALUES (?1, ?2, ?3, 'weekly_raffle', ?4, ?5)
+            `).bind(ticketId, userRow.id || id, username, now, now).run();
+          }
         }
 
         return new Response(JSON.stringify({
@@ -1522,6 +1529,39 @@ export default {
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
       }
+    }
+
+    // 12b. User Raffle Tickets Query (Protected by verifyUserSession)
+    if (url.pathname === '/api/raffles/my-tickets' && request.method === 'GET') {
+      const username = String(url.searchParams.get('username') || '').trim().replace(/^@/, '');
+      if (!username) {
+        return new Response(JSON.stringify({ error: 'Missing username parameter' }), { status: 400, headers: corsHeaders });
+      }
+      const session = await verifyUserSession(request, env, username);
+      if (!session.ok) {
+        return new Response(JSON.stringify({ error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
+      }
+      let tickets = [];
+      let totalCount = 0;
+      if (env.DB) {
+        try {
+          const rows = await env.DB.prepare(`
+            SELECT id, ticket_number, raffle_id, created_at FROM raffle_tickets
+            WHERE LOWER(kick_username) = LOWER(?1)
+            ORDER BY created_at DESC
+          `).bind(username).all();
+          tickets = rows.results || [];
+          const countRow = await env.DB.prepare('SELECT COUNT(*) as cnt FROM raffle_tickets').first();
+          totalCount = Number(countRow?.cnt || 0);
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({
+        success: true,
+        username,
+        tickets,
+        userTicketCount: tickets.length,
+        totalRaffleTickets: totalCount
+      }), { headers: corsHeaders });
     }
 
     // 13. Admin Store Redemptions (Protected by isAuthorizedAdmin)

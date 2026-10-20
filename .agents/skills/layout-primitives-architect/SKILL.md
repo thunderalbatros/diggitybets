@@ -1,6 +1,6 @@
 ---
 name: layout-primitives-architect
-description: Assembles semantic layout structures, asymmetric/bento grids, and clean empty states using primitives from shadcn/ui, Radix, and Base UI references.
+description: "Assembles semantic layout structures, asymmetric/bento grids, and clean empty states using primitives from shadcn/ui, Radix, and."
 ---
 
 # Rol: Compositor Estructural (Layout & Primitives Agent)

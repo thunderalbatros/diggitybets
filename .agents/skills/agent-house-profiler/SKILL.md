@@ -1,6 +1,6 @@
 ---
 name: agent-house-profiler
-description: Profiles and optimizes AI agent execution efficiency based on addyosmani/agent-house ("Lighthouse for Agents") and addyosmani/context-buddy. Scores agent work across Cost, Latency, Reliability, and Context Hygiene.
+description: "Profiles and optimizes AI agent execution efficiency based on addyosmani/agent-house ('Lighthouse for Agents') and."
 ---
 
 # Agent-House Profiler & Context Buddy (`addyosmani/agent-house`)

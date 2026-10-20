@@ -1,6 +1,6 @@
 ---
 name: extract-design
-description: Extract the full design language and tokens from any website URL. Produces 8 output files including AI-optimized markdown, visual HTML preview, CSS variables, and W3C tokens. Also supports visual diffing between two sites. Use when user asks to analyze, inspect, or compare a website's design, colors, fonts, or aesthetics.
+description: "Extract the full design language and tokens from any website URL."
 ---
 
 # Extract Design Language & Visual Benchmarking

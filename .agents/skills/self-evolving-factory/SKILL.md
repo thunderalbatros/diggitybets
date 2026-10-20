@@ -1,6 +1,6 @@
 ---
 name: self-evolving-factory
-description: Operates the Gate-Governed Self-Evolving Web Software Factory loop, including the SHA-256 Immutable Constitution Guard, Speculative RAG + Vertex AI Context Caching, TextGrad / DSPy Skill Optimizer, SkillSmith Surrogate Verifier in Sandcastle worktrees, and the Autonomous Tech Scout Agent.
+description: "Operates the Gate-Governed Self-Evolving Web Software Factory loop, including the SHA-256 Immutable Constitution Guard,."
 ---
 
 # 🧬 Self-Evolving Web Software Factory — Protocolo de Auto-Evolución Gobernada

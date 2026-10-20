@@ -1,6 +1,6 @@
 ---
 name: anti-shortcut-discipline
-description: Protocolo de disciplina operativa anti-atajos inspirado en addyosmani/agent-skills y affaan-m/ECC. Contiene tablas de racionalización para evitar que los agentes omitan pruebas, validaciones CLI, sanitizaciones o consultas a la base de conocimiento.
+description: "Protocolo de disciplina operativa anti-atajos inspirado en addyosmani/agent-skills y affaan-m/ECC."
 ---
 
 # 🛑 SKILL: Disciplina Operativa Anti-Atajos (Rationalization Tables)

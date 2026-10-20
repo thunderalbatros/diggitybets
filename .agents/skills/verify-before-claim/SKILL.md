@@ -1,6 +1,6 @@
 ---
 name: verify-before-claim
-description: Obligatorio antes de declarar cualquier tarea terminada en HuntHub. Ejecuta la verificación real por CLI (config + JSON + TypeScript) y adjunta la salida cruda. Úsalo siempre que se modifique .mcp.json, cualquier *.json, *.ts, package.json o tsconfig.json, o cuando el IDE y el disco discrepen.
+description: "Obligatorio antes de declarar cualquier tarea terminada en HuntHub."
 ---
 
 # Verify Before Claim (protocolo DEC-010)

@@ -1,6 +1,6 @@
 ---
 name: evidence-driven-testing
-description: Records or produces verifiable proof while testing runtime or UI behavior before claiming a task is done. Use when runtime behavior, tests, or visual UI changes need observable verification.
+description: "Records or produces verifiable proof while testing runtime or UI behavior before claiming a task is done."
 ---
 
 # Evidence-Driven Testing

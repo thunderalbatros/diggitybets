@@ -1,6 +1,6 @@
 ---
 name: visual-auditor
-description: Automated 3-Stage Super-Auditor (Clean Code AST + Playwright 3-Viewport Graphic Design & CDP 60-FPS Telemetry + Google Lighthouse 0-100 & Pa11y WCAG2AA). Enforces zero text clipping, zero horizontal overflow, zero 3D card skew deformation, 60-FPS GPU compositing, and WCAG2AA accessibility.
+description: "Automated 3-Stage Super-Auditor (Clean Code AST + Playwright 3-Viewport Graphic Design & CDP 60-FPS Telemetry + Google Lighthouse."
 ---
 
 # Rol: Super-Auditor de Código Limpio, Diseño Gráfico, Composición, Fluidez 60-FPS y Accesibilidad (Playwright CDP + Google Lighthouse + Pa11y)

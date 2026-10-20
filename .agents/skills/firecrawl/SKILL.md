@@ -1,6 +1,6 @@
 ---
 name: firecrawl
-description: Extrae contenido web dinámico (SPAs), documentación técnica y datos de casinos/slots en Markdown limpio o JSON estructurado tipado usando Firecrawl con fallback autónomo a Cheerio.
+description: "Extrae contenido web dinámico (SPAs), documentación técnica y datos de casinos/slots en Markdown limpio o JSON estructurado."
 ---
 
 # Firecrawl Web Extractor & Structured Ingestion Skill
