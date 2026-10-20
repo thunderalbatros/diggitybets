@@ -482,26 +482,61 @@ export default {
       return new Response(JSON.stringify({ ok: false, fallback: true }), { status: 200, headers: corsHeaders });
     }
 
-    // 3a. Kick Public Channel Profile Proxy & Live Stream Status
-    if (url.pathname === '/api/kick/stream-status' && request.method === 'GET') {
+    // 3a. Kick Public Channel Profile Proxy & Live Stream Status & Realtime Centrifugo Token
+    if ((url.pathname === '/api/kick/stream-status' || url.pathname === '/api/kick/realtime-token') && (request.method === 'GET' || request.method === 'POST')) {
+      let isStreamLive = false;
+      let viewerCount = 0;
+      let chatroomId = 86765775; // Verified diggitybets Kick chatroom ID
+
       try {
         const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
           headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
         });
         if (kickRes.ok) {
           const kickData = await kickRes.json();
-          const isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
-          return new Response(JSON.stringify({
-            success: true,
-            channel: 'diggitybets',
-            isStreamLive,
-            viewerCount: Number(kickData?.livestream?.viewer_count || 0),
-            chatroomId: Number(kickData?.chatroom?.id || 2672891)
-          }), { headers: corsHeaders });
+          isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
+          viewerCount = Number(kickData?.livestream?.viewer_count || 0);
+          if (kickData?.chatroom?.id) {
+            chatroomId = Number(kickData.chatroom.id);
+          }
         }
       } catch (e) {}
-      return new Response(JSON.stringify({ success: true, channel: 'diggitybets', isStreamLive: false, viewerCount: 0, chatroomId: 2672891 }), { headers: corsHeaders });
+
+      // Obtain Centrifugo realtime connection token
+      let token = '';
+      try {
+        const clientId = crypto.randomUUID();
+        const authRes = await fetch('https://web.kick.com/api/v1/realtime/auth/connection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-app-platform': 'web',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          },
+          body: JSON.stringify({ client_id: clientId })
+        });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          token = authData?.data?.token || '';
+        }
+      } catch (e) {}
+
+      return new Response(JSON.stringify({
+        success: true,
+        channel: 'diggitybets',
+        isStreamLive,
+        viewerCount,
+        chatroomId,
+        realtime: {
+          provider: 'centrifugo',
+          wsUrl: 'wss://realtime.us-west-2.platform.kick.com/connection/websocket',
+          token,
+          channel: `chatrooms.${chatroomId}.v2`
+        }
+      }), { headers: corsHeaders });
     }
+
 
     if (url.pathname.startsWith('/api/kick/user/') && request.method === 'GET') {
       const username = decodeURIComponent(url.pathname.replace('/api/kick/user/', '')).trim().replace(/^@/, '');
