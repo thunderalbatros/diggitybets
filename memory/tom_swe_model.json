@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0-tom-swe-iclr2026",
+  "user_id": "tomas_cto_hunthub",
+  "last_updated": "2026-10-20T06:10:00.000Z",
+  "tier3_overall_user_model": {
+    "user_profile": {
+      "user_id": "tomas_cto_hunthub",
+      "overall_description": [
+        "Sole entrepreneur, channel operator, and CTO (Human-In-The-Loop) of HuntHub / DiggityBets (Casino Stream Engagement Suite).",
+        "High strategic ambition: demands top-1% SOTA industrial Software Factory engineering, exhaustive primary-source research (books, academic papers, official docs, free video courses), and zero shortcuts.",
+        "Values autonomous multi-squad coordination, proactive verification before completion, and crystal-clear executive summaries in Argentine Spanish."
+      ],
+      "interactional_preferences": [
+        "[IMPORTANT] Always communicate with the user in Argentine Spanish; keep all code, identifiers, commits, and tests in English.",
+        "[IMPORTANT] Explain technical architectures clearly with structured executive reports and implementation plans; limit gate questions to max 5 with recommended defaults.",
+        "Prefer exhaustive, evidence-backed execution over partial prototypes; verify every change with CLI checks before claiming completion.",
+        "Fact-tag verified statements with [VERIFICADO: source, date] and unverified hypotheses with [ASUNCIÓN]."
+      ],
+      "coding_and_architectural_preferences": [
+        "[IMPORTANT] Hardware budget: HP 250 G8 Windows notebook — strictly zero heavy background daemons, NO Docker, NO local LLM servers (Ollama/vLLM), OBS Browser Sources <= 5% CPU.",
+        "[IMPORTANT] Financial budget: Strict USD 0 / ARS 0 permanently free tier, zero credit card requirements, permissive open-source licenses only (MIT, Apache-2.0, BSD, CC0, ISC, OFL).",
+        "[IMPORTANT] Compliance invariant: 100% free spectator participation, zero custody of real money/crypto, mandatory +18 responsible gambling notices, prizes distributed out-of-band by streamer.",
+        "[IMPORTANT] Live Stream Real-Time Integrity: Zero fake/demo test users in production; real-time sync across Kick.com Chat (!battle, !tourney, !sr, !gtb, !predict, !join) <-> Admin Control Panel <-> Cloudflare D1 Edge <-> OBS Overlays + synchronized 1920x1080 celebration banner & Kick Chat Bot announcements.",
+        "Prefer Rust-speed zero-daemon CLI linters/parsers (Oxc/oxlint, esbuild) and SQLite FTS5 + MiniSearch + AST CodeGraph + Obsidian WikiGraph (Omni-RAG v5) over heavy containerized stacks."
+      ]
+    },
+    "session_summaries": [
+      {
+        "session_id": "session-2026-10-19-books-ingest",
+        "session_tldr": "Curated, renamed, categorized, and ingested 269 canonical engineering books into Omni-RAG v5 with 100% Hit@5 recall across 30 golden queries."
+      },
+      {
+        "session_id": "session-2026-10-20-pqc-factory-v2",
+        "session_tldr": "Closed the 4 Software Factory gaps (Playwright Pixelmatch visual regression, Component Testbench Sandbox, CDN _headers & WCAG2AA landmarks, Cloudflare D1 auto-provisioning)."
+      },
+      {
+        "session_id": "session-2026-10-20-live-stream-sync-and-celebrations",
+        "session_tldr": "Purged all demo users, synchronized live Kick chat commands across Cloudflare D1 Edge to remote USA OBS overlays, and wired dual winner celebrations (1920x1080 overlay + Kick Chat Bot)."
+      },
+      {
+        "session_id": "session-2026-10-20-50-repos-software-factory",
+        "session_tldr": "Investigated the 50-repository Agentic Software Factory architecture (3-Stratum Topology, ToM-SWE, Browserbase ui-test, Stagehand, Oxc/Biome, Context7, CodeGraphContext) and integrated lightweight SOTA capabilities."
+      }
+    ]
+  },
+  "tier2_session_analyses": [
+    {
+      "session_id": "session-2026-10-20-live-stream-sync-and-celebrations",
+      "intent": "debugging_and_code_generation",
+      "user_modeling_summary": "User tested overlays during a live stream with a US-based streamer and identified real-world edge sync & demo data contamination issues, requesting an immediate, production-grade end-to-end circuit fix plus automated chat/overlay winner announcements.",
+      "emotions": "focused, urgent, quality-driven",
+      "extracted_preferences": [
+        "Never ship or retain mock/test usernames in production localStorage or D1.",
+        "Every wheel or event winner must trigger both visual 1920x1080 overlay celebration and chat bot announcement simultaneously."
+      ],
+      "last_updated": "2026-10-20T05:30:00.000Z"
+    },
+    {
+      "session_id": "session-2026-10-20-50-repos-software-factory",
+      "intent": "optimization_and_learning",
+      "user_modeling_summary": "User provided an interactive 50-repository Agentic Software Factory study and requested exhaustive investigation, selective adoption under hardware/budget rules, cloning of missing key repos, RAG ingestion from primary sources, and agent team instruction.",
+      "emotions": "exploratory, confident, ambitious",
+      "extracted_preferences": [
+        "Filter all new technologies through high-trust primary sources (books, papers, official docs, free courses) and HP 250 G8 zero-Docker rules.",
+        "Ensure all 10 Squads are explicitly trained on new tools and architectural patterns."
+      ],
+      "last_updated": "2026-10-20T06:10:00.000Z"
+    }
+  ],
+  "tier1_cleaned_signals": [
+    {
+      "signal_id": "sig-001",
+      "rule": "Zero demo/test users in live stream queues",
+      "confidence": 1.0,
+      "enforced_by": "site/js/app.js (hunthub_demo_users_purged_live_v4) + worker/index.js"
+    },
+    {
+      "signal_id": "sig-002",
+      "rule": "Synchronized Winner Announcements (Overlay 1920x1080 + Local Chat + Kick API Bot)",
+      "confidence": 1.0,
+      "enforced_by": "site/js/admin-hub.js (announceStreamWinner) + worker/index.js (/api/kick/chat/announce)"
+    },
+    {
+      "signal_id": "sig-003",
+      "rule": "3-Stratum Software Factory Topology (Harness -> Framework -> Platform) without Docker overhead",
+      "confidence": 0.99,
+      "enforced_by": "tools/intelligence/factory_sweep.mjs + tools/intelligence/tom_swe_engine.mjs"
+    }
+  ]
+}

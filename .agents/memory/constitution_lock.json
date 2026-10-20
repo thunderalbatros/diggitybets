@@ -1,10 +1,10 @@
 {
   "version": "2026.10.20",
   "sealedBy": "CTO-HITL-Constitution-Guard",
-  "sealedAt": "2026-10-20T04:16:53.015Z",
+  "sealedAt": "2026-10-20T06:19:19.615Z",
   "algorithm": "SHA-256 (LF-normalized)",
   "files": {
-    "AGENTS.md": "49b8d41123131a4ceb6a075402534cfe232d50c8878445ea1fd8035fdd40be8a",
+    "AGENTS.md": "318a7e0f5c19a98bc9839208a7e1f5e788bb2722ec1e515d5c84b62c4b671eaa",
     "CONSTRAINTS.md": "b359abc04b40e734ea38e633e7a4c7e86693b802a855164bb3544ff068815bd0"
   }
 }

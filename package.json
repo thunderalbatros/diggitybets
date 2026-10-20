@@ -11,6 +11,8 @@
     "factory:scout": "node tools/intelligence/tech_scout.mjs",
     "factory:speculative-rag": "node -e \"import('./tools/intelligence/rag_pipeline.mjs').then(async ({queryKnowledge}) => { const {speculativeRagSynthesize} = await import('./tools/intelligence/vertex_ai_bridge.mjs'); const hits = await queryKnowledge('Speculative RAG TextGrad SkillSmith', 5, {fastLocalOnly:true}); console.log(JSON.stringify(await speculativeRagSynthesize('Speculative RAG TextGrad SkillSmith', hits), null, 2)); })\"",
     "factory:constitution": "node tools/intelligence/constitution_guard.mjs",
+    "factory:tom-swe": "node tools/intelligence/tom_swe_engine.mjs",
+    "audit:diff-ui": "node tools/audit/diff_ui_adversarial.mjs",
     "audit:visual-regression": "node tools/audit/visual_regression.mjs",
     "audit:eval": "node tools/intelligence/eval_matrix.mjs",
     "db:provision": "node tools/provision_d1.mjs"

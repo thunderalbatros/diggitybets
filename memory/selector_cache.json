@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.5.0-stagehand-self-healing",
+  "last_verified": "2026-10-20T06:13:00.000Z",
+  "targets": {
+    "main_site": {
+      "file": "index.html",
+      "primitives": [
+        {
+          "id": "nav-sidebar",
+          "operation": "observe",
+          "primary_selector": ".site-sidebar",
+          "fallback_selectors": ["aside[aria-label]", "nav[aria-label]"],
+          "required": true
+        },
+        {
+          "id": "main-content-landmark",
+          "operation": "observe",
+          "primary_selector": "main",
+          "fallback_selectors": ["#main-content", "[role='main']"],
+          "required": true
+        },
+        {
+          "id": "compliance-18plus-badge",
+          "operation": "extract",
+          "primary_selector": "footer",
+          "fallback_selectors": [".site-footer", "[data-compliance]"],
+          "expected_text_pattern": "18\\+|\\+18",
+          "required": true
+        },
+        {
+          "id": "live-winner-banner",
+          "operation": "observe",
+          "primary_selector": "site/js/admin-hub.js::announceStreamWinner",
+          "fallback_selectors": ["BroadcastChannel('hunthub_celebration')"],
+          "required": true
+        }
+      ]
+    },
+    "overlays": [
+      {
+        "id": "overlay-celebration",
+        "file": "overlay-celebration/index.html",
+        "script": "overlay-celebration/main.js",
+        "primitives": [
+          {
+            "id": "celebration-stage-1080p",
+            "operation": "observe",
+            "primary_selector": "#celebration-stage",
+            "fallback_selectors": [".billboard-card", "#winner-name"],
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "overlay-battle",
+        "file": "overlay-battle/index.html",
+        "script": "overlay-battle/main.js",
+        "primitives": [
+          {
+            "id": "battle-arena-root",
+            "operation": "observe",
+            "primary_selector": "#battle-arena",
+            "fallback_selectors": [".fighter-card", "#p1-name"],
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "overlay-bonushunt",
+        "file": "overlay-bonushunt/index.html",
+        "script": "overlay-bonushunt/main.js",
+        "primitives": [
+          {
+            "id": "hunt-stage-root",
+            "operation": "observe",
+            "primary_selector": "#hunt-stage",
+            "fallback_selectors": ["#bonus-list", ".hunt-header"],
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "overlay-tourney",
+        "file": "overlay-tourney/index.html",
+        "script": "overlay-tourney/main.js",
+        "primitives": [
+          {
+            "id": "tourney-bracket-root",
+            "operation": "observe",
+            "primary_selector": "#bracket-grid",
+            "fallback_selectors": [".tourney-arena", ".native-bracket-grid"],
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "overlay-slotrequests",
+        "file": "overlay-slotrequests/index.html",
+        "script": "overlay-slotrequests/main.js",
+        "primitives": [
+          {
+            "id": "sr-queue-root",
+            "operation": "observe",
+            "primary_selector": "#sr-overlay-stage",
+            "fallback_selectors": ["#sr-overlay-canvas", "#sr-wheel-card"],
+            "required": true
+          }
+        ]
+      }
+    ]
+  }
+}
