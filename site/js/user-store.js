@@ -1,7 +1,115 @@
 /**
- * HuntHub — User Profile, Stake Bet ID TOTP Verifier, Discord Linker & Leaderboard
+ * HuntHub — User Profile, Stake Bet ID TOTP Verifier & Monthly Kick Leaderboard
  * 100% English, zero dependencies, client-side cryptographic challenge.
  */
+
+// Luxury Dark-Casino Laser-Neon Alert & Confirmation Modal (Replaces native window.alert / window.confirm)
+window.showCasinoModal = function(opts = {}) {
+  return new Promise((resolve) => {
+    const existing = document.getElementById('hunthub-casino-modal-backdrop');
+    if (existing) existing.remove();
+
+    const tone = opts.tone || 'gold'; // 'gold' | 'green' | 'danger' | 'cyan'
+    const isConfirm = Boolean(opts.isConfirm);
+    const title = String(opts.title || (isConfirm ? 'CONFIRM ACTION' : 'STORE & REWARDS NOTICE'));
+    const message = String(opts.message || '');
+    const badge = String(opts.badge || (tone === 'danger' ? '⚠️ ACTION BLOCKED' : (tone === 'green' ? '✓ REWARD CONFIRMED' : '💎 DIGGITY REWARDS VAULT')));
+    const confirmText = String(opts.confirmText || (isConfirm ? '⚡ CONFIRM REDEEM' : 'GOT IT ✓'));
+    const cancelText = String(opts.cancelText || 'CANCEL');
+
+    if (window.soundEngine) {
+      try {
+        if (tone === 'danger' && typeof window.soundEngine.playBust === 'function') {
+          window.soundEngine.playBust();
+        } else if (typeof window.soundEngine.playChip === 'function') {
+          window.soundEngine.playChip();
+        }
+      } catch (_) {}
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'hunthub-casino-modal-backdrop';
+    backdrop.className = `casino-laser-modal-backdrop tone-${tone}`;
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    const esc = (s) => (window.escapeHTML ? window.escapeHTML(s) : String(s).replace(/[&<>"']/g, ''));
+
+    backdrop.innerHTML = `
+      <div class="casino-laser-modal-card tone-${esc(tone)}">
+        <div class="casino-laser-modal-glow" aria-hidden="true"></div>
+        <div class="casino-laser-modal-top-bar">
+          <span class="casino-laser-modal-badge">${esc(badge)}</span>
+          <button type="button" class="casino-laser-modal-close" id="casino-modal-close-x" aria-label="Close">✕</button>
+        </div>
+        <h3 class="casino-laser-modal-title">${esc(title)}</h3>
+        <p class="casino-laser-modal-message">${esc(message)}</p>
+        <div class="casino-laser-modal-actions">
+          ${isConfirm ? `<button type="button" class="casino-relief-btn secondary" id="casino-modal-cancel-btn">${esc(cancelText)}</button>` : ''}
+          <button type="button" class="casino-relief-btn primary tone-${esc(tone)}" id="casino-modal-confirm-btn">${esc(confirmText)}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    const closeWith = (result) => {
+      window.removeEventListener('keydown', onKey);
+      if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+      }
+      resolve(result);
+    };
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeWith(false);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        closeWith(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+
+    const confirmBtn = document.getElementById('casino-modal-confirm-btn');
+    const cancelBtn = document.getElementById('casino-modal-cancel-btn');
+    const closeX = document.getElementById('casino-modal-close-x');
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => closeWith(true));
+      setTimeout(() => confirmBtn.focus(), 30);
+    }
+    if (cancelBtn) cancelBtn.addEventListener('click', () => closeWith(false));
+    if (closeX) closeX.addEventListener('click', () => closeWith(false));
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeWith(false);
+    });
+  });
+};
+
+window.showCasinoAlert = function(title, message, tone = 'danger', badge = '') {
+  return window.showCasinoModal({
+    title,
+    message,
+    tone,
+    badge,
+    isConfirm: false,
+    confirmText: 'UNDERSTOOD ⚡'
+  });
+};
+
+window.showCasinoConfirm = function(title, message, confirmText = '⚡ CONFIRM REDEEM', cancelText = 'CANCEL', tone = 'gold') {
+  return window.showCasinoModal({
+    title,
+    message,
+    tone,
+    badge: '🎁 CONFIRM STORE REDEMPTION',
+    isConfirm: true,
+    confirmText,
+    cancelText
+  });
+};
 
 class UserStoreController {
   constructor() {
@@ -14,10 +122,6 @@ class UserStoreController {
     // Stake Affiliate (Preserved in backlog)
     this.stakeUsername = localStorage.getItem('hunthub_stake_user') || '';
     this.stakeVerified = localStorage.getItem('hunthub_stake_verified') === 'true';
-
-    // Discord Linking
-    this.discordLinked = localStorage.getItem('hunthub_discord_linked') === 'true';
-    this.discordTag = localStorage.getItem('hunthub_discord_tag') || '';
 
     // Socials
     this.xHandle = localStorage.getItem('hunthub_x_handle') || '';
@@ -91,13 +195,13 @@ class UserStoreController {
     ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((evtName) => {
       window.addEventListener(evtName, markInteraction, { passive: true });
     });
+    this.ensureMonthlyLeaderboardCycle();
     this.initStoreStockState();
     this.updateUserUI();
     this.syncKickProfileAvatar(false);
     this.bindAuthButtons();
     this.bindProfileControls();
     this.bindStakeTotpVerification();
-    this.bindDiscordLinking();
     this.bindStoreRedemptions();
     this.renderLeaderboard();
     this.renderHistoricalLeaderboard();
@@ -107,8 +211,45 @@ class UserStoreController {
     this.syncStoreStockFromServer();
   }
 
+  getCurrentMonthKey(date = new Date()) {
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  getCurrentMonthDisplayLabel(date = new Date()) {
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return `${months[date.getUTCMonth()]} ${date.getUTCFullYear()} CYCLE`;
+  }
+
+  /**
+   * Automatic Monthly Reset on the 1st day of every month (00:00 UTC)
+   * Preserves previous month archive and resets monthly accumulated $DIG leaderboard.
+   */
+  ensureMonthlyLeaderboardCycle() {
+    const currentMonth = this.getCurrentMonthKey();
+    const savedMonth = localStorage.getItem('hunthub_kick_leaderboard_month');
+    if (savedMonth && savedMonth !== currentMonth) {
+      try {
+        const prevData = localStorage.getItem('hunthub_historical_leaderboard') || '[]';
+        localStorage.setItem(`hunthub_kick_leaderboard_archive_${savedMonth}`, prevData);
+      } catch (_) {}
+      localStorage.setItem('hunthub_historical_leaderboard', '[]');
+      localStorage.setItem('hunthub_user_monthly_dig', '0');
+      localStorage.setItem('hunthub_user_career_dig', '0');
+    }
+    if (savedMonth !== currentMonth) {
+      localStorage.setItem('hunthub_kick_leaderboard_month', currentMonth);
+    }
+    const monthLabelEl = document.getElementById('kick-lb-month-label');
+    if (monthLabelEl) {
+      monthLabelEl.textContent = this.getCurrentMonthDisplayLabel();
+    }
+  }
+
   recordVerifiedKickChatActivity(sender, content) {
     if (!sender) return;
+    this.ensureMonthlyLeaderboardCycle();
     const cleanSender = String(sender).trim().replace(/^@/, '');
     if (this.isLoggedIn && this.username) {
       const cleanSelf = String(this.username).trim().replace(/^@/, '').toLowerCase();
@@ -118,12 +259,14 @@ class UserStoreController {
         localStorage.setItem('hunthub_last_kick_chat_ts', String(this.lastVerifiedKickChatTs));
       }
     }
-    // Real Kick chat activity awards points & dynamically fills empty leaderboard slots!
+    // Real Kick chat activity awards points & dynamically tracks active chatters on the Monthly Top 20 Leaderboard!
     this.awardChatterHistoricalPoints(cleanSender, 10);
   }
 
   awardChatterHistoricalPoints(username, pts = 10) {
-    if (!username) return;
+    const numPts = Number(pts) || 0;
+    if (!username || numPts <= 0) return; // Strictly monotonic cumulative monthly $DIG (spending in Store never subtracts)
+    this.ensureMonthlyLeaderboardCycle();
     const cleanUser = username.startsWith('@') ? username : `@${username}`;
     let list = this.getHistoricalLeaderboard();
 
@@ -132,15 +275,26 @@ class UserStoreController {
       found = {
         rank: list.length + 1,
         kickUser: cleanUser,
-        totalDig: pts,
+        totalDig: numPts,
+        monthlyDig: numPts,
         tourneysWon: 0,
         huntHits: 0,
         tier: 'SILVER',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        lastActiveTs: Date.now()
       };
       list.push(found);
     } else {
-      found.totalDig = (Number(found.totalDig) || 0) + pts;
+      found.totalDig = (Number(found.totalDig) || 0) + numPts;
+      found.monthlyDig = found.totalDig;
+      found.lastActiveTs = Date.now();
+    }
+
+    if (this.username && cleanUser.toLowerCase() === (this.username.startsWith('@') ? this.username.toLowerCase() : `@${this.username.toLowerCase()}`)) {
+      try {
+        localStorage.setItem('hunthub_user_monthly_dig', String(found.totalDig));
+        localStorage.setItem('hunthub_user_career_dig', String(found.totalDig));
+      } catch (_) {}
     }
 
     list.sort((a, b) => b.totalDig - a.totalDig);
@@ -205,8 +359,6 @@ class UserStoreController {
 
     // Populate profile inputs
     const elStakeUser = document.getElementById('prof-input-stake-user');
-    const badgeStake = document.getElementById('prof-stake-status-badge');
-    const elDiscord = document.getElementById('prof-input-discord');
     const elX = document.getElementById('prof-input-x');
     const elIg = document.getElementById('prof-input-ig');
     const elLTC = document.getElementById('prof-input-ltc');
@@ -216,7 +368,6 @@ class UserStoreController {
     const elSOL = document.getElementById('prof-input-sol');
 
     if (elStakeUser) elStakeUser.value = this.stakeUsername;
-    if (elDiscord) elDiscord.value = this.discordTag;
     if (elX) elX.value = this.xHandle;
     if (elIg) elIg.value = this.igHandle;
     if (elLTC) elLTC.value = this.cryptoLTC;
@@ -543,7 +694,7 @@ class UserStoreController {
               type: 'error'
             });
           } else {
-            alert('⚠️ El archivo supera el límite de 2MB. Por favor seleccioná una imagen menor a 2MB.');
+            window.showCasinoAlert('FILE SIZE LIMIT EXCEEDED ⚠️', 'The selected image exceeds the 2MB limit. Please choose an image smaller than 2MB.', 'danger');
           }
           return;
         }
@@ -596,7 +747,6 @@ class UserStoreController {
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
         this.stakeUsername = (document.getElementById('prof-input-stake-user')?.value || '').trim();
-        this.discordTag = (document.getElementById('prof-input-discord')?.value || '').trim();
         this.xHandle = (document.getElementById('prof-input-x')?.value || '').trim();
         this.igHandle = (document.getElementById('prof-input-ig')?.value || '').trim();
         this.cryptoLTC = (document.getElementById('prof-input-ltc')?.value || '').trim();
@@ -606,7 +756,6 @@ class UserStoreController {
         this.cryptoSOL = (document.getElementById('prof-input-sol')?.value || '').trim();
 
         localStorage.setItem('hunthub_stake_user', this.stakeUsername);
-        localStorage.setItem('hunthub_discord_tag', this.discordTag);
         localStorage.setItem('hunthub_x_handle', this.xHandle);
         localStorage.setItem('hunthub_ig_handle', this.igHandle);
         localStorage.setItem('hunthub_crypto_ltc', this.cryptoLTC);
@@ -956,15 +1105,6 @@ class UserStoreController {
   }
 
   /**
-   * Discord Account Linking Integration (Synchronized with OAuthEngine)
-   */
-  bindDiscordLinking() {
-    if (window.oauthEngine) {
-      window.oauthEngine.syncDiscordUI();
-    }
-  }
-
-  /**
    * Render Stake Leaderboard ($1,500 USD Monthly Prize Pool: 1st $750, 2nd $500, 3rd $200, 4th-8th $10, Top 15 Displayed)
    */
   getStakePrizeForRank(rank) {
@@ -1136,11 +1276,12 @@ class UserStoreController {
   }
 
   /**
-   * Channel Activity Points Leaderboard ($DIG)
-   * Persisted in localStorage: hunthub_historical_leaderboard
-   * Rewards: 1st Most Active = $20 USD ($40 USD 2X under code: diggity), 2nd Most Active = $10 USD ($20 USD 2X under code: diggity)
+   * Monthly Channel Activity Points Leaderboard ($DIG) — Resets 1st of Every Month, Top 20 Active Viewers
+   * Persisted in localStorage: hunthub_historical_leaderboard (keyed by hunthub_kick_leaderboard_month)
+   * Tracks cumulative monthly $DIG earned (spending points in the Store never reduces monthly leaderboard score).
    */
   getHistoricalLeaderboard() {
+    this.ensureMonthlyLeaderboardCycle();
     let list = [];
     try {
       list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || '[]');
@@ -1159,21 +1300,35 @@ class UserStoreController {
       list = [];
     }
 
-    // If current logged-in user exists and has points, ensure they are tracked
+    // If current logged-in user exists and has accumulated monthly points, ensure they are tracked
+    // Note: totalDig is monotonic monthly accumulated $DIG (spending in the Store never reduces found.totalDig)
     if (this.username) {
       const cleanUser = this.username.startsWith('@') ? this.username : `@${this.username}`;
       const found = list.find(u => (u.kickUser || '').toLowerCase() === cleanUser.toLowerCase());
-      const careerDig = parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || (window.houseGames ? window.houseGames.balance : 0);
-      if (!found && careerDig > 0) {
+      const monthlyDig = Math.max(
+        parseInt(localStorage.getItem('hunthub_user_monthly_dig') || '0', 10) || 0,
+        parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || 0,
+        window.houseGames ? (Number(window.houseGames.balance) || 0) : 0
+      );
+      if (!found && monthlyDig > 0) {
         list.push({
           rank: list.length + 1,
           kickUser: cleanUser,
-          totalDig: careerDig,
+          totalDig: monthlyDig,
+          monthlyDig,
           tourneysWon: 0,
           huntHits: 0,
           tier: this.isSub ? 'GOLD' : 'SILVER',
           status: 'ACTIVE'
         });
+        list.sort((a, b) => b.totalDig - a.totalDig);
+        list.forEach((item, idx) => { item.rank = idx + 1; });
+        try {
+          localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
+        } catch (_) {}
+      } else if (found && monthlyDig > (Number(found.totalDig) || 0)) {
+        found.totalDig = monthlyDig;
+        found.monthlyDig = monthlyDig;
         list.sort((a, b) => b.totalDig - a.totalDig);
         list.forEach((item, idx) => { item.rank = idx + 1; });
         try {
@@ -1299,7 +1454,7 @@ class UserStoreController {
       return;
     }
 
-    tbody.innerHTML = list.slice(0, 15).map((item, idx) => {
+    tbody.innerHTML = list.slice(0, 20).map((item, idx) => {
       const rank = idx + 1;
       const isTop3 = rank <= 3;
       const rankColor = rank === 1 ? 'var(--gold)' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#cd7f32' : 'var(--text-muted)'));
@@ -1620,7 +1775,12 @@ class UserStoreController {
     storeItems.forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!this.isLoggedIn) {
-          alert('Please Link your Kick account first to redeem store items.');
+          await window.showCasinoAlert(
+            'KICK ACCOUNT REQUIRED 🔗',
+            'Please link your Kick.com account first to redeem rewards from the Store.',
+            'gold',
+            '🔒 AUTHENTICATION REQUIRED'
+          );
           return;
         }
 
@@ -1643,12 +1803,22 @@ class UserStoreController {
         }
 
         if (itemKey === 'vip_discord' && this.vipDiscordClaimed) {
-          alert('LIMIT REACHED: VIP Streamer Discord Role can only be redeemed 1 time per account.');
+          await window.showCasinoAlert(
+            'LIMIT REACHED (1/1) 🔒',
+            'VIP Streamer Discord Role can only be redeemed 1 time per account.',
+            'gold',
+            '⚠️ ACCOUNT LIMIT'
+          );
           return;
         }
 
         if (itemKey === 'battle_entry' && this.battleEntryLastTs > 0 && (Date.now() - this.battleEntryLastTs < 14 * 86400 * 1000)) {
-          alert('COOLDOWN ACTIVE: Guaranteed 1v1 Battle Entry has a 14-day cooldown per user.');
+          await window.showCasinoAlert(
+            '14-DAY COOLDOWN ACTIVE ⏳',
+            'Guaranteed 1v1 Battle Entry has a 14-day cooldown per viewer to ensure fair rotation.',
+            'gold',
+            '⏳ COOLDOWN ACTIVE'
+          );
           return;
         }
 
@@ -1660,17 +1830,36 @@ class UserStoreController {
           og_badge_role: 3
         };
         if (stockLimits[itemKey] !== undefined && (this.storeStock[itemKey] ?? stockLimits[itemKey]) <= 0) {
-          alert(`SOLD OUT THIS WEEK: Weekly stock limit (${stockLimits[itemKey]}/${stockLimits[itemKey]}) reached for this reward. Resets every Monday.`);
+          await window.showCasinoAlert(
+            'SOLD OUT THIS WEEK 📦',
+            `Weekly stock limit (${stockLimits[itemKey]}/${stockLimits[itemKey]}) reached for "${itemName}". Stock resets every Monday at 00:00 UTC.`,
+            'danger',
+            '🚫 OUT OF STOCK'
+          );
           this.updateStoreCatalogUI();
           return;
         }
 
-        if (!window.houseGames || window.houseGames.balance < cost) {
-          alert(`Insufficient $DIG points balance. You need ${cost.toLocaleString()} $DIG to redeem ${itemName}.`);
+        const currentBal = window.houseGames ? (Number(window.houseGames.balance) || 0) : 0;
+        if (!window.houseGames || currentBal < cost) {
+          await window.showCasinoAlert(
+            'INSUFFICIENT $DIG BALANCE 💎',
+            `Insufficient $DIG points balance (${currentBal.toLocaleString()} $DIG available). You need ${cost.toLocaleString()} $DIG to redeem ${itemName}.`,
+            'danger',
+            '⚠️ INSUFFICIENT $DIG POINTS'
+          );
           return;
         }
 
-        if (confirm(`Redeem "${itemName}" for ${cost.toLocaleString()} $DIG points?`)) {
+        const confirmed = await window.showCasinoConfirm(
+          `REDEEM ${itemName.toUpperCase()}?`,
+          `Redeem "${itemName}" for ${cost.toLocaleString()} $DIG points? (Your Monthly Kick Leaderboard accumulated score will NOT be reduced).`,
+          `⚡ REDEEM (${cost.toLocaleString()} $DIG)`,
+          'CANCEL',
+          'gold'
+        );
+
+        if (confirmed) {
           let turnstileToken = '';
           if (typeof window.getTurnstileToken === 'function') {
             try {
@@ -1693,7 +1882,7 @@ class UserStoreController {
             if (!res.ok) {
               const errData = await res.json().catch(() => ({}));
               if (errData.error && (errData.error.includes('SOLD OUT') || errData.error.includes('COOLDOWN') || errData.error.includes('LIMIT'))) {
-                alert(errData.error);
+                await window.showCasinoAlert('REDEMPTION NOTICE ⚠️', errData.error, 'danger');
                 return;
               }
             }
@@ -1770,15 +1959,12 @@ class UserStoreController {
               window.soundEngine.playWin();
             }
           }
-          if (window.sonner) {
-            window.sonner.toast({
-              title: 'Voucher Redeemed! 🎁',
-              message: `You redeemed "${itemName}" for ${cost.toLocaleString()} $DIG. Streamer queue notified in real-time!`,
-              type: 'gold'
-            });
-          } else {
-            alert(`Successfully redeemed: ${itemName}! Our stream moderators will process your reward.`);
-          }
+          await window.showCasinoAlert(
+            'VOUCHER REDEEMED! 🎁',
+            `You redeemed "${itemName}" for ${cost.toLocaleString()} $DIG. Streamer moderation queue notified in real-time!`,
+            'green',
+            '✓ REWARD CLAIM QUEUED'
+          );
         }
       });
     });

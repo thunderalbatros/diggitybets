@@ -777,7 +777,18 @@ class AdminHubController {
   }
 
   async deleteClaim(id, username) {
-    if (!confirm(`Are you sure you want to permanently delete the claim for @${username}?`)) return;
+    const confirmed = typeof window.showCasinoConfirm === 'function'
+      ? await window.showCasinoConfirm({
+          title: 'DELETE STORE CLAIM',
+          subtitle: 'PERMANENT ADMIN ACTION',
+          icon: '🗑️',
+          accent: 'danger',
+          confirmText: '🗑️ DELETE CLAIM',
+          cancelText: 'CANCEL',
+          message: `Are you sure you want to permanently delete the store claim for @${username}?`
+        })
+      : confirm(`Are you sure you want to permanently delete the claim for @${username}?`);
+    if (!confirmed) return;
 
     try {
       await fetch('/api/admin/delete-store-redemption', {
@@ -5588,6 +5599,9 @@ class AdminHubController {
                 const c = String(m.content || '').trim();
                 if (u && c) {
                   this.recentChatters.set(u, { user: u, ts: Date.now() });
+                  if (window.userStore && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
+                    window.userStore.recordVerifiedKickChatActivity(u, c);
+                  }
                   this.renderActiveChatters();
                   this.pushActiveChattersToEdge();
                   if (c.startsWith('!')) {
@@ -5836,9 +5850,19 @@ class AdminHubController {
     }
 
     if (cmd === '!guess' || cmd === '!gtb') {
+      const tracker = window.bonusHunt || window.bonusHuntTracker;
+      if ((tracker && tracker.guessesLocked) || localStorage.getItem('hunthub_bh_guesses_locked') === 'true') {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: `🔒 Guess Ignored (@${cleanUser})`,
+            message: `Guess the Final Balance is currently CLOSED by the streamer.`,
+            type: 'danger'
+          });
+        }
+        return;
+      }
       const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
       if (!isNaN(numVal) && numVal > 0) {
-        const tracker = window.bonusHunt || window.bonusHuntTracker;
         if (tracker && typeof tracker.submitChatGuess === 'function') {
           tracker.submitChatGuess(cleanUser, numVal);
         }

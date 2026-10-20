@@ -34,7 +34,7 @@ const requiredIds = [
   // Stake Originals Clone Hub
   'stake-originals-iframe',
   // Leaderboard & Profile (Stage 6)
-  'leaderboard', 'profile', 'totp-mult-val', 'totp-timer', 'btn-link-discord',
+  'leaderboard', 'profile', 'totp-mult-val', 'totp-timer', 'random-card-picker', 'btn-toggle-bh-guess-lock', 'bh-guess-closed-banner',
   // Streamer Admin Hub, Condensed Control Panel & Anti-Fraud Radar
   'admin-hub', 'nav-tab-admin', 'control-panel', 'nav-tab-control', 'admin-claims-tbody', 'admin-alts-tbody', 'btn-roll-sunday-raffle'
 ];

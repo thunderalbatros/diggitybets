@@ -18,6 +18,7 @@ class BonusHuntController {
     this.isActive = localStorage.getItem('hunthub_hunt_active') === 'true' || this.slots.length > 0;
     this.startBalance = this.slots.length > 0 ? Number(localStorage.getItem('hunthub_hunt_start_cost') || 0) : 0;
     this.guesses = this.isActive ? this.loadInitialGuesses() : [];
+    this.guessesLocked = localStorage.getItem('hunthub_bh_guesses_locked') === 'true';
     this.slotRequests = this.loadInitialSlotRequests();
 
     // Wheel animation state
@@ -129,11 +130,16 @@ class BonusHuntController {
     this.isActive = localStorage.getItem('hunthub_hunt_active') === 'true' || this.slots.length > 0;
     this.startBalance = this.slots.length > 0 ? Number(localStorage.getItem('hunthub_hunt_start_cost') || 0) : 0;
     this.guesses = this.loadInitialGuesses();
+    this.guessesLocked = localStorage.getItem('hunthub_bh_guesses_locked') === 'true';
     this.slotRequests = this.loadInitialSlotRequests();
     this.renderMetrics();
     this.renderSlotTable();
     this.renderGuesses();
+    this.renderGuessLockState();
     this.renderSlotRequests();
+    if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+      window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
   }
 
   init() {
@@ -143,6 +149,7 @@ class BonusHuntController {
     this.renderSlotTable();
     this.renderGuesses();
     this.initGuessForm();
+    this.renderGuessLockState();
     this.initGtbSettlement();
     this.renderSlotRequests();
     this.initSlotRequestsForm();
@@ -157,7 +164,7 @@ class BonusHuntController {
       } catch (_) {}
     }
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hunthub_hunt_slots' || e.key === 'hunthub_hunt_guesses' || e.key === 'hunthub_hunt_start_cost' || e.key === 'hunthub_hunt_active') {
+      if (e.key === 'hunthub_hunt_slots' || e.key === 'hunthub_hunt_guesses' || e.key === 'hunthub_hunt_start_cost' || e.key === 'hunthub_hunt_active' || e.key === 'hunthub_bh_guesses_locked' || e.key === 'hunthub_slot_requests') {
         this.reloadFromStorage();
       }
     });
@@ -454,11 +461,109 @@ class BonusHuntController {
     });
   }
 
+  setGuessesLocked(locked, broadcast = true) {
+    this.guessesLocked = Boolean(locked);
+    try {
+      localStorage.setItem('hunthub_bh_guesses_locked', this.guessesLocked ? 'true' : 'false');
+    } catch (_) {}
+    this.renderGuessLockState();
+    if (broadcast) {
+      try {
+        if (this.bcHunt) {
+          this.bcHunt.postMessage({ type: 'GUESS_LOCK_CHANGED', guessesLocked: this.guessesLocked, ts: Date.now() });
+        }
+      } catch (_) {}
+      window.dispatchEvent(new CustomEvent('hunthub:bonushunt-sync'));
+    }
+  }
+
+  toggleGuessesLocked() {
+    this.setGuessesLocked(!this.guessesLocked, true);
+    if (window.soundEngine && typeof window.soundEngine.playChip === 'function') {
+      try { window.soundEngine.playChip(); } catch (_) {}
+    }
+    if (window.sonner) {
+      window.sonner.toast({
+        title: this.guessesLocked ? '🔒 Guess Closed (Locked)' : '🔓 Guesses Re-Opened!',
+        message: this.guessesLocked
+          ? 'Spectators can no longer submit new predictions — ready to open bonuses!'
+          : 'Spectators can now submit their final balance predictions (!guess).',
+        type: this.guessesLocked ? 'gold' : 'green'
+      });
+    }
+  }
+
+  renderGuessLockState() {
+    const locked = Boolean(this.guessesLocked);
+    const cardEl = document.getElementById('bh-guess-card');
+    const bannerEl = document.getElementById('bh-guess-closed-banner');
+    const formEl = document.getElementById('bh-guess-form');
+    const inputEl = document.getElementById('bh-input-guess');
+    const submitBtn = document.getElementById('bh-btn-submit-guess');
+    const badgeEl = document.getElementById('bh-guess-status-badge');
+    const cpToggleBtn = document.getElementById('btn-toggle-bh-guess-lock');
+
+    if (cardEl) {
+      cardEl.classList.toggle('is-guesses-locked', locked);
+    }
+    if (bannerEl) {
+      bannerEl.style.display = locked ? 'block' : 'none';
+    }
+    if (formEl) {
+      formEl.style.opacity = locked ? '0.45' : '1';
+      formEl.style.pointerEvents = locked ? 'none' : 'auto';
+    }
+    if (inputEl) {
+      inputEl.disabled = locked;
+      inputEl.placeholder = locked ? '🔒 GUESS CLOSED — Bonus opening in progress' : 'e.g. 1750';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = locked;
+      submitBtn.textContent = locked ? '🔒 Guess Closed' : 'Lock 🎯';
+    }
+    if (badgeEl) {
+      if (locked) {
+        badgeEl.textContent = '🔒 GUESS CLOSED';
+        badgeEl.style.background = 'rgba(255, 42, 95, 0.22)';
+        badgeEl.style.borderColor = '#ff2a5f';
+        badgeEl.style.color = '#ff6b8b';
+      } else {
+        badgeEl.textContent = '🔓 GUESS OPEN';
+        badgeEl.style.background = 'rgba(83, 252, 24, 0.15)';
+        badgeEl.style.borderColor = 'var(--kick-green)';
+        badgeEl.style.color = 'var(--kick-green)';
+      }
+    }
+    if (cpToggleBtn) {
+      if (locked) {
+        cpToggleBtn.textContent = '🔒 Guesses: CLOSED';
+        cpToggleBtn.style.borderColor = '#ff2a5f';
+        cpToggleBtn.style.color = '#ff6b8b';
+        cpToggleBtn.style.background = 'rgba(255, 42, 95, 0.16)';
+      } else {
+        cpToggleBtn.textContent = '🔓 Guesses: OPEN';
+        cpToggleBtn.style.borderColor = 'var(--kick-green)';
+        cpToggleBtn.style.color = 'var(--kick-green)';
+        cpToggleBtn.style.background = 'rgba(83, 252, 24, 0.12)';
+      }
+    }
+  }
+
   submitChatGuess(username, guessVal) {
+    if (this.guessesLocked || localStorage.getItem('hunthub_bh_guesses_locked') === 'true') {
+      if (window.sonner) {
+        window.sonner.toast({
+          title: '🔒 Guess Closed',
+          message: 'Final balance predictions are locked while bonuses are being opened.',
+          type: 'danger'
+        });
+      }
+      return false;
+    }
     const clean = String(username || 'Viewer').trim().replace(/^@/, '');
     const formatted = `@${clean}`;
     const num = Number(guessVal);
-    if (!num || isNaN(num) || num <= 0) return;
+    if (!num || isNaN(num) || num <= 0) return false;
 
     this.isActive = true;
     localStorage.setItem('hunthub_hunt_active', 'true');
@@ -475,14 +580,32 @@ class BonusHuntController {
     }
     this.save();
     this.renderGuesses();
+    return true;
   }
 
   initGuessForm() {
+    const cpToggleBtn = document.getElementById('btn-toggle-bh-guess-lock');
+    if (cpToggleBtn && !cpToggleBtn._lockBound) {
+      cpToggleBtn._lockBound = true;
+      cpToggleBtn.addEventListener('click', () => this.toggleGuessesLocked());
+    }
+
     const form = document.getElementById('bh-guess-form');
     if (!form) return;
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (this.guessesLocked || localStorage.getItem('hunthub_bh_guesses_locked') === 'true') {
+        if (typeof window.showCasinoAlert === 'function') {
+          window.showCasinoAlert(
+            '🔒 GUESS CLOSED',
+            'Predictions for this Bonus Hunt have been closed by the streamer before bonus opening.',
+            'danger',
+            '🔒 CONTEST LOCKED'
+          );
+        }
+        return;
+      }
       const valEl = document.getElementById('bh-input-guess');
       const guessVal = valEl ? parseFloat(valEl.value) : 0;
 
@@ -499,7 +622,8 @@ class BonusHuntController {
       }
 
       const activeUser = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
-      this.submitChatGuess(activeUser, guessVal);
+      const ok = this.submitChatGuess(activeUser, guessVal);
+      if (!ok) return;
       if (window.soundEngine && typeof window.soundEngine.playVoteClick === 'function') {
         window.soundEngine.playVoteClick();
       }
@@ -688,65 +812,17 @@ class BonusHuntController {
   }
 
   getMaxSlotRequestsForUser(username) {
-    const clean = String(username || '').trim().replace(/^@+/, '').toLowerCase();
-    if (!clean) return 1;
+    // Maximum of 3 active Slot Requests per viewer in the Roulette (!sr).
+    // Once a viewer's request wins on the Roulette, it is removed from the wheel and frees 1 slot (2/3 -> 3/3).
+    return 3;
+  }
 
-    // Streamer / Master Admin accounts have unlimited slot requests
-    if (
-      clean === 'diggitybets' ||
-      clean === 'diggity_bets' ||
-      clean === 'tomas' ||
-      clean === 'tarkansky' ||
-      clean === 'diggitystreamer' ||
-      clean === 'vaultpack'
-    ) {
-      return Infinity;
-    }
-
-    // Check if the request belongs to the currently active browser user
-    const activeBrowserUser = String(
-      (window.userStore && window.userStore.username) ||
-      localStorage.getItem('hunthub_kick_username') ||
-      ''
-    ).trim().replace(/^@+/, '').toLowerCase();
-
-    const isCurrentBrowserUser =
-      (activeBrowserUser && clean === activeBrowserUser) ||
-      clean === 'viewer' ||
-      clean === 'guest' ||
-      clean === 'kickviewer' ||
-      clean === 'diggityviewer';
-
-    if (isCurrentBrowserUser) {
-      const isStakeVer =
-        Boolean(window.userStore && window.userStore.stakeVerified) ||
-        localStorage.getItem('hunthub_stake_verified') === 'true';
-      const isKickSub =
-        Boolean(window.userStore && window.userStore.isSub) ||
-        localStorage.getItem('hunthub_is_sub') === 'true' ||
-        localStorage.getItem('hunthub_kick_is_sub') === 'true';
-      if (isStakeVer || isKickSub) return 3;
-    }
-
-    // Also check verified Stake referrals list & Kick chat subscriber cache
-    try {
-      const referrals = JSON.parse(localStorage.getItem('hunthub_verified_stake_list') || '[]');
-      if (Array.isArray(referrals)) {
-        const foundStake = referrals.some((r) => {
-          const rUser = String(r.username || '').trim().replace(/^@+/, '').toLowerCase();
-          const rKick = String(r.kickUser || '').trim().replace(/^@+/, '').toLowerCase();
-          return (rUser === clean || rKick === clean) && String(r.status || 'verified').toLowerCase() === 'verified';
-        });
-        if (foundStake) return 3;
-      }
-    } catch (_) {}
-
-    if (window.adminHub && window.adminHub.subscriberUsers instanceof Set && window.adminHub.subscriberUsers.has(clean)) {
-      return 3;
-    }
-
-    // Default for Non-Stake Verified & Non-Subscriber spectators: Max 1 request
-    return 1;
+  getActiveSlotRequestCountForUser(username) {
+    const clean = String(username || 'Viewer').trim().replace(/^@+/, '').toLowerCase() || 'viewer';
+    const handle = `@${clean}`;
+    return this.slotRequests.filter(
+      (r) => String(r.user || r.caller || '').toLowerCase() === handle
+    ).length;
   }
 
   addSlotRequest(username, slotQuery, silentToast = false) {
@@ -782,30 +858,22 @@ class BonusHuntController {
     if (alreadyHasSameSlot) {
       if (!silentToast && window.sonner) {
         window.sonner.toast({
-          title: `⚠️ Slot Already in Queue (${handle})`,
-          message: `You already have "${entry.name}" active in the !sr Roulette (${userRequests.length}/${maxAllowed === Infinity ? '∞' : maxAllowed}).`,
+          title: `⚠️ Slot Already in Roulette (${handle})`,
+          message: `You already have "${entry.name}" active in the !sr Roulette (${userRequests.length}/${maxAllowed}).`,
           type: 'gold'
         });
       }
       return null;
     }
 
-    // Enforce 1 request (Non-Stake Verified) vs 3 requests (Stake Verified or Kick Subscriber)
+    // Enforce maximum of 3 active Slot Requests per viewer in the Roulette
     if (userRequests.length >= maxAllowed) {
       if (!silentToast && window.sonner) {
-        if (maxAllowed === 1) {
-          window.sonner.toast({
-            title: `🔒 !sr Limit Reached (1/1 Request · ${handle})`,
-            message: `Non-Stake verified viewers get max 1 Slot Request. Verify your Stake account (code DIGGITY) or subscribe on Kick to unlock 3 Slot Requests!`,
-            type: 'gold'
-          });
-        } else {
-          window.sonner.toast({
-            title: `🔒 VIP !sr Limit Reached (${maxAllowed}/${maxAllowed} Requests · ${handle})`,
-            message: `You already have ${userRequests.length} active VIP Slot Requests in the queue.`,
-            type: 'gold'
-          });
-        }
+        window.sonner.toast({
+          title: `🔒 Max 3 Active Requests Reached (${maxAllowed}/${maxAllowed} · ${handle})`,
+          message: `You already have ${userRequests.length} active Slot Requests in the Roulette. Once one of your requests wins on the Roulette, 1 slot will open up!`,
+          type: 'gold'
+        });
       }
       return null;
     }
@@ -816,14 +884,17 @@ class BonusHuntController {
     this.renderSlotRequests();
     this.drawSlotWheel(this.wheelAngle);
     this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+    if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+      window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
 
     const newCount = userRequests.length + 1;
-    const quotaLabel = maxAllowed === Infinity ? `${newCount}/∞` : `${newCount}/${maxAllowed}`;
+    const quotaLabel = `${newCount}/${maxAllowed}`;
     if (!silentToast && window.sonner) {
       window.sonner.toast({
-        title: `🎰 !sr Queued (${quotaLabel} · ${handle})`,
-        message: `${entry.name} added to the Slot Requests Roulette!${maxAllowed === 1 ? ' (Verify Stake or Sub for 3 requests!)' : ''}`,
-        type: maxAllowed >= 3 ? 'gold' : 'cyan'
+        title: `🎰 !sr Queued in Roulette (${quotaLabel} · ${handle})`,
+        message: `${entry.name} added to the Slot Requests Roulette (${newCount}/3 active)!`,
+        type: 'gold'
       });
     }
     return entry;
@@ -836,6 +907,9 @@ class BonusHuntController {
     this.renderSlotRequests();
     this.drawSlotWheel(this.wheelAngle);
     this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+    if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+      window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
   }
 
   clearSlotRequests() {
@@ -845,9 +919,15 @@ class BonusHuntController {
     this.drawSlotWheel(0);
     this.broadcastSlotRequestsOverlay({ type: 'CLEAR_WINNER' });
     this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+    if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+      window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
   }
 
   renderSlotRequests() {
+    if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+      window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
     const listEl = document.getElementById('bh-sr-list');
     const countEl = document.getElementById('bh-sr-count');
     if (countEl) countEl.textContent = String(this.slotRequests.length);
@@ -1193,7 +1273,7 @@ class BonusHuntController {
           });
         }
 
-        // Remove selected winner from active pool so next spin picks a fresh request
+        // Remove selected winner from active pool so next spin picks a fresh request & frees 1 slot for that viewer!
         const removeIdx = this.slotRequests.findIndex(
           (r) => r.name === winner.name && (r.user || r.caller) === (winner.user || winner.caller)
         );
@@ -1203,6 +1283,9 @@ class BonusHuntController {
           this.renderSlotRequests();
           this.drawSlotWheel(this.wheelAngle);
           this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+          if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
+            window.diggityIntelSuite.updateVaultSrQuotaUI();
+          }
         }
 
         if (window.sonner) {

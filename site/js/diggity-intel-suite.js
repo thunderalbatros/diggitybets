@@ -1361,10 +1361,8 @@
       const sealEl = document.getElementById('vault-foil-seal-top');
       const btnRip = document.getElementById('btn-rip-vault-pack');
       const btnSeal = document.getElementById('btn-seal-vault-pack');
-      const btnAddHunt = document.getElementById('btn-vault-add-hunt');
       const btnQueueSr = document.getElementById('btn-vault-queue-sr');
       const provSelect = document.getElementById('vault-filter-provider');
-      const btnDeckAddHunt = document.getElementById('btn-vault-deck-add-hunt');
       const btnDeckQueueWheel = document.getElementById('btn-vault-deck-queue-wheel');
       const btnDeckClear = document.getElementById('btn-vault-deck-clear');
 
@@ -1388,9 +1386,6 @@
       this.sealHoloVaultPack(true);
       this.renderVaultRoundTray();
 
-      if (btnDeckAddHunt) {
-        btnDeckAddHunt.onclick = () => this.addAllVaultCardsToHunt();
-      }
       if (btnDeckQueueWheel) {
         btnDeckQueueWheel.onclick = () => this.addAllVaultCardsToWheel();
       }
@@ -1517,18 +1512,6 @@
       if (btnRip) btnRip.onclick = () => this.ripHoloVaultPack();
       if (btnSeal) btnSeal.onclick = () => this.sealHoloVaultPack(false);
 
-      if (btnAddHunt) {
-        btnAddHunt.onclick = () => {
-          if (!this.lastRevealedVaultSlot) return;
-          this.autoCaptureBonusToHunt({
-            slotName: this.lastRevealedVaultSlot.name,
-            betSize: 2.0,
-            bonusTier: '3S',
-            caller: '@VaultPack'
-          });
-        };
-      }
-
       if (btnQueueSr) {
         btnQueueSr.onclick = () => {
           if (!this.lastRevealedVaultSlot) return;
@@ -1545,6 +1528,7 @@
           if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
             window.adminHub.renderSlotRequestsAdmin();
           }
+          this.updateVaultSrQuotaUI();
         };
       }
     }
@@ -2203,51 +2187,28 @@
       }
     }
 
-    addAllVaultCardsToHunt() {
-      if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
-        if (window.sonner) {
-          window.sonner.toast({
-            title: '⚠️ Deck Vacío',
-            message: 'Abre al menos un sobre en Holo-Vault antes de añadir al Bonus Hunt.',
-            type: 'gold'
-          });
-        }
-        return;
+    updateVaultSrQuotaUI() {
+      const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
+      const maxSlots = (window.bonusHunt && typeof window.bonusHunt.getMaxSlotRequestsForUser === 'function')
+        ? window.bonusHunt.getMaxSlotRequestsForUser(user)
+        : 3;
+      const activeCount = (window.bonusHunt && typeof window.bonusHunt.getActiveSlotRequestCountForUser === 'function')
+        ? window.bonusHunt.getActiveSlotRequestCountForUser(user)
+        : 0;
+      const pillEl = document.getElementById('vault-sr-quota-pill');
+      if (pillEl) {
+        pillEl.textContent = `🎡 ACTIVE ROULETTE REQUESTS: ${activeCount} / ${maxSlots}`;
+        pillEl.style.borderColor = activeCount >= maxSlots ? 'rgba(239,68,68,0.6)' : 'rgba(255,215,0,0.45)';
+        pillEl.style.color = activeCount >= maxSlots ? '#fca5a5' : 'var(--gold)';
       }
-
-      const total = this.vaultRoundDeck.length;
-      this.vaultRoundDeck.forEach((card, idx) => {
-        this.autoCaptureBonusToHunt({
-          slotName: card.name,
-          betSize: 2.0,
-          bonusTier: '3S',
-          caller: `@VaultPick#${idx + 1}`
-        });
-      });
-
-      if (window.ProAudioFX && typeof window.ProAudioFX.playVictoryFanfare === 'function') {
-        window.ProAudioFX.playVictoryFanfare();
-      } else if (window.soundEngine && typeof window.soundEngine.playVictoryFanfare === 'function') {
-        window.soundEngine.playVictoryFanfare();
-      }
-
-      if (window.sonner) {
-        window.sonner.toast({
-          title: `💎 ¡${total} Slots Añadidos al Bonus Hunt!`,
-          message: `Todas las cartas de la ronda fueron transferidas al Bonus Hunt activo con bet $2.00.`,
-          type: 'green'
-        });
-      }
-
-      if (typeof window.confetti === 'function') {
-        try {
-          window.confetti({
-            particleCount: 65,
-            spread: 80,
-            origin: { x: 0.5, y: 0.6 },
-            colors: ['#53fc18', '#00e5ff', '#ffd700']
-          });
-        } catch (_) {}
+      const btnQueueSr = document.getElementById('btn-vault-queue-sr');
+      if (btnQueueSr) {
+        btnQueueSr.disabled = activeCount >= maxSlots;
+        btnQueueSr.style.opacity = activeCount >= maxSlots ? '0.45' : '1';
+        btnQueueSr.style.cursor = activeCount >= maxSlots ? 'not-allowed' : 'pointer';
+        btnQueueSr.textContent = activeCount >= maxSlots
+          ? `🔒 Roulette Quota Full (${activeCount}/${maxSlots})`
+          : `🎡 Send to Roulette (!sr) (${activeCount}/${maxSlots})`;
       }
     }
 
@@ -2256,39 +2217,34 @@
         if (window.sonner) {
           window.sonner.toast({
             title: '⚠️ Deck Vacío',
-            message: 'Abre al menos un sobre en Holo-Vault antes de enviar a la ruleta.',
+            message: 'Abre al menos un sobre en Random Card Picker antes de enviar a la ruleta.',
             type: 'gold'
           });
         }
         return;
       }
 
-      const total = this.vaultRoundDeck.length;
-      this.vaultRoundDeck.forEach((card, idx) => {
+      const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
+      let addedCount = 0;
+      for (const card of this.vaultRoundDeck) {
         if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
-          window.bonusHunt.addSlotRequest(`@VaultCard#${idx + 1}`, card.name, false);
+          const ok = window.bonusHunt.addSlotRequest(user, card.name, false);
+          if (ok) addedCount++;
+          else break;
         }
-      });
+      }
 
       if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
         window.adminHub.renderSlotRequestsAdmin();
       }
-
-      if (window.sonner) {
-        window.sonner.toast({
-          title: `🎡 ¡${total} Slots Enviados a la Ruleta !sr!`,
-          message: `Las cartas de la ronda se cargaron a la lista de Slot Requests para girar la ruleta.`,
-          type: 'gold'
-        });
-      }
+      this.updateVaultSrQuotaUI();
     }
 
     renderVaultRoundTray() {
+      this.updateVaultSrQuotaUI();
       const gridEl = document.getElementById('vault-tray-grid');
       const countEl = document.getElementById('vault-deck-count');
-      const huntCountEl = document.getElementById('vault-deck-btn-hunt-count');
       const wheelCountEl = document.getElementById('vault-deck-btn-wheel-count');
-      const btnAddHunt = document.getElementById('btn-vault-deck-add-hunt');
       const btnQueueWheel = document.getElementById('btn-vault-deck-queue-wheel');
       const btnClear = document.getElementById('btn-vault-deck-clear');
 
@@ -2296,14 +2252,8 @@
       const count = this.vaultRoundDeck.length;
 
       if (countEl) countEl.textContent = String(count);
-      if (huntCountEl) huntCountEl.textContent = String(count);
-      if (wheelCountEl) wheelCountEl.textContent = String(count);
+      if (wheelCountEl) wheelCountEl.textContent = String(Math.min(count, 3));
 
-      if (btnAddHunt) {
-        btnAddHunt.disabled = count === 0;
-        btnAddHunt.style.opacity = count === 0 ? '0.45' : '1';
-        btnAddHunt.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
-      }
       if (btnQueueWheel) {
         btnQueueWheel.disabled = count === 0;
         btnQueueWheel.style.opacity = count === 0 ? '0.45' : '1';
@@ -2354,11 +2304,8 @@
               </div>
             </div>
             <div class="vault-tray-card-btns">
-              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-green" data-vault-action="hunt" data-idx="${i}" title="+ Añadir slot individual al Bonus Hunt">
-                💎 +Hunt
-              </button>
-              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-gold" data-vault-action="wheel" data-idx="${i}" title="Enviar a la Ruleta !sr">
-                🎡 Wheel
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-gold" data-vault-action="wheel" data-idx="${i}" title="Enviar a la Ruleta !sr (Máx 3 activas)">
+                🎡 !sr Roulette
               </button>
               <a href="${stakeUrl}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle vault-tray-mini-btn" style="border-color: var(--cyan); color: var(--cyan);" title="Abrir en Stake">
                 ↗️ Stake
@@ -2378,21 +2325,7 @@
               const targetCard = this.vaultRoundDeck[idx];
               if (!targetCard) return;
 
-              if (action === 'hunt') {
-                this.autoCaptureBonusToHunt({
-                  slotName: targetCard.name,
-                  betSize: 2.0,
-                  bonusTier: '3S',
-                  caller: `@VaultPick#${idx + 1}`
-                });
-                if (window.sonner) {
-                  window.sonner.toast({
-                    title: `💎 ${targetCard.name} añadido al Bonus Hunt`,
-                    message: `Bet $2.00 registrado con caller @VaultPick#${idx + 1}.`,
-                    type: 'green'
-                  });
-                }
-              } else if (action === 'wheel') {
+              if (action === 'wheel') {
                 const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
                 if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
                   window.bonusHunt.addSlotRequest(user, targetCard.name, false);
@@ -2400,13 +2333,7 @@
                 if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
                   window.adminHub.renderSlotRequestsAdmin();
                 }
-                if (window.sonner) {
-                  window.sonner.toast({
-                    title: `🎡 ${targetCard.name} enviado a la Ruleta !sr`,
-                    message: `Disponible en la lista de Slot Requests.`,
-                    type: 'gold'
-                  });
-                }
+                this.updateVaultSrQuotaUI();
               } else if (action === 'remove') {
                 this.removeVaultRoundCard(idx);
               }

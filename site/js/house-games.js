@@ -151,6 +151,13 @@ class StakeOriginalsController {
     this.renderBalance(prev);
     if (window.userStore) {
       window.userStore.points = this.balance;
+      // Accumulate positive $DIG earned into the Monthly Kick Leaderboard (spending never subtracts)
+      if (amount > 0 && opts.skipLeaderboard !== true && window.userStore.username && typeof window.userStore.awardChatterHistoricalPoints === 'function') {
+        const netEarned = opts.bet ? Math.max(0, amount - opts.bet) : amount;
+        if (netEarned > 0) {
+          window.userStore.awardChatterHistoricalPoints(window.userStore.username, netEarned);
+        }
+      }
     }
 
     // High-performance Particle Celebrations & Haptics on Wins

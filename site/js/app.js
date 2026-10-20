@@ -38,7 +38,7 @@ window.switchView = function(targetId) {
     }
   }
 
-  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#store', '#stake-leaderboard', '#bounties', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
+  const validViews = ['#watch', '#house-games', '#battle', '#tournament', '#bonushunt', '#slot-intel', '#random-card-picker', '#store', '#stake-leaderboard', '#bounties', '#leaderboard', '#profile', '#admin-hub', '#control-panel'];
   if (!validViews.includes(targetId)) {
     targetId = '#watch';
   }
@@ -77,6 +77,9 @@ window.switchView = function(targetId) {
   if (targetId === '#leaderboard' && window.userStore && typeof window.userStore.renderHistoricalLeaderboard === 'function') {
     window.userStore.renderHistoricalLeaderboard();
   }
+  if (targetId === '#random-card-picker' && window.diggityIntelSuite && typeof window.diggityIntelSuite.renderVaultRoundTray === 'function') {
+    window.diggityIntelSuite.renderVaultRoundTray();
+  }
 
   // Flush any deferred Admin Hub / Control Panel render immediately when entering those views
   if ((targetId === '#admin-hub' || targetId === '#control-panel') && window.adminHub && window.adminHub._adminDecksDirty) {
@@ -106,7 +109,8 @@ window.switchView = function(targetId) {
     '#battle': '⚔️ 1v1 BATTLE & KING OF THE HILL',
     '#tournament': '🏆 8-BRACKET TOURNAMENT',
     '#bonushunt': '💎 BONUS HUNT TRACKER',
-    '#slot-intel': '🔥 SLOT RADAR, ENGINE DNA & VAULT',
+    '#slot-intel': '🔥 SLOT RADAR & ENGINE DNA',
+    '#random-card-picker': '🃏 RANDOM CARD PICKER (HOLO-VAULT)',
     '#store': '🎁 REWARDS STORE & RAFFLES',
     '#stake-leaderboard': '⚡ STAKE WAGER LEADERBOARD ($1,500)',
     '#bounties': '🎯 ONLY ON STAKE BOUNTYS ($3 – $20 USD)',
@@ -154,6 +158,37 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn(`[HuntHub] Subsystem ${name} init notice:`, e);
     }
   };
+
+  // 0. Luxury Casino Theme Coordinator (Tier S DNA)
+  safeInit('casinoTheme', () => {
+    const savedTheme = localStorage.getItem('hunthub_theme') || 'default';
+    if (savedTheme && savedTheme !== 'default') {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    const themeSelect = document.getElementById('casino-theme-select');
+    if (themeSelect) {
+      themeSelect.value = savedTheme;
+      themeSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'default') {
+          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', val);
+        }
+        localStorage.setItem('hunthub_theme', val);
+        if (window.audio && typeof window.audio.playTactileClick === 'function') {
+          window.audio.playTactileClick();
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Theme Applied 🎨',
+            message: `Switched to ${e.target.options[e.target.selectedIndex].text}`,
+            type: 'green'
+          });
+        }
+      });
+    }
+  });
 
   safeInit('soundEngine', () => window.soundEngine && window.soundEngine.init());
   safeInit('antiFraud', () => window.antiFraud && window.antiFraud.init());

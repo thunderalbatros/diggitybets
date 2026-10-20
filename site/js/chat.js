@@ -101,6 +101,10 @@ class LiveChatController {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
+      if (window.userStore && window.userStore.isLoggedIn && typeof window.userStore.recordVerifiedKickChatActivity === 'function') {
+        window.userStore.recordVerifiedKickChatActivity(currentUsername, text);
+      }
+
       if (text.startsWith('!') && window.adminHub && typeof window.adminHub.processLiveChatCommand === 'function') {
         window.adminHub.processLiveChatCommand(currentUsername, text);
       }
