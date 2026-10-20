@@ -1904,11 +1904,20 @@ export default {
     }
 
     if (url.pathname === '/api/wheel/duo/spin' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      cachedDuoQueues.lastSpin = {
+        action: 'spin',
+        targetOverlay: 'wheel-duo',
+        mode: body.mode || cachedDuoQueues.mode || 'battle',
+        spinId: body.spinId || ('edge_spin_' + Date.now()),
+        winner: body.winner || null,
+        targetCorner: body.targetCorner || 'A',
+        targetSeed: body.targetSeed || null,
+        ts: Date.now()
+      };
       return new Response(JSON.stringify({
         success: true,
-        spinId: 'edge_spin_' + Date.now(),
-        winner: null,
-        mode: 'battle'
+        ...cachedDuoQueues.lastSpin
       }), { headers: corsHeaders });
     }
 
