@@ -2141,9 +2141,15 @@ class AdminHubController {
     state.ts = Date.now();
     state.gameMode = state.gameMode || this.tourneyMode || 'BONUS_BUY';
     state.mode = state.gameMode;
+    state.predictionsClosed = Boolean(
+      state.predictionsClosed !== undefined
+        ? state.predictionsClosed
+        : (localStorage.getItem('hunthub_tourney_preds_closed') === 'true')
+    );
     const filledSeeds = this.getTourneySeedSlotsMap().filter(s => state.matches?.[s.matchId]?.[s.side]?.username).length;
     try {
       localStorage.setItem('hunthub_tourney_state', JSON.stringify(state));
+      localStorage.setItem('hunthub_tourney_preds_closed', state.predictionsClosed ? 'true' : 'false');
       if (filledSeeds > 0 || state.status === 'IN_PROGRESS' || state.status === 'FINISHED') {
         localStorage.setItem('hunthub_tourney_active', 'true');
       }
@@ -2196,13 +2202,18 @@ class AdminHubController {
 
   resetTourneyBracket(silent = false) {
     const emptyState = this.createEmptyTourneyState(this.tourneyMode);
+    emptyState.predictionsClosed = false;
     try {
       localStorage.removeItem('hunthub_tourney_pred');
-      localStorage.setItem('hunthub_tourney_active', 'false');
+      localStorage.setItem('hunthub_tourney_pred_locked', 'false');
+      localStorage.setItem('hunthub_tourney_preds_closed', 'false');
+      localStorage.setItem('hunthub_tourney_active', 'true');
       localStorage.setItem('hunthub_tourney_seed_count', '0');
     } catch (_) {}
     if (window.tournamentPrediction) {
       window.tournamentPrediction.predictions = { semi1_a: null, semi1_b: null, semi2_a: null, semi2_b: null, final_a: null, final_b: null, champion: null };
+      window.tournamentPrediction.isLocked = false;
+      window.tournamentPrediction.predictionsClosed = false;
       if (typeof window.tournamentPrediction.renderBracket === 'function') {
         window.tournamentPrediction.renderBracket();
       }
@@ -2486,6 +2497,53 @@ class AdminHubController {
     const btnReset = document.getElementById('btn-admin-reset-tourney');
     const btnModeBuy = document.getElementById('btn-admin-tourney-mode-buy');
     const btnModeSpins = document.getElementById('btn-admin-tourney-mode-spins');
+    const btnTogglePredLock = document.getElementById('btn-toggle-tourney-pred-lock');
+
+    const syncPredLockBtnUI = (isClosed) => {
+      if (!btnTogglePredLock) return;
+      if (isClosed) {
+        btnTogglePredLock.textContent = '🔒 Predictions: CLOSED';
+        btnTogglePredLock.style.borderColor = '#ef4444';
+        btnTogglePredLock.style.color = '#ef4444';
+        btnTogglePredLock.style.background = 'rgba(239, 68, 68, 0.14)';
+      } else {
+        btnTogglePredLock.textContent = '🔓 Predictions: OPEN';
+        btnTogglePredLock.style.borderColor = '#53fc18';
+        btnTogglePredLock.style.color = '#53fc18';
+        btnTogglePredLock.style.background = 'rgba(83, 252, 24, 0.12)';
+      }
+    };
+
+    syncPredLockBtnUI(localStorage.getItem('hunthub_tourney_preds_closed') === 'true');
+
+    if (btnTogglePredLock) {
+      btnTogglePredLock.onclick = () => {
+        const nextClosed = !(localStorage.getItem('hunthub_tourney_preds_closed') === 'true');
+        try {
+          localStorage.setItem('hunthub_tourney_preds_closed', nextClosed ? 'true' : 'false');
+          localStorage.setItem('hunthub_tourney_active', 'true');
+        } catch (_) {}
+        syncPredLockBtnUI(nextClosed);
+        const state = this.getTourneyState();
+        state.predictionsClosed = nextClosed;
+        if (!nextClosed && (!state.status || state.status === 'LOBBY')) {
+          state.status = 'IN_PROGRESS';
+        }
+        this.saveTourneyState(state, true);
+        if (window.tournamentPrediction && typeof window.tournamentPrediction.checkTourneyAccessState === 'function') {
+          window.tournamentPrediction.checkTourneyAccessState();
+        }
+        if (window.sonner) {
+          window.sonner.toast({
+            title: nextClosed ? 'Tournament Predictions Closed 🔒' : 'Tournament Predictions Open 🔓',
+            message: nextClosed
+              ? 'Viewers can no longer modify or submit 8-Bracket predictions.'
+              : 'Viewers can now pick and lock their 8-Bracket Tournament predictions!',
+            type: nextClosed ? 'danger' : 'green'
+          });
+        }
+      };
+    }
 
     if (btnModeBuy) {
       btnModeBuy.onclick = () => this.setTourneyMode('BONUS_BUY');
@@ -2500,7 +2558,10 @@ class AdminHubController {
         state.status = 'IN_PROGRESS';
         state.gameMode = this.tourneyMode;
         state.mode = this.tourneyMode;
+        state.predictionsClosed = false;
         localStorage.setItem('hunthub_tourney_active', 'true');
+        localStorage.setItem('hunthub_tourney_preds_closed', 'false');
+        syncPredLockBtnUI(false);
         this.saveTourneyState(state, true);
         try {
           fetch('/api/tourney/open', {

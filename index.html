@@ -201,16 +201,6 @@
         </div>
 
         <div class="topbar-right">
-          <!-- Luxury Casino Theme Selector (Tier S DNA) -->
-          <div class="theme-switcher-wrapper" style="display: flex; align-items: center; margin-right: 8px;">
-            <select id="casino-theme-select" class="theme-select-pill" title="Luxury Casino Theme" aria-label="Select Luxury Casino Theme" style="background: rgba(17, 22, 36, 0.85); border: 1px solid var(--border-specular); color: var(--text-med); font-family: var(--font-ui); font-size: 11px; font-weight: 700; border-radius: 20px; padding: 4px 10px; cursor: pointer; outline: none; transition: border-color 0.2s ease;">
-              <option value="default">🟢 Neon Green</option>
-              <option value="cyber-emerald">💎 Cyber-Emerald</option>
-              <option value="electric-violet">⚡ Electric-Violet</option>
-              <option value="obsidian-gold">👑 Obsidian-Gold</option>
-            </select>
-          </div>
-
           <!-- Auth Guest Panel (Link Kick CTA only when unauthenticated) -->
           <div id="auth-guest-panel" style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="btn-header-cta" id="btn-kick-login" title="Link Kick.com account">
@@ -4024,6 +4014,9 @@
                 <button type="button" class="btn-stake-secondary" id="btn-admin-tourney-mode-spins" style="padding: 5px 10px; font-size: 11px;">🎰 Spins (1-Click)</button>
               </div>
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="btn-toggle-tourney-pred-lock" class="btn-chat-toggle" style="padding: 6px 10px; font-size: 11px; border-color: #53fc18; color: #53fc18; font-weight: 800;">
+                  🔓 Predictions: OPEN
+                </button>
                 <button type="button" id="cp-btn-seed-tourney" class="btn-stake-primary" style="padding: 6px 10px; font-size: 11px;">
                   ⚡ Auto-Seed (!tourney)
                 </button>

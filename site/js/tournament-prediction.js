@@ -17,7 +17,8 @@ const PEPE_CHAMP_FALLBACK = '/site/images/emotes/pepe-champ.png';
 
 class TournamentPredictionController {
   constructor() {
-    this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
+    this.predictionsClosed = localStorage.getItem('hunthub_tourney_preds_closed') === 'true';
+    this.isActive = true;
 
     this.defaultSlots = [
       { id: 'seed_1', username: '@Seed1', slotName: 'Wanted Dead or a Wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
@@ -68,6 +69,19 @@ class TournamentPredictionController {
     const seedId = `seed_${seedIndex}`;
     const fallback = this.defaultSlots[seedIndex - 1] || this.defaultSlots[0];
     if (!rawPlayer || typeof rawPlayer !== 'object') {
+      if (seedIndex >= 1 && seedIndex <= 8) {
+        return {
+          id: fallback.id,
+          seed: seedIndex,
+          username: fallback.username,
+          displayName: fallback.username.replace(/^@/, ''),
+          slotName: fallback.slotName,
+          name: fallback.name,
+          provider: fallback.provider,
+          img: fallback.img,
+          isTbd: false
+        };
+      }
       return {
         id: seedId,
         seed: seedIndex,
@@ -83,6 +97,19 @@ class TournamentPredictionController {
     const rawUser = String(rawPlayer.username || rawPlayer.displayName || rawPlayer.name || '').trim().replace(/^@/, '');
     const rawSlot = String(rawPlayer.slotName || rawPlayer.slot || '').trim();
     if (!rawUser && !rawSlot) {
+      if (seedIndex >= 1 && seedIndex <= 8) {
+        return {
+          id: fallback.id,
+          seed: seedIndex,
+          username: fallback.username,
+          displayName: fallback.username.replace(/^@/, ''),
+          slotName: fallback.slotName,
+          name: fallback.name,
+          provider: fallback.provider,
+          img: fallback.img,
+          isTbd: false
+        };
+      }
       return {
         id: seedId,
         seed: seedIndex,
@@ -177,8 +204,34 @@ class TournamentPredictionController {
 
     const state = this.normalizeTourneyStateObject(parsed);
     if (!state) {
-      this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
+      this.predictionsClosed = localStorage.getItem('hunthub_tourney_preds_closed') === 'true';
+      this.isActive = true;
+      this.entryById.clear();
+      this.slots = this.defaultSlots.map((slot, idx) => {
+        const entry = {
+          id: slot.id,
+          seed: idx + 1,
+          username: slot.username,
+          displayName: slot.username.replace(/^@/, ''),
+          slotName: slot.slotName,
+          name: slot.name,
+          provider: slot.provider,
+          img: slot.img,
+          isTbd: false
+        };
+        this.entryById.set(entry.id, entry);
+        return entry;
+      });
       return;
+    }
+
+    if (typeof state.predictionsClosed === 'boolean') {
+      this.predictionsClosed = state.predictionsClosed;
+      try {
+        localStorage.setItem('hunthub_tourney_preds_closed', this.predictionsClosed ? 'true' : 'false');
+      } catch (_) {}
+    } else {
+      this.predictionsClosed = localStorage.getItem('hunthub_tourney_preds_closed') === 'true';
     }
 
     this.liveTourneyState = state;
@@ -216,12 +269,7 @@ class TournamentPredictionController {
     });
 
     this.slots = nextSlots;
-
-    if (filledPlayers > 0 || state.status === 'IN_PROGRESS' || state.status === 'FINISHED') {
-      this.isActive = true;
-    } else {
-      this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true' && state.status !== 'LOBBY';
-    }
+    this.isActive = true;
 
     // Check if tournament roster changed so stale predictions from an old tournament are cleared
     const validIds = new Set(this.slots.filter(s => !s.isTbd).map(s => s.id));
@@ -520,8 +568,16 @@ class TournamentPredictionController {
     const liveChamp = this.liveTourneyState?.champion ? this.findEntryByRawPlayer(this.liveTourneyState.champion) : null;
     const esc = this.escapeHTML.bind(this);
 
+    const closedBannerHtml = this.predictionsClosed
+      ? `<div id="tourney-pred-closed-banner" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 16px; margin-bottom: 14px; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.55); border-radius: 10px;">
+          <span style="font-size: 16px;">🔒</span>
+          <strong style="font-family: var(--font-display); font-size: 13px; color: #f87171; letter-spacing: 0.8px;">PREDICTIONS CLOSED — STREAMER HAS LOCKED BRACKET ENTRIES</strong>
+        </div>`
+      : '';
+
     container.innerHTML = `
-      <div class="bracket-viewer-grid">
+      ${closedBannerHtml}
+      <div class="bracket-viewer-grid" style="${this.predictionsClosed && !this.isLocked ? 'opacity: 0.78;' : ''}">
         <!-- QUARTERFINALS -->
         <div class="bracket-round-col">
           <div class="bracket-col-header">QUARTERFINALS</div>
@@ -654,6 +710,16 @@ class TournamentPredictionController {
     const items = document.querySelectorAll('.match-slot-item');
     items.forEach(el => {
       el.addEventListener('click', () => {
+        if (this.predictionsClosed) {
+          if (window.sonner) {
+            window.sonner.toast({
+              title: 'Predictions Closed 🔒',
+              message: 'The streamer has closed bracket predictions for this tournament.',
+              type: 'danger'
+            });
+          }
+          return;
+        }
         const slotId = el.getAttribute('data-slot-id');
         const target = el.getAttribute('data-target');
         if (!slotId || slotId === 'null') return;
@@ -723,11 +789,20 @@ class TournamentPredictionController {
         lockBtn.textContent = '✓ Bracket Locked';
         lockBtn.disabled = true;
       }
+    } else if (this.predictionsClosed) {
+      if (statusEl) {
+        statusEl.textContent = '🔒 PREDICTIONS CLOSED BY STREAMER';
+        statusEl.style.color = '#ef4444';
+      }
+      if (lockBtn) {
+        lockBtn.textContent = '🔒 Predictions Closed';
+        lockBtn.disabled = true;
+      }
     } else {
       if (statusEl) {
         const isComplete = this.predictions.champion !== null;
-        statusEl.textContent = isComplete ? 'PICKS COMPLETE (READY TO LOCK)' : 'SELECTIONS IN PROGRESS';
-        statusEl.style.color = isComplete ? 'var(--cyan)' : 'var(--gold)';
+        statusEl.textContent = isComplete ? 'PICKS COMPLETE (READY TO LOCK)' : 'OPEN — CLICK MATCHUPS TO PICK WINNERS';
+        statusEl.style.color = isComplete ? 'var(--cyan)' : 'var(--kick-green)';
       }
       if (lockBtn) {
         lockBtn.textContent = 'Submit & Lock Bracket 🔒';
@@ -767,6 +842,16 @@ class TournamentPredictionController {
     if (!btn) return;
 
     btn.addEventListener('click', () => {
+      if (this.predictionsClosed) {
+        if (window.sonner) {
+          window.sonner.toast({
+            title: 'Predictions Closed 🔒',
+            message: 'The streamer has closed bracket predictions for this tournament.',
+            type: 'danger'
+          });
+        }
+        return;
+      }
       if (!this.predictions.champion) {
         if (window.sonner) {
           window.sonner.toast({
@@ -1729,7 +1814,7 @@ class TournamentPredictionController {
           this.syncWithTourneyState(parsed);
           this.checkTourneyAccessState();
         } catch (_) {}
-      } else if (e.key === 'hunthub_tourney_active') {
+      } else if (e.key === 'hunthub_tourney_active' || e.key === 'hunthub_tourney_preds_closed') {
         this.checkTourneyAccessState();
       }
     });
@@ -1751,18 +1836,15 @@ class TournamentPredictionController {
           data?.overlays?.tourney ||
           null;
         if (remoteTourney && remoteTourney.matches) {
-          const hash = JSON.stringify(remoteTourney.matches) + '|' + JSON.stringify(remoteTourney.champion || '') + '|' + (remoteTourney.status || '');
+          const hash = JSON.stringify(remoteTourney.matches) + '|' + JSON.stringify(remoteTourney.champion || '') + '|' + (remoteTourney.status || '') + '|' + String(Boolean(remoteTourney.predictionsClosed));
           if (hash !== this._lastEdgeTourneyHash) {
             this._lastEdgeTourneyHash = hash;
             try {
               localStorage.setItem('hunthub_tourney_state', JSON.stringify(remoteTourney));
-              const hasSeeds = ['m1', 'm2', 'm3', 'm4'].some(k => {
-                const m = remoteTourney.matches[k];
-                return m && ((m.player1 && m.player1.username && m.player1.username !== 'TBD') || (m.player2 && m.player2.username && m.player2.username !== 'TBD') || (m.p1 && m.p1.name && m.p1.name !== 'TBD') || (m.p2 && m.p2.name && m.p2.name !== 'TBD'));
-              });
-              if (hasSeeds || remoteTourney.status === 'IN_PROGRESS' || remoteTourney.status === 'FINISHED') {
-                localStorage.setItem('hunthub_tourney_active', 'true');
+              if (typeof remoteTourney.predictionsClosed === 'boolean') {
+                localStorage.setItem('hunthub_tourney_preds_closed', remoteTourney.predictionsClosed ? 'true' : 'false');
               }
+              localStorage.setItem('hunthub_tourney_active', 'true');
             } catch (_) {}
             this.syncWithTourneyState(remoteTourney);
             this.checkTourneyAccessState();
@@ -1788,7 +1870,8 @@ class TournamentPredictionController {
   }
 
   checkTourneyAccessState() {
-    this.isActive = localStorage.getItem('hunthub_tourney_active') === 'true';
+    this.predictionsClosed = localStorage.getItem('hunthub_tourney_preds_closed') === 'true';
+    this.isActive = true;
     this.isLocked = localStorage.getItem('hunthub_tourney_pred_locked') === 'true';
     this.renderBracket();
     this.renderStandings();

@@ -426,6 +426,9 @@ async function recordServerUserDevice(db, userId, deviceHash, clientIp) {
   }
 }
 
+// In-memory fallback for bot OAuth token
+let memoryBotTokenRecord = null;
+
 // Cloudflare Turnstile Verification Helper
 async function verifyTurnstileToken(token, secretKey, remoteIp) {
   if (!token) return false;
@@ -717,14 +720,14 @@ export default {
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
-      const clientId = env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+      const clientId = env.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM';
       const redirectUri = url.origin.includes('diggitybets.vip') ? 'https://diggitybets.vip/api/auth/callback' : `${url.origin}/api/auth/callback`;
 
       const authorizeUrl = new URL('https://id.kick.com/oauth/authorize');
       authorizeUrl.searchParams.set('response_type', 'code');
       authorizeUrl.searchParams.set('client_id', clientId);
       authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-      const requestedScope = url.searchParams.get('bot') === '1' ? 'user:read chat:write' : 'user:read';
+      const requestedScope = 'user:read chat:write';
       authorizeUrl.searchParams.set('scope', requestedScope);
       authorizeUrl.searchParams.set('state', state);
       authorizeUrl.searchParams.set('code_challenge', codeChallenge);
@@ -757,7 +760,7 @@ export default {
     // 6. Kick OAuth 2.1 PKCE Token Exchange Endpoint
     if ((url.pathname === '/api/auth/kick/callback' || url.pathname === '/api/auth/callback') && request.method === 'POST') {
       try {
-        const { code, code_verifier, redirect_uri, kick_username } = await request.json();
+        const { code, code_verifier, redirect_uri, kick_username, client_id } = await request.json();
         const cleanUsernameHint = String(kick_username || '').trim().replace(/^@/, '');
 
         if (!code || !code_verifier) {
@@ -767,7 +770,7 @@ export default {
           });
         }
 
-        const clientId = env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+        const clientId = client_id || env.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM';
         const clientSecret = env.KICK_CLIENT_SECRET || '';
 
         // Determine matching redirect_uri
@@ -785,13 +788,20 @@ export default {
         }
 
         let tokenRes = { ok: false };
+        let tokenErrText = '';
         try {
           tokenRes = await fetch('https://id.kick.com/oauth/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(tokenParams)
           });
-        } catch (_) {}
+          if (!tokenRes.ok) {
+            tokenErrText = await tokenRes.text();
+            console.error('[Worker Kick OAuth] Token exchange failed with status', tokenRes.status, tokenErrText);
+          }
+        } catch (fetchErr) {
+          tokenErrText = String(fetchErr?.message || fetchErr);
+        }
 
         let userData = { username: 'KickViewer', isSub: false, id: 0, avatarUrl: '' };
         let tokenData = null;
@@ -818,7 +828,9 @@ export default {
         if (!tokenRes.ok) {
           return new Response(JSON.stringify({
             error: 'Kick OAuth token exchange failed',
-            verified: false
+            verified: false,
+            kick_status: tokenRes.status,
+            kick_details: tokenErrText || 'Could not verify token with Kick id server'
           }), { status: 401, headers: corsHeaders });
         }
 
@@ -842,32 +854,57 @@ export default {
         const cleanUsername = String(userData.username || '').trim().toLowerCase().replace(/^@/, '');
         const kickIdNum = Number(userData.id) || 0;
         const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || cleanUsername === 'tarkansky' || kickIdNum === 88254585);
+        const isBotAccount = (cleanUsername === 'diggitybot' || cleanUsername === 'diggity_bot' || cleanUsername === 'hunthubbot');
         const hasChatWrite = String(tokenData?.scope || '').includes('chat:write');
 
-        // Persist into D1 if available
-        if (env.DB && userData.username) {
+        // Persist into D1 if available or in-memory fallback
+        if (userData.username) {
           try {
             const now = Math.floor(Date.now() / 1000);
-            await env.DB.prepare(`
-              INSERT INTO users (id, kick_id, username, display_name, avatar, first_seen_at, last_seen_at)
-              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
-              ON CONFLICT(kick_id) DO UPDATE SET last_seen_at = ?6, avatar = ?5
-            `).bind(crypto.randomUUID(), kickIdNum || Math.floor(Date.now() / 1000), cleanUsername, userData.username, userData.avatarUrl || '', now).run();
-
-            if ((isAdmin || hasChatWrite) && tokenData?.access_token) {
-              const botTokenRecord = JSON.stringify({
-                access_token: tokenData.access_token,
-                refresh_token: tokenData.refresh_token || '',
-                expires_at: Date.now() + (Number(tokenData.expires_in || 7200) * 1000),
-                scope: tokenData.scope || 'user:read',
-                username: userData.username,
-                kick_id: kickIdNum || 88254585
-              });
+            if (env.DB) {
               await env.DB.prepare(`
-                INSERT INTO kv_store (key, value_json, updated_at)
-                VALUES ('kick_bot_oauth_token_v1', ?1, ?2)
-                ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
-              `).bind(botTokenRecord, Date.now()).run();
+                INSERT INTO users (id, kick_id, username, display_name, avatar, first_seen_at, last_seen_at)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+                ON CONFLICT(kick_id) DO UPDATE SET last_seen_at = ?6, avatar = ?5
+              `).bind(crypto.randomUUID(), kickIdNum || Math.floor(Date.now() / 1000), cleanUsername, userData.username, userData.avatarUrl || '', now).run();
+            }
+
+            if ((isBotAccount || (isAdmin && hasChatWrite)) && tokenData?.access_token) {
+              let shouldWriteBotToken = isBotAccount;
+              if (!isBotAccount && isAdmin) {
+                // Only use streamer token as fallback if DiggityBot has not been linked yet
+                let existingBotUser = String(memoryBotTokenRecord?.username || '').trim().toLowerCase().replace(/^@/, '');
+                if (!existingBotUser && env.DB) {
+                  try {
+                    const existingRow = await env.DB.prepare("SELECT value_json FROM kv_store WHERE key = 'kick_bot_oauth_token_v1'").first();
+                    if (existingRow && existingRow.value_json) {
+                      const parsedRow = JSON.parse(existingRow.value_json);
+                      existingBotUser = String(parsedRow?.username || '').trim().toLowerCase().replace(/^@/, '');
+                    }
+                  } catch (_) {}
+                }
+                const hasDedicatedBot = (existingBotUser === 'diggitybot' || existingBotUser === 'diggity_bot' || existingBotUser === 'hunthubbot');
+                shouldWriteBotToken = !hasDedicatedBot;
+              }
+
+              if (shouldWriteBotToken) {
+                const botTokenRecord = JSON.stringify({
+                  access_token: tokenData.access_token,
+                  refresh_token: tokenData.refresh_token || '',
+                  expires_at: Date.now() + (Number(tokenData.expires_in || 7200) * 1000),
+                  scope: tokenData.scope || 'user:read chat:write',
+                  username: userData.username,
+                  kick_id: kickIdNum || 88254585
+                });
+                try { memoryBotTokenRecord = JSON.parse(botTokenRecord); } catch (_) {}
+                if (env.DB) {
+                  await env.DB.prepare(`
+                    INSERT INTO kv_store (key, value_json, updated_at)
+                    VALUES ('kick_bot_oauth_token_v1', ?1, ?2)
+                    ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+                  `).bind(botTokenRecord, Date.now()).run();
+                }
+              }
             }
           } catch (_) {}
         }
@@ -1584,6 +1621,27 @@ export default {
       return new Response(JSON.stringify({ claims }), { headers: corsHeaders });
     }
 
+    // 13b. Admin Raffle Ledger (Protected by isAuthorizedAdmin)
+    if (url.pathname === '/api/admin/raffle-ledger' && request.method === 'GET') {
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
+      let entries = [];
+      let totalTickets = 0;
+      if (env.DB) {
+        try {
+          const rows = await env.DB.prepare(`
+            SELECT id, user_id, kick_username, raffle_id, ticket_number, created_at FROM raffle_tickets
+            ORDER BY created_at DESC LIMIT 500
+          `).all();
+          entries = rows.results || [];
+          const countRow = await env.DB.prepare('SELECT COUNT(*) as cnt FROM raffle_tickets').first();
+          totalTickets = Number(countRow?.cnt || 0);
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true, entries, totalTickets }), { headers: corsHeaders });
+    }
+
     // 14. Admin Approve Store Redemption (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/approve-store-redemption' && request.method === 'POST') {
       if (!(await isAuthorizedAdmin(request, env))) {
@@ -1840,9 +1898,13 @@ export default {
             tokenRowParsed = JSON.parse(row.value_json);
             accessToken = tokenRowParsed.access_token || '';
             refreshToken = tokenRowParsed.refresh_token || '';
-            if (tokenRowParsed.kick_id) broadcasterId = Number(tokenRowParsed.kick_id) || 88254585;
           }
         } catch (_) {}
+      }
+
+      if (!accessToken && memoryBotTokenRecord) {
+        accessToken = memoryBotTokenRecord.access_token || '';
+        refreshToken = memoryBotTokenRecord.refresh_token || '';
       }
 
       if (!accessToken) {
@@ -1867,9 +1929,9 @@ export default {
 
       try {
         let res = await sendWithToken(accessToken);
-        if (res.status === 401 && refreshToken && env?.DB) {
+        if (res.status === 401 && refreshToken) {
           // Rotate refresh token per Kick OAuth 2.1 contract
-          const clientId = env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+          const clientId = env.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM';
           const clientSecret = env.KICK_CLIENT_SECRET || '';
           const refreshParams = {
             grant_type: 'refresh_token',
@@ -1887,16 +1949,19 @@ export default {
             if (refData.access_token) {
               accessToken = refData.access_token;
               const updatedRecord = JSON.stringify({
-                ...(tokenRowParsed || {}),
+                ...(tokenRowParsed || memoryBotTokenRecord || {}),
                 access_token: refData.access_token,
                 refresh_token: refData.refresh_token || refreshToken,
                 expires_at: Date.now() + (Number(refData.expires_in || 7200) * 1000)
               });
-              await env.DB.prepare(`
-                INSERT INTO kv_store (key, value_json, updated_at)
-                VALUES ('kick_bot_oauth_token_v1', ?1, ?2)
-                ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
-              `).bind(updatedRecord, Date.now()).run();
+              try { memoryBotTokenRecord = JSON.parse(updatedRecord); } catch (_) {}
+              if (env?.DB) {
+                await env.DB.prepare(`
+                  INSERT INTO kv_store (key, value_json, updated_at)
+                  VALUES ('kick_bot_oauth_token_v1', ?1, ?2)
+                  ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+                `).bind(updatedRecord, Date.now()).run();
+              }
               res = await sendWithToken(accessToken);
             }
           }

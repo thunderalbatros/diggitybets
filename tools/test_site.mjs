@@ -35,9 +35,15 @@ const requiredIds = [
   'stake-originals-iframe',
   // Leaderboard & Profile (Stage 6)
   'leaderboard', 'profile', 'totp-mult-val', 'totp-timer', 'random-card-picker', 'btn-toggle-bh-guess-lock', 'bh-guess-closed-banner',
+  'btn-toggle-tourney-pred-lock', 'cp-bounty-claims-tbody', 'cp-bounties-active-tbody',
   // Streamer Admin Hub, Condensed Control Panel & Anti-Fraud Radar
   'admin-hub', 'nav-tab-admin', 'control-panel', 'nav-tab-control', 'admin-claims-tbody', 'admin-alts-tbody', 'btn-roll-sunday-raffle'
 ];
+
+if (html.includes('id="casino-theme-select"')) {
+  console.error('[FAIL] Legacy #casino-theme-select should be removed from index.html');
+  process.exit(1);
+}
 
 let missingIds = [];
 for (const id of requiredIds) {

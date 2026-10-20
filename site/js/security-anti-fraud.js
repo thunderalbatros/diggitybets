@@ -409,12 +409,28 @@ class AntiFraudEngine {
   window.sanitizeHTML = function(dirtyHtml) {
     const str = String(dirtyHtml ?? '');
     if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
-      return window.DOMPurify.sanitize(str, {
+      const purifyConfig = {
         USE_PROFILES: { html: true, svg: true, svgFilters: true },
-        ADD_ATTR: ['target', 'rel', 'loading', 'decoding', 'fetchpriority', 'aria-hidden', 'aria-label', 'role', 'data-target', 'data-bounty-id', 'data-tier', 'data-studio'],
+        ALLOW_DATA_ATTR: true,
+        ADD_ATTR: ['target', 'rel', 'loading', 'decoding', 'fetchpriority', 'aria-hidden', 'aria-label', 'role', 'colspan', 'rowspan', 'referrerpolicy', 'data-target', 'data-bounty-id', 'data-tier', 'data-studio'],
         FORBID_TAGS: ['script', 'object', 'embed', 'applet', 'base', 'meta'],
         FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onmouseenter']
-      });
+      };
+      const trimmed = str.trim();
+      if (/^<tr[\s>]/i.test(trimmed)) {
+        const domBody = window.DOMPurify.sanitize('<table><tbody>' + str + '</tbody></table>', { ...purifyConfig, RETURN_DOM: true });
+        const tbody = domBody && domBody.querySelector ? domBody.querySelector('tbody') : null;
+        if (tbody) return tbody.innerHTML;
+      } else if (/^<(td|th)[\s>]/i.test(trimmed)) {
+        const domBody = window.DOMPurify.sanitize('<table><tbody><tr>' + str + '</tr></tbody></table>', { ...purifyConfig, RETURN_DOM: true });
+        const tr = domBody && domBody.querySelector ? domBody.querySelector('tr') : null;
+        if (tr) return tr.innerHTML;
+      } else if (/^<(thead|tbody|tfoot|caption|colgroup)[\s>]/i.test(trimmed)) {
+        const domBody = window.DOMPurify.sanitize('<table>' + str + '</table>', { ...purifyConfig, RETURN_DOM: true });
+        const table = domBody && domBody.querySelector ? domBody.querySelector('table') : null;
+        if (table) return table.innerHTML;
+      }
+      return window.DOMPurify.sanitize(str, purifyConfig);
     }
     return str
       .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')

@@ -159,35 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 0. Luxury Casino Theme Coordinator (Tier S DNA)
+  // 0. Ensure signature Neon Green dark casino aesthetic (clear any legacy theme override)
   safeInit('casinoTheme', () => {
-    const savedTheme = localStorage.getItem('hunthub_theme') || 'default';
-    if (savedTheme && savedTheme !== 'default') {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
-    const themeSelect = document.getElementById('casino-theme-select');
-    if (themeSelect) {
-      themeSelect.value = savedTheme;
-      themeSelect.addEventListener('change', (e) => {
-        const val = e.target.value;
-        if (val === 'default') {
-          document.documentElement.removeAttribute('data-theme');
-        } else {
-          document.documentElement.setAttribute('data-theme', val);
-        }
-        localStorage.setItem('hunthub_theme', val);
-        if (window.audio && typeof window.audio.playTactileClick === 'function') {
-          window.audio.playTactileClick();
-        }
-        if (window.sonner) {
-          window.sonner.toast({
-            title: 'Theme Applied 🎨',
-            message: `Switched to ${e.target.options[e.target.selectedIndex].text}`,
-            type: 'green'
-          });
-        }
-      });
-    }
+    document.documentElement.removeAttribute('data-theme');
+    try { localStorage.removeItem('hunthub_theme'); } catch (_) {}
   });
 
   safeInit('soundEngine', () => window.soundEngine && window.soundEngine.init());
