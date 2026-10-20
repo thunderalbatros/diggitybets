@@ -141,9 +141,10 @@ export class OverlayServer {
       // CORS headers for local overlays & web client
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Private-Network', 'true');
       res.setHeader(
         'Access-Control-Allow-Headers',
-        'Content-Type, Kick-Event-Signature, Kick-Event-Message-Id, Kick-Event-Message-Timestamp, x-device-fingerprint'
+        'Content-Type, Kick-Event-Signature, Kick-Event-Message-Id, Kick-Event-Message-Timestamp, x-device-fingerprint, Access-Control-Request-Private-Network'
       );
 
       if (req.method === 'OPTIONS') {
@@ -1915,6 +1916,24 @@ export class OverlayServer {
       this.clients.add(ws);
       console.log(`[Hub] Overlay connected (Total active overlays: ${this.clients.size})`);
 
+      // Immediately send current duo queues and state to newly connected overlay
+      try {
+        ws.send(JSON.stringify({
+          action: 'wheel_duo_queues',
+          battleQueue: this.battleQueue,
+          tourneyQueue: this.tourneyQueue,
+          mode: this.duoWheelMode
+        }));
+        if (this.battleManager) {
+          ws.send(JSON.stringify({
+            action: 'battle_state',
+            type: 'battle_state',
+            state: this.battleManager.getState(),
+            data: this.battleManager.getState()
+          }));
+        }
+      } catch (_) {}
+
       ws.on('message', (data) => {
         try {
           const payload = JSON.parse(data.toString());
@@ -2261,6 +2280,19 @@ export class OverlayServer {
       tourneyQueue: this.tourneyQueue,
       mode: this.duoWheelMode,
     });
+
+    // Asynchronously sync to production Cloudflare Edge for remote dashboards
+    try {
+      fetch('https://diggitybets.vip/api/wheel/duo/queues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          battleQueue: this.battleQueue,
+          tourneyQueue: this.tourneyQueue,
+          mode: this.duoWheelMode
+        })
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   // --- Wheel Duo Spin Execution ---

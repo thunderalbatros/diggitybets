@@ -6,6 +6,12 @@
 
 let d1Initialized = false;
 let lastRetentionPruneAt = 0;
+let cachedDuoQueues = {
+  battleQueue: [],
+  tourneyQueue: [],
+  mode: 'battle',
+  counts: { battle: 0, tourney: 0 }
+};
 
 async function initD1(db) {
   if (!db) return;
@@ -1873,13 +1879,23 @@ export default {
       }
     }
 
-    if (url.pathname === '/api/wheel/duo/queues' && request.method === 'GET') {
-      return new Response(JSON.stringify({
-        battleQueue: [],
-        tourneyQueue: [],
-        mode: 'battle',
-        counts: { battle: 0, tourney: 0 }
-      }), { headers: corsHeaders });
+    if (url.pathname === '/api/wheel/duo/queues') {
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          if (Array.isArray(body.battleQueue)) cachedDuoQueues.battleQueue = body.battleQueue;
+          if (Array.isArray(body.tourneyQueue)) cachedDuoQueues.tourneyQueue = body.tourneyQueue;
+          if (body.mode) cachedDuoQueues.mode = body.mode;
+          cachedDuoQueues.counts = {
+            battle: cachedDuoQueues.battleQueue.length,
+            tourney: cachedDuoQueues.tourneyQueue.length
+          };
+          return new Response(JSON.stringify({ success: true, ...cachedDuoQueues }), { headers: corsHeaders });
+        } catch (_) {
+          return new Response(JSON.stringify({ success: false }), { headers: corsHeaders });
+        }
+      }
+      return new Response(JSON.stringify(cachedDuoQueues), { headers: corsHeaders });
     }
 
     if (url.pathname === '/api/wheel/duo/mode' && request.method === 'POST') {

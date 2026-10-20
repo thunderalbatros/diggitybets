@@ -50,57 +50,100 @@ export class KickPusherClient {
     this.commandHandlers.push(handler);
   }
 
-  public connect(): void {
+  public async connect(): Promise<void> {
     this.shouldReconnect = true;
-    const watchdog = KickWatchdog.getInstance();
-    const activeKey = watchdog.getActivePusherKey();
-    const activeCluster = watchdog.getActivePusherCluster();
-    const url = `wss://ws-${activeCluster}.pusher.com/app/${activeKey}?protocol=7&client=js&version=8.4.0&flash=false`;
+    this.stopKeepalive();
+
+    let token = '';
+    try {
+      const clientId = crypto.randomUUID();
+      const authRes = await fetch('https://web.kick.com/api/v1/realtime/auth/connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-app-platform': 'web',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        },
+        body: JSON.stringify({ client_id: clientId })
+      });
+      if (authRes.ok) {
+        const authData: any = await authRes.json();
+        token = authData?.data?.token || '';
+      }
+    } catch (err) {
+      console.warn('[KickChat] Failed to obtain Centrifugo token:', err);
+    }
+
+    const wsUrl = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
 
     try {
-      this.ws = new WebSocket(url);
+      this.ws = new WebSocket(wsUrl);
     } catch (err) {
-      console.error('[Pusher] WebSocket constructor error:', err);
-      watchdog.recordFailure();
+      console.error('[KickChat] WebSocket constructor error:', err);
       this.scheduleReconnect();
       return;
     }
 
     this.ws.onopen = () => {
       this.isConnected = true;
-      watchdog.recordSuccess();
-      console.log(`[Pusher] WebSocket connected to Kick cluster (${activeCluster})`);
+      console.log(`[KickChat] WebSocket connected to Kick Realtime Centrifugo (Room #${this.chatroomId})`);
+      if (token && this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          id: 1,
+          connect: { token }
+        }));
+      }
       this.startKeepalive();
     };
 
     this.ws.onmessage = (event) => {
+      this.lastActivity = Date.now();
       try {
         const raw = typeof event.data === 'string' ? event.data : event.data.toString();
-        const payload = JSON.parse(raw);
-        if (payload.event === 'pusher:error') {
-          const code = payload.data?.code;
-          if (code === 4001 || code === 4004) {
-            console.warn(`[Pusher] App key rejected by Kick (${code}). Triggering dynamic rediscovery...`);
-            watchdog.discoverActivePusherKey().then((newKey) => {
-              if (newKey) this.connect();
-            });
-          }
+        if (raw === '{}') {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send('{}');
+          return;
         }
-        this.handlePusherEvent(payload);
+        const payload = JSON.parse(raw);
+
+        // Handshake connect reply -> subscribe to chatroom channel
+        if (payload.id === 1 && payload.connect) {
+          console.log(`[KickChat] Centrifugo handshake OK. Subscribing to chatrooms.${this.chatroomId}.v2`);
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+              id: 2,
+              subscribe: { channel: `chatrooms.${this.chatroomId}.v2` }
+            }));
+          }
+          return;
+        }
+
+        let pubData = null;
+        if (payload.push && payload.push.pub && payload.push.pub.data) {
+          pubData = payload.push.pub.data;
+        } else if (payload.pub && payload.pub.data) {
+          pubData = payload.pub.data;
+        } else if (payload.event) {
+          pubData = payload;
+        }
+
+        if (pubData) {
+          this.handlePusherEvent(pubData);
+        }
       } catch (err) {
-        console.error('[Pusher] Error parsing message:', err);
+        console.error('[KickChat] Error parsing message:', err);
       }
     };
 
     this.ws.onerror = (err) => {
-      watchdog.recordFailure();
-      console.warn('[Pusher] Socket error:', err);
+      console.warn('[KickChat] Socket error:', err);
     };
 
     this.ws.onclose = (event) => {
       this.isConnected = false;
       this.stopKeepalive();
-      console.log(`[Pusher] Disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
+      console.log(`[KickChat] Disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
       if (this.shouldReconnect) {
         this.scheduleReconnect();
       }
@@ -117,19 +160,29 @@ export class KickPusherClient {
     }
   }
 
+  private lastActivity = Date.now();
+  private watchdogTimer: NodeJS.Timeout | null = null;
+
   private startKeepalive(): void {
     this.stopKeepalive();
-    this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+    this.lastActivity = Date.now();
+    // Centrifugo sends ping {} every 25s. We only send pong {} in reply (tested & verified).
+    // If no message or ping is received in 45 seconds, socket is dead, reconnect.
+    this.watchdogTimer = setInterval(() => {
+      if (Date.now() - this.lastActivity > 45000) {
+        console.warn('[KickChat] Centrifugo watchdog timeout (>45s inactivity). Reconnecting...');
+        this.stopKeepalive();
+        if (this.ws) {
+          try { this.ws.close(); } catch {}
+        }
       }
-    }, 25000);
+    }, 10000);
   }
 
   private stopKeepalive(): void {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
+    if (this.watchdogTimer) {
+      clearInterval(this.watchdogTimer);
+      this.watchdogTimer = null;
     }
   }
 
@@ -137,27 +190,14 @@ export class KickPusherClient {
     if (this.reconnectTimer) return;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      console.log('[Pusher] Reconnecting to Kick chat...');
+      console.log('[KickChat] Reconnecting to Kick realtime...');
       this.connect();
-    }, 4000);
+    }, 3500);
   }
 
   private handlePusherEvent(payload: { event: string; channel?: string; data?: any }): void {
     const { event, data } = payload;
 
-    if (event === 'pusher:connection_established') {
-      const channel = `chatrooms.${this.chatroomId}.v2`;
-      this.ws?.send(JSON.stringify({
-        event: 'pusher:subscribe',
-        data: { auth: '', channel }
-      }));
-      return;
-    }
-
-    if (event === 'pusher_internal:subscription_succeeded') {
-      console.log(`[Pusher] Subscribed to Kick chatroom ${this.chatroomId} (Realtime Chat Active)`);
-      return;
-    }
 
     if (event === 'App\\Events\\ChatMessageEvent') {
       let parsed = data;
