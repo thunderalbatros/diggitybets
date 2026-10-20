@@ -4970,18 +4970,20 @@ class AdminHubController {
   }
 
   async initLiveKickChatBridge() {
-    let chatroomId = 2672891; // Default diggitybets Kick chatroom ID
+    let chatroomId = 86765775; // Verified diggitybets Kick chatroom ID
     window.hunthubStreamLive = false;
+    let realtimeConfig = null;
 
     const refreshStreamStatus = async () => {
       try {
         const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 3000);
+        const t = setTimeout(() => controller.abort(), 4000);
         const res = await fetch('/api/kick/stream-status', { signal: controller.signal });
         clearTimeout(t);
         if (res.ok) {
           const data = await res.json();
           if (data?.chatroomId) chatroomId = Number(data.chatroomId);
+          if (data?.realtime) realtimeConfig = data.realtime;
           window.hunthubStreamLive = Boolean(data?.isStreamLive);
           if (window.hunthubStreamLive) {
             this.purgeDemoUsersForLiveStream('api_stream_live');
@@ -5012,28 +5014,80 @@ class AdminHubController {
     if (this._streamStatusPoll) clearInterval(this._streamStatusPoll);
     this._streamStatusPoll = setInterval(refreshStreamStatus, 120_000);
 
-    const connectPusher = () => {
+    const connectLiveSocket = async () => {
+      if (this._kickPingInterval) {
+        clearInterval(this._kickPingInterval);
+        this._kickPingInterval = null;
+      }
+
+      // If we don't have realtimeConfig or token, fetch
+      if (!realtimeConfig || !realtimeConfig.token) {
+        await refreshStreamStatus();
+      }
+
+      const token = realtimeConfig?.token;
+      const wsUrl = realtimeConfig?.wsUrl || 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+      const channelName = realtimeConfig?.channel || `chatrooms.${chatroomId}.v2`;
+
+      if (!token) {
+        // Fallback: try to reconnect in 5s
+        setTimeout(connectLiveSocket, 5000);
+        return;
+      }
+
       try {
-        const wsUrl = 'wss://ws-us2.pusher.app/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false';
         const ws = new WebSocket(wsUrl);
         this.kickPusherWs = ws;
 
         ws.onopen = () => {
+          // Centrifugo connection handshake
           ws.send(JSON.stringify({
-            event: 'pusher:subscribe',
-            data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
+            id: 1,
+            connect: { token: token }
           }));
-          const statusEl = document.getElementById('cp-kick-ws-status');
-          if (statusEl) {
-            statusEl.textContent = `LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
-          }
         };
 
         ws.onmessage = (evt) => {
           try {
-            const packet = JSON.parse(evt.data);
-            if (packet.event === 'App\\Events\\ChatMessageEvent' && packet.data) {
-              const msgData = typeof packet.data === 'string' ? JSON.parse(packet.data) : packet.data;
+            if (!evt.data) return;
+            const text = typeof evt.data === 'string' ? evt.data : '';
+            if (text === '{}') {
+              ws.send('{}');
+              return;
+            }
+            const packet = JSON.parse(text);
+
+            // Centrifugo connect response -> subscribe to chatroom channel
+            if (packet.id === 1 && packet.connect) {
+              ws.send(JSON.stringify({
+                id: 2,
+                subscribe: { channel: channelName }
+              }));
+              const statusEl = document.getElementById('cp-kick-ws-status');
+              if (statusEl) {
+                statusEl.textContent = `LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+              }
+              // Send keepalive ping every 20 seconds
+              this._kickPingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send('{}');
+                }
+              }, 20000);
+              return;
+            }
+
+            // Extract ChatMessageEvent from Centrifugo publication or legacy Pusher
+            let pubData = null;
+            if (packet.push && packet.push.pub && packet.push.pub.data) {
+              pubData = packet.push.pub.data;
+            } else if (packet.pub && packet.pub.data) {
+              pubData = packet.pub.data;
+            } else if (packet.event === 'App\\Events\\ChatMessageEvent' && packet.data) {
+              pubData = packet;
+            }
+
+            if (pubData && pubData.event === 'App\\Events\\ChatMessageEvent' && pubData.data) {
+              const msgData = typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
               const sender = msgData?.sender?.username || 'Chatter';
               const content = String(msgData?.content || '').trim();
               if (sender) {
@@ -5062,12 +5116,19 @@ class AdminHubController {
         };
 
         ws.onclose = () => {
-          setTimeout(connectPusher, 6000);
+          if (this._kickPingInterval) {
+            clearInterval(this._kickPingInterval);
+            this._kickPingInterval = null;
+          }
+          realtimeConfig = null; // force token refresh on reconnect
+          setTimeout(connectLiveSocket, 5000);
         };
-      } catch (_) {}
+      } catch (_) {
+        setTimeout(connectLiveSocket, 6000);
+      }
     };
 
-    connectPusher();
+    connectLiveSocket();
   }
 
   processLiveChatCommand(username, rawMessage) {

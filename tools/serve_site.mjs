@@ -42,6 +42,59 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (cleanUrl === '/api/kick/stream-status' || cleanUrl === '/api/kick/realtime-token') {
+    (async () => {
+      let isStreamLive = false;
+      let viewerCount = 0;
+      let chatroomId = 86765775;
+      try {
+        const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets');
+        if (kickRes.ok) {
+          const kickData = await kickRes.json();
+          isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
+          viewerCount = Number(kickData?.livestream?.viewer_count || 0);
+          if (kickData?.chatroom?.id) chatroomId = Number(kickData.chatroom.id);
+        }
+      } catch (e) {}
+
+      let token = '';
+      try {
+        const clientId = crypto.randomUUID();
+        const authRes = await fetch('https://web.kick.com/api/v1/realtime/auth/connection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-app-platform': 'web',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          },
+          body: JSON.stringify({ client_id: clientId })
+        });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          token = authData?.data?.token || '';
+        }
+      } catch (e) {}
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        success: true,
+        channel: 'diggitybets',
+        isStreamLive,
+        viewerCount,
+        chatroomId,
+        realtime: {
+          provider: 'centrifugo',
+          wsUrl: 'wss://realtime.us-west-2.platform.kick.com/connection/websocket',
+          token,
+          channel: `chatrooms.${chatroomId}.v2`
+        }
+      }));
+    })();
+    return;
+  }
+
+
   if (cleanUrl === '/api/auth/kick/callback' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });

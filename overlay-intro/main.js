@@ -362,45 +362,62 @@
   }
   renderTicker();
 
-  // Try live Pusher connection to Kick channel diggitybets
+  // Try live Centrifugo connection to Kick channel diggitybets
   (async function connectLiveKickChat() {
-    let chatroomId = 2672891; // Verified diggitybets Kick chatroom ID
+    let chatroomId = 86765775;
+    let realtimeConfig = null;
+
     try {
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 2000);
-      const res = await fetch('https://kick.com/api/v2/channels/diggitybets', { signal: controller.signal });
-      clearTimeout(t);
+      const res = await fetch('/api/kick/stream-status');
       if (res.ok) {
         const data = await res.json();
-        if (data?.chatroom?.id) chatroomId = Number(data.chatroom.id);
+        if (data?.chatroomId) chatroomId = Number(data.chatroomId);
+        if (data?.realtime) realtimeConfig = data.realtime;
       }
     } catch (_) {}
 
+    const token = realtimeConfig?.token;
+    const wsUrl = realtimeConfig?.wsUrl || 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+    const channelName = realtimeConfig?.channel || `chatrooms.${chatroomId}.v2`;
+
+    if (!token) {
+      setTimeout(connectLiveKickChat, 5000);
+      return;
+    }
+
     try {
-      const PUSHER_KEY = '32cbd69e4b950bf97679';
-      const wsUrl = `wss://ws-us2.pusher.app/app/${PUSHER_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({
-          event: 'pusher:subscribe',
-          data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
-        }));
+        ws.send(JSON.stringify({ id: 1, connect: { token: token } }));
       };
 
       ws.onmessage = (msg) => {
         try {
+          if (!msg.data) return;
+          if (msg.data === '{}') {
+            ws.send('{}');
+            return;
+          }
           const payload = JSON.parse(msg.data);
-          if (payload.event === 'App\\Events\\ChatMessageEvent' && payload.data) {
-            const chatData = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
+          if (payload.id === 1 && payload.connect) {
+            ws.send(JSON.stringify({ id: 2, subscribe: { channel: channelName } }));
+            return;
+          }
+
+          let pubData = null;
+          if (payload.push?.pub?.data) pubData = payload.push.pub.data;
+          else if (payload.pub?.data) pubData = payload.pub.data;
+          else if (payload.event) pubData = payload;
+
+          if (pubData && pubData.event === 'App\\Events\\ChatMessageEvent' && pubData.data) {
+            const chatData = typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
             const username = chatData.sender?.username || '';
             const content = String(chatData.content || '').trim();
             if (username && content && !content.startsWith('!')) {
               chatMessages.unshift({ user: username, text: content.slice(0, 60) });
               if (chatMessages.length > 20) chatMessages.pop();
               renderTicker();
-
-              // Real chat activity fills the leaderboard live on screen!
               awardChatterActivity(username, 10);
             }
           }
@@ -408,9 +425,11 @@
       };
 
       ws.onclose = () => {
-        setTimeout(connectLiveKickChat, 6000);
+        setTimeout(connectLiveKickChat, 5000);
       };
-    } catch (_) {}
+    } catch (_) {
+      setTimeout(connectLiveKickChat, 6000);
+    }
   })();
 
   // BroadcastChannel & Storage Event Listeners
