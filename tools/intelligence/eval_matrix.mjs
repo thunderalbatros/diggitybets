@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { queryKnowledge, getOrBuildMiniSearchIndex } from './rag_pipeline.mjs';
 import { runAstAudit } from './ast_guard.mjs';
 import { computeRagasMetrics } from './vertex_ai_bridge.mjs';
+import { runSleeptimeCompute } from './tom_swe_engine.mjs';
+import { runDiffUiAdversarialGate } from '../audit/diff_ui_adversarial.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,7 +71,8 @@ export async function runEvalMatrix() {
     { q: "strazzullo frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" },
     { q: "poeaa fowler money allocation unit of work goos walking skeleton c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" },
     { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture jason gregory serious cryptography aumasson", expectedKeyword: "gregory" },
-    { q: "theory of gambling statistical logic richard epstein procedural storytelling tanya short tarn adams web audio api boris smus", expectedKeyword: "epstein" }
+    { q: "theory of gambling statistical logic richard epstein procedural storytelling tanya short tarn adams web audio api boris smus", expectedKeyword: "epstein" },
+    { q: "50 repositorios software factory tom-swe three-tier memory stagehand selector cache browserbase ui-test oxlint context7", expectedKeyword: "tom-swe" }
   ];
 
   let ragScore = 100;
@@ -232,10 +235,18 @@ export async function runEvalMatrix() {
   const hasD1Tool = fs.existsSync(d1ToolPath);
   if (!hasD1Tool) pqcScore -= 25;
 
+  // 5.5 Check ToM-SWE 3-Tier Memory & Diff-UI Adversarial + Stagehand + Oxc Gate
+  const tomRes = runSleeptimeCompute();
+  const diffUiRes = runDiffUiAdversarialGate();
+  if (!tomRes.passed) pqcScore -= 15;
+  if (!diffUiRes.passed) pqcScore -= 20;
+
   console.log(`  ✓ Cloudflare CDN Edge _headers (CSP + HSTS + Immutable Cache): ${hasEdgeHeaders ? 'YES' : 'NO'}`);
   console.log(`  ✓ Semantic Landmarks (<main>, <nav>/<aside>, ARIA >= 5): ${hasMainLandmark && hasNavLandmark && hasAriaLabels ? 'YES' : 'NO'}`);
   console.log(`  ✓ PQC Component Visual Regression Harness Ready: ${hasVisualHarness ? 'YES' : 'NO'}`);
   console.log(`  ✓ Cloudflare D1 Edge Provisioning Tool Ready: ${hasD1Tool ? 'YES' : 'NO'}`);
+  console.log(`  ✓ ToM-SWE 3-Tier Mental Model (${tomRes.tier1Count} signals, ${tomRes.tier3PreferencesCount} prefs): ${tomRes.passed ? 'PASS' : 'FAIL'}`);
+  console.log(`  ✓ Diff-UI Adversarial + Stagehand Cache + Oxc Rust Linter (${diffUiRes.passedCount}/${diffUiRes.totalTests} in ${diffUiRes.totalElapsedMs}ms): ${diffUiRes.passed ? 'PASS' : 'FAIL'}`);
 
   results.dimensions.pqc = {
     score: Math.max(0, pqcScore),
@@ -243,6 +254,9 @@ export async function runEvalMatrix() {
     hasSemanticA11y: hasMainLandmark && hasNavLandmark && hasAriaLabels,
     hasVisualHarness,
     hasD1Tool,
+    tomSwePassed: tomRes.passed,
+    diffUiAdversarialPassed: diffUiRes.passed,
+    oxlintElapsedMs: diffUiRes.oxlintElapsedMs,
     passed: pqcScore >= 80
   };
   if (pqcScore < 80) results.passed = false;
