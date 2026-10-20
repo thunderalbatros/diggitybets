@@ -1879,45 +1879,110 @@ export default {
       }
     }
 
+    const duoCacheKey = new Request('https://diggitybets.vip/__edge_cache__/duo_queues_v2');
+
+    const readDuoQueues = async () => {
+      let state = cachedDuoQueues;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          const match = await caches.default.match(duoCacheKey);
+          if (match) {
+            const data = await match.json();
+            if (data && (data.updatedAt || 0) >= (state.updatedAt || 0)) {
+              state = data;
+              cachedDuoQueues = data;
+            }
+          }
+        }
+      } catch (_) {}
+
+      if (env.DB && (!state.battleQueue || state.battleQueue.length === 0)) {
+        try {
+          const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'duo_queues_v1'").first();
+          if (row && row.value_json) {
+            const parsed = JSON.parse(row.value_json);
+            if (parsed && Array.isArray(parsed.battleQueue) && parsed.battleQueue.length > 0) {
+              state = { ...cachedDuoQueues, ...parsed };
+              cachedDuoQueues = state;
+            }
+          }
+        } catch (_) {}
+      }
+      return state;
+    };
+
+    const writeDuoQueues = async (next) => {
+      next.updatedAt = Date.now();
+      cachedDuoQueues = next;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          await caches.default.put(duoCacheKey, new Response(JSON.stringify(next), {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+          }));
+        }
+      } catch (_) {}
+
+      if (env.DB) {
+        try {
+          await env.DB.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES ('duo_queues_v1', ?1, ?2)
+            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+          `).bind(JSON.stringify(next), Date.now()).run();
+        } catch (_) {}
+      }
+    };
+
     if (url.pathname === '/api/wheel/duo/queues') {
       if (request.method === 'POST') {
         try {
           const body = await request.json();
-          if (Array.isArray(body.battleQueue)) cachedDuoQueues.battleQueue = body.battleQueue;
-          if (Array.isArray(body.tourneyQueue)) cachedDuoQueues.tourneyQueue = body.tourneyQueue;
-          if (body.mode) cachedDuoQueues.mode = body.mode;
-          cachedDuoQueues.counts = {
-            battle: cachedDuoQueues.battleQueue.length,
-            tourney: cachedDuoQueues.tourneyQueue.length
+          const current = await readDuoQueues();
+          const next = { ...current };
+          if (Array.isArray(body.battleQueue)) next.battleQueue = body.battleQueue;
+          if (Array.isArray(body.tourneyQueue)) next.tourneyQueue = body.tourneyQueue;
+          if (body.mode) next.mode = body.mode;
+          next.counts = {
+            battle: next.battleQueue.length,
+            tourney: next.tourneyQueue.length
           };
-          return new Response(JSON.stringify({ success: true, ...cachedDuoQueues }), { headers: corsHeaders });
+          await writeDuoQueues(next);
+          return new Response(JSON.stringify({ success: true, ...next }), { headers: corsHeaders });
         } catch (_) {
           return new Response(JSON.stringify({ success: false }), { headers: corsHeaders });
         }
       }
-      return new Response(JSON.stringify(cachedDuoQueues), { headers: corsHeaders });
+      const data = await readDuoQueues();
+      return new Response(JSON.stringify(data), { headers: corsHeaders });
     }
 
     if (url.pathname === '/api/wheel/duo/mode' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      return new Response(JSON.stringify({ success: true, mode: body.mode || 'battle' }), { headers: corsHeaders });
+      const current = await readDuoQueues();
+      if (body.mode) {
+        current.mode = body.mode;
+        await writeDuoQueues(current);
+      }
+      return new Response(JSON.stringify({ success: true, mode: current.mode || 'battle' }), { headers: corsHeaders });
     }
 
     if (url.pathname === '/api/wheel/duo/spin' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      cachedDuoQueues.lastSpin = {
+      const current = await readDuoQueues();
+      current.lastSpin = {
         action: 'spin',
         targetOverlay: 'wheel-duo',
-        mode: body.mode || cachedDuoQueues.mode || 'battle',
+        mode: body.mode || current.mode || 'battle',
         spinId: body.spinId || ('edge_spin_' + Date.now()),
         winner: body.winner || null,
         targetCorner: body.targetCorner || 'A',
         targetSeed: body.targetSeed || null,
         ts: Date.now()
       };
+      await writeDuoQueues(current);
       return new Response(JSON.stringify({
         success: true,
-        ...cachedDuoQueues.lastSpin
+        ...current.lastSpin
       }), { headers: corsHeaders });
     }
 

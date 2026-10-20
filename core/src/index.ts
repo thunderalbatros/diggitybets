@@ -569,10 +569,24 @@ function parseGuessAmount(raw: string): number | null {
   return isNaN(val) ? null : val;
 }
 
-// 9. Start Pusher Connection
+// 9. Start Pusher / Centrifugo Connection
 pusherClient.connect();
 
-// 10. Clean Graceful Shutdown
+// 10. Periodic Edge Sync (Keeps production Cloudflare Edge updated for remote streamer OBS in USA)
+setInterval(async () => {
+  try {
+    const battleQueue = overlayServer.getBattleQueue();
+    const tourneyQueue = overlayServer.getTourneyQueue();
+    const mode = overlayServer.getDuoWheelMode();
+    await fetch('https://diggitybets.vip/api/wheel/duo/queues', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ battleQueue, tourneyQueue, mode })
+    });
+  } catch (_) {}
+}, 4000);
+
+// 11. Clean Graceful Shutdown
 process.on('SIGINT', () => {
   console.log('\n[Service] Stopping HuntHub Core...');
   pusherClient.disconnect();
