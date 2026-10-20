@@ -508,7 +508,7 @@
     - [https://diggitybets.vip/](https://diggitybets.vip/)
   - **Previsualización de Despliegue Cloudflare Edge:**
     - URL de Prueba Edge: [https://diggitybets.positive-handspring.workers.dev](https://diggitybets.positive-handspring.workers.dev)
-    - URL de Reclamo permanente (Cloudflare Dashboard): [https://dash.cloudflare.com/claim-preview?claimToken=QxUZ_a_2uWdeRuyXddPsY9_-d-D4xCQC-qP77UR-RSU](https://dash.cloudflare.com/claim-preview?claimToken=QxUZ_a_2uWdeRuyXddPsY9_-d-D4xCQC-qP77UR-RSU)
+    - URL de Reclamo permanente (Cloudflare Dashboard): `[REDACTED — claim token removed 2026-10-20 por seguridad; sigue en el historial de git hasta purgarlo]`
     - Version ID: `e8527f8d-95d4-4ee4-a1e1-8faeb5a201cd`
   - **Verificación de Borde y Telemetría en Vivo:**
     - Servidor estático y SPA routing verificado sirviendo HTTP 200 OK en 1,217 archivos estáticos y Stake Originals.

@@ -206,20 +206,86 @@ function isSameOrTrustedOrigin(request) {
   }
 }
 
-function isAuthorizedAdmin(request, env) {
+// ---------------------------------------------------------------------------
+// Admin authentication (Gate A1 — replaces the former static public token)
+// Admin tokens are short-lived, HMAC-SHA256 signed with env.ADMIN_API_SECRET and are
+// only issued after a verified Kick OAuth login of an allow-listed streamer account.
+// Without ADMIN_API_SECRET every admin request is denied (fail closed).
+// ---------------------------------------------------------------------------
+const ADMIN_USERNAMES = ['diggitybets', 'diggity_bets', 'tarkansky'];
+const ADMIN_KICK_IDS = [88254585];
+const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+function b64urlEncodeBytes(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64urlEncodeText(text) {
+  return b64urlEncodeBytes(new TextEncoder().encode(text));
+}
+
+function b64urlDecodeText(b64url) {
+  const b64 = String(b64url).replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+async function hmacSha256B64Url(secret, message) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return b64urlEncodeBytes(new Uint8Array(sig));
+}
+
+function isAdminIdentity(username, kickId) {
+  const name = String(username || '').trim().toLowerCase().replace(/^@/, '');
+  return ADMIN_USERNAMES.includes(name) || ADMIN_KICK_IDS.includes(Number(kickId));
+}
+
+export async function issueAdminToken({ username, kickId }, secret, ttlMs = ADMIN_TOKEN_TTL_MS) {
+  if (!secret) return '';
+  const payload = b64urlEncodeText(JSON.stringify({
+    u: String(username || '').trim().toLowerCase().replace(/^@/, ''),
+    k: Number(kickId) || 0,
+    exp: Date.now() + ttlMs
+  }));
+  return `${payload}.${await hmacSha256B64Url(secret, payload)}`;
+}
+
+async function isAuthorizedAdmin(request, env) {
   if (!isSameOrTrustedOrigin(request)) return false;
-  const adminUser = (request.headers.get('x-admin-user') || '').trim().toLowerCase().replace(/^@/, '');
-  const isStreamerUser = ['diggitybets', 'diggity_bets', 'tarkansky', 'admin', 'streamer'].includes(adminUser) || adminUser.length >= 2;
 
   const configuredSecret = env?.ADMIN_API_SECRET || '';
-  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  const tokenHeader = (request.headers.get('x-admin-token') || request.headers.get('x-admin-secret') || authHeader || '').trim();
+  if (!configuredSecret) return false; // fail closed: no secret, no admin API
 
-  if (configuredSecret) {
-    return isStreamerUser && (constantTimeEqual(tokenHeader, configuredSecret) || constantTimeEqual(tokenHeader, 'diggity_stream_deck_v1'));
+  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const token = (request.headers.get('x-admin-token') || request.headers.get('x-admin-secret') || authHeader || '').trim();
+  if (!token) return false;
+
+  // Break-glass: the raw secret itself (kept private by the streamer, never shipped to the browser).
+  if (constantTimeEqual(token, configuredSecret)) return true;
+
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const [payloadB64, sig] = parts;
+  try {
+    const expectedSig = await hmacSha256B64Url(configuredSecret, payloadB64);
+    if (!constantTimeEqual(sig, expectedSig)) return false;
+    const payload = JSON.parse(b64urlDecodeText(payloadB64));
+    if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) return false;
+    return isAdminIdentity(payload.u, payload.k);
+  } catch (_) {
+    return false;
   }
-  return isStreamerUser && constantTimeEqual(tokenHeader, 'diggity_stream_deck_v1');
 }
+
 
 // In-Memory L1 Sliding Window Rate Limiter
 const ipRateLimits = new Map();
@@ -745,7 +811,7 @@ export default {
           kick_id: userData.id,
           isAdmin,
           hasChatWrite,
-          adminToken: isAdmin ? 'diggity_stream_deck_v1' : undefined,
+          adminToken: isAdmin ? (await issueAdminToken({ username: cleanUsername, kickId: kickIdNum }, env.ADMIN_API_SECRET)) || undefined : undefined,
           verified: true
         }), { headers: corsHeaders });
 
@@ -1280,7 +1346,7 @@ export default {
 
     // 13. Admin Store Redemptions (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/store-redemptions' && request.method === 'GET') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let claims = [];
@@ -1300,7 +1366,7 @@ export default {
 
     // 14. Admin Approve Store Redemption (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/approve-store-redemption' && request.method === 'POST') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       const { redemptionId } = await request.json();
@@ -1312,7 +1378,7 @@ export default {
 
     // 15. Admin Reject Store Redemption (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/reject-store-redemption' && request.method === 'POST') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       const { redemptionId } = await request.json();
@@ -1324,7 +1390,7 @@ export default {
 
     // 16. Admin Stake Verifications Queue (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/stake-verifications' && request.method === 'GET') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let requests = [];
@@ -1339,7 +1405,7 @@ export default {
 
     // 17. Admin Approve Stake Verification (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/approve-stake-verification' && request.method === 'POST') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       const { requestId } = await request.json();
@@ -1361,7 +1427,7 @@ export default {
 
     // 18. Admin Reject Stake Verification (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/reject-stake-verification' && request.method === 'POST') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       const { requestId } = await request.json();
@@ -1373,7 +1439,7 @@ export default {
 
     // 19. Admin Security Alerts (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/security-alerts' && request.method === 'GET') {
-      if (!isAuthorizedAdmin(request, env)) {
+      if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       let alerts = [];
@@ -1828,7 +1894,7 @@ export default {
         if (!isSameOrTrustedOrigin(request)) {
           return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
         }
-        const adminAuthed = isAuthorizedAdmin(request, env);
+        const adminAuthed = await isAuthorizedAdmin(request, env);
         const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
         if (!adminAuthed) {
           const rl = checkEdgeRateLimit(clientIp, 'bounty_claim_post', 10, 60_000);
@@ -1967,7 +2033,7 @@ export default {
         if (!targetUsername || targetUsername.length > 64) {
           return new Response(JSON.stringify({ error: 'Valid username required' }), { status: 400, headers: noCacheHeaders });
         }
-        const adminAuthed = isAuthorizedAdmin(request, env);
+        const adminAuthed = await isAuthorizedAdmin(request, env);
         const callerHeader = String(request.headers.get('x-admin-user') || '').trim().toLowerCase().replace(/^@+/, '');
         if (!adminAuthed && callerHeader !== targetUsername) {
           return new Response(JSON.stringify({ error: 'Forbidden: Can only purge own account data or as admin' }), { status: 403, headers: noCacheHeaders });
@@ -2048,7 +2114,7 @@ export default {
       if (request.method === 'GET') {
         const syncState = await readOverlaySyncState();
         const duoState = await readDuoQueues();
-        const adminAuthed = isAuthorizedAdmin(request, env);
+        const adminAuthed = await isAuthorizedAdmin(request, env);
         let state = {
           users: [],
           stake_verification_requests: [],
@@ -2094,7 +2160,7 @@ export default {
         if (!isSameOrTrustedOrigin(request)) {
           return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
         }
-        const adminAuthed = isAuthorizedAdmin(request, env);
+        const adminAuthed = await isAuthorizedAdmin(request, env);
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
         let mutated = false;

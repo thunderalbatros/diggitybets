@@ -58,3 +58,10 @@ desktop.ini
 
 # Local intelligence & RAG index caches
 .cache/
+
+# SQLite runtime databases (contain user data - never version them)
+core/*.db
+core/*.db-shm
+core/*.db-wal
+*.db-shm
+*.db-wal

@@ -488,7 +488,11 @@ class OAuthEngine {
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     if (isAdmin) {
       localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
-      localStorage.setItem('hunthub_admin_token', user.adminToken || 'diggity_stream_deck_v1');
+      if (user.adminToken) {
+        localStorage.setItem('hunthub_admin_token', user.adminToken);
+      } else {
+        localStorage.removeItem('hunthub_admin_token');
+      }
     } else {
       localStorage.removeItem('hunthub_streamer_admin_unlocked');
       localStorage.removeItem('hunthub_admin_token');

@@ -583,7 +583,7 @@
             headers: {
               'Content-Type': 'application/json',
               'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
-              'x-admin-token': localStorage.getItem('hunthub_admin_token') || 'diggity_stream_deck_v1'
+              'x-admin-token': localStorage.getItem('hunthub_admin_token') || ''
             },
             body: JSON.stringify({
               bounties: this.bounties,
@@ -1277,7 +1277,7 @@
           headers: {
             'Content-Type': 'application/json',
             'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
-            'x-admin-token': localStorage.getItem('hunthub_admin_token') || 'diggity_stream_deck_v1'
+            'x-admin-token': localStorage.getItem('hunthub_admin_token') || ''
           },
           body: JSON.stringify({
             type: 'BOUNTY_HUNTED',
