@@ -3387,16 +3387,27 @@ class AdminHubController {
 
   async syncDuoQueues() {
     try {
-      const res = await fetch('/api/wheel/duo/queues');
-      if (res.ok) {
+      let res = null;
+      try {
+        res = await fetch('http://127.0.0.1:3001/api/wheel/duo/queues', { mode: 'cors' });
+      } catch (_) {}
+      if (!res || !res.ok) {
+        res = await fetch('/api/wheel/duo/queues');
+      }
+      if (res && res.ok) {
         const data = await res.json();
         if (Array.isArray(data.tourneyQueue)) {
           this.tourneyQueue = data.tourneyQueue;
           const tCount = document.getElementById('cp-tourney-q-count');
           if (tCount) tCount.textContent = String(this.tourneyQueue.length);
         }
+        if (Array.isArray(data.battleQueue)) {
+          this.battleQueue = data.battleQueue;
+          const bCount = document.getElementById('cp-battle-q-count');
+          if (bCount) bCount.textContent = String(this.battleQueue.length);
+        }
         const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
-        if (q && q.length > 0) {
+        if (Array.isArray(q)) {
           this.duoPool = q.map(e => ({
             chatter: e.username,
             slot: e.slotName,
@@ -5019,6 +5030,41 @@ class AdminHubController {
         clearInterval(this._kickPingInterval);
         this._kickPingInterval = null;
       }
+
+      // Priority 1: Connect to Local Stream Hub on 127.0.0.1:3001 (Streamer notebook, 0 CORS, instant chat & queue relay)
+      try {
+        const localWs = new WebSocket('ws://127.0.0.1:3001/');
+        localWs.onopen = () => {
+          console.log('[AdminHub] Connected to Local Stream Hub (ws://127.0.0.1:3001/)');
+          this.localHubWs = localWs;
+          const statusEl = document.getElementById('cp-kick-ws-status');
+          if (statusEl) {
+            statusEl.textContent = `🟢 LOCAL STREAM HUB ONLINE (ws://127.0.0.1:3001 · Room #${chatroomId})`;
+            statusEl.style.color = '#00ff88';
+          }
+          localWs.send(JSON.stringify({ action: 'get_duo_queues' }));
+        };
+        localWs.onmessage = (evt) => {
+          try {
+            const data = JSON.parse(evt.data);
+            if (data.type === 'chat_message' && data.data) {
+              const m = data.data;
+              this.processLiveChatCommand(m.sender?.username || m.sender?.slug || m.sender, m.content);
+            } else if (data.action === 'wheel_duo_queues' || data.action === 'duo_queues') {
+              const q = this.duoMode === 'tourney' ? data.tourneyQueue : data.battleQueue;
+              if (Array.isArray(q)) {
+                this.duoPool = q.map(e => ({
+                  chatter: e.username,
+                  slot: e.slotName,
+                  provider: e.slotProvider,
+                  icon: '🎰'
+                }));
+                this.renderDuoQueue();
+              }
+            }
+          } catch (_) {}
+        };
+      } catch (_) {}
 
       // If we don't have realtimeConfig or token, fetch
       if (!realtimeConfig || !realtimeConfig.token) {

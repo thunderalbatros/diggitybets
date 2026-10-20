@@ -35,7 +35,9 @@ class DuoWheelApp {
         return u && !demoUsernames.has(u);
       });
     } else {
-      this.pool = purged ? [] : this.getDefaultPool();
+      const isObs = window.location.search.includes('obs=1');
+      const isExplicitDemo = window.location.search.includes('demo=1');
+      this.pool = (purged || (isObs && !isExplicitDemo)) ? [] : this.getDefaultPool();
     }
     this.trackEl = document.getElementById('reel-track');
     this.containerEl = document.getElementById('reel-container');
@@ -425,7 +427,7 @@ class DuoWheelApp {
             this.syncTargetFromBattleState(payload.data);
           } else if (payload.action === 'wheel_duo_queues' || payload.action === 'duo_queues') {
             const q = this.mode === 'tourney' ? payload.tourneyQueue : payload.battleQueue;
-            if (q && q.length > 0) {
+            if (Array.isArray(q)) {
               this.pool = q.map((item) => ({
                 chatter: item.username,
                 avatar: item.avatar || '',
@@ -459,15 +461,20 @@ class DuoWheelApp {
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
             const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
-            if (Array.isArray(q) && q.length > 0 && q.length !== this.pool.length) {
-              this.pool = q.map((item) => ({
+            if (Array.isArray(q)) {
+              const mapped = q.map((item) => ({
                 chatter: item.username,
                 avatar: item.avatar || '',
                 slot: item.slotName,
                 provider: item.slotProvider,
                 icon: '🎰',
               }));
-              this.renderTrack();
+              const curJoined = this.pool.map((p) => p.chatter + ':' + p.slot).join('|');
+              const newJoined = mapped.map((p) => p.chatter + ':' + p.slot).join('|');
+              if (curJoined !== newJoined) {
+                this.pool = mapped;
+                this.renderTrack();
+              }
             }
           }
           const evt = data?.overlays?.lastOverlayEvent;
