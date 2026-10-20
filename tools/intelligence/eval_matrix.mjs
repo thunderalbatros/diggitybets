@@ -67,7 +67,8 @@ export async function runEvalMatrix() {
     { q: "ousterhout deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" },
     { q: "strazzullo frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" },
     { q: "poeaa fowler money allocation unit of work goos walking skeleton c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" },
-    { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture jason gregory serious cryptography aumasson", expectedKeyword: "gregory" }
+    { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture jason gregory serious cryptography aumasson", expectedKeyword: "gregory" },
+    { q: "theory of gambling statistical logic richard epstein procedural storytelling tanya short tarn adams web audio api boris smus", expectedKeyword: "epstein" }
   ];
 
   let ragScore = 100;
