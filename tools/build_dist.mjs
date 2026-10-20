@@ -177,7 +177,7 @@ const headersContent = `/*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss: ws://127.0.0.1:8080 ws://localhost:8080 ws://127.0.0.1:3001 http://127.0.0.1:3001; frame-src 'self' https://player.kick.com https://kick.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
+  Content-Security-Policy: default-src 'self' https: data: blob:; script-src 'self' 'inline-speculation-rules' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss: ws://127.0.0.1:8080 ws://localhost:8080 ws://127.0.0.1:3001 http://127.0.0.1:3001; frame-src 'self' https://player.kick.com https://kick.com https://challenges.cloudflare.com; require-trusted-types-for 'script'; trusted-types default dompurify; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
 
 /site/css/*
   Cache-Control: public, max-age=31536000, immutable

@@ -62,26 +62,34 @@ export function runDiffUiAdversarialGate() {
   }
 
   // --------------------------------------------------------------------------
-  // 2. Stagehand v1.5 Self-Healing DOM Selector Cache Verification
+  // 2. Self-Healing DOM Selector Cache & CSP Zero-Inline Verification
   // --------------------------------------------------------------------------
+  const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const inlineExecScripts = indexHtml.match(/<script(?![^>]*src=)(?![^>]*application\/ld\+json)(?![^>]*speculationrules)[^>]*>/gi) || [];
+  const inlineOnClicks = indexHtml.match(/\bonclick\s*=\s*["']/gi) || [];
+  if (inlineExecScripts.length === 0 && inlineOnClicks.length === 0) {
+    emitPass('csp-zero-inline-scripts', 'index.html contains 0 inline executable <script> blocks and 0 inline onclick attributes');
+  } else {
+    emitFail('csp-zero-inline-scripts', `Found ${inlineExecScripts.length} inline scripts and ${inlineOnClicks.length} onclick attributes in index.html`);
+  }
+
   if (fs.existsSync(SELECTOR_CACHE_PATH)) {
     const cache = JSON.parse(fs.readFileSync(SELECTOR_CACHE_PATH, 'utf8'));
-    const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
     // Verify main site primitives
     for (const prim of cache.targets?.main_site?.primitives || []) {
       if (prim.id === 'compliance-18plus-badge') {
         const re = new RegExp(prim.expected_text_pattern, 'i');
         if (re.test(indexHtml)) {
-          emitPass(`stagehand-${prim.id}`, `extract() verified +18 compliance pattern in index.html`);
+          emitPass(`selector-cache-${prim.id}`, `Verified +18 compliance pattern in index.html`);
         } else {
-          emitFail(`stagehand-${prim.id}`, `Expected +18 compliance pattern in index.html`);
+          emitFail(`selector-cache-${prim.id}`, `Expected +18 compliance pattern in index.html`);
         }
       } else if (prim.id === 'main-content-landmark') {
         if (/<main\b/i.test(indexHtml)) {
-          emitPass(`stagehand-${prim.id}`, `observe() primary selector <main> intact`);
+          emitPass(`selector-cache-${prim.id}`, `Primary selector <main> intact`);
         } else {
-          emitFail(`stagehand-${prim.id}`, `Missing <main> landmark in index.html`);
+          emitFail(`selector-cache-${prim.id}`, `Missing <main> landmark in index.html`);
         }
       }
     }
@@ -100,15 +108,15 @@ export function runDiffUiAdversarialGate() {
           });
           if (matchedSelector) {
             const healedNote = matchedSelector === prim.primary_selector ? 'primary' : `self-healed via fallback (${matchedSelector})`;
-            emitPass(`stagehand-${ov.id}`, `observe(${prim.id}) verified [${healedNote}]`);
+            emitPass(`selector-cache-${ov.id}`, `Selector (${prim.id}) verified [${healedNote}]`);
           } else {
-            emitFail(`stagehand-${ov.id}`, `None of ${allSelectors.join(', ')} found in ${ov.file}`);
+            emitFail(`selector-cache-${ov.id}`, `None of ${allSelectors.join(', ')} found in ${ov.file}`);
           }
         }
       }
     }
   } else {
-    emitFail('stagehand-selector-cache', 'Missing memory/selector_cache.json');
+    emitFail('selector-cache', 'Missing memory/selector_cache.json');
   }
 
   // --------------------------------------------------------------------------
@@ -133,6 +141,22 @@ export function runDiffUiAdversarialGate() {
     emitPass('adversarial-zero-demo-users', 'hunthub_demo_users_purged_live_v4 + purgeDemoUsersForLiveStream active; zero synthetic test users in live stream queues');
   } else {
     emitFail('adversarial-zero-demo-users', 'Missing hunthub_demo_users_purged_live_v4 purge guard in site/js/admin-hub.js');
+  }
+
+  // --------------------------------------------------------------------------
+  // 3.5 Verify OKLCH + W3C DTCG 2025.10 + Native CSS @starting-style Tokens
+  // --------------------------------------------------------------------------
+  const designTokensCss = fs.readFileSync(path.join(ROOT, 'site', 'css', 'design-tokens.css'), 'utf8');
+  const dtcgPath = path.join(ROOT, 'tokens', 'design.tokens.json');
+  const hasOklchAndStartingStyle =
+    designTokensCss.includes('oklch(') &&
+    designTokensCss.includes('@starting-style') &&
+    designTokensCss.includes('allow-discrete') &&
+    fs.existsSync(dtcgPath);
+  if (hasOklchAndStartingStyle) {
+    emitPass('design-tokens-oklch-dtcg', 'OKLCH perceptual colors, @starting-style discrete transitions, and tokens/design.tokens.json active');
+  } else {
+    emitFail('design-tokens-oklch-dtcg', 'Missing OKLCH, @starting-style, or tokens/design.tokens.json');
   }
 
   // --------------------------------------------------------------------------

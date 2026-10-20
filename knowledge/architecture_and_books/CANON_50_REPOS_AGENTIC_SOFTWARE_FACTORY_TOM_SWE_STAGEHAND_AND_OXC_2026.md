@@ -153,3 +153,6 @@ Para evitar el caos de scripts sueltos, nuestra Software Factory organiza sus ca
    - *Mitigación Activa*: **Motor `ToM-SWE` de 3 Niveles (`tools/intelligence/tom_swe_engine.mjs` + `memory/tom_swe_model.json`)**. Antes de ejecutar tareas complejas o ambiguas, el Escuadrón 0 y el Escuadrón 9 consultan el modelo mental de 3 niveles y ejecutan *Sleeptime Compute* para preservar las preferencias del CTO sin contaminar la ventana de contexto.
 3. **Riesgo 3: Saturación de CPU/RAM en Hardware Ligero (HP 250 G8)**
    - *Mitigación Activa*: Sustitución de demonios pesados (Docker, ESLint daemon, Ollama) por binarios nativos en Rust y C de ejecución instantánea (**`oxlint v1.89.0` en `111ms`**, **`SQLite FTS5` en `<5ms`**, **`esbuild` en `<150ms`**) y aislamiento mediante **Git Worktrees**.
+
+---
+**Conexiones del Grafo (Obsidian):** [[INDEX]] · [[CANON_SOTA_RAG_ARCHITECTURES_AND_TOOLS_2026]] · [[CURATED_MASTER_BOOKS_AND_COURSES_2026]] · [[CANON_SOFTWARE_ENGINEERING_AT_GOOGLE]] · [[CANON_HARNESS_ENGINEERING_INTEGRAL_2026]] · #architecture_and_books

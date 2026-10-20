@@ -51,90 +51,10 @@
     }
   }
   </script>
-  <!-- Global Security & XSS Sanitization Shield (Zero-Trust) -->
-  <script>
-    window.escapeHTML = function(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    };
-    (function() {
-      const originalFetch = window.fetch;
-      window.fetch = function(url, options = {}) {
-        try {
-          const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
-          if (urlStr.startsWith('/api/') || urlStr.includes('/api/')) {
-            options = options || {};
-            options.headers = options.headers || {};
-            const devHash = localStorage.getItem('hunthub_device_hash') || (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '');
-            if (devHash) {
-              if (options.headers instanceof Headers) {
-                if (!options.headers.has('x-device-fingerprint')) options.headers.set('x-device-fingerprint', devHash);
-              } else if (Array.isArray(options.headers)) {
-                if (!options.headers.some(([k]) => k.toLowerCase() === 'x-device-fingerprint')) {
-                  options.headers.push(['x-device-fingerprint', devHash]);
-                }
-              } else if (typeof options.headers === 'object') {
-                if (!options.headers['x-device-fingerprint'] && !options.headers['X-Device-Fingerprint']) {
-                  options.headers['x-device-fingerprint'] = devHash;
-                }
-              }
-            }
-          }
-        } catch (_) {}
-        return originalFetch.call(this, url, options);
-      };
-    })();
-  </script>
-  <!-- Cloudflare Turnstile Anti-Bot Shield (Explicit & Invisible Mode) -->
+  <!-- Global Security, TrustedTypes, Fetch Auth Injector & Turnstile Anti-Bot Shield -->
+  <script src="site/js/vendor/purify.min.js?v=33.0" defer></script>
+  <script src="site/js/security-anti-fraud.js?v=33.0" defer></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script>
-    window.CLOUDFLARE_TURNSTILE_SITEKEY = '0x4AAAAAAFaW8Lu0S2WC3Pa8';
-    window.getTurnstileToken = function(action = 'general') {
-      return new Promise((resolve) => {
-        if (!window.turnstile || !window.CLOUDFLARE_TURNSTILE_SITEKEY) {
-          resolve('');
-          return;
-        }
-        let container = document.getElementById('cf-turnstile-container');
-        if (!container) {
-          container = document.createElement('div');
-          container.id = 'cf-turnstile-container';
-          container.style.position = 'fixed';
-          container.style.bottom = '-9999px';
-          container.style.left = '-9999px';
-          container.style.opacity = '0';
-          container.style.pointerEvents = 'none';
-          document.body.appendChild(container);
-        }
-        try {
-          const widgetId = window.turnstile.render(container, {
-            sitekey: window.CLOUDFLARE_TURNSTILE_SITEKEY,
-            action: action,
-            size: 'invisible',
-            callback: function(token) {
-              try { window.turnstile.remove(widgetId); } catch (_) {}
-              resolve(token || '');
-            },
-            'error-callback': function() {
-              try { window.turnstile.remove(widgetId); } catch (_) {}
-              resolve('');
-            },
-            'expired-callback': function() {
-              try { window.turnstile.remove(widgetId); } catch (_) {}
-              resolve('');
-            }
-          });
-        } catch (_) {
-          resolve('');
-        }
-      });
-    };
-  </script>
 </head>
 <body>
 
@@ -1532,7 +1452,7 @@
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <a href="#slot-intel" onclick="window.switchView('#slot-intel'); if(window.diggityIntelSuite) window.diggityIntelSuite.switchIntelTab('rtp'); return false;" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
+          <a href="#slot-intel" id="btn-bh-live-rtp-radar" class="btn-chat-toggle" style="padding: 5px 10px; font-size: 11px; text-decoration: none; border-color: #53fc18; color: #53fc18;">
             🌡️ Live RTP Radar
           </a>
         </div>
@@ -3360,10 +3280,10 @@
             Splits 50% net profit from the $100 bonus buy live on Kick! Winner verified provably fair via HMAC-SHA256 commit-reveal.
           </p>
           <div style="display: flex; gap: 10px; justify-content: center;">
-            <button type="button" class="btn-stake-primary" onclick="navigator.clipboard.writeText('🎉 CONGRATS ' + document.getElementById('raffle-winner-display-name').textContent + '! You won the Sunday $100 Bonus Buy Split Profit Raffle! 🎟️💎'); if (window.sonner) window.sonner.toast({ title: 'Copied Shoutout! 📋', message: 'Ready to paste in Kick chat', type: 'gold' });" style="padding: 10px 20px;">
+            <button type="button" id="btn-copy-raffle-announcement" class="btn-stake-primary" style="padding: 10px 20px;">
               Copy Chat Announcement 📋
             </button>
-            <button type="button" class="btn-chat-toggle" onclick="document.getElementById('admin-raffle-winner-modal').style.display = 'none';" style="padding: 10px 18px;">
+            <button type="button" id="btn-close-raffle-winner-modal" class="btn-chat-toggle" style="padding: 10px 18px;">
               Close ✕
             </button>
           </div>
@@ -4453,10 +4373,8 @@
   <script defer src="site/js/audio.js?v=30.0"></script>
   <script defer src="site/js/pro-fx-audio.js?v=30.0"></script>
   <script defer src="site/js/provably-fair.js?v=30.0"></script>
-  <script defer src="site/js/vendor/purify.min.js?v=33.0"></script>
   <script defer src="site/js/vendor/lazyload.min.js?v=33.0"></script>
   <script defer src="site/js/vendor/thumbhash.min.js?v=33.0"></script>
-  <script defer src="site/js/security-anti-fraud.js?v=33.0"></script>
   <script defer src="site/js/avatar-generator.js?v=30.0"></script>
   <script defer src="site/js/user-store.js?v=30.0"></script>
   <script defer src="site/js/auth-oauth.js?v=30.0"></script>

@@ -286,9 +286,125 @@ class AntiFraudEngine {
 }
 
 // ============================================================================
-// DOMPurify + W3C TrustedTypes Default Policy & StorageQuotaGuard (SOTA 2026)
+// DOMPurify + W3C TrustedTypes Default Policy, Fetch Auth Injector & Turnstile
 // ============================================================================
 (function initSecurityAndStorageShield() {
+  // 0. Global escapeHTML helper
+  window.escapeHTML = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  // 0b. Global Fetch Interceptor: attaches device fingerprint + signed user/admin tokens on /api/*
+  const originalFetch = window.fetch;
+  if (typeof originalFetch === 'function') {
+    window.fetch = function(url, options = {}) {
+      try {
+        const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+        if (urlStr.startsWith('/api/') || urlStr.includes('/api/')) {
+          options = options || {};
+          options.headers = options.headers || {};
+          const devHash = localStorage.getItem('hunthub_device_hash') || (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '');
+          const userToken = localStorage.getItem('hunthub_user_token') || '';
+          const adminToken = localStorage.getItem('hunthub_admin_token') || '';
+
+          const setHeaderIfMissing = (key, val) => {
+            if (!val) return;
+            if (options.headers instanceof Headers) {
+              if (!options.headers.has(key)) options.headers.set(key, val);
+            } else if (Array.isArray(options.headers)) {
+              if (!options.headers.some(([k]) => k.toLowerCase() === key.toLowerCase())) {
+                options.headers.push([key, val]);
+              }
+            } else if (typeof options.headers === 'object') {
+              const lower = key.toLowerCase();
+              const hasKey = Object.keys(options.headers).some(k => k.toLowerCase() === lower);
+              if (!hasKey) options.headers[key] = val;
+            }
+          };
+
+          setHeaderIfMissing('x-device-fingerprint', devHash);
+          setHeaderIfMissing('x-user-token', userToken);
+          setHeaderIfMissing('x-admin-token', adminToken);
+        }
+      } catch (_) {}
+      return originalFetch.call(this, url, options);
+    };
+  }
+
+  // 0c. Cloudflare Turnstile Invisible Token Helper
+  window.CLOUDFLARE_TURNSTILE_SITEKEY = '0x4AAAAAAFaW8Lu0S2WC3Pa8';
+  window.getTurnstileToken = function(action = 'general') {
+    return new Promise((resolve) => {
+      if (!window.turnstile || !window.CLOUDFLARE_TURNSTILE_SITEKEY) {
+        resolve('');
+        return;
+      }
+      let container = document.getElementById('cf-turnstile-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'cf-turnstile-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '-9999px';
+        container.style.left = '-9999px';
+        container.style.opacity = '0';
+        container.style.pointerEvents = 'none';
+        document.body.appendChild(container);
+      }
+      try {
+        const widgetId = window.turnstile.render(container, {
+          sitekey: window.CLOUDFLARE_TURNSTILE_SITEKEY,
+          action: action,
+          size: 'invisible',
+          callback: function(token) {
+            try { window.turnstile.remove(widgetId); } catch (_) {}
+            resolve(token || '');
+          },
+          'error-callback': function() {
+            try { window.turnstile.remove(widgetId); } catch (_) {}
+            resolve('');
+          },
+          'expired-callback': function() {
+            try { window.turnstile.remove(widgetId); } catch (_) {}
+            resolve('');
+          }
+        });
+      } catch (_) {
+        resolve('');
+      }
+    });
+  };
+
+  // 0d. CSP-Clean Delegated Click Handlers for static buttons in index.html
+  document.addEventListener('click', (e) => {
+    const target = e.target && e.target.closest ? e.target.closest('#btn-bh-live-rtp-radar, #btn-copy-raffle-announcement, #btn-close-raffle-winner-modal') : null;
+    if (!target) return;
+    if (target.id === 'btn-bh-live-rtp-radar') {
+      e.preventDefault();
+      if (typeof window.switchView === 'function') window.switchView('#slot-intel');
+      if (window.diggityIntelSuite && typeof window.diggityIntelSuite.switchIntelTab === 'function') {
+        window.diggityIntelSuite.switchIntelTab('rtp');
+      }
+    } else if (target.id === 'btn-copy-raffle-announcement') {
+      const nameEl = document.getElementById('raffle-winner-display-name');
+      const winnerName = nameEl ? nameEl.textContent : '@Winner';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText('🎉 CONGRATS ' + winnerName + '! You won the Sunday $100 Bonus Buy Split Profit Raffle! 🎟️💎');
+      }
+      if (window.sonner) {
+        window.sonner.toast({ title: 'Copied Shoutout! 📋', message: 'Ready to paste in Kick chat', type: 'gold' });
+      }
+    } else if (target.id === 'btn-close-raffle-winner-modal') {
+      const modal = document.getElementById('admin-raffle-winner-modal');
+      if (modal) modal.style.display = 'none';
+    }
+  });
+
   // 1. Universal HTML Sanitizer backed by cure53/DOMPurify
   window.sanitizeHTML = function(dirtyHtml) {
     const str = String(dirtyHtml ?? '');

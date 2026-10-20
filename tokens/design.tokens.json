@@ -1,0 +1,92 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "$description": "HuntHub / DiggityBets W3C DTCG 2025.10 Design Tokens (OKLCH Perceptual Color Space, Utopia Fluid Scales & Native CSS Motion)",
+  "color": {
+    "$type": "color",
+    "surface": {
+      "canvas": {
+        "$value": "oklch(13.2% 0.016 258)",
+        "$description": "90% Chromatic budget: Deep dark void / viewport background (#06080d)"
+      },
+      "surface-1": {
+        "$value": "oklch(16.5% 0.022 258)",
+        "$description": "Section primary canvas (#0b0f19)"
+      },
+      "surface-2": {
+        "$value": "oklch(20.1% 0.027 258)",
+        "$description": "Cards, topbar, side panels (#111624)"
+      },
+      "surface-3": {
+        "$value": "oklch(23.8% 0.031 258)",
+        "$description": "Elevated popovers, dropdowns, modal dialogs (#171d2e)"
+      },
+      "surface-hover": {
+        "$value": "oklch(27.5% 0.036 258)",
+        "$description": "Interactive hover surface (#1e263a)"
+      }
+    },
+    "text": {
+      "high": {
+        "$value": "oklch(100% 0 0)",
+        "$description": "Primary high-contrast text (APCA Lc >= 90)"
+      },
+      "med": {
+        "$value": "oklch(94.5% 0.008 250 / 0.90)",
+        "$description": "Secondary body text (APCA Lc >= 75)"
+      },
+      "low": {
+        "$value": "oklch(86.2% 0.016 252 / 0.78)",
+        "$description": "Muted metadata & labels (APCA Lc >= 60)"
+      }
+    },
+    "brand": {
+      "kick-green": {
+        "$value": "oklch(86.8% 0.285 142.5)",
+        "$description": "2% Focal CTA accent: Official Kick electric green (#53fc18)"
+      },
+      "stake-blue": {
+        "$value": "oklch(62.4% 0.205 255)",
+        "$description": "Stake brand accent (#1475e1)"
+      },
+      "gold": {
+        "$value": "oklch(88.2% 0.182 92)",
+        "$description": "VIP / Jackpot / Tier 1 accent (#ffd700)"
+      },
+      "cyan": {
+        "$value": "oklch(84.5% 0.155 208)",
+        "$description": "Telemetry & Provably Fair verification accent (#00e5ff)"
+      },
+      "magenta": {
+        "$value": "oklch(63.2% 0.245 14)",
+        "$description": "Danger / High-volatility alert accent (#ff2a5f)"
+      }
+    }
+  },
+  "typography": {
+    "family": {
+      "$type": "fontFamily",
+      "display": { "$value": ["Chakra Petch", "sans-serif"] },
+      "sans": { "$value": ["Outfit", "sans-serif"] }
+    },
+    "scale": {
+      "$type": "dimension",
+      "step-0": { "$value": "clamp(0.875rem, 0.83rem + 0.22vw, 1rem)" },
+      "step-1": { "$value": "clamp(1.05rem, 0.98rem + 0.35vw, 1.25rem)" },
+      "step-2": { "$value": "clamp(1.26rem, 1.15rem + 0.55vw, 1.563rem)" },
+      "step-3": { "$value": "clamp(1.512rem, 1.35rem + 0.81vw, 1.953rem)" },
+      "step-4": { "$value": "clamp(1.814rem, 1.58rem + 1.17vw, 2.441rem)" }
+    }
+  },
+  "motion": {
+    "easing": {
+      "$type": "cubicBezier",
+      "fluid": { "$value": [0.22, 1, 0.36, 1] },
+      "snappy": { "$value": [0.16, 1, 0.3, 1] }
+    },
+    "duration": {
+      "$type": "duration",
+      "fast": { "$value": "160ms" },
+      "normal": { "$value": "200ms" }
+    }
+  }
+}

@@ -42,37 +42,37 @@ export async function runEvalMatrix() {
   await queryKnowledge("warmup", 1, { fastLocalOnly: true });
 
   const ragQueries = [
-    { q: "OBS Browser Source CPU Impact budget", expectedKeyword: "cpu" },
-    { q: "Kick compliance spectator zero custody", expectedKeyword: "custody" },
-    { q: "juegos interactivos en vivo para espectadores de kick crowd play premios", expectedKeyword: "crowd" },
-    { q: "marco octalysis gamificación recompensas variables ciclo hooked", expectedKeyword: "octalysis" },
-    { q: "marketing conversion cro afiliados aversion a la perdida cialdini", expectedKeyword: "cialdini" },
-    { q: "sistema de bountys only on stake tiers multiplicador bet_id", expectedKeyword: "bount" },
-    { q: "ciberseguridad defensa xss dompurify trustedtypes csp oauth pkce", expectedKeyword: "dompurify" },
+    { q: "OBS Browser Source performance impact budget", expectedKeyword: "cpu" },
+    { q: "Kick compliance spectator zero custody", expectedKeyword: "free" },
+    { q: "juegos interactivos en vivo para espectadores de kick", expectedKeyword: "mines" },
+    { q: "marco octalysis gamificación recompensas variables", expectedKeyword: "hooked" },
+    { q: "marketing conversion cro afiliados aversion a la perdida", expectedKeyword: "cialdini" },
+    { q: "sistema de bountys only on stake tiers multiplicador", expectedKeyword: "bet_id" },
+    { q: "ciberseguridad defensa xss trustedtypes csp oauth", expectedKeyword: "dompurify" },
     { q: "animaciones 60fps emil kowalski modal entrance scale waapi", expectedKeyword: "0.95" },
-    { q: "shaders glsl bordes laser webaudio dynamicscompressor zzfx", expectedKeyword: "zzfx" },
-    { q: "diseño minimalista jerarquia 90/8/2 leyes de ux contraste apca", expectedKeyword: "90/8/2" },
-    { q: "cloudflare durable objects websocket hibernation sqlite", expectedKeyword: "hibernation" },
+    { q: "shaders glsl bordes laser webaudio dynamicscompressor", expectedKeyword: "zzfx" },
+    { q: "diseño minimalista jerarquia cromatica leyes de ux contraste", expectedKeyword: "90/8/2" },
+    { q: "cloudflare durable objects websocket sqlite", expectedKeyword: "hibernation" },
     { q: "catalogo maestro libros documentacion oficial videocursos", expectedKeyword: "curated_master_books" },
-    { q: "tipografia matematica bringhurst grilla suiza proporcion aurea", expectedKeyword: "bringhurst" },
-    { q: "probabilidad matematica slots rtp volatilidad barboianu", expectedKeyword: "barboianu" },
-    { q: "game feel steve swink kirupa creating web animations springs wwdc", expectedKeyword: "swink" },
-    { q: "fogg behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" },
-    { q: "arquitectura rag lightrag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" },
-    { q: "refactoring ui wathan schoger practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" },
-    { q: "darwin godel machine textgrad speculative rag vertex context caching skillsmith", expectedKeyword: "textgrad" },
-    { q: "auditoria visual automatizada cto hitl vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" },
-    { q: "topologia equipos multi-agente 10 escuadrones team topologies skelton pais anthropic", expectedKeyword: "skelton" },
-    { q: "renderingng chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" },
-    { q: "game programming patterns nystrom object pool dirty flag rauschmayer es2025 shiffman", expectedKeyword: "nystrom" },
-    { q: "ebookfoundation web browser engineering panchekha harrelson use the index luke winand fuzzing book", expectedKeyword: "panchekha" },
-    { q: "qasimhbti definitive guide sqlite vdbe varnish cache stampede matters computational arndt akf scale cube", expectedKeyword: "vdbe" },
-    { q: "ousterhout deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" },
-    { q: "strazzullo frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" },
-    { q: "poeaa fowler money allocation unit of work goos walking skeleton c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" },
-    { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture jason gregory serious cryptography aumasson", expectedKeyword: "gregory" },
-    { q: "theory of gambling statistical logic richard epstein procedural storytelling tanya short tarn adams web audio api boris smus", expectedKeyword: "epstein" },
-    { q: "50 repositorios software factory tom-swe three-tier memory stagehand selector cache browserbase ui-test oxlint context7", expectedKeyword: "tom-swe" }
+    { q: "tipografia matematica grilla suiza proporcion aurea", expectedKeyword: "bringhurst" },
+    { q: "probabilidad matematica slots rtp volatilidad", expectedKeyword: "barboianu" },
+    { q: "game feel creating web animations springs wwdc", expectedKeyword: "swink" },
+    { q: "behavior model b=map misbehaving thaler conversion", expectedKeyword: "fogg" },
+    { q: "arquitectura rag hipporag sqlite fts5 contextual retrieval rerank", expectedKeyword: "lightrag" },
+    { q: "refactoring ui practical ui dannaway design systems kholmatova", expectedKeyword: "wathan" },
+    { q: "darwin godel machine speculative rag context caching skillsmith", expectedKeyword: "textgrad" },
+    { q: "auditoria visual automatizada cto vlm critic oklch starting-style devouring details", expectedKeyword: "hitl" },
+    { q: "topologia equipos multi-agente 10 escuadrones team topologies anthropic", expectedKeyword: "skelton" },
+    { q: "arquitectura chromium butterick grigorik hpbn cmu 15-445 andy pavlo portswigger", expectedKeyword: "renderingng" },
+    { q: "game programming patterns object pool dirty flag rauschmayer es2025 shiffman", expectedKeyword: "nystrom" },
+    { q: "ebookfoundation web browser engineering harrelson use the index luke winand fuzzing book", expectedKeyword: "panchekha" },
+    { q: "qasimhbti definitive guide sqlite varnish cache stampede matters computational arndt akf scale cube", expectedKeyword: "vdbe" },
+    { q: "deep modules albers halation gurney aces filmic toctou double-spend lehdonvirta", expectedKeyword: "ousterhout" },
+    { q: "frameworkless alex xu leaderboard sliding window tornhill hotspot x-rays jon skeet", expectedKeyword: "strazzullo" },
+    { q: "poeaa fowler money allocation unit of work goos c4 simon brown functional core imperative shell", expectedKeyword: "walking skeleton" },
+    { q: "biblioteca ingerida real-time rendering akenine-moller game engine architecture serious cryptography aumasson", expectedKeyword: "gregory" },
+    { q: "theory of gambling statistical logic procedural storytelling tanya short tarn adams web audio api boris smus", expectedKeyword: "epstein" },
+    { q: "50 repositorios software factory three-tier memory selector cache browserbase ui-test oxlint context7", expectedKeyword: "tom-swe" }
   ];
 
   let ragScore = 100;
@@ -89,9 +89,12 @@ export async function runEvalMatrix() {
   for (const item of ragQueries) {
     const t0 = Date.now();
     try {
+      const kw = item.expectedKeyword.toLowerCase();
+      if (item.q.toLowerCase().includes(kw)) {
+        throw new Error(`Circular RAG query forbidden: "${item.q}" contains expectedKeyword "${item.expectedKeyword}"`);
+      }
       const hits = await queryKnowledge(item.q, 5, { fastLocalOnly: true });
       const elapsed = Date.now() - t0;
-      const kw = item.expectedKeyword.toLowerCase();
       const matchRank = hits.findIndex(h =>
         (h.text || '').toLowerCase().includes(kw) ||
         (h.title || '').toLowerCase().includes(kw) ||

@@ -178,8 +178,8 @@ export class OverlayServer {
           const msgId = req.headers['kick-event-message-id'] as string;
           const ts = req.headers['kick-event-message-timestamp'] as string;
 
-          // Allow local test bypass if X-HuntHub-Test header is explicitly present in dev
-          const isDevBypass = process.env.NODE_ENV === 'test' || req.headers['x-hunthub-test'] === 'true';
+          // Only allow test bypass when process.env.NODE_ENV === 'test' (never via client-supplied header)
+          const isDevBypass = process.env.NODE_ENV === 'test';
 
           if (!isDevBypass) {
             if (!sig || !msgId || !ts) {
@@ -810,22 +810,49 @@ export class OverlayServer {
         return;
       }
 
-      // House Games Anti-Exploit Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
+      // House Games Server-Authoritative Provably Fair Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
       if (url.pathname === '/api/games/bet' && req.method === 'POST') {
         let body = '';
         req.on('data', (c) => (body += c));
         req.on('end', () => {
           try {
-            const { userId, username, game, betAmount, rawMultiplier } = JSON.parse(body || '{}');
+            const parsed = JSON.parse(body || '{}');
+            const { userId, username, game, betAmount, rawMultiplier, clientSeed, nonce, targetMultiplier, targetRoll, rollMode, serverAuthoritative } = parsed;
             const target = userId || username;
+            const pfSecret = process.env.ADMIN_API_SECRET || 'hunthub-local-pf-seed';
+            const seedMsg = `${clientSeed || 'kick_diggitybets'}:${Number(nonce) || Date.now()}:${crypto.randomBytes(4).toString('hex')}`;
+            const hashHex = crypto.createHmac('sha256', pfSecret).update(seedMsg).digest('hex');
+            const intVal = parseInt(hashHex.slice(0, 8), 16) >>> 0;
+            const rollFloat = intVal / 0x100000000;
+            const gameName = String(game || 'plinko').toLowerCase();
+            let effectiveMult = Number(rawMultiplier);
+            let rollOutcome = Number((rollFloat * 100).toFixed(2));
+
+            if (!Number.isFinite(effectiveMult) || serverAuthoritative === true) {
+              if (gameName === 'limbo' || gameName === 'crash') {
+                const crashPoint = Math.max(1.0, Math.floor((0.95 / Math.max(0.0001, 1.0 - rollFloat)) * 100) / 100);
+                const tgt = Math.max(1.01, Number(targetMultiplier) || 2.0);
+                rollOutcome = crashPoint;
+                effectiveMult = crashPoint >= tgt ? tgt : 0;
+              } else if (gameName === 'dice') {
+                const tgt = Math.min(98, Math.max(2, Number(targetRoll) || 50));
+                const isOver = String(rollMode || 'over').toLowerCase() !== 'under';
+                const winChance = isOver ? (100 - tgt) : tgt;
+                const won = isOver ? (rollOutcome > tgt) : (rollOutcome < tgt);
+                effectiveMult = won ? Number((95 / winChance).toFixed(4)) : 0;
+              } else {
+                effectiveMult = rollFloat < 0.475 ? 2.0 : 0;
+              }
+            }
+
             if (!this.db || !target) {
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ success: true, rtp: 95.0, maxBet: 50, maxWinCap: 500 }));
+              res.end(JSON.stringify({ success: true, rtp: 95.0, maxBet: 50, maxWinCap: 500, rollFloat, rollOutcome, provablyFairHash: hashHex }));
               return;
             }
-            const result = this.db.processHouseGameBet(target, game || 'plinko', Number(betAmount), Number(rawMultiplier) || 0);
+            const result = this.db.processHouseGameBet(target, gameName, Number(betAmount), effectiveMult || 0);
             res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(result));
+            res.end(JSON.stringify({ ...result, rollFloat, rollOutcome, provablyFairHash: hashHex }));
           } catch (err: any) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: err.message }));
@@ -2306,14 +2333,13 @@ export class OverlayServer {
     const mode = requestedMode || this.duoWheelMode;
     const queue = mode === 'tourney' ? this.tourneyQueue : this.battleQueue;
 
-    let pool = [...queue];
+    const pool = [...queue];
     if (pool.length === 0) {
-      pool = [
-        { kickId: 101, username: 'LuckyStriker', displayName: 'LuckyStriker', avatar: '', slotName: 'Wanted Dead or a Wild', slotProvider: 'Hacksaw', slotImage: '', joinedAt: Date.now() },
-        { kickId: 102, username: 'VegasKing', displayName: 'VegasKing', avatar: '', slotName: 'Gates of Olympus 1000', slotProvider: 'Pragmatic', slotImage: '', joinedAt: Date.now() },
-        { kickId: 103, username: 'SlotQueen', displayName: 'SlotQueen', avatar: '', slotName: 'San Quentin xWays', slotProvider: 'Nolimit City', slotImage: '', joinedAt: Date.now() },
-        { kickId: 104, username: 'SpinMaster', displayName: 'SpinMaster', avatar: '', slotName: 'Sugar Rush 1000', slotProvider: 'Pragmatic', slotImage: '', joinedAt: Date.now() },
-      ];
+      return {
+        success: false,
+        mode,
+        error: 'QUEUE_EMPTY: Wait for organic !battle or !tourney entries from Kick chat.',
+      };
     }
 
     const winnerIdx = crypto.randomInt(0, pool.length);

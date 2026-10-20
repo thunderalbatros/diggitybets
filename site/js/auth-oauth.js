@@ -486,6 +486,9 @@ class OAuthEngine {
     localStorage.setItem('hunthub_kick_username', formattedUsername);
     localStorage.setItem('hunthub_is_sub', user.isSub ? 'true' : 'false');
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
+    if (user.userToken) {
+      localStorage.setItem('hunthub_user_token', user.userToken);
+    }
     if (isAdmin) {
       localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
       if (user.adminToken) {

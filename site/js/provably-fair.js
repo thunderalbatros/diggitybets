@@ -231,3 +231,4 @@ class ProvablyFairEngine {
 }
 
 window.pfEngine = new ProvablyFairEngine();
+window.provablyFair = window.pfEngine;

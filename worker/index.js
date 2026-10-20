@@ -162,7 +162,6 @@ function isStakeCompanionHost(host) {
 function resolveTrustedOrigin(request) {
   const origin = request.headers.get('origin') || '';
   if (!origin) return 'https://diggitybets.vip';
-  if (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://')) return origin;
   try {
     const u = new URL(origin);
     const host = u.hostname.toLowerCase();
@@ -171,7 +170,7 @@ function resolveTrustedOrigin(request) {
       host === 'www.diggitybets.vip' ||
       host.endsWith('.diggitybets.pages.dev') ||
       host === 'diggitybets.pages.dev' ||
-      host.endsWith('.workers.dev') ||
+      host === 'diggitybets.positive-handspring.workers.dev' ||
       host === 'localhost' ||
       host === '127.0.0.1' ||
       isStakeCompanionHost(host)
@@ -187,7 +186,6 @@ function isSameOrTrustedOrigin(request) {
   const referer = request.headers.get('referer') || '';
   const checkUrl = origin || referer;
   if (!checkUrl) return true; // Same-origin or direct server/OBS request without cross-site Origin
-  if (checkUrl.startsWith('chrome-extension://') || checkUrl.startsWith('moz-extension://')) return true;
   try {
     const u = new URL(checkUrl);
     const host = u.hostname.toLowerCase();
@@ -196,7 +194,7 @@ function isSameOrTrustedOrigin(request) {
       host === 'www.diggitybets.vip' ||
       host.endsWith('.diggitybets.pages.dev') ||
       host === 'diggitybets.pages.dev' ||
-      host.endsWith('.workers.dev') ||
+      host === 'diggitybets.positive-handspring.workers.dev' ||
       host === 'localhost' ||
       host === '127.0.0.1' ||
       isStakeCompanionHost(host)
@@ -207,14 +205,17 @@ function isSameOrTrustedOrigin(request) {
 }
 
 // ---------------------------------------------------------------------------
-// Admin authentication (Gate A1 — replaces the former static public token)
+// Admin & User authentication (Gate A1 + Gate A5 — HMAC-SHA256 signed tokens)
 // Admin tokens are short-lived, HMAC-SHA256 signed with env.ADMIN_API_SECRET and are
 // only issued after a verified Kick OAuth login of an allow-listed streamer account.
-// Without ADMIN_API_SECRET every admin request is denied (fail closed).
+// User tokens are issued after a verified Kick OAuth login for any spectator account
+// and prevent IDOR / crypto wallet hijacking / unauthorized redemptions.
+// Without ADMIN_API_SECRET every protected request is denied (fail closed).
 // ---------------------------------------------------------------------------
 const ADMIN_USERNAMES = ['diggitybets', 'diggity_bets', 'tarkansky'];
 const ADMIN_KICK_IDS = [88254585];
 const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+const USER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function b64urlEncodeBytes(bytes) {
   let bin = '';
@@ -252,6 +253,7 @@ function isAdminIdentity(username, kickId) {
 export async function issueAdminToken({ username, kickId }, secret, ttlMs = ADMIN_TOKEN_TTL_MS) {
   if (!secret) return '';
   const payload = b64urlEncodeText(JSON.stringify({
+    role: 'admin',
     u: String(username || '').trim().toLowerCase().replace(/^@/, ''),
     k: Number(kickId) || 0,
     exp: Date.now() + ttlMs
@@ -259,14 +261,43 @@ export async function issueAdminToken({ username, kickId }, secret, ttlMs = ADMI
   return `${payload}.${await hmacSha256B64Url(secret, payload)}`;
 }
 
-async function isAuthorizedAdmin(request, env) {
+export async function issueUserToken({ username, kickId }, secret, ttlMs = USER_TOKEN_TTL_MS) {
+  if (!secret) return '';
+  const cleanUser = String(username || '').trim().toLowerCase().replace(/^@/, '');
+  if (!cleanUser) return '';
+  const payload = b64urlEncodeText(JSON.stringify({
+    role: 'user',
+    u: cleanUser,
+    k: Number(kickId) || 0,
+    exp: Date.now() + ttlMs
+  }));
+  return `${payload}.${await hmacSha256B64Url(secret, payload)}`;
+}
+
+function parseCookieHeader(cookieHeader, keyName) {
+  if (!cookieHeader) return '';
+  const parts = String(cookieHeader).split(';');
+  for (const part of parts) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === keyName) return decodeURIComponent(rest.join('='));
+  }
+  return '';
+}
+
+async function isAuthorizedAdmin(request, env, explicitToken = '') {
   if (!isSameOrTrustedOrigin(request)) return false;
 
   const configuredSecret = env?.ADMIN_API_SECRET || '';
   if (!configuredSecret) return false; // fail closed: no secret, no admin API
 
   const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  const token = (request.headers.get('x-admin-token') || request.headers.get('x-admin-secret') || authHeader || '').trim();
+  const token = (
+    explicitToken ||
+    request.headers.get('x-admin-token') ||
+    request.headers.get('x-admin-secret') ||
+    authHeader ||
+    ''
+  ).trim();
   if (!token) return false;
 
   // Break-glass: the raw secret itself (kept private by the streamer, never shipped to the browser).
@@ -283,6 +314,43 @@ async function isAuthorizedAdmin(request, env) {
     return isAdminIdentity(payload.u, payload.k);
   } catch (_) {
     return false;
+  }
+}
+
+export async function verifyUserSession(request, env, expectedUsername = '') {
+  if (!isSameOrTrustedOrigin(request)) return { ok: false, reason: 'FORBIDDEN_ORIGIN' };
+
+  const cleanExpected = String(expectedUsername || '').trim().toLowerCase().replace(/^@+/, '');
+  if (await isAuthorizedAdmin(request, env)) {
+    return { ok: true, isAdmin: true, username: cleanExpected || 'diggitybets' };
+  }
+
+  const secret = env?.USER_SESSION_SECRET || env?.ADMIN_API_SECRET || '';
+  if (!secret) return { ok: false, reason: 'NO_SECRET_CONFIGURED' };
+
+  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const cookieToken = parseCookieHeader(request.headers.get('cookie'), 'hh_session');
+  const token = (request.headers.get('x-user-token') || cookieToken || authHeader || '').trim();
+  if (!token) return { ok: false, reason: 'MISSING_USER_TOKEN' };
+
+  const parts = token.split('.');
+  if (parts.length !== 2) return { ok: false, reason: 'MALFORMED_TOKEN' };
+  const [payloadB64, sig] = parts;
+  try {
+    const expectedSig = await hmacSha256B64Url(secret, payloadB64);
+    if (!constantTimeEqual(sig, expectedSig)) return { ok: false, reason: 'INVALID_SIGNATURE' };
+    const payload = JSON.parse(b64urlDecodeText(payloadB64));
+    if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) {
+      return { ok: false, reason: 'TOKEN_EXPIRED' };
+    }
+    const tokenUser = String(payload.u || '').trim().toLowerCase().replace(/^@+/, '');
+    if (!tokenUser) return { ok: false, reason: 'EMPTY_USER' };
+    if (cleanExpected && tokenUser !== cleanExpected) {
+      return { ok: false, reason: 'USER_MISMATCH' };
+    }
+    return { ok: true, isAdmin: false, username: tokenUser, kickId: Number(payload.k) || 0 };
+  } catch (_) {
+    return { ok: false, reason: 'INVALID_PAYLOAD' };
   }
 }
 
@@ -389,7 +457,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': allowedOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, x-device-fingerprint, Kick-Event-Signature',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-user, x-admin-token, x-admin-secret, x-user-token, x-device-fingerprint, Kick-Event-Signature',
           'Vary': 'Origin'
         }
       });
@@ -804,6 +872,14 @@ export default {
           } catch (_) {}
         }
 
+        const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
+        const issuedUserToken = await issueUserToken({ username: cleanUsername, kickId: kickIdNum }, sessionSecret);
+        const issuedAdminToken = isAdmin ? await issueAdminToken({ username: cleanUsername, kickId: kickIdNum }, env.ADMIN_API_SECRET) : '';
+        const responseHeaders = { ...corsHeaders };
+        if (issuedUserToken) {
+          responseHeaders['Set-Cookie'] = `hh_session=${encodeURIComponent(issuedUserToken)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`;
+        }
+
         return new Response(JSON.stringify({
           success: true,
           username: userData.username,
@@ -811,9 +887,10 @@ export default {
           kick_id: userData.id,
           isAdmin,
           hasChatWrite,
-          adminToken: isAdmin ? (await issueAdminToken({ username: cleanUsername, kickId: kickIdNum }, env.ADMIN_API_SECRET)) || undefined : undefined,
+          userToken: issuedUserToken || undefined,
+          adminToken: issuedAdminToken || undefined,
           verified: true
-        }), { headers: corsHeaders });
+        }), { headers: responseHeaders });
 
       } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), {
@@ -906,6 +983,10 @@ export default {
       try {
         const { username } = await request.json();
         const cleanUser = String(username || '').trim().replace(/^@/, '').slice(0, 64);
+        const session = await verifyUserSession(request, env, cleanUser);
+        if (!session.ok) {
+          return new Response(JSON.stringify({ error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
+        }
         if (env.DB && cleanUser) {
           await env.DB.prepare(`
             UPDATE users SET discord_id = NULL, discord_username = NULL, discord_avatar = NULL
@@ -1067,7 +1148,7 @@ export default {
       }
     }
 
-    // 11. Profile Update Endpoint (Same-Origin, Sanitized & Rate Limited)
+    // 11. Profile Update Endpoint (Same-Origin, Authenticated, Sanitized & Rate Limited)
     if (url.pathname === '/api/profile/update' && request.method === 'POST') {
       if (!isSameOrTrustedOrigin(request)) {
         return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: corsHeaders });
@@ -1083,6 +1164,13 @@ export default {
       try {
         const body = await request.json();
         const cleanUser = String(body.username || '').trim().replace(/^@/, '').slice(0, 64);
+        if (!cleanUser) {
+          return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: corsHeaders });
+        }
+        const session = await verifyUserSession(request, env, cleanUser);
+        if (!session.ok) {
+          return new Response(JSON.stringify({ error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
+        }
         const deviceHash = request.headers.get('x-device-fingerprint') || body.deviceHash || '';
         if (env.DB && deviceHash && cleanUser) {
           ctx.waitUntil(recordServerUserDevice(env.DB, cleanUser, deviceHash, clientIp));
@@ -1150,6 +1238,10 @@ export default {
         const lastChatActivityMs = Number(body.lastChatActivityMs ?? Infinity);
         if (!username) {
           return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
+        }
+        const session = await verifyUserSession(request, env, username);
+        if (!session.ok) {
+          return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: session.reason }), { status: 403, headers: corsHeaders });
         }
 
         // Rate limit: 1 heartbeat award per 10 minutes per IP+username
@@ -1219,10 +1311,11 @@ export default {
       }
     }
 
-    // 12C. Phase 6 House Games Anti-Exploit Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
+    // 12C. Phase 6 House Games Server-Authoritative Provably Fair Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
     if (url.pathname === '/api/games/bet' && request.method === 'POST') {
       try {
-        const { game, betAmount, rawMultiplier } = await request.json().catch(() => ({}));
+        const body = await request.json().catch(() => ({}));
+        const { game, betAmount, rawMultiplier, username, clientSeed, nonce, targetMultiplier, targetRoll, rollMode } = body;
         const bet = Number(betAmount) || 0;
         if (bet < 1 || bet > 50) {
           return new Response(JSON.stringify({
@@ -1233,17 +1326,82 @@ export default {
             maxWinCap: 500
           }), { status: 400, headers: corsHeaders });
         }
-        const mult = Number(rawMultiplier) || 0;
+
+        // Compute server-authoritative CSPRNG / HMAC-SHA256 Provably Fair roll
+        const pfSecret = env?.USER_SESSION_SECRET || env?.ADMIN_API_SECRET || 'hunthub-provably-fair-edge-seed';
+        const randBytes = new Uint32Array(2);
+        crypto.getRandomValues(randBytes);
+        const seedMsg = `${clientSeed || 'kick_diggitybets'}:${Number(nonce) || Date.now()}:${randBytes[0]}`;
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey('raw', enc.encode(pfSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(seedMsg));
+        const sigArr = new Uint8Array(sigBuf);
+        const hashHex = Array.from(sigArr).map(b => b.toString(16).padStart(2, '0')).join('');
+        const intVal = ((sigArr[0] << 24) | (sigArr[1] << 16) | (sigArr[2] << 8) | sigArr[3]) >>> 0;
+        const rollFloat = intVal / 0x100000000;
+
+        const gameName = String(game || 'plinko').toLowerCase();
+        let mult = Number(rawMultiplier);
+        let rollOutcome = Number((rollFloat * 100).toFixed(2));
+
+        if (!Number.isFinite(mult) || body.serverAuthoritative === true) {
+          if (gameName === 'limbo' || gameName === 'crash') {
+            const crashPoint = Math.max(1.0, Math.floor((0.95 / Math.max(0.0001, 1.0 - rollFloat)) * 100) / 100);
+            const target = Math.max(1.01, Number(targetMultiplier) || 2.0);
+            rollOutcome = crashPoint;
+            mult = crashPoint >= target ? target : 0;
+          } else if (gameName === 'dice') {
+            const target = Math.min(98, Math.max(2, Number(targetRoll) || 50));
+            const isOver = String(rollMode || 'over').toLowerCase() !== 'under';
+            const winChance = isOver ? (100 - target) : target;
+            const won = isOver ? (rollOutcome > target) : (rollOutcome < target);
+            mult = won ? Number((95 / winChance).toFixed(4)) : 0;
+          } else if (gameName === 'plinko') {
+            const plinkoMults = [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6];
+            let bucket = 0;
+            for (let i = 0; i < 8; i++) {
+              bucket += (sigArr[4 + i] & 1);
+            }
+            rollOutcome = bucket;
+            mult = plinkoMults[bucket] ?? 0.5;
+          } else if (!Number.isFinite(mult)) {
+            mult = rollFloat < 0.475 ? 2.0 : 0;
+          }
+        }
+
         const rawPayout = mult > 0 ? Math.floor(bet * mult) : 0;
         const cappedPayout = rawPayout > 0 ? Math.min(rawPayout, bet + 500) : 0;
         const netProfit = cappedPayout - bet;
+        let newBalance = undefined;
+
+        const cleanUser = String(username || '').trim().replace(/^@+/, '');
+        if (env.DB && cleanUser) {
+          const session = await verifyUserSession(request, env, cleanUser);
+          if (!session.ok) {
+            return new Response(JSON.stringify({ success: false, error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
+          }
+          const userRow = await env.DB.prepare('SELECT id, points_balance FROM users WHERE LOWER(username) = LOWER(?1)').bind(cleanUser).first();
+          if (!userRow || Number(userRow.points_balance || 0) < bet) {
+            return new Response(JSON.stringify({
+              success: false,
+              error: 'INSUFFICIENT_BALANCE: Not enough $DIG points in server ledger'
+            }), { status: 400, headers: corsHeaders });
+          }
+          newBalance = Math.max(0, Number(userRow.points_balance) + netProfit);
+          await env.DB.prepare('UPDATE users SET points_balance = ?1 WHERE id = ?2').bind(newBalance, userRow.id).run();
+        }
+
         return new Response(JSON.stringify({
           success: true,
-          game: game || 'plinko',
+          game: gameName,
           betAmount: bet,
           rawPayout,
           cappedPayout,
           netProfit,
+          newBalance,
+          rollFloat,
+          rollOutcome,
+          provablyFairHash: hashHex,
           rtp: 95.0,
           maxBet: 50,
           maxWinCap: 500
@@ -1253,7 +1411,7 @@ export default {
       }
     }
 
-    // 12. Store Redeem Voucher Endpoint (Anti-Bot, Anti-Sybil & Rate Limited)
+    // 12. Store Redeem Voucher Endpoint (Authenticated, Server-Authoritative Pricing & Balance, Anti-Bot)
     if (url.pathname === '/api/store/redeem' && request.method === 'POST') {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       const rl = checkEdgeRateLimit(clientIp, 'store_redeem', 5, 300_000);
@@ -1271,9 +1429,14 @@ export default {
         }
 
         const username = String(body.username || '').trim().replace(/^@/, '');
-        const { voucherTitle, costPoints, stakeVerified, turnstileToken } = body;
+        const { voucherTitle, costPoints, turnstileToken } = body;
         if (!username) {
           return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: corsHeaders });
+        }
+
+        const session = await verifyUserSession(request, env, username);
+        if (!session.ok) {
+          return new Response(JSON.stringify({ error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
         }
 
         // Cloudflare Turnstile Verification (if secret configured)
@@ -1292,51 +1455,68 @@ export default {
           ctx.waitUntil(recordServerUserDevice(env.DB, username, deviceHash, clientIp));
         }
 
+        let userRow = null;
+        if (env.DB) {
+          userRow = await env.DB.prepare(`
+            SELECT id, risk_score, is_shadowbanned, points_balance, stake_verified FROM users
+            WHERE LOWER(username) = LOWER(?1)
+          `).bind(username).first();
+
+          if (!userRow) {
+            return new Response(JSON.stringify({
+              error: 'USER_NOT_FOUND: Account must exist in server database before redeeming vouchers.'
+            }), { status: 404, headers: corsHeaders });
+          }
+        }
+
+        // Strictly derive Stake VIP status from server database, NEVER from client body.stakeVerified
+        const isStakeVerified = Boolean(userRow && Number(userRow.stake_verified) === 1);
+
         const id = crypto.randomUUID();
         const now = Math.floor(Date.now() / 1000);
         const titleLower = String(voucherTitle || '').toLowerCase();
-        let effectiveCost = Number(costPoints) || 50;
-        if (titleLower.includes('20') && titleLower.includes('split')) {
-          effectiveCost = stakeVerified ? 1200 : 1500;
-        } else if (titleLower.includes('battle') || titleLower.includes('1v1')) {
-          effectiveCost = stakeVerified ? 500 : 700;
+        let effectiveCost = Math.max(50, Number(costPoints) || 500);
+        if (titleLower.includes('40') && titleLower.includes('split')) {
+          effectiveCost = isStakeVerified ? 4800 : 6000;
+        } else if (titleLower.includes('20') && titleLower.includes('split')) {
+          effectiveCost = isStakeVerified ? 2400 : 3000;
+        } else if (titleLower.includes('og') && titleLower.includes('badge')) {
+          effectiveCost = isStakeVerified ? 2000 : 2500;
         } else if (titleLower.includes('tourney') || titleLower.includes('bracket')) {
-          effectiveCost = stakeVerified ? 800 : 1000;
+          effectiveCost = isStakeVerified ? 1200 : 1500;
+        } else if (titleLower.includes('battle') || titleLower.includes('1v1')) {
+          effectiveCost = isStakeVerified ? 800 : 1000;
+        } else if (titleLower.includes('vip') && titleLower.includes('discord')) {
+          effectiveCost = 500;
+        } else if (titleLower.includes('raffle')) {
+          effectiveCost = 50;
         }
 
         let initialStatus = 'PENDING';
-        if (env.DB) {
-          try {
-            const userRow = await env.DB.prepare(`
-              SELECT risk_score, is_shadowbanned, points_balance FROM users
-              WHERE LOWER(username) = LOWER(?1)
-            `).bind(username).first();
-
-            if (userRow) {
-              if (userRow.is_shadowbanned === 1 || (userRow.risk_score && userRow.risk_score >= 75)) {
-                initialStatus = 'FLAGGED_ALT_SUSPECT';
-              }
-              if (userRow.points_balance !== undefined && userRow.points_balance < effectiveCost) {
-                return new Response(JSON.stringify({
-                  error: `INSUFFICIENT_BALANCE: Database shows ${userRow.points_balance} $DIG, required ${effectiveCost} $DIG.`
-                }), { status: 400, headers: corsHeaders });
-              }
-              await env.DB.prepare(`
-                UPDATE users SET points_balance = MAX(0, points_balance - ?1)
-                WHERE LOWER(username) = LOWER(?2)
-              `).bind(effectiveCost, username).run();
-            }
-          } catch (_) {}
+        if (env.DB && userRow) {
+          if (userRow.is_shadowbanned === 1 || (userRow.risk_score && userRow.risk_score >= 75)) {
+            initialStatus = 'FLAGGED_ALT_SUSPECT';
+          }
+          if (Number(userRow.points_balance ?? 0) < effectiveCost) {
+            return new Response(JSON.stringify({
+              error: `INSUFFICIENT_BALANCE: Database shows ${userRow.points_balance ?? 0} $DIG, required ${effectiveCost} $DIG.`
+            }), { status: 400, headers: corsHeaders });
+          }
+          await env.DB.prepare(`
+            UPDATE users SET points_balance = MAX(0, points_balance - ?1)
+            WHERE LOWER(username) = LOWER(?2)
+          `).bind(effectiveCost, username).run();
 
           await env.DB.prepare(`
             INSERT INTO store_redemptions (id, user_id, kick_username, voucher_title, cost_points, status, created_at)
-            VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6)
-          `).bind(id, username, voucherTitle, effectiveCost, initialStatus, now).run();
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+          `).bind(id, userRow.id || id, username, voucherTitle, effectiveCost, initialStatus, now).run();
         }
 
         return new Response(JSON.stringify({
           success: true,
           effectiveCost,
+          stakeVerified: isStakeVerified,
           redemption: { id, kick_username: username, voucher_title: voucherTitle, cost_points: effectiveCost, status: initialStatus, created_at: now }
         }), { headers: corsHeaders });
       } catch (err) {
@@ -1376,16 +1556,24 @@ export default {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
-    // 15. Admin Reject Store Redemption (Protected by isAuthorizedAdmin)
+    // 15. Admin Reject Store Redemption (Protected by isAuthorizedAdmin + Atomic Point Refund)
     if (url.pathname === '/api/admin/reject-store-redemption' && request.method === 'POST') {
       if (!(await isAuthorizedAdmin(request, env))) {
         return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
       }
       const { redemptionId } = await request.json();
+      let refundedAmount = 0;
       if (env.DB && redemptionId) {
-        await env.DB.prepare("UPDATE store_redemptions SET status = 'REJECTED' WHERE id = ?1").bind(redemptionId).run();
+        const existing = await env.DB.prepare('SELECT kick_username, cost_points, status FROM store_redemptions WHERE id = ?1').bind(redemptionId).first();
+        if (existing && existing.status !== 'REJECTED') {
+          await env.DB.prepare("UPDATE store_redemptions SET status = 'REJECTED' WHERE id = ?1").bind(redemptionId).run();
+          refundedAmount = Number(existing.cost_points) || 0;
+          if (refundedAmount > 0 && existing.kick_username) {
+            await env.DB.prepare('UPDATE users SET points_balance = points_balance + ?1 WHERE LOWER(username) = LOWER(?2)').bind(refundedAmount, existing.kick_username).run();
+          }
+        }
       }
-      return new Response(JSON.stringify({ success: true, refunded: true }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, refunded: true, refundedAmount }), { headers: corsHeaders });
     }
 
     // 16. Admin Stake Verifications Queue (Protected by isAuthorizedAdmin)
@@ -1695,8 +1883,8 @@ export default {
 
     if (url.pathname === '/api/kick/chat/announce' && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-      if (!isSameOrTrustedOrigin(request)) {
-        return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ ok: false, error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
       }
       try {
         const body = await request.json().catch(() => ({}));
@@ -1758,8 +1946,8 @@ export default {
         }), { headers: noCacheHeaders });
       }
       if (request.method === 'POST') {
-        if (!isSameOrTrustedOrigin(request)) {
-          return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+        if (!(await isAuthorizedAdmin(request, env))) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
         }
         try {
           const body = await request.json();
@@ -1776,7 +1964,7 @@ export default {
       }
     }
 
-    // 13b. Diggity Stake Companion Cross-Origin Auto-Capture Bridge (POST JSON + GET Image Beacon)
+    // 13b. Diggity Stake Companion Cross-Origin Auto-Capture Bridge (Protected by Admin Token)
     if (url.pathname === '/api/companion/capture') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
@@ -1800,6 +1988,11 @@ export default {
             caller: url.searchParams.get('caller') || '@tarkansky',
             ts: Number(url.searchParams.get('ts') || Date.now())
           };
+        }
+
+        const explicitAdminToken = String(payload.adminToken || payload.token || url.searchParams.get('token') || '').trim();
+        if (!(await isAuthorizedAdmin(request, env, explicitAdminToken))) {
+          return new Response(JSON.stringify({ ok: false, error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
         }
 
         const actionType = String(payload.action || url.searchParams.get('action') || 'AUTO_CAPTURE_BONUS').toUpperCase();
@@ -2033,10 +2226,9 @@ export default {
         if (!targetUsername || targetUsername.length > 64) {
           return new Response(JSON.stringify({ error: 'Valid username required' }), { status: 400, headers: noCacheHeaders });
         }
-        const adminAuthed = await isAuthorizedAdmin(request, env);
-        const callerHeader = String(request.headers.get('x-admin-user') || '').trim().toLowerCase().replace(/^@+/, '');
-        if (!adminAuthed && callerHeader !== targetUsername) {
-          return new Response(JSON.stringify({ error: 'Forbidden: Can only purge own account data or as admin' }), { status: 403, headers: noCacheHeaders });
+        const session = await verifyUserSession(request, env, targetUsername);
+        if (!session.ok) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Valid user session or admin token required to purge account data' }), { status: 403, headers: noCacheHeaders });
         }
         if (env.DB) {
           const u = await env.DB.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?1)').bind(targetUsername).first();
@@ -2161,6 +2353,9 @@ export default {
           return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
         }
         const adminAuthed = await isAuthorizedAdmin(request, env);
+        if (!adminAuthed) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+        }
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
         let mutated = false;
@@ -2266,6 +2461,9 @@ export default {
 
     if (url.pathname.startsWith('/api/battle/') && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
       try {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
@@ -2302,6 +2500,9 @@ export default {
 
     if (url.pathname.startsWith('/api/tourney/') && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
       try {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
@@ -2319,6 +2520,9 @@ export default {
 
     // 22. Phase 4 Wheels & Spotlight Edge Endpoints
     if (url.pathname === '/api/wheel/spin-complete' && request.method === 'POST') {
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       try {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
@@ -2351,6 +2555,9 @@ export default {
     if (url.pathname === '/api/wheel/duo/queues') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'POST') {
+        if (!(await isAuthorizedAdmin(request, env))) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+        }
         try {
           const body = await request.json();
           const current = await readDuoQueues();
@@ -2374,6 +2581,9 @@ export default {
 
     if (url.pathname === '/api/wheel/duo/mode' && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
       const body = await request.json().catch(() => ({}));
       const current = await readDuoQueues();
       if (body.mode) {
@@ -2385,6 +2595,9 @@ export default {
 
     if (url.pathname === '/api/wheel/duo/spin' && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
       const body = await request.json().catch(() => ({}));
       const current = await readDuoQueues();
       current.lastSpin = {
@@ -2419,6 +2632,9 @@ export default {
     }
 
     if (url.pathname === '/api/hunt/spotlight/clear' && request.method === 'POST') {
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
       const current = await readOverlaySyncState();
       current.spotlightState = { active: false, username: null, expiresAt: 0 };
       await writeOverlaySyncState(current);
@@ -2428,6 +2644,9 @@ export default {
     if (url.pathname === '/api/wheel/csgo/active-pool') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'POST') {
+        if (!(await isAuthorizedAdmin(request, env))) {
+          return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+        }
         try {
           const body = await request.json().catch(() => ({}));
           const current = await readOverlaySyncState();

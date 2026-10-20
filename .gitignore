@@ -13,7 +13,8 @@ node_modules/
 core/node_modules/
 tools/audit/node_modules/
 
-# Local Streamer.bot Runtime & Binaries (Desktop only)
+# Local Streamer.bot Runtime & Binaries (Archived in legacy/streamerbot-desktop/)
+legacy/
 *.dll
 *.exe
 *.exe.config
@@ -33,7 +34,7 @@ data/*.db.bak
 data/*.cache*
 data/*.dat*
 
-# Local UI Knowledge Base & Reference Repos (~1.2 GB, cloned locally for research)
+# Local UI Knowledge Base & Reference Repos (Cloned locally for research)
 references/
 !references/INDEX.md
 diggitybets-rebrand-toolkit/
@@ -52,6 +53,8 @@ desktop.ini
 *~
 .idea/
 .vscode/
+.obsidian/
+*.base
 
 # Sandcastle Ephemeral Worktrees
 .sandboxes/

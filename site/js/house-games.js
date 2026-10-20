@@ -183,7 +183,46 @@ class StakeOriginalsController {
     const gross = Math.max(0, Math.floor(Number(rawGrossPayout) || 0));
     if (gross <= 0) return 0;
     const maxGross = Math.max(0, Math.floor(Number(betAmount) || 0)) + this.maxWinCap;
-    return Math.min(gross, maxGross);
+    const capped = Math.min(gross, maxGross);
+    this.syncServerBet(this.activeTab || 'plinko', betAmount, betAmount > 0 ? capped / betAmount : 0);
+    return capped;
+  }
+
+  csprngFloat() {
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      const buf = new Uint32Array(1);
+      window.crypto.getRandomValues(buf);
+      return buf[0] / 0x100000000;
+    }
+    return 0.5;
+  }
+
+  async syncServerBet(game, betAmount, rawMultiplier = 0, extra = {}) {
+    try {
+      const username = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@+/, '').trim();
+      const res = await fetch('/api/games/bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username || undefined,
+          game,
+          betAmount,
+          rawMultiplier,
+          clientSeed: window.pfEngine?.clientSeed || 'kick_diggitybets',
+          nonce: window.pfEngine?.nonce || 1,
+          ...extra
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.newBalance === 'number' && Number.isFinite(data.newBalance)) {
+          this.balance = data.newBalance;
+          this.renderBalance();
+        }
+        return data;
+      }
+    } catch (_) {}
+    return null;
   }
 
   /**
@@ -408,7 +447,7 @@ class StakeOriginalsController {
           finalBin = res.finalBin;
         } else {
           for (let r = 0; r < this.plinkoRows; r++) {
-            const dir = Math.random() >= 0.5 ? 1 : 0;
+            const dir = this.csprngFloat() >= 0.5 ? 1 : 0;
             path.push(dir);
             finalBin += dir;
           }
@@ -718,7 +757,7 @@ class StakeOriginalsController {
       } while (buf[0] >= maxUnbiased);
       return buf[0] % bound;
     }
-    return Math.floor(Math.random() * bound);
+    return Math.floor(this.csprngFloat() * bound);
   }
 
   generateDeck(size = 52) {
@@ -978,7 +1017,7 @@ class StakeOriginalsController {
       this.crashTargetMultiplier = window.pfEngine.getCrashMultiplier ? window.pfEngine.getCrashMultiplier(hash) : 2.45;
       window.pfEngine.nextNonce();
     } else {
-      const rand = Math.random();
+      const rand = this.csprngFloat();
       this.crashTargetMultiplier = rand < 0.05 ? 1.00 : parseFloat(Math.max(1.00, (0.95 / (1.0 - rand))).toFixed(2));
     }
 
@@ -1398,7 +1437,7 @@ class StakeOriginalsController {
       rollResult = window.pfEngine.getDiceRoll(hash);
       window.pfEngine.nextNonce();
     } else {
-      rollResult = parseFloat((Math.random() * 100).toFixed(2));
+      rollResult = parseFloat((this.csprngFloat() * 100).toFixed(2));
     }
 
     const isWin = this.diceMode === 'over' ? rollResult >= this.diceTarget : rollResult <= this.diceTarget;
@@ -2586,7 +2625,7 @@ class StakeOriginalsController {
       winningPocket = window.pfEngine.getRouletteOutcome(hash);
       window.pfEngine.nextNonce();
     } else {
-      winningPocket = Math.floor(Math.random() * 37);
+      winningPocket = this.unbiasedRandomInt(37);
     }
 
     const isRed = this.redNumbers.includes(winningPocket);
@@ -3010,7 +3049,7 @@ class StakeOriginalsController {
       outcomeMultiplier = window.pfEngine.getLimboMultiplier(hash);
       window.pfEngine.nextNonce();
     } else {
-      const rand = Math.random();
+      const rand = this.csprngFloat();
       outcomeMultiplier = rand < 0.05 ? 1.00 : parseFloat(Math.max(1.00, (0.95 / (1.0 - rand))).toFixed(2));
     }
 
@@ -3100,14 +3139,15 @@ class StakeOriginalsController {
   }
 
   async drawHiloCard(step) {
-    const serverSeed = (window.provablyFair && window.provablyFair.serverSeed) || 'hunthub_server_seed_diggitybets';
-    const clientSeed = (window.provablyFair && window.provablyFair.clientSeed) || 'kick_session';
-    const roundNonce = (window.provablyFair && window.provablyFair.nonce) || 1;
+    const pf = window.pfEngine || window.provablyFair;
+    const serverSeed = (pf && pf.serverSeed) || 'hunthub_server_seed_diggitybets';
+    const clientSeed = (pf && pf.clientSeed) || 'kick_session';
+    const roundNonce = (pf && pf.nonce) || 1;
 
-    let cardIndex = Math.floor(Math.random() * 52);
-    if (window.provablyFair && typeof window.provablyFair.generateRoundHash === 'function') {
+    let cardIndex = this.unbiasedRandomInt(52);
+    if (pf && typeof pf.generateRoundHash === 'function') {
       try {
-        const hash = await window.provablyFair.generateRoundHash(serverSeed, clientSeed, `${roundNonce}:${step}`);
+        const hash = await pf.generateRoundHash(serverSeed, clientSeed, `${roundNonce}:${step}`);
         const intVal = parseInt(hash.substring(0, 8), 16);
         cardIndex = intVal % 52;
       } catch (_) {}
@@ -3566,7 +3606,7 @@ class StakeOriginalsController {
     this.kenoSelected.clear();
     const pool = Array.from({ length: 40 }, (_, i) => i + 1);
     for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = this.unbiasedRandomInt(i + 1);
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     pool.slice(0, 10).forEach(n => this.kenoSelected.add(n));
@@ -3635,15 +3675,16 @@ class StakeOriginalsController {
 
   async drawKenoNumbers() {
     const pool = Array.from({ length: 40 }, (_, i) => i + 1);
-    const serverSeed = (window.provablyFair && window.provablyFair.serverSeed) || 'hunthub_server_seed_diggitybets';
-    const clientSeed = (window.provablyFair && window.provablyFair.clientSeed) || 'kick_session';
-    const roundNonce = (window.provablyFair && window.provablyFair.nonce) || 1;
+    const pf = window.pfEngine || window.provablyFair;
+    const serverSeed = (pf && pf.serverSeed) || 'hunthub_server_seed_diggitybets';
+    const clientSeed = (pf && pf.clientSeed) || 'kick_session';
+    const roundNonce = (pf && pf.nonce) || 1;
 
     for (let cursor = 0; cursor < 39; cursor++) {
-      let randFloat = Math.random();
-      if (window.provablyFair && typeof window.provablyFair.generateRoundHash === 'function') {
+      let randFloat = this.csprngFloat();
+      if (pf && typeof pf.generateRoundHash === 'function') {
         try {
-          const hash = await window.provablyFair.generateRoundHash(serverSeed, clientSeed, `${roundNonce}:${cursor}`);
+          const hash = await pf.generateRoundHash(serverSeed, clientSeed, `${roundNonce}:${cursor}`);
           const intVal = parseInt(hash.substring(0, 8), 16);
           randFloat = intVal / 0x100000000;
         } catch (_) {}

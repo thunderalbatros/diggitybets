@@ -130,9 +130,9 @@
 - [ANTI_BOT_STEALTH_GUIDE.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/ANTI_BOT_STEALTH_GUIDE.md) — Huella `ThumbmarkJS`, Cloudflare Turnstile y detección de granjas de bots.
 - [CANON_SEMINAL_CRYPTOGRAPHY_PAPERS_AND_PROTOCOLS.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_SEMINAL_CRYPTOGRAPHY_PAPERS_AND_PROTOCOLS.md) & [CANON_SECURITY_BOOKS_AND_DOCS_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_SECURITY_BOOKS_AND_DOCS_2026.md) — Papers seminales de criptografía, firmas digitales y protocolos seguros.
 - [CANON_IDENTITY_AND_OAUTH_CYBERSECURITY_AUDIT_2026.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_IDENTITY_AND_OAUTH_CYBERSECURITY_AUDIT_2026.md) & [CANON_REALTIME_STREAM_ARCHITECTURE_AND_VULNERABILITY_DEFENSE.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_REALTIME_STREAM_ARCHITECTURE_AND_VULNERABILITY_DEFENSE.md).
-- [VAULT_REAL_WORLD_CRYPTOGRAPHY_DAVID_WONG.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/VAULT_REAL_WORLD_CRYPTOGRAPHY_DAVID_WONG.md) — *Real-World Cryptography* (David Wong): SHA-256, HMAC, CSPRNG y firmas digitales.
-- [VAULT_SECURITY_ENGINEERING_ROSS_ANDERSON.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/VAULT_SECURITY_ENGINEERING_ROSS_ANDERSON.md) — *Security Engineering* (Ross Anderson).
-- [VAULT_THREAT_MODELING_ADAM_SHOSTACK.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/VAULT_THREAT_MODELING_ADAM_SHOSTACK.md) — *Threat Modeling: Designing for Security* (Adam Shostack, STRIDE).
+- [CANON_REAL_WORLD_CRYPTOGRAPHY_DAVID_WONG.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_REAL_WORLD_CRYPTOGRAPHY_DAVID_WONG.md) — *Real-World Cryptography* (David Wong): SHA-256, HMAC, CSPRNG y firmas digitales.
+- [CANON_SECURITY_ENGINEERING_ROSS_ANDERSON.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_SECURITY_ENGINEERING_ROSS_ANDERSON.md) — *Security Engineering* (Ross Anderson).
+- [CANON_THREAT_MODELING_ADAM_SHOSTACK.md](file:///c:/Users/tomas/Desktop/streamerbot/knowledge/cybersecurity/CANON_THREAT_MODELING_ADAM_SHOSTACK.md) — *Threat Modeling: Designing for Security* (Adam Shostack, STRIDE).
 
 ---
 

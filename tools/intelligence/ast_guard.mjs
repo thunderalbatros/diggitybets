@@ -147,15 +147,55 @@ export function scanSecurityAndPerformance(filePath) {
         msg: 'Prohibited eval() or new Function() invocation.'
       });
     }
+
+    // 4. Hardcoded legacy admin token or paid GCP project ID
+    if (line.includes('diggity_stream_deck_v1')) {
+      findings.push({
+        type: 'SECURITY_BLOCKER',
+        rule: 'no-hardcoded-admin-token',
+        line: lineNum,
+        snippet: trimmed.slice(0, 100),
+        msg: 'Prohibited legacy hardcoded admin token diggity_stream_deck_v1.'
+      });
+    }
   });
 
   return findings;
 }
 
-export function runAstAudit(targetDirs = ['site/js', 'core/src']) {
+export function runNegativeSelfTest() {
+  const syntheticCode = [
+    'class BrokenFixture {',
+    '  run() {',
+    '    this.missingGhostMethod();',
+    '    eval("alert(1)");',
+    '  }',
+    '}'
+  ].join('\n');
+  const tmpFile = path.join(ROOT, '.cache', '__ast_negative_fixture__.js');
+  fs.mkdirSync(path.dirname(tmpFile), { recursive: true });
+  fs.writeFileSync(tmpFile, syntheticCode, 'utf8');
+  try {
+    const cls = scanClassMethods(tmpFile);
+    const sec = scanSecurityAndPerformance(tmpFile);
+    const caughtMissing = cls.length === 1 && cls[0].missingMethods.includes('missingGhostMethod');
+    const caughtEval = sec.some(s => s.type === 'SECURITY_BLOCKER' && s.rule === 'no-eval');
+    return caughtMissing && caughtEval;
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch (_) {}
+  }
+}
+
+export function runAstAudit(targetDirs = ['site/js', 'core/src', 'worker']) {
   console.log(`\n======================================================`);
   console.log(`🛡️  AST & SYMBOLIC CODE GUARD AUDIT`);
   console.log(`======================================================\n`);
+
+  const negativeTestOk = runNegativeSelfTest();
+  if (!negativeTestOk) {
+    console.error(`❌ [AST GUARD SELF-TEST FAILED] Detector failed to catch synthetic negative fixture!`);
+    return { passed: false, score: 0, totalFiles: 0, totalClasses: 0, missingMethodErrors: 1, securityBlockers: 1, warnings: 0 };
+  }
 
   let totalFiles = 0;
   let totalClasses = 0;

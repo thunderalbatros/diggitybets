@@ -44,17 +44,18 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const GCP_PROJECT = env.GOOGLE_CLOUD_PROJECT || env.GCP_PROJECT_ID || 'project-6565e6dc-f33c-49ff-b22';
-const GCP_LOCATION = env.GCP_LOCATION || 'us-central1';
 const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-2.5-flash';
 
-let vertexClient = null;
+let geminiFreeClient = null;
 
 /**
- * Initializes and retrieves the Google Gen AI client configured for Vertex AI
+ * Initializes and retrieves the Google AI Studio Free Tier client (No Credit Card, $0 Forever)
+ * Strictly avoids GCP Vertex AI billing projects per AGENTS.md §2.1.
  */
 export async function getVertexClient() {
-  if (vertexClient) return vertexClient;
+  if (geminiFreeClient) return geminiFreeClient;
+  const apiKey = env.GEMINI_API_KEY || env.GOOGLE_AI_STUDIO_KEY || '';
+  if (!apiKey) return null;
 
   try {
     const sdkPath = path.join(ROOT, 'core', 'node_modules', '@google', 'genai', 'dist', 'node', 'index.mjs');
@@ -67,15 +68,10 @@ export async function getVertexClient() {
       GoogleGenAI = mod.GoogleGenAI;
     }
 
-    vertexClient = new GoogleGenAI({
-      vertexai: true,
-      project: GCP_PROJECT,
-      location: GCP_LOCATION
-    });
-
-    return vertexClient;
+    geminiFreeClient = new GoogleGenAI({ apiKey });
+    return geminiFreeClient;
   } catch (err) {
-    console.warn(`[Vertex AI] Initialization warning: ${err.message}`);
+    console.warn(`[Gemini Free Tier] Initialization warning: ${err.message}`);
     return null;
   }
 }

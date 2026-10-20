@@ -878,14 +878,18 @@ class BonusHuntController {
           </div>
         </div>
         <div style="display: flex; gap: 4px; flex-shrink: 0;">
-          <button type="button" class="btn-chat-toggle" onclick="window.bonusHunt.addRequestToHunt(${idx})" style="padding: 3px 7px; font-size: 10px; border-color: rgba(83,252,24,0.45); color: #53fc18; white-space: nowrap;">
+          <button type="button" class="btn-chat-toggle" data-bh-req-add="${idx}" style="padding: 3px 7px; font-size: 10px; border-color: rgba(83,252,24,0.45); color: #53fc18; white-space: nowrap;">
             + Hunt
           </button>
-          <button type="button" class="btn-chat-toggle" onclick="window.bonusHunt.removeSlotRequest(${idx})" style="padding: 3px 7px; font-size: 10px; border-color: rgba(239,68,68,0.45); color: #ef4444;">
+          <button type="button" class="btn-chat-toggle" data-bh-req-rm="${idx}" style="padding: 3px 7px; font-size: 10px; border-color: rgba(239,68,68,0.45); color: #ef4444;">
             ✕
           </button>
         </div>
       `;
+      const addBtn = item.querySelector('[data-bh-req-add]');
+      if (addBtn) addBtn.addEventListener('click', () => this.addRequestToHunt(idx));
+      const rmBtn = item.querySelector('[data-bh-req-rm]');
+      if (rmBtn) rmBtn.addEventListener('click', () => this.removeSlotRequest(idx));
       listEl.appendChild(item);
     });
   }

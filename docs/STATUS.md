@@ -707,10 +707,34 @@
     - Validación determinista de `schema.sql` (8 tablas y 6 índices) contra `node:sqlite` en C y soporte de provisionamiento remoto en Cloudflare D1 (`--remote`).
     - Puntaje compuesto final en `eval_matrix.mjs` (5 dimensiones): **99.4 / 100.0 [S+ (Elite)]**.
 
+- **Stage 32 (Gates A–E — Exhaustive Security Hardening, Server-Authoritative Economy, Non-Circular RAG, OKLCH + `@starting-style` Tokens & Workspace Hygiene):** COMPLETED & VERIFIED VIA CLI.
+  - **1. Gate A — Zero-Trust Security & CSP Hardening (`worker/index.js`, `core/src/hub/overlay-server.ts`, `site/js/auth-oauth.js`, `site/js/security-anti-fraud.js`, `tools/build_dist.mjs`):**
+    - Eliminated IDOR and user session spoofing by implementing `issueUserToken` and `verifyUserSession` (HMAC-SHA256) across `/api/profile/update`, `/api/watch/heartbeat`, `/api/store/redeem`, `/api/privacy/purge`, `/api/auth/discord/unlink`, and `/api/games/bet`.
+    - Protected all 11 stream/bot/overlay mutation endpoints (`POST /api/kick/chat/announce`, `POST /api/overlay/celebration`, `/api/companion/capture`, `POST /api/sync/state`, `POST /api/battle/*`, `POST /api/tourney/*`, `POST /api/wheel/*`, `POST /api/hunt/spotlight/clear`) with `isAuthorizedAdmin`.
+    - Removed `chrome-extension://` and generic `.workers.dev` CORS wildcards from `resolveTrustedOrigin`.
+    - Removed the `x-hunthub-test: true` webhook signature bypass in `core/src/hub/overlay-server.ts` (allowing bypass only when `process.env.NODE_ENV === 'test'`).
+    - Extracted inline executable `<script>` blocks and `onclick` attributes from `index.html` and `site/js/bonushunt.js`, removing `'unsafe-inline'` from `script-src` in `dist/_headers` (`script-src 'self' 'inline-speculation-rules' https://challenges.cloudflare.com`).
+    - Fixed CommonJS/ESM resolution via `data/package.json` (`12/12` core test suites passing) and expanded `tools/test_admin_auth.mjs` to `17/17` security assertions.
+  - **2. Gate B — Server-Authoritative `$DIG` Economy & Provably Fair CSPRNG (`worker/index.js`, `core/src/hub/overlay-server.ts`, `site/js/house-games.js`, `site/js/provably-fair.js`):**
+    - Upgraded `/api/games/bet` in both Edge Worker and Local Hub to compute deterministic `HMAC-SHA256(serverSeed, clientSeed:nonce)` outcomes server-side and persist balance transitions in D1 / SQLite.
+    - Hardened `/api/store/redeem` to verify `stake_verified === 1` and catalog pricing strictly from D1 (`users`), ignoring client-supplied `stakeVerified`, and fixed `/api/admin/reject-store-redemption` to refund `cost_points` in SQL.
+    - Replaced all `Math.random()` game outcome calls in `site/js/house-games.js` with `csprngFloat()` / `unbiasedRandomInt()` (`crypto.getRandomValues`) and aliased `window.provablyFair = window.pfEngine`.
+  - **3. Gate C — Honest Non-Circular QA & RAG Evaluation (`tools/intelligence/eval_matrix.mjs`, `tools/intelligence/ast_guard.mjs`, `tools/intelligence/vertex_ai_bridge.mjs`):**
+    - Rewrote all 31 `ragQueries` in `eval_matrix.mjs` so zero queries contain `expectedKeyword` inside `q` (enforced via runtime exception check), achieving `100.0% Hit@5 (31/31)` and `MRR 0.684`.
+    - Added mandatory `runNegativeSelfTest()` to `ast_guard.mjs` proving detection of undefined class methods and `eval()` before scanning production files (`site/js/`, `worker/`).
+    - Removed paid GCP Vertex AI project ID from `vertex_ai_bridge.mjs`, using strictly Google AI Studio Free Tier (`GEMINI_API_KEY`) and Groq Free Tier (`GROQ_API_KEY`).
+    - Deduplicated 18 `VAULT_*.md` mirrors in `knowledge/` and rebuilt the SQLite FTS5 / MiniSearch RAG index.
+  - **4. Gate D — OKLCH Perceptual Color Space, W3C DTCG 2025.10 & Native `@starting-style` (`tokens/design.tokens.json`, `site/css/design-tokens.css`):**
+    - Created `tokens/design.tokens.json` (W3C DTCG 2025.10 schema) and upgraded `site/css/design-tokens.css` with `oklch(...)` surface/brand primitives, `interpolate-size: allow-keywords`, `linear()` spring curves, and `@starting-style` + `transition-behavior: allow-discrete` modal/popover/toast choreography.
+  - **5. Gate E — Workspace Hygiene & Constitutional Lock (`AGENTS.md`, `legacy/streamerbot-desktop/`):**
+    - Archived 150 legacy C#/.NET desktop binaries (`*.dll`, `*.exe`, `Streamer.bot*`, `x64/`, `x86/`) into `legacy/streamerbot-desktop/` (git-ignored).
+    - Documented the non-mandatory Stake affiliate reward policy in `AGENTS.md §2.2` and sealed `.agents/memory/constitution_lock.json` (`SHA-256`).
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases, Refinements, SOTA 2026 Evolution, SOTA Agent Harness, Kick Podium, Admin Cleanup, Holo-Vault 10-Card Round Deck, Kick Podium High-Contrast Watermarks, SOTA 2026 Audio Overhaul, Stage 30 Visual Awareness & Stage 31 Self-Evolving Web Software Factory v2: 100% COMPLETED, VERIFIED & DEPLOYED.**
+- **All Phases through Stage 32 (Gates A–E Security, Economy, QA, OKLCH Design Tokens & Workspace Hygiene): 100% COMPLETED & VERIFIED LOCALLY.**
+- **Pending Human Operator Action Before `git push` / Deploy:** Run `npx wrangler secret put ADMIN_API_SECRET` and `npx wrangler secret put USER_SESSION_SECRET` (or `ADMIN_API_SECRET` covers both) so Cloudflare Worker can sign/verify admin and user tokens in production.
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
