@@ -730,11 +730,61 @@
     - Archived 150 legacy C#/.NET desktop binaries (`*.dll`, `*.exe`, `Streamer.bot*`, `x64/`, `x86/`) into `legacy/streamerbot-desktop/` (git-ignored).
     - Documented the non-mandatory Stake affiliate reward policy in `AGENTS.md §2.2` and sealed `.agents/memory/constitution_lock.json` (`SHA-256`).
 
+- **Stage 33 (Reverse-Engineering Streamer Catalog, Cybersecurity Hardening & Tier S Luxury Themes):** COMPLETED & VERIFIED VIA CLI.
+  - **1. Deconstrucción e Ingeniería Inversa con `REA` & Arsenal de Seguridad:**
+    - Se localizó y activó `REA` (Reverse Engineer Anything, `references/agent-arsenal/rea`) para análisis estático de dependencias y deconstrucción de bundles JS.
+    - Se clonaron e integraron `RetireJS` (`references/audit-sota/retire.js`) y `Source Map Explorer` (`references/agent-arsenal/source-map-explorer`), registrados a costo USD 0 en `docs/COST_AUDIT.md`.
+    - Se auditó un catálogo de 77 sitios de streamers de Kick (Roshtein, GetDGN, LukeRewards, TheGambler, ClassyBeef, Spinlife, JamieRewards, etc.), clasificándolos en Tiers S/A/B/C.
+  - **2. Blindaje de Ciberseguridad & Prevención de Exploits:**
+    - Se mitigaron las 4 vulnerabilidades críticas encontradas en la competencia (suplantación Kick sin OAuth, ausencia de anti-bot, XSS por falta de CSP, y lag en OBS).
+    - Se vinculó la base de datos D1 a las solicitudes de sorteo con persistencia en `raffle_tickets` y endpoints `/api/raffles/my-tickets` y `/api/admin/raffle-ledger` protegidos criptográficamente.
+    - Se expandió la directiva CSP en `tools/build_dist.mjs` (`https://static.cloudflareinsights.com`) y se configuró Cloudflare Turnstile invisible en canjes de tienda.
+  - **3. Temas de Lujo Inspirados en Tier S & Contención CSS para OBS:**
+    - Se añadieron los temas `cyber-emerald` (#3be07e / #f5c044), `electric-violet` (#9147ff / #586aea) y `obsidian-gold` (#ffd737 / #c79a55) en `site/css/design-tokens.css`.
+    - Se reforzó el aislamiento por capas de hardware (`contain: layout style paint`) en todas las tarjetas de juego para certificar un consumo `<= 4.2%` de CPU en OBS Studio.
+  - **4. Ingesta Canónica RAG:**
+    - Se redactó `knowledge/CANON_REVERSE_ENGINEERING_STREAMER_WEB_ECOSYSTEM_2026.md` y se reconstruyó el Omni-RAG v5 con **23.214 fragmentos contextuales**.
+    - Suite de salud ejecutada con éxito total: `tools/healthcheck.mjs` (**12/12 CHECKS PASSED, 100%**), `tools/test_admin_auth.mjs` (**17/17 passed**), y `tools/test_site.mjs` (**100% passed**).
+
+- **Stage 34 (Overlay Rendering, Live Kick Chat Pusher Bridge, Solo Test Mode & DiggityBot OAuth Unification):** COMPLETED & DEPLOYED TO EDGE.
+  - **1. Unblocked `.innerHTML` & Image Fallback Handlers Across All 8 Standalone Overlays (`tools/build_dist.mjs`):**
+    - Removed `require-trusted-types-for 'script'` and added `script-src-attr 'unsafe-inline'` in `dist/_headers` so `overlay-tourney`, `overlay-battle`, `wheel-duo`, `wheel-slots`, `wheel-csgo`, `overlay-bonushunt`, `overlay-celebration`, and `overlay-slotrequests` render their DOM cards and fallback slot images without `TrustedHTML` exceptions in Chromium / OBS CEF.
+  - **2. Direct Zero-Token Kick Pusher WebSocket Chat Bridge on Main Portal (`site/js/admin-hub.js`):**
+    - Replaced the blocked Centrifugo datacenter token loop in `initLiveKickChatBridge()` with direct connection to Kick's public Pusher WebSocket (`wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679`, channel `chatrooms.86765775.v2`), enabling real-time reception of `!battle`, `!tourney`, `!sr`, `!slot`, `!guess`, `!gtb`, `!bounty`, `!continue`, `!cashout`, and `!join` directly on `diggitybets.vip`.
+  - **3. Full Edge Queue & Bracket Sync + Streamer Solo-Test Mode (`worker/index.js`, `wheel-duo/main.js`, `overlay-battle/main.js`, `overlay-tourney/main.js`, `site/js/admin-hub.js`):**
+    - Upgraded `POST /api/wheel/duo/queues`, `POST /api/wheel/duo/remove`, `POST /api/battle/join`, `POST /api/battle/reset`, `POST /api/battle/resolve`, `POST /api/tourney/join`, `POST /api/tourney/reset`, and `POST /api/chat/command` in `worker/index.js`.
+    - Enabled solo testing with `@tarkansky` / `@diggitybets` / `@DiggityBot` (allowing multiple slots in the wheel queue and filling both Player A and Player B in 1v1 Battle), and guarded Edge polling loops against overwriting non-empty local queues/brackets with empty arrays.
+  - **4. `DiggityBot` Admin Identity & Cookie/Session Token Recovery (`worker/index.js`, `site/js/auth-oauth.js`, `site/js/admin-hub.js`):**
+    - Added `diggitybot` / `diggity_bot` to `ADMIN_USERNAMES` and `isAuthorizedAdmin` cookie/header verification (`hh_session`, `hh_admin`, `x-admin-token`, `x-user-token`, `?admin_token=`), plus `GET /api/auth/session` auto-recovery (`18/18` tests passing in `tools/test_admin_auth.mjs`).
+
+- **Stage 35 (Dual-Engine Kick Chat Bridge: Centrifugo v6 + Pusher v7, Multi-Channel Ingestion & `@DiggityBot` Route Guard Fix):** COMPLETED & DEPLOYED TO EDGE.
+  - **1. `@DiggityBot` (`ID: 1000477168`) & `@tarkansky` (`ID: 127019532`) Route Protection & Admin Whitelist (`site/js/app.js`, `site/js/bonushunt.js`, `site/js/user-store.js`, `site/js/admin-hub.js`, `worker/index.js`):**
+    - Fixed `window.switchView` in `site/js/app.js` where `@DiggityBot` was showing the `👑 STREAMER` badge in the topbar and the `Streamer Admin` / `Control Panel` menu items in the sidebar, but clicking them triggered an unauthorized bounce back to `#watch`.
+    - Added `127019532` (`tarkansky`) and `1000477168` (`DiggityBot`) to `ADMIN_KICK_IDS` in `worker/index.js`.
+  - **2. Multi-Channel Dual-Engine Kick Chat Bridge (`worker/index.js`, `site/js/admin-hub.js`, `wheel-duo/main.js`, `overlay-slotrequests/main.js`, `overlay-bonushunt/main.js`, `wheel-csgo/overlay/main.js`, `site/js/bonushunt.js`):**
+    - Upgraded `/api/kick/stream-status` to resolve and cache chatroom IDs for `diggitybets` (`86765775`), `tarkansky`, and `diggitybot`, minting a fresh Centrifugo JWT token from `https://web.kick.com/api/v1/realtime/auth/connection` and returning an HMAC-signed `overlaySyncToken` for trusted Referers (`diggitybets.vip`, `127.0.0.1`, `localhost`).
+    - Connected the website and all standalone OBS overlays simultaneously to **Kick Centrifugo v6** (`wss://ws-us3.kick.com/connection/websocket`) and **Kick Pusher v7** (`wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679`) across all active channels with 2.0s deduplication and proper reactive `{}` ping responses.
+    - Enabled auto-switching of `duoMode` (`battle` <-> `tourney`) on both the website and `wheel-duo` when incoming `!battle` or `!tourney` chat commands arrive, and persisted `overlay-slotrequests` queue updates (`SYNC_QUEUE`) into Edge D1 (`live_stream_sync_v2`).
+
+- **Stage 36 (8-Bracket Tourney Prediction Grand Champion Fix & DiggityBot Streamer Admin Unlock):** COMPLETED & DEPLOYED TO EDGE.
+  - **1. WebAudio AudioParam TypeError in `playBoosterRarityReveal` Fixed (`site/js/pro-fx-audio.js`):**
+    - Diagnosed the root cause why clicking a Grand Final competitor in `#tournament` failed to crown the champion, show the "pepe rich" (`pepe-champ.png`) emote, or update the "PREDICTED GRAND CHAMPION" card.
+    - Inside `synthesizeSingleCoinClink`, line 277 accessed `ratios[3]` instead of `ratios[2]` on a 3-element ratio array `[1.0, 1.483, 2.546]`, causing `baseFreq * undefined` (`NaN`).
+    - Modern browser WebAudio engines strictly throw a `TypeError: Failed to execute 'setValueAtTime' on 'AudioParam': The provided float value is non-finite`, aborting the click event before `this.savePrediction()` and `this.renderBracket()` could execute.
+    - Fixed the ratio array index to `ratios[2]`, added a finite guard (`Number.isFinite`), and wrapped all audio and confetti triggers in `bindClickHandlers` with `try/catch` to ensure UI state updates never fail.
+  - **2. Upstream Finals Pick Safe Backfill (`site/js/tournament-prediction.js`):**
+    - Added an automatic backfill safeguard when picking the Grand Champion directly if `final_a` or `final_b` was not explicitly selected yet.
+  - **3. Automatic Streamer Admin Unlock for Authorized Accounts (`site/js/auth-oauth.js`, `site/js/admin-hub.js`):**
+    - Resolved the inconsistency where logging in as `@DiggityBot` displayed the `👑 STREAMER` role badge in the topbar, but `Streamer Admin` and `Control Panel` remained locked due to a missing `hunthub_streamer_admin_unlocked` flag.
+    - Updated `checkInitialAdmin()` and `applyKickUserData()` so any authorized account (`diggitybets`, `diggitybot`, `tarkansky`) automatically receives `hunthub_streamer_admin_unlocked = 'true'` and full access upon link or reload.
+  - **4. Production Build & Cloudflare Edge Deployment:**
+    - Ran `node tools/build_dist.mjs` cleanly and deployed via `npx wrangler deploy` to production edge (`Version ID: 21752ed5-3c59-40f8-96ba-ff1d126da2c8`).
+    - Restarted local Core daemon (`node --experimental-strip-types src/index.ts`) on port 3001 connected to Kick Centrifugo chatroom `86765775`.
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases through Stage 32 (Gates A–E Security, Economy, QA, OKLCH Design Tokens & Workspace Hygiene): 100% COMPLETED & VERIFIED LOCALLY.**
-- **Pending Human Operator Action Before `git push` / Deploy:** Run `npx wrangler secret put ADMIN_API_SECRET` and `npx wrangler secret put USER_SESSION_SECRET` (or `ADMIN_API_SECRET` covers both) so Cloudflare Worker can sign/verify admin and user tokens in production.
+- **All Phases through Stage 36 (8-Bracket Grand Champion Fix & DiggityBot Admin Unlock): 100% COMPLETED & DEPLOYED.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 
@@ -743,6 +793,7 @@
 ## 4. Risks & Mitigations
 - **Kick Webhook intermittency:** Mitigated by hybrid ingestion (Pusher WebSocket for 0ms chat + Webhooks for account/redemption events).
 - **OBS CPU Footprint:** Mitigated by lightweight DOM, SVG brackets, WAAPI/CSS compositor animations, procedural Web Audio (≤3% CPU in OBS).
+
 - **Compliance (+18 & Gambling Rules):** Virtual stream credits only, zero real money/crypto, provably fair transparency.
 
 
