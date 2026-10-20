@@ -138,9 +138,9 @@ export async function synthesizeCourseWithAI({ title, videoId, segments, fullTex
   }
 
   const models = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-8b-instant',
-    'gemma2-9b-it'
+    'openai/gpt-oss-120b',
+    'qwen/qwen3.8-27b',
+    'openai/gpt-oss-20b'
   ];
 
   const prompt = `You are the Lead Principal Frontend Architect and Technical Ingester for HuntHub / DiggityBets.

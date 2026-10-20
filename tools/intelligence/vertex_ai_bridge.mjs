@@ -44,18 +44,21 @@ function loadEnv() {
 }
 
 const env = loadEnv();
+const GCP_PROJECT = env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || '';
+const GCP_LOCATION = env.GCP_LOCATION || 'us-central1';
 const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GROQ_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'];
 
-let geminiFreeClient = null;
+let vertexOrStudioClient = null;
 
 /**
- * Initializes and retrieves the Google AI Studio Free Tier client (No Credit Card, $0 Forever)
- * Strictly avoids GCP Vertex AI billing projects per AGENTS.md §2.1.
+ * Initializes and retrieves the Gemini client:
+ *   1. If USE_VERTEX_AI=true or GOOGLE_APPLICATION_CREDENTIALS + GCP_PROJECT_ID exist in .env,
+ *      connects via GCP Vertex AI (covered by promotional credits at $0 net cost).
+ *   2. Otherwise, if GEMINI_API_KEY / GOOGLE_AI_STUDIO_KEY is set, connects via Google AI Studio Free Tier.
  */
 export async function getVertexClient() {
-  if (geminiFreeClient) return geminiFreeClient;
-  const apiKey = env.GEMINI_API_KEY || env.GOOGLE_AI_STUDIO_KEY || '';
-  if (!apiKey) return null;
+  if (vertexOrStudioClient) return vertexOrStudioClient;
 
   try {
     const sdkPath = path.join(ROOT, 'core', 'node_modules', '@google', 'genai', 'dist', 'node', 'index.mjs');
@@ -68,10 +71,29 @@ export async function getVertexClient() {
       GoogleGenAI = mod.GoogleGenAI;
     }
 
-    geminiFreeClient = new GoogleGenAI({ apiKey });
-    return geminiFreeClient;
+    const adcPath = env.GOOGLE_APPLICATION_CREDENTIALS || '';
+    if (adcPath && fs.existsSync(adcPath)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = adcPath;
+    }
+
+    if ((env.USE_VERTEX_AI === 'true' || adcPath) && GCP_PROJECT) {
+      vertexOrStudioClient = new GoogleGenAI({
+        vertexai: true,
+        project: GCP_PROJECT,
+        location: GCP_LOCATION
+      });
+      return vertexOrStudioClient;
+    }
+
+    const apiKey = env.GEMINI_API_KEY || env.GOOGLE_AI_STUDIO_KEY || '';
+    if (apiKey) {
+      vertexOrStudioClient = new GoogleGenAI({ apiKey });
+      return vertexOrStudioClient;
+    }
+
+    return null;
   } catch (err) {
-    console.warn(`[Gemini Free Tier] Initialization warning: ${err.message}`);
+    console.warn(`[Vertex/Gemini Client] Initialization warning: ${err.message}`);
     return null;
   }
 }
@@ -125,35 +147,37 @@ Respond strictly in valid JSON format:
   // 1. Primary: Groq Ultra-Fast LPU (800ms latency)
   const groqKey = env.GROQ_API_KEY;
   if (groqKey) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+    for (const groqModel of GROQ_MODELS) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemInstruction },
-            { role: 'user', content: `User Query: "${userQuery}"` }
-          ],
-          temperature: 0.1,
-          response_format: { type: 'json_object' }
-        })
-      });
-      clearTimeout(timeoutId);
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: groqModel,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user', content: `User Query: "${userQuery}"` }
+            ],
+            temperature: 0.1,
+            response_format: { type: 'json_object' }
+          })
+        });
+        clearTimeout(timeoutId);
 
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return JSON.parse(content);
-      }
-    } catch (_) {}
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return JSON.parse(content);
+        }
+      } catch (_) {}
+    }
   }
 
   // 2. High-Intelligence Fallback: Vertex AI Gemini 2.5 Flash
@@ -202,7 +226,7 @@ Filter out irrelevant candidates (score < 0.40). Sort descending by score.`;
   // 1. Try Groq (Fastest listwise inference ~700-900ms)
   const groqKey = env.GROQ_API_KEY;
   if (groqKey) {
-    for (const model of ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']) {
+    for (const model of GROQ_MODELS) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',

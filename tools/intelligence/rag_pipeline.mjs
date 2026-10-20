@@ -1051,11 +1051,12 @@ Output pure markdown text and cite the specific sources used.`;
     }
   } catch (_) {}
 
-  // 2. Fallback: Groq Ultra-Fast LPU (Verified Production Models)
+  // 2. Fallback: Groq Ultra-Fast LPU (Verified 2026 Production Models)
   if (GROQ_API_KEY) {
     const candidateModels = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant'
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b'
     ];
 
     for (const model of candidateModels) {
