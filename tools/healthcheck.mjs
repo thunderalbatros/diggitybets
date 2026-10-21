@@ -109,6 +109,18 @@ check('Zero Spectator Custody & Compliance (+18 Notice)', () => {
   if (!html.includes('100% free')) throw new Error('Missing 100% free participation disclosure');
 });
 
+check('Compact 1-Click 7-Day $DIG Loyalty Streak in Topbar Right', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const topbarMatch = html.match(/<div class="topbar-right">[\s\S]*?<\/header>/);
+  if (!topbarMatch || !topbarMatch[0].includes('id="dig-daily-streak-container"')) {
+    throw new Error('#dig-daily-streak-container is not mounted inside .topbar-right');
+  }
+  const intelJs = fs.readFileSync('site/js/diggity-intel-suite.js', 'utf8');
+  if (!intelJs.includes('Loyalty streak') || !intelJs.includes('[50, 75, 100, 125, 150, 200, 300]')) {
+    throw new Error('Missing 7-day loyalty streak rewards schedule [50, 75, 100, 125, 150, 200, 300]');
+  }
+});
+
 // 7. Cloudflare Distribution Payload & Edge Worker Configuration
 check('Cloudflare Production Dist Payload & wrangler.toml Assets', () => {
   if (!fs.existsSync('wrangler.toml')) throw new Error('Missing wrangler.toml');

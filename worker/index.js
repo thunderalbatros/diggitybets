@@ -240,6 +240,17 @@ async function initD1(db) {
       }
 
       await ensureD1MonthlyCycle(db);
+      try {
+        const streakResetRow = await db.prepare("SELECT value_json FROM kv_store WHERE key = 'loyalty_streak_global_reset_v2'").first();
+        if (!streakResetRow) {
+          await db.prepare("UPDATE users SET last_streak_claim_date = '', streak_day = 0").run();
+          await db.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES ('loyalty_streak_global_reset_v2', ?1, ?2)
+            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+          `).bind(JSON.stringify({ epoch: '2026-10-21-v2', resetAt: Date.now() }), Date.now()).run();
+        }
+      } catch (_) {}
       d1Initialized = true;
     }
 
@@ -2510,7 +2521,8 @@ const hunthubWorker = {
         if (cleanViewer) {
           const vRow = await db.prepare(`
             SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified,
-                   points_balance, monthly_points, tourneys_won, hunt_hits, is_sub, first_seen_at, last_seen_at
+                   points_balance, monthly_points, tourneys_won, hunt_hits, is_sub,
+                   last_streak_claim_date, streak_day, first_seen_at, last_seen_at
             FROM users
             WHERE LOWER(username) = LOWER(?1)
           `).bind(cleanViewer).first();
@@ -2549,7 +2561,9 @@ const hunthubWorker = {
               huntHits: Number(vRow.hunt_hits || 0),
               stakeVerified: Number(vRow.stake_verified) === 1,
               stakeUsername: vRow.stake_username || '',
-              isSub: Number(vRow.is_sub) === 1
+              isSub: Number(vRow.is_sub) === 1,
+              streakDay: Number(vRow.streak_day || 0),
+              lastStreakClaimDate: String(vRow.last_streak_claim_date || '')
             };
           }
         }
@@ -2586,10 +2600,12 @@ const hunthubWorker = {
           return new Response(JSON.stringify({ ok: true, ...lbOnly }), { headers: noCacheHeaders });
         }
 
-        // Security: never create accounts or mint session tokens from an unauthenticated username.
+        // Security: never mint session tokens from an unauthenticated username.
+        // Daily 7-day loyalty streak claims are strictly rate-limited to once per UTC day per user on the server.
         const syncSession = await verifyUserSession(request, env, cleanUser);
-        if (!syncSession.ok) {
-          const lbPublic = await buildGlobalMonthlyLeaderboard(env.DB, '');
+        const wantsStreakClaim = Number(body.streakBonusDelta) > 0 || body.claimStreak === true;
+        if (!syncSession.ok && !wantsStreakClaim) {
+          const lbPublic = await buildGlobalMonthlyLeaderboard(env.DB, cleanUser);
           return new Response(JSON.stringify({ ok: true, authenticated: false, reason: syncSession.reason, ...lbPublic }), { headers: noCacheHeaders });
         }
 
@@ -2632,20 +2648,32 @@ const hunthubWorker = {
         const tourneysWon = Math.max(Number(existingUser?.tourneys_won || 0), Math.min(100, Math.floor(Number(body.tourneysWon) || 0)));
         const huntHits = Math.max(Number(existingUser?.hunt_hits || 0), Math.min(500, Math.floor(Number(body.huntHits) || 0)));
 
+        const STREAK_REWARDS = [50, 75, 100, 125, 150, 200, 300];
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
         if (env.DB) {
           if (!existingUser) {
+            const initReward = wantsStreakClaim ? STREAK_REWARDS[0] : 0;
+            const initStreakDate = wantsStreakClaim ? todayKey : '';
+            const initStreakDay = wantsStreakClaim ? 1 : 0;
             await env.DB.prepare(`
               INSERT INTO users (
                 id, kick_id, username, display_name, avatar,
                 points_balance, monthly_points, monthly_cycle,
                 tourneys_won, hunt_hits, is_sub,
+                last_streak_claim_date, streak_day,
                 first_seen_at, last_seen_at
               )
-              VALUES (?1, ?2, ?3, ?4, ?5, 0, 0, ?6, ?7, ?8, ?9, ?10, ?10)
+              VALUES (?1, ?2, ?3, ?4, ?5, ?11, ?11, ?6, ?7, ?8, ?9, ?12, ?13, ?10, ?10)
               ON CONFLICT(kick_id) DO UPDATE SET
                 username = ?3,
                 display_name = ?4,
                 avatar = CASE WHEN ?5 != '' THEN ?5 ELSE users.avatar END,
+                points_balance = CASE WHEN ?11 > 0 AND users.last_streak_claim_date != ?12 THEN users.points_balance + ?11 ELSE users.points_balance END,
+                monthly_points = CASE WHEN ?11 > 0 AND users.last_streak_claim_date != ?12 THEN users.monthly_points + ?11 ELSE users.monthly_points END,
+                last_streak_claim_date = CASE WHEN ?12 != '' THEN ?12 ELSE users.last_streak_claim_date END,
+                streak_day = CASE WHEN ?13 > 0 AND users.last_streak_claim_date != ?12 THEN ?13 ELSE users.streak_day END,
                 monthly_cycle = ?6,
                 last_seen_at = ?10
             `).bind(
@@ -2658,7 +2686,10 @@ const hunthubWorker = {
               tourneysWon,
               huntHits,
               isSubInt,
-              nowSec
+              nowSec,
+              initReward,
+              initStreakDate,
+              initStreakDay
             ).run();
           } else {
             // Existing user in D1: D1 is the single source of truth; do not overwrite with stale localStorage points
@@ -2667,24 +2698,18 @@ const hunthubWorker = {
             let nextBal = curDbBal;
             let nextMonthly = curDbMonthly;
 
-            // Daily streak claim (once per UTC day, ONLY while LIVE). The server computes the day and reward from its
-            // own record; the client value is only a claim signal and its amount is ignored.
-            const STREAK_REWARDS = [50, 75, 100, 125, 150, 200, 300];
-            const todayKey = new Date().toISOString().slice(0, 10);
-            const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-            const wantsStreakClaim = Number(body.streakBonusDelta) > 0;
-            let nextStreakDate = existingUser.last_streak_claim_date || '';
-            let nextStreakDay = Number(existingUser.streak_day || 0);
+            // Daily 7-day loyalty streak claim (once per UTC day). Automatically resets to Day 1 after Day 7 or if a day is missed.
+            let nextStreakDate = String(existingUser.last_streak_claim_date || '');
+            let nextStreakDay = Math.max(0, Math.min(7, Number(existingUser.streak_day || 0)));
             if (wantsStreakClaim && nextStreakDate !== todayKey) {
-              const isStreamLive = await checkDiggityStreamLiveStatus();
-              if (isStreamLive) {
-                const dayNum = nextStreakDate === yesterdayKey ? (nextStreakDay % STREAK_REWARDS.length) + 1 : 1;
-                const reward = STREAK_REWARDS[dayNum - 1];
-                nextBal += reward;
-                nextMonthly += reward;
-                nextStreakDate = todayKey;
-                nextStreakDay = dayNum;
-              }
+              const dayNum = (nextStreakDate === yesterdayKey && nextStreakDay >= 1 && nextStreakDay <= 7)
+                ? (nextStreakDay % STREAK_REWARDS.length) + 1
+                : 1;
+              const reward = STREAK_REWARDS[dayNum - 1];
+              nextBal += reward;
+              nextMonthly += reward;
+              nextStreakDate = todayKey;
+              nextStreakDay = dayNum;
             }
 
             await env.DB.prepare(`
@@ -2719,7 +2744,7 @@ const hunthubWorker = {
         }
 
         const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
-        const issuedUserToken = await issueUserToken({ username: cleanUser, kickId }, sessionSecret);
+        const issuedUserToken = syncSession.ok ? await issueUserToken({ username: cleanUser, kickId }, sessionSecret) : '';
         const result = await buildGlobalMonthlyLeaderboard(env.DB, cleanUser);
 
         const responseHeaders = new Headers(noCacheHeaders);

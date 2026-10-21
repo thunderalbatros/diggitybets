@@ -219,6 +219,96 @@ await test('Overlay & Event Rules Pipeline: 1-call max (!battle/!tourney first c
   assert.equal(syncSr.json.slotRequests[2].name, 'Wanted Dead or a Wild');
 });
 
+await test('7-Day $DIG Loyalty Streak: 1-click claim works for new & existing users, progresses Day 1..7 (+50..+300), and resets to Day 1 after Day 7', async () => {
+  const dbUsers = new Map();
+  const mockDb = {
+    prepare(sql) {
+      let args = [];
+      const stmt = {
+        bind(...a) { args = a; return stmt; },
+        async first() {
+          if (/SELECT \* FROM users WHERE LOWER\(username\) = LOWER/.test(sql) || /SELECT id, kick_id, username/.test(sql)) {
+            return dbUsers.get(String(args[0] || '').toLowerCase()) || null;
+          }
+          if (/SELECT COUNT\(\*\) AS cnt FROM users/.test(sql)) return { cnt: dbUsers.size };
+          if (/SELECT COUNT\(\*\) AS higher FROM users/.test(sql)) return { higher: 0 };
+          return null;
+        },
+        async all() {
+          return { results: [...dbUsers.values()] };
+        },
+        async run() {
+          if (/INSERT INTO users/.test(sql) && args.length >= 13) {
+            const u = String(args[2]).toLowerCase();
+            dbUsers.set(u, {
+              id: args[0],
+              kick_id: args[1],
+              username: u,
+              display_name: args[3],
+              avatar: args[4],
+              points_balance: Number(args[10] || 0),
+              monthly_points: Number(args[10] || 0),
+              monthly_cycle: args[5],
+              tourneys_won: args[6],
+              hunt_hits: args[7],
+              is_sub: args[8],
+              last_streak_claim_date: args[11] || '',
+              streak_day: Number(args[12] || 0),
+              stake_verified: 0,
+              is_shadowbanned: 0,
+              first_seen_at: args[9],
+              last_seen_at: args[9]
+            });
+          } else if (/UPDATE users[\s\S]*SET display_name = \?1/.test(sql)) {
+            for (const row of dbUsers.values()) {
+              if (row.id === args[10]) {
+                row.points_balance = Number(args[2]);
+                row.monthly_points = Number(args[3]);
+                row.last_streak_claim_date = String(args[8] || '');
+                row.streak_day = Number(args[11] || 0);
+              }
+            }
+          }
+          return { meta: { changes: 1 } };
+        }
+      };
+      return stmt;
+    }
+  };
+
+  const envWithDb = { ...withSecret, DB: mockDb };
+  const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+  // Day 1 claim by a brand new spectator (even without OAuth token yet)
+  const d1Res = await callEndpoint('/api/leaderboard/sync-user', 'POST', { origin: 'https://diggitybets.vip' }, { username: 'streakviewer', streakBonusDelta: 50, claimStreak: true }, envWithDb);
+  assert.equal(d1Res.status, 200);
+  assert.equal(d1Res.json.viewerProfile.pointsBalance, 50, 'Day 1 claim must award +50 $DIG');
+  assert.equal(d1Res.json.viewerProfile.streakDay, 1, 'Day 1 claim must set streakDay = 1');
+  assert.equal(d1Res.json.userToken, undefined, 'Unauthenticated streak claim must never mint a session token');
+
+  // Duplicate claim on the same day must be ignored
+  const dupRes = await callEndpoint('/api/leaderboard/sync-user', 'POST', { origin: 'https://diggitybets.vip' }, { username: 'streakviewer', streakBonusDelta: 50, claimStreak: true }, envWithDb);
+  assert.equal(dupRes.json.viewerProfile.pointsBalance, 50, 'Second claim on same UTC day must not award extra points');
+
+  // Simulate consecutive Days 2 through 7 (+75, +100, +125, +150, +200, +300)
+  const expectedRewards = [50, 75, 100, 125, 150, 200, 300];
+  let expectedBal = 50;
+  for (let day = 2; day <= 7; day++) {
+    dbUsers.get('streakviewer').last_streak_claim_date = yesterdayKey;
+    const res = await callEndpoint('/api/leaderboard/sync-user', 'POST', { origin: 'https://diggitybets.vip' }, { username: 'streakviewer', streakBonusDelta: expectedRewards[day - 1], claimStreak: true }, envWithDb);
+    expectedBal += expectedRewards[day - 1];
+    assert.equal(res.json.viewerProfile.streakDay, day, `Expected streakDay = ${day}`);
+    assert.equal(res.json.viewerProfile.pointsBalance, expectedBal, `Expected balance ${expectedBal} on Day ${day}`);
+  }
+
+  // Day 8 (after Day 7 completed yesterday) must automatically reset to Day 1 (+50 $DIG)
+  dbUsers.get('streakviewer').last_streak_claim_date = yesterdayKey;
+  const resetRes = await callEndpoint('/api/leaderboard/sync-user', 'POST', { origin: 'https://diggitybets.vip' }, { username: 'streakviewer', streakBonusDelta: 50, claimStreak: true }, envWithDb);
+  expectedBal += 50;
+  assert.equal(resetRes.json.viewerProfile.streakDay, 1, 'After Day 7, streak must reset to Day 1');
+  assert.equal(resetRes.json.viewerProfile.pointsBalance, expectedBal, 'Reset Day 1 must award +50 $DIG');
+});
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\nAdmin & Endpoint Auth tests: ${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

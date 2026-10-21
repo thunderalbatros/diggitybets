@@ -994,39 +994,90 @@
   border-color: rgba(239, 68, 68, 0.45);
 }
 
-/* 6. 7-DAY $DIG DAILY STREAK VAULT */
-.daily-streak-strip {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
+/* 6. COMPACT 7-DAY $DIG LOYALTY STREAK (TOPBAR RIGHT) */
+.topbar-streak-compact-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-@media (max-width: 720px) {
-  .daily-streak-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.streak-day-pill {
-  padding: 8px 6px;
-  border-radius: 10px;
-  background: rgba(11, 16, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
+.topbar-loyalty-streak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 4px 11px;
+  border-radius: 999px;
   font-family: var(--font-display, 'Chakra Petch', sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  background: linear-gradient(135deg, rgba(14, 20, 32, 0.96) 0%, rgba(10, 14, 24, 0.98) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.52);
+  color: #f8fafc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45), 0 0 12px rgba(255, 215, 0, 0.18);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.streak-day-pill.is-claimed {
-  background: rgba(83, 252, 24, 0.14);
+.topbar-loyalty-streak-btn.is-claimable:hover {
+  transform: translateY(-1px);
   border-color: #53fc18;
-  color: #53fc18;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 14px rgba(83, 252, 24, 0.32);
 }
 
-.streak-day-pill.is-today {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.24), rgba(245, 158, 11, 0.12));
-  border-color: #ffd700;
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.28);
+.topbar-loyalty-streak-btn.is-claimed {
+  border-color: rgba(83, 252, 24, 0.42);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 8px rgba(83, 252, 24, 0.12);
+}
+
+.topbar-loyalty-streak-btn .streak-status-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.topbar-loyalty-streak-btn.is-claimed .streak-status-icon {
+  color: #53fc18;
+  font-weight: 900;
+}
+
+.topbar-loyalty-streak-btn .streak-label-text {
+  color: #e2e8f0;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.topbar-loyalty-streak-btn .streak-dig-tag {
+  color: #ffd700;
+  font-weight: 900;
+}
+
+.topbar-loyalty-streak-btn .streak-day-tag {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.topbar-loyalty-streak-btn .streak-reward-val {
+  color: #53fc18;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(83, 252, 24, 0.14);
+  border: 1px solid rgba(83, 252, 24, 0.35);
+}
+
+@media (max-width: 640px) {
+  .topbar-loyalty-streak-btn {
+    font-size: 9.5px;
+    padding: 3px 8px;
+    gap: 3px;
+    min-height: 32px;
+  }
+  .topbar-loyalty-streak-btn .streak-reward-val {
+    padding: 1px 4px;
+  }
 }
 
 /* 7. LIVE RTP THERMAL RADAR PREMIUM HIGH-CONTRAST PAGINATION */

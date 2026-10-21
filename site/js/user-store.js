@@ -259,6 +259,7 @@ class UserStoreController {
   async syncGlobalLeaderboardAndUser(extraPayload = {}) {
     if (typeof fetch !== 'function') return null;
     try {
+      const reqStartTs = Date.now();
       const cleanUser = (this.username || localStorage.getItem('hunthub_kick_username') || '').trim().replace(/^@+/, '');
       let res = null;
 
@@ -298,7 +299,22 @@ class UserStoreController {
 
       if (data.viewerProfile) {
         this.globalViewerProfile = data.viewerProfile;
-        if (typeof data.viewerProfile.pointsBalance === 'number' && Number.isFinite(data.viewerProfile.pointsBalance)) {
+        const todayKey = new Date().toISOString().slice(0, 10);
+        let localClaimedToday = false;
+        try {
+          const streakSaved = JSON.parse(localStorage.getItem(`hunthub_daily_streak_v2_${cleanUser.toLowerCase()}`) || 'null');
+          localClaimedToday = Boolean(streakSaved && streakSaved.lastClaimDate === todayKey);
+        } catch (_) {}
+        const serverClaimedToday = String(data.viewerProfile.lastStreakClaimDate || '') === todayKey;
+        const claimHappenedDuringReq = Boolean(window._lastStreakClaimTs && window._lastStreakClaimTs > reqStartTs);
+
+        if (localClaimedToday && !serverClaimedToday && !extraPayload.claimStreak && !this._retriedStreakSyncToday) {
+          this._retriedStreakSyncToday = true;
+          this.syncGlobalLeaderboardAndUser({ streakBonusDelta: 50, claimStreak: true });
+        }
+
+        const shouldApplyServerBalance = !claimHappenedDuringReq && (!localClaimedToday || serverClaimedToday);
+        if (shouldApplyServerBalance && typeof data.viewerProfile.pointsBalance === 'number' && Number.isFinite(data.viewerProfile.pointsBalance)) {
           localStorage.setItem('hunthub_balance', String(data.viewerProfile.pointsBalance));
           if (window.houseGames) {
             const prevBal = window.houseGames.balance;
@@ -306,7 +322,7 @@ class UserStoreController {
             window.houseGames.renderBalance(prevBal);
           }
         }
-        if (typeof data.viewerProfile.monthlyPoints === 'number' && Number.isFinite(data.viewerProfile.monthlyPoints)) {
+        if (shouldApplyServerBalance && typeof data.viewerProfile.monthlyPoints === 'number' && Number.isFinite(data.viewerProfile.monthlyPoints)) {
           localStorage.setItem('hunthub_user_monthly_dig', String(data.viewerProfile.monthlyPoints));
           localStorage.setItem('hunthub_user_career_dig', String(data.viewerProfile.monthlyPoints));
         }
@@ -321,6 +337,9 @@ class UserStoreController {
           localStorage.setItem('hunthub_avatar', data.viewerProfile.avatar);
           localStorage.setItem('hunthub_avatar_type', 'img');
           this.updateAvatarUI();
+        }
+        if (window.diggityIntelSuite && typeof window.diggityIntelSuite.initDailyStreakVault === 'function') {
+          window.diggityIntelSuite.initDailyStreakVault();
         }
       }
 
