@@ -4,6 +4,11 @@
 > **Last Updated:** 2026-10-21  
 > **Manager:** Antigravity Tech Lead  
 
+### 2026-10-21 — Compact 1-Click Topbar 7-Day $DIG Loyalty Streak & Global Day 1 Reset
+- **Compact Topbar Right Placement:** Removed the full-width 7-day loyalty streak bar from `#store` and mounted the compact, minimalist, 1-click capsule (`#dig-daily-streak-container` / `#btn-claim-daily-streak`) inside `.topbar-right` directly below the username and role badge, visible across all site views (`Day 1 +50`, `Day 2 +75`, `Day 3 +100`, `Day 4 +125`, `Day 5 +150`, `Day 6 +200`, `Day 7 +300`).
+- **1-Click Instant Claim Fix:** Removed the faulty `isStreamLive` gate and uninitialized D1 user drop in `/api/leaderboard/sync-user` that prevented spectators from claiming their daily login reward upon entering the site.
+- **Global Reset & 7-Day Cycle Rollover:** Reset all users in D1 (`loyalty_streak_global_reset_v2`) and browser storage (`STREAK_RESET_EPOCH = '2026-10-21-v2'`) to start today at `"Day 1" +50`, and verified automatic rollover back to `"Day 1" +50` after completing `"Day 7" +300` (or after missing a day).
+
 ### 2026-10-21 — Economy hardening (cron chat + caps + RTP)
 - Cloudflare Cron `* * * * *` polls Kick chat every minute (chat-to-earn works with nobody on the site; still live-only).
 - House games net-profit cap: +500 $DIG / rolling 24 h and +1,000 / rolling 7 days (server ledger, partial pay at cap).
