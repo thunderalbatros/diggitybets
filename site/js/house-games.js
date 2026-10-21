@@ -18,6 +18,13 @@ class StakeOriginalsController {
       localStorage.setItem('hunthub_balance', '0');
       localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
     }
+    // 2026-10-21 economy reset: every account restarts at 0 $DIG (server D1 was reset too).
+    if (!localStorage.getItem('hunthub_points_reset_2026_10_21')) {
+      localStorage.setItem('hunthub_balance', '0');
+      localStorage.setItem('hunthub_user_monthly_dig', '0');
+      localStorage.setItem('hunthub_user_career_dig', '0');
+      localStorage.setItem('hunthub_points_reset_2026_10_21', 'true');
+    }
     let saved = localStorage.getItem('hunthub_balance');
     let parsed = parseInt(saved, 10);
     this.balance = isNaN(parsed) ? 0 : Math.max(0, parsed);
@@ -181,15 +188,14 @@ class StakeOriginalsController {
   }
 
   /**
-   * Phase 6 Anti-Exploit Cap: Caps gross payout at betAmount + MAX_WIN_CAP (500 $DIG net profit)
+   * Phase 6 Anti-Exploit Cap: Caps gross payout at betAmount + MAX_WIN_CAP (500 $DIG net profit).
+   * Pure function: it never touches the balance or the server (safe for live previews).
    */
   capGrossPayout(betAmount, rawGrossPayout) {
     const gross = Math.max(0, Math.floor(Number(rawGrossPayout) || 0));
     if (gross <= 0) return 0;
     const maxGross = Math.max(0, Math.floor(Number(betAmount) || 0)) + this.maxWinCap;
-    const capped = Math.min(gross, maxGross);
-    this.syncServerBet(this.activeTab || 'plinko', betAmount, betAmount > 0 ? capped / betAmount : 0);
-    return capped;
+    return Math.min(gross, maxGross);
   }
 
   csprngFloat() {
@@ -201,35 +207,48 @@ class StakeOriginalsController {
     return 0.5;
   }
 
-  async syncServerBet(game, betAmount, rawMultiplier = 0, extra = {}) {
-    try {
-      const username = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@+/, '').trim();
-      const headers = (window.userStore && typeof window.userStore.getAuthHeaders === 'function')
-        ? window.userStore.getAuthHeaders(true)
-        : { 'Content-Type': 'application/json' };
-      const res = await fetch('/api/games/bet', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          username: username || undefined,
-          game,
-          betAmount,
-          rawMultiplier,
-          clientSeed: window.pfEngine?.clientSeed || 'kick_diggitybets',
-          nonce: window.pfEngine?.nonce || 1,
-          ...extra
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (typeof data.newBalance === 'number' && Number.isFinite(data.newBalance)) {
-          this.balance = data.newBalance;
-          this.renderBalance();
-        }
-        return data;
+  /**
+   * Server ledger sync (/api/games/bet). The server debits every bet when it is placed and validates every
+   * credit against recorded debits, so the D1 balance is the single source of truth and the client never
+   * reports a multiplier. Requests are serialized so responses cannot overwrite the balance out of order.
+   */
+  syncLedger(action, game, amount) {
+    const amt = Math.floor(Number(amount) || 0);
+    if (amt < 1) return;
+    const username = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@+/, '').trim();
+    if (!username || !(window.userStore && window.userStore.isLoggedIn)) return;
+    this._ledgerPending = (this._ledgerPending || 0) + 1;
+    this._ledgerQueue = (this._ledgerQueue || Promise.resolve()).then(async () => {
+      let data = null;
+      try {
+        const headers = (window.userStore && typeof window.userStore.getAuthHeaders === 'function')
+          ? window.userStore.getAuthHeaders(true)
+          : { 'Content-Type': 'application/json' };
+        const res = await fetch('/api/games/bet', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ username, action, game: game || this.activeTab || 'game', amount: amt })
+        });
+        data = await res.json().catch(() => null);
+      } catch (_) {}
+      this._ledgerPending = Math.max(0, (this._ledgerPending || 1) - 1);
+      if (data && data.success === false && typeof data.error === 'string' && data.error.startsWith('INSUFFICIENT_BALANCE')) {
+        this.showToast('⚠️ Tu saldo en el servidor es menor al mostrado. Se sincronizó con el servidor.', 'loss');
       }
-    } catch (_) {}
-    return null;
+      if (data && typeof data.newBalance === 'number' && Number.isFinite(data.newBalance) && this._ledgerPending === 0) {
+        this.balance = Math.max(0, data.newBalance);
+        localStorage.setItem('hunthub_balance', String(this.balance));
+        this.renderBalance();
+      }
+    });
+  }
+
+  /** Credits a settled win/push to the balance and records it on the server ledger. */
+  creditGame(amount) {
+    const amt = Math.floor(Number(amount) || 0);
+    if (amt <= 0) return;
+    this.adjustBalance(amt);
+    this.syncLedger('credit', this.activeTab, amt);
   }
 
   /**
@@ -256,6 +275,7 @@ class StakeOriginalsController {
       return false;
     }
     this.adjustBalance(-betAmount);
+    this.syncLedger('debit', this.activeTab, betAmount);
     return true;
   }
 
@@ -527,7 +547,7 @@ class StakeOriginalsController {
         } else {
           // Ball landed in bucket!
           const winAmount = this.capGrossPayout(b.bet, b.bet * b.multiplier);
-          this.adjustBalance(winAmount);
+          this.creditGame(winAmount);
           this.plinkoHistory.push(b.multiplier);
           if (this.plinkoHistory.length > 12) this.plinkoHistory.shift();
           this.renderPlinkoHistory();
@@ -889,7 +909,7 @@ class StakeOriginalsController {
 
     this.minesState = 'cashed';
     const winAmount = this.capGrossPayout(this.minesBet, this.minesBet * this.minesCurrentMultiplier);
-    this.adjustBalance(winAmount);
+    this.creditGame(winAmount);
 
     if (window.soundEngine) {
       if (this.minesCurrentMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
@@ -1063,19 +1083,20 @@ class StakeOriginalsController {
 
       const cashoutBtn = document.getElementById('crash-btn-cashout');
       if (cashoutBtn && this.crashState === 'running') {
-        const potentialWin = this.capGrossPayout(this.crashBet, this.crashBet * currentMult);
+        const potentialWin = this.capGrossPayout(this.crashBet, this.crashBet * currentMult, false);
         cashoutBtn.textContent = `Cashout: ${potentialWin} $DIG (${currentMult.toFixed(2)}x)`;
       }
 
-      // Check Auto-Cashout
-      if (this.crashAutoCashout && currentMult >= this.crashAutoCashout) {
-        this.cashoutCrash();
+      // Check Crash first: the round is lost if the crash point was reached
+      if (currentMult >= this.crashTargetMultiplier) {
+        this.triggerCrash(this.crashTargetMultiplier);
         return;
       }
 
-      // Check Crash
-      if (currentMult >= this.crashTargetMultiplier) {
-        this.triggerCrash(this.crashTargetMultiplier);
+      // Check Auto-Cashout (settles at the exact configured multiplier)
+      if (this.crashAutoCashout && currentMult >= this.crashAutoCashout) {
+        this.crashCurrentMultiplier = this.crashAutoCashout;
+        this.cashoutCrash();
         return;
       }
 
@@ -1202,7 +1223,7 @@ class StakeOriginalsController {
 
     this.crashState = 'cashed';
     const winAmount = this.capGrossPayout(this.crashBet, this.crashBet * this.crashCurrentMultiplier);
-    this.adjustBalance(winAmount);
+    this.creditGame(winAmount);
 
     if (window.soundEngine) {
       if (this.crashCurrentMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
@@ -1458,7 +1479,7 @@ class StakeOriginalsController {
 
       if (isWin) {
         const payout = this.capGrossPayout(bet, bet * this.diceMultiplier);
-        this.adjustBalance(payout);
+        this.creditGame(payout);
         if (window.soundEngine) {
           if (this.diceMultiplier >= 5.0 && typeof window.soundEngine.playVictoriousTrumpetFanfare === 'function') {
             window.soundEngine.playVictoriousTrumpetFanfare();
@@ -1571,6 +1592,16 @@ class StakeOriginalsController {
       return;
     }
 
+    // Dealer peek: with a ten-value up-card (10/J/Q/K) the dealer checks the hole card
+    // for a natural before the player acts (official peek rule, same as Ace-up after insurance).
+    if (dealerUpCardRank >= 9) {
+      if (this.calculateHand(this.bjDealerHand) === 21) {
+        this.renderBlackjackTable(true);
+        this.resolveBlackjack(this.calculateHand(this.bjPlayerHand) === 21 ? 'push' : 'dealer_blackjack');
+        return;
+      }
+    }
+
     this.startPlayerTurn();
   }
 
@@ -1642,11 +1673,11 @@ class StakeOriginalsController {
       if (this.bjInsuranceBet > 0) {
         // Insurance WIN! Pays 2:1 on insurance bet (total returned: 3x insuranceBet = 1.5x original bet)
         const insurancePayout = this.bjInsuranceBet * 3;
-        this.adjustBalance(insurancePayout);
+        this.creditGame(insurancePayout);
 
         if (playerTotal === 21) {
           // Push on main bet + Win on insurance
-          this.adjustBalance(this.bjBet);
+          this.creditGame(this.bjBet);
           this.resolveBlackjack('insurance_and_push');
         } else {
           // Main bet lost, insurance paid 2:1 -> Even Hand (Tablas / Net 0)
@@ -2087,7 +2118,7 @@ class StakeOriginalsController {
 
     if (totalPayout > 0) {
       totalPayout = this.capGrossPayout(totalBet, totalPayout);
-      this.adjustBalance(totalPayout);
+      this.creditGame(totalPayout);
     }
 
     const netProfit = totalPayout - totalBet;
@@ -2158,7 +2189,7 @@ class StakeOriginalsController {
     } else if (outcome === 'blackjack') {
       // 3:2 Natural Blackjack payout (2.5x bet total)
       const payout = this.capGrossPayout(this.bjBet, this.bjBet * 2.5);
-      this.adjustBalance(payout);
+      this.creditGame(payout);
       if (window.soundEngine) window.soundEngine.playWin();
       if (banner) {
         banner.textContent = `🃏 BLACKJACK! Paid 3:2 (+${payout} $DIG)!`;
@@ -2166,14 +2197,14 @@ class StakeOriginalsController {
       }
     } else if (outcome === 'win' || outcome === 'dealer_bust') {
       const payout = this.capGrossPayout(this.bjBet, this.bjBet * 2);
-      this.adjustBalance(payout);
+      this.creditGame(payout);
       if (window.soundEngine) window.soundEngine.playWin();
       if (banner) {
         banner.textContent = outcome === 'dealer_bust' ? `Dealer Busted! You Win +${payout} $DIG!` : `You Win +${payout} $DIG!`;
         banner.className = 'hg-result-banner active win';
       }
     } else if (outcome === 'push') {
-      this.adjustBalance(this.bjBet);
+      this.creditGame(this.bjBet);
       if (banner) {
         banner.textContent = `Push! Hand tied · ${this.bjBet} $DIG bet returned.`;
         banner.className = 'hg-result-banner active push';
@@ -2521,6 +2552,14 @@ class StakeOriginalsController {
     }
 
     const addAmt = this.rouletteChip;
+    const currentTotal = Object.values(this.rouletteBets).reduce((s, v) => s + v, 0);
+    if (currentTotal + addAmt > this.maxBet) {
+      this.showToast(`⚠️ Límite de ruleta: apuesta total máxima ${this.maxBet} $DIG por giro.`, 'loss');
+      if (window.soundEngine && typeof window.soundEngine.playBust === 'function') {
+        try { window.soundEngine.playBust(); } catch (_) {}
+      }
+      return;
+    }
     this.rouletteBets[betId] = (this.rouletteBets[betId] || 0) + addAmt;
     if (window.soundEngine) window.soundEngine.playChip();
     this.updateRouletteBetDisplay();
@@ -2766,7 +2805,7 @@ class StakeOriginalsController {
 
         if (totalWinnings > 0) {
           totalWinnings = this.capGrossPayout(totalCost, totalWinnings);
-          this.adjustBalance(totalWinnings);
+          this.creditGame(totalWinnings);
           setTimeout(() => {
             if (window.soundEngine) window.soundEngine.playWin();
           }, 150);
@@ -3087,7 +3126,7 @@ class StakeOriginalsController {
 
     if (isWin) {
       const payout = this.capGrossPayout(this.limboBet, this.limboBet * this.limboTarget);
-      this.adjustBalance(payout);
+      this.creditGame(payout);
       if (window.soundEngine && outcomeMultiplier >= 10.0 && typeof window.soundEngine.playCoins === 'function') {
         window.soundEngine.playCoins();
       }
@@ -3319,7 +3358,7 @@ class StakeOriginalsController {
       if (skipBtn) skipBtn.disabled = false;
       if (cashoutBtn) {
         cashoutBtn.disabled = this.hiloCurrentMultiplier <= 1.0;
-        const currentPayout = this.capGrossPayout(this.hiloBet, this.hiloBet * this.hiloCurrentMultiplier);
+        const currentPayout = this.capGrossPayout(this.hiloBet, this.hiloBet * this.hiloCurrentMultiplier, false);
         cashoutBtn.textContent = `Cashout: ${currentPayout.toLocaleString()} $DIG`;
         if (this.hiloCurrentMultiplier > 1.0) cashoutBtn.classList.add('active');
         else cashoutBtn.classList.remove('active');
@@ -3451,7 +3490,7 @@ class StakeOriginalsController {
     if (this.hiloState !== 'in_game' || this.hiloCurrentMultiplier <= 1.0) return;
 
     const payout = this.capGrossPayout(this.hiloBet, this.hiloBet * this.hiloCurrentMultiplier);
-    this.adjustBalance(payout);
+    this.creditGame(payout);
     this.hiloState = 'cashed';
 
     if (window.soundEngine) {
@@ -3766,7 +3805,7 @@ class StakeOriginalsController {
     this.renderKenoPaytable(matchedHits);
 
     if (mult > 0 && payout > 0) {
-      this.adjustBalance(payout);
+      this.creditGame(payout);
       if (window.soundEngine) {
         if (typeof window.soundEngine.playWin === 'function') window.soundEngine.playWin();
         if (mult >= 10 && typeof window.soundEngine.playCoins === 'function') window.soundEngine.playCoins();

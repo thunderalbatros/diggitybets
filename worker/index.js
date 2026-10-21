@@ -1520,6 +1520,16 @@ export default {
           }), { headers: corsHeaders });
         }
 
+        // Durable (D1-backed) cooldown: the in-memory limiter above resets per isolate, so also enforce 270s in the DB
+        if (env.DB) {
+          try {
+            const lastRow = await env.DB.prepare('SELECT last_watch_reward_at FROM users WHERE LOWER(username) = LOWER(?1)').bind(username).first();
+            if (lastRow && (Math.floor(Date.now() / 1000) - Number(lastRow.last_watch_reward_at || 0)) < 270) {
+              return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: true, reason: 'HEARTBEAT_COOLDOWN' }), { headers: corsHeaders });
+            }
+          } catch (_) {}
+        }
+
         const deviceHash = request.headers.get('x-device-fingerprint') || body.deviceHash || '';
         if (env.DB && deviceHash) {
           ctx.waitUntil(recordServerUserDevice(env.DB, username, deviceHash, clientIp));
@@ -1600,103 +1610,79 @@ export default {
       }
     }
 
-    // 12C. Phase 6 House Games Server-Authoritative Provably Fair Bet Endpoint (95% RTP, Max Bet 50 $DIG, Max Win Cap 500 $DIG)
+    // 12C. House Games Server Ledger (debit at bet time, credit at settlement).
+    // The server NEVER trusts a client-supplied multiplier. Every bet is debited atomically from the D1
+    // balance; every credit is validated against the debits actually recorded for that user:
+    //   - a single credit is at most 2 * (50 bet + 500 win cap) = 1100 $DIG
+    //   - credits in the last hour can never exceed debits + 500 per debited round, nor net +3000 $DIG/hour
+    // Requires a valid Kick OAuth session for the same username.
     if (url.pathname === '/api/games/bet' && request.method === 'POST') {
       try {
         const body = await request.json().catch(() => ({}));
-        const { game, betAmount, rawMultiplier, username, clientSeed, nonce, targetMultiplier, targetRoll, rollMode } = body;
-        const bet = Number(betAmount) || 0;
-        if (bet < 1 || bet > 50) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: bet > 50 ? 'MAX_BET_EXCEEDED: Maximum bet is 50 $DIG' : 'MIN_BET_INVALID: Minimum bet is 1 $DIG',
-            rtp: 95.0,
-            maxBet: 50,
-            maxWinCap: 500
-          }), { status: 400, headers: corsHeaders });
+        const action = String(body.action || '').toLowerCase();
+        const gameName = String(body.game || 'unknown').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24) || 'unknown';
+        const amount = Math.floor(Number(body.amount ?? body.betAmount) || 0);
+        const MAX_BET = 50;
+        const MAX_WIN_CAP = 500;
+        const MAX_SINGLE_CREDIT = 2 * (MAX_BET + MAX_WIN_CAP);
+        const MAX_NET_PER_HOUR = 3000;
+        const fail = (status, error) => new Response(JSON.stringify({ success: false, error, maxBet: MAX_BET, maxWinCap: MAX_WIN_CAP }), { status, headers: corsHeaders });
+
+        if (action !== 'debit' && action !== 'credit') return fail(400, 'ACTION_REQUIRED: use action=debit|credit (client multipliers are no longer trusted)');
+        if (!Number.isFinite(amount) || amount < 1) return fail(400, 'AMOUNT_INVALID: minimum is 1 $DIG');
+        if (action === 'debit' && amount > MAX_BET) return fail(400, `MAX_BET_EXCEEDED: Maximum bet is ${MAX_BET} $DIG`);
+        if (action === 'credit' && amount > MAX_SINGLE_CREDIT) return fail(400, 'CREDIT_TOO_LARGE');
+
+        const cleanUser = String(body.username || '').trim().replace(/^@+/, '');
+        if (!env.DB || !cleanUser) return fail(401, 'LOGIN_REQUIRED: link your Kick account to play with $DIG');
+        const session = await verifyUserSession(request, env, cleanUser);
+        if (!session.ok) return fail(403, `Forbidden: ${session.reason}`);
+
+        const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+        const rl = checkEdgeRateLimit(`${cleanUser.toLowerCase()}`, 'games_ledger', 90, 10_000);
+        if (!rl.allowed) return fail(429, 'RATE_LIMITED: slow down');
+
+        const userRow = await env.DB.prepare('SELECT id, points_balance, is_shadowbanned FROM users WHERE LOWER(username) = LOWER(?1)').bind(cleanUser).first();
+        if (!userRow) return fail(404, 'USER_NOT_LINKED');
+        if (Number(userRow.is_shadowbanned || 0) === 1) return fail(403, 'ACCOUNT_RESTRICTED');
+
+        const nowMs = Date.now();
+        let newBalance = Number(userRow.points_balance || 0);
+
+        if (action === 'debit') {
+          const upd = await env.DB.prepare('UPDATE users SET points_balance = points_balance - ?1 WHERE id = ?2 AND points_balance >= ?1').bind(amount, userRow.id).run();
+          if (!upd?.meta?.changes) {
+            return new Response(JSON.stringify({ success: false, error: 'INSUFFICIENT_BALANCE: Not enough $DIG points in server ledger', newBalance }), { status: 400, headers: corsHeaders });
+          }
+          newBalance -= amount;
+          await env.DB.prepare('INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
+            .bind(crypto.randomUUID(), userRow.id, -amount, newBalance, 'game_debit', gameName, null, nowMs).run();
+        } else {
+          const since = nowMs - 3_600_000;
+          const rows = await env.DB.prepare(`
+            SELECT type, COUNT(*) AS n, COALESCE(SUM(ABS(amount)), 0) AS s
+            FROM point_transactions
+            WHERE user_id = ?1 AND type IN ('game_debit', 'game_credit') AND created_at >= ?2
+            GROUP BY type
+          `).bind(userRow.id, since).all();
+          let debits = 0, debitCount = 0, credits = 0;
+          for (const r of (rows?.results || [])) {
+            if (r.type === 'game_debit') { debits = Number(r.s) || 0; debitCount = Number(r.n) || 0; }
+            if (r.type === 'game_credit') credits = Number(r.s) || 0;
+          }
+          const allowedCredits = debits + Math.min(MAX_WIN_CAP * debitCount, MAX_NET_PER_HOUR);
+          if (debitCount === 0 || credits + amount > allowedCredits) {
+            return new Response(JSON.stringify({ success: false, error: 'CREDIT_REJECTED: no matching bets in server ledger', newBalance }), { status: 400, headers: corsHeaders });
+          }
+          await env.DB.prepare('UPDATE users SET points_balance = points_balance + ?1 WHERE id = ?2').bind(amount, userRow.id).run();
+          newBalance += amount;
+          await env.DB.prepare('INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
+            .bind(crypto.randomUUID(), userRow.id, amount, newBalance, 'game_credit', gameName, null, nowMs).run();
         }
 
-        // Compute server-authoritative CSPRNG / HMAC-SHA256 Provably Fair roll
-        const pfSecret = env?.USER_SESSION_SECRET || env?.ADMIN_API_SECRET || 'hunthub-provably-fair-edge-seed';
-        const randBytes = new Uint32Array(2);
-        crypto.getRandomValues(randBytes);
-        const seedMsg = `${clientSeed || 'kick_diggitybets'}:${Number(nonce) || Date.now()}:${randBytes[0]}`;
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey('raw', enc.encode(pfSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-        const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(seedMsg));
-        const sigArr = new Uint8Array(sigBuf);
-        const hashHex = Array.from(sigArr).map(b => b.toString(16).padStart(2, '0')).join('');
-        const intVal = ((sigArr[0] << 24) | (sigArr[1] << 16) | (sigArr[2] << 8) | sigArr[3]) >>> 0;
-        const rollFloat = intVal / 0x100000000;
-
-        const gameName = String(game || 'plinko').toLowerCase();
-        let mult = Number(rawMultiplier);
-        let rollOutcome = Number((rollFloat * 100).toFixed(2));
-
-        if (!Number.isFinite(mult) || body.serverAuthoritative === true) {
-          if (gameName === 'limbo' || gameName === 'crash') {
-            const crashPoint = Math.max(1.0, Math.floor((0.95 / Math.max(0.0001, 1.0 - rollFloat)) * 100) / 100);
-            const target = Math.max(1.01, Number(targetMultiplier) || 2.0);
-            rollOutcome = crashPoint;
-            mult = crashPoint >= target ? target : 0;
-          } else if (gameName === 'dice') {
-            const target = Math.min(98, Math.max(2, Number(targetRoll) || 50));
-            const isOver = String(rollMode || 'over').toLowerCase() !== 'under';
-            const winChance = isOver ? (100 - target) : target;
-            const won = isOver ? (rollOutcome > target) : (rollOutcome < target);
-            mult = won ? Number((95 / winChance).toFixed(4)) : 0;
-          } else if (gameName === 'plinko') {
-            const plinkoMults = [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6];
-            let bucket = 0;
-            for (let i = 0; i < 8; i++) {
-              bucket += (sigArr[4 + i] & 1);
-            }
-            rollOutcome = bucket;
-            mult = plinkoMults[bucket] ?? 0.5;
-          } else if (!Number.isFinite(mult)) {
-            mult = rollFloat < 0.475 ? 2.0 : 0;
-          }
-        }
-
-        const rawPayout = mult > 0 ? Math.floor(bet * mult) : 0;
-        const cappedPayout = rawPayout > 0 ? Math.min(rawPayout, bet + 500) : 0;
-        const netProfit = cappedPayout - bet;
-        let newBalance = undefined;
-
-        const cleanUser = String(username || '').trim().replace(/^@+/, '');
-        if (env.DB && cleanUser) {
-          const session = await verifyUserSession(request, env, cleanUser);
-          if (!session.ok) {
-            return new Response(JSON.stringify({ success: false, error: `Forbidden: ${session.reason}` }), { status: 403, headers: corsHeaders });
-          }
-          const userRow = await env.DB.prepare('SELECT id, points_balance FROM users WHERE LOWER(username) = LOWER(?1)').bind(cleanUser).first();
-          if (!userRow || Number(userRow.points_balance || 0) < bet) {
-            return new Response(JSON.stringify({
-              success: false,
-              error: 'INSUFFICIENT_BALANCE: Not enough $DIG points in server ledger'
-            }), { status: 400, headers: corsHeaders });
-          }
-          newBalance = Math.max(0, Number(userRow.points_balance) + netProfit);
-          await env.DB.prepare('UPDATE users SET points_balance = ?1 WHERE id = ?2').bind(newBalance, userRow.id).run();
-        }
-
-        return new Response(JSON.stringify({
-          success: true,
-          game: gameName,
-          betAmount: bet,
-          rawPayout,
-          cappedPayout,
-          netProfit,
-          newBalance,
-          rollFloat,
-          rollOutcome,
-          provablyFairHash: hashHex,
-          rtp: 95.0,
-          maxBet: 50,
-          maxWinCap: 500
-        }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true, action, game: gameName, amount, newBalance, maxBet: MAX_BET, maxWinCap: MAX_WIN_CAP }), { headers: corsHeaders });
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: err.message }), { status: 400, headers: corsHeaders });
       }
     }
 
@@ -2575,6 +2561,13 @@ export default {
         if (!cleanUser || cleanUser.length > 64 || ignored.has(cleanUser) || cleanUser.startsWith('kickuser_')) {
           const lbOnly = await buildGlobalMonthlyLeaderboard(env.DB, '');
           return new Response(JSON.stringify({ ok: true, ...lbOnly }), { headers: noCacheHeaders });
+        }
+
+        // Security: never create accounts or mint session tokens from an unauthenticated username.
+        const syncSession = await verifyUserSession(request, env, cleanUser);
+        if (!syncSession.ok) {
+          const lbPublic = await buildGlobalMonthlyLeaderboard(env.DB, '');
+          return new Response(JSON.stringify({ ok: true, authenticated: false, reason: syncSession.reason, ...lbPublic }), { headers: noCacheHeaders });
         }
 
         const nowSec = Math.floor(Date.now() / 1000);
