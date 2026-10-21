@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   sync-slot-intel:
     runs-on: ubuntu-latest
@@ -16,25 +19,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Sync Multi-Casino Catalog & Live RTP Snapshot
         run: node tools/sync_live_casino_intel.mjs
 
-      - name: Rebuild Production Bundle (dist/)
+      - name: Verify Production Bundle Build (dist/)
         run: node tools/build_dist.mjs
 
       - name: Commit & Push Updated Catalog and Live Telemetry
         run: |
           git config user.name "DiggityBets Intel Bot"
           git config user.email "intel-bot@diggitybets.vip"
-          git add data/curated_slots.js data/live_casino_intel.json site/data/live_casino_intel.json dist/
+          git add data/curated_slots.js data/live_casino_intel.json site/data/live_casino_intel.json
           if git diff --staged --quiet; then
             echo "No catalog or telemetry changes to commit."
           else
             git commit -m "chore(intel): auto-sync multi-casino slot catalog & live RTP telemetry [skip ci]"
+            git pull --rebase origin main || true
             git push
           fi
