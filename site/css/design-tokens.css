@@ -134,7 +134,9 @@ dialog[open],
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *:not(#topbar-dig-balance-pill),
+  *:not(#topbar-dig-balance-pill)::before,
+  *:not(#topbar-dig-balance-pill)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

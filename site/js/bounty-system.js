@@ -873,9 +873,10 @@
 
       var claimBtns = gridEl.querySelectorAll('[data-claim-bounty-id]');
       for (var j = 0; j < claimBtns.length; j++) {
-        claimBtns[j].addEventListener('click', function() {
+        claimBtns[j].addEventListener('click', function(ev) {
           var bId = this.getAttribute('data-claim-bounty-id');
-          self.openClaimModal(bId);
+          var cardEl = this.closest('.bounty-card-3d') || ev.currentTarget;
+          self.openClaimModal(bId, cardEl);
         });
       }
 
@@ -895,7 +896,7 @@
       if (!feedEl) return;
       var approved = this.claims.filter(function(c) { return c.status === 'APPROVED'; });
       if (approved.length === 0) {
-        feedEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:18px;color:#cbd5e1;">ESPACIO VACÍO — Waiting for the first verified Code: <strong>diggity</strong> Bounty Hunter!</td></tr>';
+        feedEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:18px;color:#cbd5e1;">OPEN LEDGER — Waiting for the first verified Code: <strong>diggity</strong> Bounty Hunter!</td></tr>';
         return;
       }
       feedEl.innerHTML = approved.slice(0, 10).map(function(c) {
@@ -936,13 +937,19 @@
       });
     },
 
-    openClaimModal: function(bountyId) {
+    openClaimModal: function(bountyId, anchorEl) {
       var bounty = this.bounties.find(function(b) { return b.id === bountyId; });
       if (!bounty) return;
       this.activeModalBountyId = bounty.id;
 
       var backdrop = document.getElementById('bounty-claim-modal-backdrop');
       if (!backdrop) return;
+      if (backdrop.parentNode !== document.body) {
+        document.body.appendChild(backdrop);
+      }
+
+      var modalCard = backdrop.querySelector('.bounty-claim-modal');
+      var targetCard = anchorEl || document.querySelector('.bounty-card-3d[data-bounty-id="' + bounty.id + '"]');
 
       var titleEl = document.getElementById('bounty-modal-slot-title');
       var reqEl = document.getElementById('bounty-modal-req-summary');
@@ -967,6 +974,31 @@
 
       this.evaluateModalLiveChecks();
       backdrop.classList.add('is-open');
+
+      if (modalCard && targetCard && typeof targetCard.getBoundingClientRect === 'function') {
+        var rect = targetCard.getBoundingClientRect();
+        var vw = window.innerWidth || document.documentElement.clientWidth || 1280;
+        var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+        var modalW = Math.min(520, vw - 24);
+        var modalH = Math.min(modalCard.offsetHeight || 430, vh - 24);
+        var left = rect.left + (rect.width / 2) - (modalW / 2);
+        var top = rect.top + (rect.height / 2) - (modalH / 2);
+        left = Math.max(12, Math.min(left, vw - modalW - 12));
+        top = Math.max(12, Math.min(top, vh - modalH - 12));
+        modalCard.classList.add('is-card-anchored');
+        modalCard.style.left = Math.round(left) + 'px';
+        modalCard.style.top = Math.round(top) + 'px';
+      } else if (modalCard) {
+        modalCard.classList.remove('is-card-anchored');
+        modalCard.style.left = '';
+        modalCard.style.top = '';
+      }
+
+      if (betIdInp) {
+        setTimeout(function() {
+          try { betIdInp.focus({ preventScroll: true }); } catch (_) {}
+        }, 30);
+      }
     },
 
     closeClaimModal: function() {
@@ -1070,6 +1102,12 @@
       var self = this;
       var closeBtn = document.getElementById('btn-close-bounty-modal');
       if (closeBtn) closeBtn.addEventListener('click', function() { self.closeClaimModal(); });
+      var backdrop = document.getElementById('bounty-claim-modal-backdrop');
+      if (backdrop) {
+        backdrop.addEventListener('click', function(e) {
+          if (e.target === backdrop) self.closeClaimModal();
+        });
+      }
 
       var inputs = ['bounty-claim-bet-id', 'bounty-claim-bet-usd', 'bounty-claim-payout-usd', 'bounty-claim-multiplier'];
       for (var i = 0; i < inputs.length; i++) {

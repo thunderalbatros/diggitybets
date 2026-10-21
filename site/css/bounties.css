@@ -644,8 +644,8 @@
   position: fixed;
   inset: 0;
   z-index: 9500;
-  background: rgba(4, 7, 14, 0.84);
-  backdrop-filter: blur(8px);
+  background: rgba(4, 7, 14, 0.65);
+  backdrop-filter: blur(4px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -657,14 +657,22 @@
 }
 
 .bounty-claim-modal {
-  width: 100%;
-  max-width: 540px;
+  width: min(520px, calc(100vw - 24px));
+  max-width: 520px;
   border-radius: 18px;
   background: linear-gradient(165deg, #0d1424 0%, #070b14 100%);
-  border: 1.5px solid rgba(83, 252, 24, 0.45);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.88);
-  padding: 22px 24px;
+  border: 1.5px solid rgba(83, 252, 24, 0.55);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.92), 0 0 28px rgba(83, 252, 24, 0.18);
+  padding: 20px 22px;
   color: #ffffff;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.bounty-claim-modal.is-card-anchored {
+  position: fixed;
+  margin: 0;
+  z-index: 9501;
 }
 
 .bounty-auto-checks-box {

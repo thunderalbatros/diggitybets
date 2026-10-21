@@ -616,6 +616,26 @@ class AdminHubController {
       } catch (e) { claims = []; }
     }
 
+    let deletedIds = new Set();
+    try {
+      const savedDeleted = JSON.parse(localStorage.getItem('hunthub_deleted_claim_ids') || '[]');
+      if (Array.isArray(savedDeleted)) deletedIds = new Set(savedDeleted.map(String));
+    } catch (_) {}
+
+    const getClaimCompositeKey = (c) => {
+      const u = String(c?.kick_username || c?.username || '').trim().toLowerCase().replace(/^@/, '');
+      const v = String(c?.voucher_title || c?.voucherTitle || '').trim().toLowerCase();
+      const t = String(c?.created_at || c?.timestamp || '');
+      return `${u}:${v}:${t}`;
+    };
+
+    claims = claims.filter(c => {
+      const cid = String(c?.id || '');
+      if (cid && deletedIds.has(cid)) return false;
+      if (deletedIds.has(getClaimCompositeKey(c))) return false;
+      return true;
+    });
+
     let filtered = claims;
     if (this.currentFilter === 'pending') {
       filtered = claims.filter(c => c.status === 'PENDING');
@@ -705,7 +725,7 @@ class AdminHubController {
               <button type="button" class="btn-chat-toggle btn-copy-claim-info" data-user="${username}" data-voucher="${safeVoucher}" title="Copy chat shoutout" style="padding: 4px 8px; font-size: 11px;">
                 📋
               </button>
-              <button type="button" class="btn-chat-toggle btn-delete-claim" data-id="${safeId}" data-user="${username}" title="Delete claim 🗑️" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12);">
+              <button type="button" class="btn-chat-toggle btn-delete-claim" data-id="${safeId}" data-user="${username}" data-voucher="${safeVoucher}" data-ts="${this.escapeHTML(c.created_at || c.timestamp || '')}" title="Delete claim 🗑️" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12);">
                 🗑️
               </button>
             </div>
@@ -722,7 +742,7 @@ class AdminHubController {
       b.onclick = () => this.rejectClaim(b.dataset.id, b.dataset.user);
     });
     tbody.querySelectorAll('.btn-delete-claim').forEach(b => {
-      b.onclick = () => this.deleteClaim(b.dataset.id, b.dataset.user);
+      b.onclick = () => this.deleteClaim(b.dataset.id, b.dataset.user, b.dataset.voucher, b.dataset.ts, b.closest('tr'));
     });
     tbody.querySelectorAll('.btn-copy-wallet').forEach(b => {
       b.onclick = () => {
@@ -800,7 +820,7 @@ class AdminHubController {
     this.renderClaimsQueue();
   }
 
-  async deleteClaim(id, username) {
+  async deleteClaim(id, username, voucherTitle = '', ts = '', rowEl = null) {
     const confirmed = typeof window.showCasinoConfirm === 'function'
       ? await window.showCasinoConfirm({
           title: 'DELETE STORE CLAIM',
@@ -814,18 +834,36 @@ class AdminHubController {
       : confirm(`Are you sure you want to permanently delete the claim for @${username}?`);
     if (!confirmed) return;
 
+    const compositeKey = `${String(username || '').trim().toLowerCase().replace(/^@/, '')}:${String(voucherTitle || '').trim().toLowerCase()}:${String(ts || '')}`;
+    try {
+      const savedDeleted = JSON.parse(localStorage.getItem('hunthub_deleted_claim_ids') || '[]');
+      const set = new Set(Array.isArray(savedDeleted) ? savedDeleted.map(String) : []);
+      if (id) set.add(String(id));
+      if (compositeKey) set.add(compositeKey);
+      localStorage.setItem('hunthub_deleted_claim_ids', JSON.stringify(Array.from(set).slice(-300)));
+    } catch (_) {}
+
+    if (rowEl && typeof rowEl.remove === 'function') {
+      rowEl.remove();
+    }
+
     try {
       await fetch('/api/admin/delete-store-redemption', {
         method: 'POST',
         headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ redemptionId: id, adminUser: 'diggitybets' })
+        body: JSON.stringify({ redemptionId: id, username, voucherTitle, adminUser: 'diggitybets' })
       });
     } catch (_) {}
 
     // Local storage removal
     try {
       let claims = JSON.parse(localStorage.getItem(this.storageKeyClaims) || '[]');
-      claims = claims.filter(c => String(c.id) !== String(id));
+      claims = claims.filter(c => {
+        if (id && String(c.id) === String(id)) return false;
+        const cKey = `${String(c.kick_username || c.username || '').trim().toLowerCase().replace(/^@/, '')}:${String(c.voucher_title || c.voucherTitle || '').trim().toLowerCase()}:${String(c.created_at || c.timestamp || '')}`;
+        if (cKey === compositeKey) return false;
+        return true;
+      });
       localStorage.setItem(this.storageKeyClaims, JSON.stringify(claims));
     } catch (_) {}
 
@@ -2464,7 +2502,8 @@ class AdminHubController {
         slotName: winningPlayer.slotName,
         slotImg: winningPlayer.slotImage,
         statValue: statLabel,
-        prize: `Congratulations @${cleanWinnerHandle} has won the tourney!`
+        customMessage: `@${cleanWinnerHandle} has won the tourney`,
+        prize: `@${cleanWinnerHandle} has won the tourney`
       });
 
       // If a viewer won the 8-Bracket Prediction contest, announce them right after!
@@ -3328,7 +3367,7 @@ class AdminHubController {
     const prizeUsd = Math.min(20, streakNum * 5);
     const isMaxPrize = streakNum >= 4;
     this.announceStreamWinner({
-      eventType: 'battle',
+      eventType: isMaxPrize ? 'koth_champion' : 'battle',
       tier: isMaxPrize ? 'grand' : 'partial',
       type: isMaxPrize ? 'KOTH_CHAMPION' : 'BATTLE_WIN',
       category: isMaxPrize ? 'KING OF THE HILL · $20 MAX CHAMPION' : `1V1 BATTLE WINNER · STREAK ${streakNum}/4`,
@@ -3338,6 +3377,7 @@ class AdminHubController {
       slotName: resolvedSlot.name,
       slotImg: resolvedSlot.image,
       statValue: scoreDetail || 'WIN',
+      customMessage: isMaxPrize ? `@${winUserClean} is the King of the Hill !` : `@${winUserClean} has won the battle`,
       prize: isMaxPrize ? '🏆 MAX PRIZE WON: $20.00 USD!' : `STREAK ${streakNum}/4 · $${prizeUsd}.00 USD BANKED`
     });
 
@@ -3713,6 +3753,18 @@ class AdminHubController {
           try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
           this.renderDuoQueue();
         }
+        if (Array.isArray(data.slotRequests) && window.bonusHunt) {
+          const remoteReqs = data.slotRequests.filter(r => isCleanUser(r?.caller || r?.user || ''));
+          const localReqs = Array.isArray(window.bonusHunt.slotRequests) ? window.bonusHunt.slotRequests : [];
+          const remoteSig = JSON.stringify(remoteReqs.map(r => `${r.caller || r.user}:${r.name}`));
+          const localSig = JSON.stringify(localReqs.map(r => `${r.caller || r.user}:${r.name}`));
+          if (remoteSig !== localSig && (remoteReqs.length > 0 || localReqs.length === 0)) {
+            window.bonusHunt.slotRequests = remoteReqs;
+            try { localStorage.setItem('hunthub_slot_requests', JSON.stringify(remoteReqs)); } catch (_) {}
+            if (typeof window.bonusHunt.renderSlotRequests === 'function') window.bonusHunt.renderSlotRequests();
+            if (typeof window.bonusHunt.drawSlotWheel === 'function') window.bonusHunt.drawSlotWheel(window.bonusHunt.wheelAngle || 0);
+          }
+        }
         if (Array.isArray(data.activeChatters) && data.activeChatters.length > 0) {
           for (const c of data.activeChatters) {
             const cname = String(c?.username || c?.user || '').trim().replace(/^@/, '');
@@ -3728,7 +3780,15 @@ class AdminHubController {
             const mid = String(m?.id || '');
             if (!mid || this._loggedEdgeMsgIds.has(mid)) continue;
             this._loggedEdgeMsgIds.add(mid);
-            this.logLiveChatActivityToDOM(m.username, m.content, Boolean(m.isCommand));
+            if (m.isBotAnnouncement || String(m.username || '').toLowerCase() === 'diggitybot') {
+              this.appendChatAnnouncementToDOM({
+                id: mid,
+                message: m.content,
+                ts: m.ts || Date.now()
+              });
+            } else {
+              this.logLiveChatActivityToDOM(m.username, m.content, Boolean(m.isCommand));
+            }
           }
           const statusEl = document.getElementById('cp-kick-ws-status');
           if (statusEl) {
@@ -3996,7 +4056,7 @@ class AdminHubController {
         this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot, spinId);
         this.updateWheelTargetUI();
         this.announceStreamWinner({
-          eventType: 'picked',
+          eventType: 'sr_wheel_picked',
           tier: 'partial',
           type: 'WHEEL_PICKED',
           category: `1V1 BATTLE · ${targetCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'} PICKED`,
@@ -4006,12 +4066,13 @@ class AdminHubController {
           slotName: winner.slot,
           slotImg: winner.imageUrl,
           statValue: `CORNER ${targetCorner}`,
+          customMessage: `@${String(winner.chatter || '').replace(/^@/, '')} has been picked on roulette with (${winner.slot})`,
           prize: `Picked on Dual Wheel (${winner.slot})!`
         });
         if (window.sonner) {
           window.sonner.toast({
             title: `Winner ${targetCorner === 'A' ? 'A (Blue Corner)' : 'B (Red Corner)'} Selected! 🎰`,
-            message: `Congratulations @${winner.chatter} has been picked! ("${winner.slot}")`,
+            message: `@${winner.chatter} has been picked on roulette with (${winner.slot})`,
             type: targetCorner === 'A' ? 'cyan' : 'gold'
           });
         }
@@ -4019,7 +4080,7 @@ class AdminHubController {
         // Auto-assign winner to 8-Bracket Tournament Seed (1/8 .. 8/8) and wrap to 1/8 after 8/8
         this.assignWheelWinnerToTourneySeed(winner.chatter, winner.slot, spinId, targetSeed);
         this.announceStreamWinner({
-          eventType: 'picked',
+          eventType: 'sr_wheel_picked',
           tier: 'partial',
           type: 'WHEEL_PICKED',
           category: `8-BRACKET TOURNEY · SEED ${targetSeed}/8 PICKED`,
@@ -4029,6 +4090,7 @@ class AdminHubController {
           slotName: winner.slot,
           slotImg: winner.imageUrl,
           statValue: `SEED #${targetSeed}`,
+          customMessage: `@${String(winner.chatter || '').replace(/^@/, '')} has been picked on roulette with (${winner.slot})`,
           prize: `Picked for 8-Bracket Tourney (${winner.slot})!`
         });
         if (window.sonner) {
@@ -4270,15 +4332,21 @@ class AdminHubController {
     }, 6850);
   }
 
-  formatWinnerAnnouncementText(eventType, username, customMessage = '') {
+  formatWinnerAnnouncementText(eventType, username, customMessage = '', slotName = '') {
     const cleanUser = String(username || 'Winner').trim().replace(/^@/, '') || 'Winner';
     if (customMessage) return String(customMessage).trim();
     const norm = String(eventType || 'picked').trim().toLowerCase();
-    if (norm === 'battle' || norm === 'battle_win' || norm === 'koth_champion' || norm === 'koth_cashout') {
-      return `Congratulations @${cleanUser} has won the battle!`;
+    if (norm === 'sr_wheel_picked' || norm === 'wheel_picked' || norm === 'slot_wheel_picked') {
+      return `@${cleanUser} has been picked on roulette with (${slotName || 'Slot'})`;
+    }
+    if (norm === 'koth_champion') {
+      return `@${cleanUser} is the King of the Hill !`;
+    }
+    if (norm === 'battle' || norm === 'battle_win' || norm === 'koth_cashout') {
+      return `@${cleanUser} has won the battle`;
     }
     if (norm === 'tourney' || norm === 'tournament' || norm === 'tourney_champion') {
-      return `Congratulations @${cleanUser} has won the tourney!`;
+      return `@${cleanUser} has won the tourney`;
     }
     if (norm === 'gtb' || norm === 'guess' || norm === 'bonushunt_gtb') {
       return `Congratulations @${cleanUser} has won the gtb!`;
@@ -4289,13 +4357,52 @@ class AdminHubController {
     if (norm === 'giveaway' || norm === 'raffle') {
       return `Congratulations @${cleanUser} has won the giveaway!`;
     }
+    if (slotName) {
+      return `@${cleanUser} has been picked on roulette with (${slotName})`;
+    }
     return `Congratulations @${cleanUser} has been picked!`;
+  }
+
+  announceEventChatMessage(message, opts = {}) {
+    const cleanMsg = String(message || '').trim();
+    if (!cleanMsg) return null;
+    const now = Date.now();
+    if (this._lastEventChatMsg === cleanMsg && this._lastEventChatTs && (now - this._lastEventChatTs) < 2500) {
+      return null;
+    }
+    this._lastEventChatMsg = cleanMsg;
+    this._lastEventChatTs = now;
+
+    const cleanUser = String(opts.username || '').trim().replace(/^@/, '');
+    const eventType = String(opts.type || opts.eventType || 'entry').trim().toLowerCase();
+    const annObj = {
+      id: 'ann_' + now + '_' + Math.random().toString(36).slice(2, 6),
+      eventType,
+      username: cleanUser ? `@${cleanUser}` : 'DiggityBot',
+      slotName: opts.slotName || '',
+      message: cleanMsg,
+      ts: now
+    };
+    this.appendChatAnnouncementToDOM(annObj);
+
+    fetch('/api/kick/chat/announce', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        eventType,
+        username: cleanUser || 'DiggityBot',
+        slotName: opts.slotName || '',
+        customMessage: cleanMsg
+      })
+    }).catch(() => {});
+
+    return annObj;
   }
 
   announceStreamWinner(opts = {}) {
     const cleanUser = String(opts.username || 'Winner').trim().replace(/^@/, '') || 'Winner';
     const eventType = String(opts.eventType || opts.type || 'picked').trim().toLowerCase();
-    const message = this.formatWinnerAnnouncementText(eventType, cleanUser, opts.customMessage || opts.announcementText || '');
+    const message = this.formatWinnerAnnouncementText(eventType, cleanUser, opts.customMessage || opts.announcementText || '', opts.slotName || '');
     const now = Date.now();
 
     // Prevent duplicate double-triggers within 3.5 seconds for the exact same winner & eventType
@@ -4355,7 +4462,7 @@ class AdminHubController {
       timeSpan.textContent = `[${timeStr}] `;
       const botBadge = document.createElement('strong');
       botBadge.style.color = '#ffd700';
-      botBadge.textContent = '🤖 DIGGITY BOT: ';
+      botBadge.textContent = '🤖 DiggityBot: ';
       const msgSpan = document.createElement('span');
       msgSpan.style.color = '#53fc18';
       msgSpan.textContent = ann.message;
@@ -4369,7 +4476,7 @@ class AdminHubController {
       if (!feedEl) return;
       const row = document.createElement('div');
       row.style.cssText = 'padding: 6px 10px; margin: 4px 0; border-radius: 8px; background: linear-gradient(90deg, rgba(255, 215, 0, 0.16), rgba(83, 252, 24, 0.08)); border: 1px solid rgba(255, 215, 0, 0.45); font-size: 12px; font-weight: 800; color: #ffd700;';
-      row.textContent = `🏆 ${ann.message}`;
+      row.textContent = `🤖 DiggityBot: ${ann.message}`;
       feedEl.prepend(row);
     });
   }
@@ -4844,6 +4951,14 @@ class AdminHubController {
     }
 
     this.pushDuoQueuesToEdge();
+    const entryMsg = mode === 'tourney'
+      ? `@${cleanUser} entered with ${meta.name} for tourney`
+      : `@${cleanUser} has entered with ${meta.name} to battle`;
+    this.announceEventChatMessage(entryMsg, {
+      type: mode === 'tourney' ? 'TOURNEY_ENTRY' : 'BATTLE_ENTRY',
+      username: cleanUser,
+      slotName: meta.name
+    });
     return true;
   }
 

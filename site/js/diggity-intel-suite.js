@@ -1520,21 +1520,44 @@
 
       if (btnQueueSr) {
         btnQueueSr.onclick = () => {
-          if (!this.lastRevealedVaultSlot) return;
-          const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
-          if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
-            window.bonusHunt.addSlotRequest(user, this.lastRevealedVaultSlot.name, false);
-          } else if (window.sonner) {
-            window.sonner.toast({
-              title: 'Sent to !sr Wheel! 🎡',
-              message: `${this.lastRevealedVaultSlot.name} added to Slot Requests.`,
-              type: 'gold'
+          const fallbackCard = Array.isArray(this.vaultRoundDeck) && this.vaultRoundDeck.length > 0
+            ? this.vaultRoundDeck[this.vaultRoundDeck.length - 1]
+            : null;
+          const targetSlot = this.lastRevealedVaultSlot || fallbackCard;
+          if (!targetSlot) {
+            this.showVaultSrStatusCard({
+              status: 'warning',
+              title: 'No Revealed Slot Card Yet',
+              detail: 'Rip open a Holo-Vault pack first to reveal a slot card and send it to the !sr Roulette.'
             });
+            return;
+          }
+          const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
+          let addedEntry = null;
+          if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
+            addedEntry = window.bonusHunt.addSlotRequest(user, targetSlot.name, false);
           }
           if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
             window.adminHub.renderSlotRequestsAdmin();
           }
           this.updateVaultSrQuotaUI();
+          const activeCount = (window.bonusHunt && typeof window.bonusHunt.getActiveSlotRequestCountForUser === 'function')
+            ? window.bonusHunt.getActiveSlotRequestCountForUser(user)
+            : 1;
+          if (addedEntry) {
+            this.showVaultSrStatusCard({
+              status: 'success',
+              title: `Queued in !sr Roulette: ${addedEntry.name}`,
+              detail: `Synced live to the !sr Roulette Overlay & Control Panel for ${addedEntry.user} (${activeCount}/3 active requests).`,
+              slots: [addedEntry.name]
+            });
+          } else {
+            this.showVaultSrStatusCard({
+              status: 'warning',
+              title: `Could Not Queue "${targetSlot.name}"`,
+              detail: `Either "${targetSlot.name}" is already in the wheel or you reached the maximum of 3 active !sr requests (${activeCount}/3).`
+            });
+          }
         };
       }
     }
@@ -2013,8 +2036,8 @@
 
         if (window.sonner) {
           window.sonner.toast({
-            title: `🃏 ${rarityTier === 'mythic-gold' ? 'MYTHIC 24K FOIL' : 'Holo-Vault'} Revelada: ${chosen.name}!`,
-            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'} (${rtpFormatted.toFixed(2)}% RTP) · Guardada en la Ronda`,
+            title: `🃏 ${rarityTier === 'mythic-gold' ? 'MYTHIC 24K FOIL' : 'Holo-Vault'} Revealed: ${chosen.name}!`,
+            message: `${chosen.provider} · Max Win ${chosen.maxWin || '10,000x'} (${rtpFormatted.toFixed(2)}% RTP) · Saved to Round Tray`,
             type: rarityTier === 'mythic-gold' ? 'gold' : 'green'
           });
         }
@@ -2049,12 +2072,12 @@
             <div>
               ✨ REVEALED [${rarityBadge}]: <strong>${chosen.name}</strong> (${chosen.provider}) · RTP: ${rtpFormatted.toFixed(2)}% · Max Win: ${chosen.maxWin || '15,000x'}
               <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 12px; background: rgba(83, 252, 24, 0.18); border: 1px solid #53fc18; color: #53fc18; font-size: 11px;">
-                🃏 En Ronda (${deckIndex}/10)
+                🃏 In Round (${deckIndex}/10)
               </span>
             </div>
             <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff; padding: 3px 10px; border-radius: 14px; font-size: 11.5px; font-weight: 900;">
               <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #00e5ff; animation: vaultCountdownPulse 1s infinite;"></span>
-              <span>Exhibiendo carta (${secondsLeft}s) · Auto-cerrando sobre</span>
+              <span>Showcasing card (${secondsLeft}s) · Auto-sealing pack</span>
             </div>
           </div>
         `;
@@ -2101,7 +2124,7 @@
       if (statsEl) {
         statsEl.style.color = 'var(--gold)';
         statsEl.style.borderColor = 'rgba(255, 215, 0, 0.35)';
-        statsEl.innerHTML = `🔒 <strong>PAQUETE CERRADO</strong> — La carta anterior está guardada en la Ronda (${count}/10 cartas). ¡Haz clic en el sobre o en "⚡ RIP NEXT PACK" para rasgar el nuevo sobre!`;
+        statsEl.innerHTML = `🔒 <strong>PACK SEALED</strong> — Your previous card is saved in the Round Tray (${count}/10 cards). Click the pack or "⚡ RIP NEXT PACK" to tear open a new booster pack!`;
       }
       if (btnRip) {
         btnRip.innerHTML = '⚡ RIP NEXT PACK';
@@ -2111,6 +2134,48 @@
     // =========================================================================
     // 5.2 10-CARD ROUND VAULT TRAY (Viewer Picks & Community Deck)
     // =========================================================================
+    showVaultSrStatusCard(opts = {}) {
+      const cardEl = document.getElementById('vault-sr-status-card');
+      if (!cardEl) return;
+      const isOk = opts.status !== 'warning';
+      const accent = isOk ? '#53fc18' : '#ffd700';
+      const bgGrad = isOk
+        ? 'linear-gradient(135deg, rgba(83, 252, 24, 0.16) 0%, rgba(11, 18, 30, 0.96) 100%)'
+        : 'linear-gradient(135deg, rgba(255, 215, 0, 0.16) 0%, rgba(18, 16, 10, 0.96) 100%)';
+      const icon = isOk ? '✅' : '⚠️';
+      const safeTitle = this.escapeHTML(opts.title || 'Action Executed');
+      const safeDetail = this.escapeHTML(opts.detail || '');
+      const slotsList = Array.isArray(opts.slots) && opts.slots.length > 0
+        ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${opts.slots.map(s => `<span style="padding:3px 9px;border-radius:999px;background:rgba(83,252,24,0.16);border:1px solid rgba(83,252,24,0.5);color:#53fc18;font-family:var(--font-display);font-size:11px;font-weight:800;">🎰 ${this.escapeHTML(s)}</span>`).join('')}</div>`
+        : '';
+
+      cardEl.style.display = 'flex';
+      cardEl.style.background = bgGrad;
+      cardEl.style.borderColor = accent;
+      cardEl.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1;">
+          <span style="font-size:18px;line-height:1.1;">${icon}</span>
+          <div style="min-width:0;flex:1;">
+            <div style="font-family:var(--font-display);font-size:13px;font-weight:900;color:${accent};letter-spacing:0.3px;">${safeTitle}</div>
+            <div style="font-size:12px;color:#e2e8f0;margin-top:2px;">${safeDetail}</div>
+            ${slotsList}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span style="padding:4px 10px;border-radius:999px;background:rgba(0,229,255,0.14);border:1px solid rgba(0,229,255,0.45);color:#00e5ff;font-family:var(--font-display);font-size:10.5px;font-weight:900;">LIVE IN ROULETTE &amp; CONTROL PANEL</span>
+          <button type="button" id="btn-close-vault-sr-status" class="btn-chat-toggle" style="padding:3px 8px;font-size:11px;">✕</button>
+        </div>
+      `;
+      const closeBtn = cardEl.querySelector('#btn-close-vault-sr-status');
+      if (closeBtn) {
+        closeBtn.onclick = () => { cardEl.style.display = 'none'; };
+      }
+      if (this._vaultStatusCardTimer) clearTimeout(this._vaultStatusCardTimer);
+      this._vaultStatusCardTimer = setTimeout(() => {
+        if (cardEl) cardEl.style.display = 'none';
+      }, 9000);
+    }
+
     addSlotToVaultRoundDeck(slot, rarityTier, rtpFormatted) {
       if (!slot) return;
       if (!Array.isArray(this.vaultRoundDeck)) this.vaultRoundDeck = [];
@@ -2118,8 +2183,8 @@
       if (this.vaultRoundDeck.length >= 10) {
         if (window.sonner) {
           window.sonner.toast({
-            title: '🃏 Ronda Completa (10/10 Cartas)',
-            message: 'La bandeja de 10 cartas está llena. Añade las cartas al Bonus Hunt o pulsa "Nueva Ronda" para reiniciar.',
+            title: '🃏 Round Tray Full (10/10 Cards)',
+            message: 'The 10-card round tray is full. Load your selected cards to the !sr Roulette or click "New Round" to reset.',
             type: 'gold'
           });
         }
@@ -2160,8 +2225,8 @@
         this.renderVaultRoundTray();
         if (window.sonner && removed[0]) {
           window.sonner.toast({
-            title: '🗑️ Carta removida de la ronda',
-            message: `${removed[0].name} removida del deck.`,
+            title: '🗑️ Card Removed from Round',
+            message: `${removed[0].name} removed from the round deck.`,
             type: 'default'
           });
         }
@@ -2172,8 +2237,8 @@
       if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
         if (window.sonner) {
           window.sonner.toast({
-            title: 'Deck ya está vacío',
-            message: 'Abre sobres en Holo-Vault para acumular hasta 10 cartas por ronda.',
+            title: 'Round Deck Already Empty',
+            message: 'Rip open packs in the Holo-Vault to collect up to 10 cards per round.',
             type: 'default'
           });
         }
@@ -2184,10 +2249,15 @@
         localStorage.setItem('hunthub_vault_round_deck', JSON.stringify([]));
       } catch (_) {}
       this.renderVaultRoundTray();
+      this.showVaultSrStatusCard({
+        status: 'success',
+        title: '🧹 New Round Started',
+        detail: 'The 10-card round tray has been cleared and is ready for new pack openings.'
+      });
       if (window.sonner) {
         window.sonner.toast({
-          title: '🧹 Nueva Ronda Iniciada',
-          message: 'Bandeja de 10 cartas reiniciada. Lista para nuevos picks de la comunidad.',
+          title: '🧹 New Round Started',
+          message: '10-card tray reset. Ready for fresh community picks!',
           type: 'gold'
         });
       }
@@ -2214,16 +2284,21 @@
         btnQueueSr.style.cursor = activeCount >= maxSlots ? 'not-allowed' : 'pointer';
         btnQueueSr.textContent = activeCount >= maxSlots
           ? `🔒 Roulette Quota Full (${activeCount}/${maxSlots})`
-          : `🎡 Send to Roulette (!sr) (${activeCount}/${maxSlots})`;
+          : `🎡 Send to !sr Roulette (${activeCount}/${maxSlots})`;
       }
     }
 
     addAllVaultCardsToWheel() {
       if (!Array.isArray(this.vaultRoundDeck) || this.vaultRoundDeck.length === 0) {
+        this.showVaultSrStatusCard({
+          status: 'warning',
+          title: '⚠️ Round Deck Is Empty',
+          detail: 'Open at least one pack in Random Card Picker before loading slots to the !sr Roulette.'
+        });
         if (window.sonner) {
           window.sonner.toast({
-            title: '⚠️ Deck Vacío',
-            message: 'Abre al menos un sobre en Random Card Picker antes de enviar a la ruleta.',
+            title: '⚠️ Round Deck Empty',
+            message: 'Open at least one pack in Random Card Picker before sending to the roulette.',
             type: 'gold'
           });
         }
@@ -2231,12 +2306,17 @@
       }
 
       const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
-      let addedCount = 0;
+      const queuedNames = [];
       for (const card of this.vaultRoundDeck) {
         if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
-          const ok = window.bonusHunt.addSlotRequest(user, card.name, false);
-          if (ok) addedCount++;
-          else break;
+          const entry = window.bonusHunt.addSlotRequest(user, card.name, false);
+          if (entry) {
+            queuedNames.push(entry.name);
+          } else {
+            const curActive = window.bonusHunt.getActiveSlotRequestCountForUser(user);
+            const maxAllowed = window.bonusHunt.getMaxSlotRequestsForUser(user);
+            if (curActive >= maxAllowed) break;
+          }
         }
       }
 
@@ -2244,6 +2324,24 @@
         window.adminHub.renderSlotRequestsAdmin();
       }
       this.updateVaultSrQuotaUI();
+
+      const activeCount = (window.bonusHunt && typeof window.bonusHunt.getActiveSlotRequestCountForUser === 'function')
+        ? window.bonusHunt.getActiveSlotRequestCountForUser(user)
+        : queuedNames.length;
+      if (queuedNames.length > 0) {
+        this.showVaultSrStatusCard({
+          status: 'success',
+          title: `✅ Loaded ${queuedNames.length} Slot${queuedNames.length === 1 ? '' : 's'} to !sr Roulette (${activeCount}/3 Active)`,
+          detail: `Synced live to the !sr Roulette Overlay & Control Panel for ${user.startsWith('@') ? user : '@' + user}.`,
+          slots: queuedNames
+        });
+      } else {
+        this.showVaultSrStatusCard({
+          status: 'warning',
+          title: `🔒 !sr Roulette Quota Full or Duplicate (${activeCount}/3 Active)`,
+          detail: `You already have ${activeCount}/3 active requests in the !sr Roulette (or these slots are already queued).`
+        });
+      }
     }
 
     renderVaultRoundTray() {
@@ -2310,13 +2408,13 @@
               </div>
             </div>
             <div class="vault-tray-card-btns">
-              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-gold" data-vault-action="wheel" data-idx="${i}" title="Enviar a la Ruleta !sr (Máx 3 activas)">
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn vault-btn-gold" data-vault-action="wheel" data-idx="${i}" title="Send to !sr Roulette (Max 3 active)">
                 🎡 !sr Roulette
               </button>
-              <a href="${stakeUrl}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle vault-tray-mini-btn" style="border-color: var(--cyan); color: var(--cyan);" title="Abrir en Stake">
+              <a href="${stakeUrl}" target="_blank" rel="noopener noreferrer" class="btn-chat-toggle vault-tray-mini-btn" style="border-color: var(--cyan); color: var(--cyan);" title="Open on Stake">
                 ↗️ Stake
               </a>
-              <button type="button" class="btn-chat-toggle vault-tray-mini-btn btn-remove" data-vault-action="remove" data-idx="${i}" title="Quitar carta de la ronda">
+              <button type="button" class="btn-chat-toggle vault-tray-mini-btn btn-remove" data-vault-action="remove" data-idx="${i}" title="Remove card from round">
                 ✕
               </button>
             </div>
@@ -2333,13 +2431,33 @@
 
               if (action === 'wheel') {
                 const user = (window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '@Viewer';
+                let addedEntry = null;
                 if (window.bonusHunt && typeof window.bonusHunt.addSlotRequest === 'function') {
-                  window.bonusHunt.addSlotRequest(user, targetCard.name, false);
+                  addedEntry = window.bonusHunt.addSlotRequest(user, targetCard.name, false);
                 }
                 if (window.adminHub && typeof window.adminHub.renderSlotRequestsAdmin === 'function') {
                   window.adminHub.renderSlotRequestsAdmin();
                 }
                 this.updateVaultSrQuotaUI();
+                const activeCount = (window.bonusHunt && typeof window.bonusHunt.getActiveSlotRequestCountForUser === 'function')
+                  ? window.bonusHunt.getActiveSlotRequestCountForUser(user)
+                  : 1;
+                if (addedEntry) {
+                  btn.textContent = '✓ Queued!';
+                  setTimeout(() => { btn.textContent = '🎡 !sr Roulette'; }, 2400);
+                  this.showVaultSrStatusCard({
+                    status: 'success',
+                    title: `✅ Queued in !sr Roulette: ${addedEntry.name}`,
+                    detail: `Synced live to the !sr Roulette Overlay & Control Panel for ${addedEntry.user} (${activeCount}/3 active requests).`,
+                    slots: [addedEntry.name]
+                  });
+                } else {
+                  this.showVaultSrStatusCard({
+                    status: 'warning',
+                    title: `⚠️ Could Not Queue "${targetCard.name}"`,
+                    detail: `Either "${targetCard.name}" is already in the !sr Roulette or you reached the maximum of 3 active requests (${activeCount}/3).`
+                  });
+                }
               } else if (action === 'remove') {
                 this.removeVaultRoundCard(idx);
               }
@@ -2354,8 +2472,8 @@
           emptyEl.innerHTML = `
             <span class="vault-empty-slot-number">SLOT #${i + 1}</span>
             <div class="vault-empty-slot-icon">🃏</div>
-            <div class="vault-empty-slot-text">Ranura Disponible</div>
-            <span style="font-size: 9.5px; opacity: 0.5;">Abre un sobre para llenar</span>
+            <div class="vault-empty-slot-text">Available Slot</div>
+            <span style="font-size: 9.5px; opacity: 0.5;">Open a pack to fill</span>
           `;
           gridEl.appendChild(emptyEl);
         }
@@ -3265,7 +3383,7 @@
       if (window.sonner) {
         window.sonner.toast({
           title: `⚡ Auto-Captured: ${resolved.name || slotName} (${tier})`,
-          message: `Bet $${bet.toFixed(2)} cargado al Bonus Hunt por ${cleanCaller}!`,
+          message: `Bet $${bet.toFixed(2)} loaded to Bonus Hunt by ${cleanCaller}!`,
           type: 'green'
         });
       }
@@ -3283,8 +3401,9 @@
       const todayKey = new Date().toISOString().slice(0, 10);
       const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
-      // One-time global reset so every user starts at Day 1 (+50 $DIG) today
+      // Always purge guest streak keys so unauthenticated sessions can never claim or migrate points
       try {
+        localStorage.removeItem('hunthub_daily_streak_v2_guest');
         if (localStorage.getItem('hunthub_daily_streak_epoch') !== STREAK_RESET_EPOCH) {
           localStorage.removeItem('hunthub_daily_streak_v1');
           for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -3301,27 +3420,69 @@
         .trim()
         .toLowerCase()
         .replace(/^@+/, '');
-      const storageKey = rawUser ? `hunthub_daily_streak_v2_${rawUser}` : 'hunthub_daily_streak_v2_guest';
+      const isKickLinked = Boolean(
+        rawUser &&
+        !rawUser.startsWith('kickuser_') &&
+        ((window.userStore && window.userStore.isLoggedIn) || localStorage.getItem('hunthub_auth_token'))
+      );
 
+      // Reconcile the 100 $DIG -> 50 $DIG double-claim bug caused by claiming after logout
+      try {
+        if (!localStorage.getItem('hunthub_streak_logout_reconciled_v1')) {
+          localStorage.setItem('hunthub_streak_logout_reconciled_v1', 'true');
+          const curBal = parseInt(localStorage.getItem('hunthub_balance') || '0', 10) || 0;
+          if (!isKickLinked) {
+            localStorage.setItem('hunthub_balance', '0');
+            if (window.houseGames) {
+              window.houseGames.balance = 0;
+              if (typeof window.houseGames.renderBalance === 'function') window.houseGames.renderBalance(0);
+            }
+          } else if (curBal === 100) {
+            localStorage.setItem('hunthub_balance', '50');
+            localStorage.setItem('hunthub_user_monthly_dig', '50');
+            localStorage.setItem('hunthub_user_career_dig', '50');
+            if (window.houseGames) {
+              window.houseGames.balance = 50;
+              if (typeof window.houseGames.renderBalance === 'function') window.houseGames.renderBalance(50);
+            }
+          }
+        }
+      } catch (_) {}
+
+      const scheduleSummary = 'Day 1 +50 · Day 2 +75 · Day 3 +100 · Day 4 +125 · Day 5 +150 · Day 6 +200 · Day 7 +300';
+
+      // Strictly require a linked Kick.com account before activating Loyalty Streak claims
+      if (!isKickLinked) {
+        container.innerHTML = `
+          <button type="button" id="btn-claim-daily-streak" class="topbar-loyalty-streak-btn is-locked" title="Link your Kick.com account to unlock and claim your 7-Day $DIG Loyalty Streak (${scheduleSummary})" aria-label="Link Kick account to unlock Loyalty streak $DIG Day 1 +50" style="opacity: 0.78;">
+            <span class="streak-status-icon" aria-hidden="true">🔒</span>
+            <span class="streak-label-text">Loyalty streak <strong class="streak-dig-tag">$DIG</strong></span>
+            <span class="streak-day-tag">"Day 1"</span>
+            <span class="streak-reward-val">+50</span>
+          </button>
+        `;
+        const lockedBtn = document.getElementById('btn-claim-daily-streak');
+        if (lockedBtn) {
+          lockedBtn.onclick = () => {
+            if (window.sonner) {
+              window.sonner.toast({
+                title: '🔒 Link Your Kick.com Account First',
+                message: 'Connect your Kick.com account to unlock and claim your daily +50 $DIG loyalty streak!',
+                type: 'gold'
+              });
+            }
+            const loginBtn = document.getElementById('btn-kick-login');
+            if (loginBtn) loginBtn.click();
+          };
+        }
+        return;
+      }
+
+      const storageKey = `hunthub_daily_streak_v2_${rawUser}`;
       let saved = null;
       try {
         saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
       } catch (_) {}
-
-      // If user claimed as guest today and then linked Kick, carry over today's claim to their account
-      if (rawUser && (!saved || !saved.lastClaimDate)) {
-        try {
-          const guestSaved = JSON.parse(localStorage.getItem('hunthub_daily_streak_v2_guest') || 'null');
-          if (guestSaved && guestSaved.lastClaimDate === todayKey && Number(guestSaved.streakDay) >= 1) {
-            saved = guestSaved;
-            localStorage.setItem(storageKey, JSON.stringify(guestSaved));
-            if (window.userStore && typeof window.userStore.syncStateToBackend === 'function') {
-              const migratedReward = rewards[(Number(guestSaved.streakDay) - 1) % rewards.length] || 50;
-              window.userStore.syncStateToBackend({ streakBonusDelta: migratedReward, claimStreak: true });
-            }
-          }
-        } catch (_) {}
-      }
 
       // Reconcile with backend D1 profile if server has a same-day or yesterday streak record
       const vp = window.userStore && window.userStore.globalViewerProfile;
@@ -3364,7 +3525,6 @@
       const nextDayNum = (displayDay % rewards.length) + 1;
       const nextDayReward = rewards[nextDayNum - 1] || 50;
 
-      const scheduleSummary = 'Day 1 +50 · Day 2 +75 · Day 3 +100 · Day 4 +125 · Day 5 +150 · Day 6 +200 · Day 7 +300';
       const tooltipText = alreadyClaimedToday
         ? `✓ Claimed "Day ${displayDay}" (+${displayReward} $DIG) today! Tomorrow: "Day ${nextDayNum}" +${nextDayReward} (${scheduleSummary})`
         : `Click to claim "Day ${displayDay}" +${displayReward} $DIG! (${scheduleSummary})`;

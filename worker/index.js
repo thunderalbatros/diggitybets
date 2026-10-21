@@ -1956,6 +1956,31 @@ const hunthubWorker = {
       return new Response(JSON.stringify({ success: true, refunded: true, refundedAmount }), { headers: corsHeaders });
     }
 
+    // 15b. Admin Delete Store Redemption (Protected by isAuthorizedAdmin)
+    if (url.pathname === '/api/admin/delete-store-redemption' && request.method === 'POST') {
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: corsHeaders });
+      }
+      try {
+        const { redemptionId, username, voucherTitle } = await request.json();
+        if (env.DB) {
+          if (redemptionId) {
+            await env.DB.prepare('DELETE FROM store_redemptions WHERE id = ?1').bind(String(redemptionId)).run();
+          }
+          if (username && voucherTitle) {
+            const cleanUser = String(username).trim().replace(/^@+/, '');
+            await env.DB.prepare('DELETE FROM store_redemptions WHERE LOWER(kick_username) = LOWER(?1) AND LOWER(voucher_title) = LOWER(?2)').bind(cleanUser, String(voucherTitle).trim()).run();
+          } else if (username && !redemptionId) {
+            const cleanUser = String(username).trim().replace(/^@+/, '');
+            await env.DB.prepare('DELETE FROM store_redemptions WHERE LOWER(kick_username) = LOWER(?1)').bind(cleanUser).run();
+          }
+        }
+        return new Response(JSON.stringify({ success: true, deleted: true }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
+      }
+    }
+
     // 16. Admin Stake Verifications Queue (Protected by isAuthorizedAdmin)
     if (url.pathname === '/api/admin/stake-verifications' && request.method === 'GET') {
       if (!(await isAuthorizedAdmin(request, env))) {
@@ -2369,6 +2394,32 @@ const hunthubWorker = {
                 });
                 enteredList.push(lowerUser);
                 duoMutated = true;
+                if (!isFirstBackfill && (now - msgTs) < 120000) {
+                  const botMsg = targetMode === 'tourney'
+                    ? `@${cleanUser} entered with ${meta.name} for tourney`
+                    : `@${cleanUser} has entered with ${meta.name} to battle`;
+                  recentMsgs.push({
+                    id: 'bot_' + msgId,
+                    username: 'DiggityBot',
+                    content: botMsg,
+                    isCommand: false,
+                    isBotAnnouncement: true,
+                    createdAt: new Date(now).toISOString(),
+                    ts: now
+                  });
+                  syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
+                  syncCurrent.chatAnnouncements.push({
+                    id: 'ann_' + msgId,
+                    username: `@${cleanUser}`,
+                    eventType: targetMode === 'tourney' ? 'tourney_entry' : 'battle_entry',
+                    message: botMsg,
+                    slotName: meta.name,
+                    ts: now
+                  });
+                  if (typeof dispatchKickBotChatMessage === 'function') {
+                    ctx.waitUntil(dispatchKickBotChatMessage(botMsg).catch(() => null));
+                  }
+                }
               }
             } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
               const meta = formatSlotTitle(arg);
@@ -2398,6 +2449,30 @@ const hunthubWorker = {
                   queue: syncCurrent.slotRequests,
                   ts: now
                 };
+                if (!isFirstBackfill && (now - msgTs) < 120000) {
+                  const botSrMsg = `@${cleanUser} has entered the roulette queue with ${meta.name}`;
+                  recentMsgs.push({
+                    id: 'bot_sr_' + msgId,
+                    username: 'DiggityBot',
+                    content: botSrMsg,
+                    isCommand: false,
+                    isBotAnnouncement: true,
+                    createdAt: new Date(now).toISOString(),
+                    ts: now
+                  });
+                  syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
+                  syncCurrent.chatAnnouncements.push({
+                    id: 'ann_sr_' + msgId,
+                    username: `@${cleanUser}`,
+                    eventType: 'sr_entry',
+                    message: botSrMsg,
+                    slotName: meta.name,
+                    ts: now
+                  });
+                  if (typeof dispatchKickBotChatMessage === 'function') {
+                    ctx.waitUntil(dispatchKickBotChatMessage(botSrMsg).catch(() => null));
+                  }
+                }
               }
             } else if ((cmd === '!guess' || cmd === '!gtb') && arg.length >= 1) {
               const isLocked = Boolean(syncCurrent.guessesLocked || syncCurrent.bonushuntState?.guessesLocked);
@@ -2711,6 +2786,11 @@ const hunthubWorker = {
             // Daily 7-day loyalty streak claim (once per UTC day). Automatically resets to Day 1 after Day 7 or if a day is missed.
             let nextStreakDate = String(existingUser.last_streak_claim_date || '');
             let nextStreakDay = Math.max(0, Math.min(7, Number(existingUser.streak_day || 0)));
+            // One-time reconciliation for Day 1 double-claim bug (100 -> 50 $DIG)
+            if (nextStreakDay === 1 && nextStreakDate === todayKey && nextBal === 100 && nextMonthly <= 100) {
+              nextBal = 50;
+              nextMonthly = Math.min(nextMonthly, 50);
+            }
             if (wantsStreakClaim && nextStreakDate !== todayKey) {
               const dayNum = (nextStreakDate === yesterdayKey && nextStreakDay >= 1 && nextStreakDay <= 7)
                 ? (nextStreakDay % STREAK_REWARDS.length) + 1
@@ -2773,17 +2853,32 @@ const hunthubWorker = {
       }
     }
 
-    const formatWinnerAnnouncementText = (username, eventType, customMessage) => {
+    const formatWinnerAnnouncementText = (username, eventType, customMessage, slotName = '') => {
       if (customMessage && String(customMessage).trim().length > 0) {
         return String(customMessage).trim().slice(0, 480);
       }
       const cleanUser = '@' + String(username || 'Viewer').trim().replace(/^@+/, '');
       const typeNorm = String(eventType || 'picked').trim().toLowerCase();
-      if (typeNorm === 'battle' || typeNorm === '1v1') {
-        return `Congratulations ${cleanUser} has won the battle!`;
+      if (typeNorm === 'sr_entry') {
+        return `${cleanUser} has entered the roulette queue with ${slotName || 'Slot'}`;
       }
-      if (typeNorm === 'tourney' || typeNorm === 'tournament' || typeNorm === 'bracket') {
-        return `Congratulations ${cleanUser} has won the tourney!`;
+      if (typeNorm === 'tourney_entry') {
+        return `${cleanUser} entered with ${slotName || 'Slot'} for tourney`;
+      }
+      if (typeNorm === 'battle_entry') {
+        return `${cleanUser} has entered with ${slotName || 'Slot'} to battle`;
+      }
+      if (typeNorm === 'sr_wheel_picked' || typeNorm === 'wheel_picked' || typeNorm === 'slot_wheel_picked') {
+        return `${cleanUser} has been picked on roulette with (${slotName || 'Slot'})`;
+      }
+      if (typeNorm === 'koth_champion') {
+        return `${cleanUser} is the King of the Hill !`;
+      }
+      if (typeNorm === 'battle' || typeNorm === '1v1' || typeNorm === 'battle_win' || typeNorm === 'koth_cashout') {
+        return `${cleanUser} has won the battle`;
+      }
+      if (typeNorm === 'tourney' || typeNorm === 'tournament' || typeNorm === 'bracket' || typeNorm === 'tourney_champion') {
+        return `${cleanUser} has won the tourney`;
       }
       if (typeNorm === 'gtb' || typeNorm === 'guess' || typeNorm === 'guessthebalance') {
         return `Congratulations ${cleanUser} has won the gtb!`;
@@ -2793,6 +2888,9 @@ const hunthubWorker = {
       }
       if (typeNorm === 'giveaway' || typeNorm === 'raffle') {
         return `Congratulations ${cleanUser} has won the giveaway!`;
+      }
+      if (slotName) {
+        return `${cleanUser} has been picked on roulette with (${slotName})`;
       }
       return `Congratulations ${cleanUser} has been picked!`;
     };
@@ -2901,30 +2999,56 @@ const hunthubWorker = {
 
     if (url.pathname === '/api/kick/chat/announce' && request.method === 'POST') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-      if (!(await isAuthorizedAdmin(request, env))) {
-        return new Response(JSON.stringify({ ok: false, error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
-      }
       try {
         const body = await request.json().catch(() => ({}));
-        const cleanUser = '@' + String(body.username || body.winner || 'Viewer').trim().replace(/^@+/, '');
         const eventType = String(body.eventType || body.type || 'picked').trim().toLowerCase();
-        const message = formatWinnerAnnouncementText(cleanUser, eventType, body.message);
+        const isEntryEvent = eventType === 'sr_entry' || eventType === 'battle_entry' || eventType === 'tourney_entry' || eventType === 'entry';
+        const adminAuthed = await isAuthorizedAdmin(request, env);
+        if (!adminAuthed) {
+          const userSession = isEntryEvent ? await verifyUserSession(request, env) : { ok: false };
+          if (!userSession.ok) {
+            return new Response(JSON.stringify({ ok: false, error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+          }
+          const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+          const rl = checkEdgeRateLimit(clientIp, 'entry_announce', 12, 60_000);
+          if (!rl.allowed) {
+            return new Response(JSON.stringify({ ok: false, error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+          }
+        }
+        const cleanUser = '@' + String(body.username || body.winner || 'Viewer').trim().replace(/^@+/, '');
+        const slotName = String(body.slotName || '').trim().slice(0, 120);
+        const message = formatWinnerAnnouncementText(cleanUser, eventType, body.customMessage || body.message, slotName);
         const nowTs = Number(body.timestamp || body.ts || Date.now());
 
         const current = await readOverlaySyncState();
         current.chatAnnouncements = Array.isArray(current.chatAnnouncements) ? current.chatAnnouncements : [];
+        const annId = body.id || ('ann_' + nowTs + '_' + Math.random().toString(36).slice(2, 6));
         const announcementItem = {
-          id: body.id || ('ann_' + nowTs + '_' + Math.random().toString(36).slice(2, 6)),
+          id: annId,
           username: cleanUser,
           eventType,
           message,
-          slotName: String(body.slotName || '').trim().slice(0, 120),
+          slotName,
           prize: String(body.prize || '').trim().slice(0, 80),
           ts: nowTs
         };
         current.chatAnnouncements.push(announcementItem);
         if (current.chatAnnouncements.length > 50) {
           current.chatAnnouncements = current.chatAnnouncements.slice(-50);
+        }
+
+        current.recentChatMessages = Array.isArray(current.recentChatMessages) ? current.recentChatMessages : [];
+        current.recentChatMessages.push({
+          id: 'bot_' + annId,
+          username: 'DiggityBot',
+          content: message,
+          isCommand: false,
+          isBotAnnouncement: true,
+          createdAt: new Date(nowTs).toISOString(),
+          ts: nowTs
+        });
+        if (current.recentChatMessages.length > 50) {
+          current.recentChatMessages = current.recentChatMessages.slice(-50);
         }
 
         if (body.celebration && typeof body.celebration === 'object') {
@@ -3816,9 +3940,47 @@ const hunthubWorker = {
       const syncState = await readOverlaySyncState();
       return new Response(JSON.stringify({
         ...data,
+        slotRequests: Array.isArray(syncState.slotRequests) ? syncState.slotRequests : [],
         recentChatMessages: Array.isArray(syncState.recentChatMessages) ? syncState.recentChatMessages : [],
         activeChatters: Array.isArray(syncState.activeChatters) ? syncState.activeChatters : []
       }), { headers: noCacheHeaders });
+    }
+
+    if (url.pathname === '/api/sr/queue' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!isSameOrTrustedOrigin(request)) {
+        return new Response(JSON.stringify({ error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+      }
+      const adminAuthed = await isAuthorizedAdmin(request, env);
+      if (!adminAuthed) {
+        const userSession = await verifyUserSession(request, env);
+        if (!userSession.ok) {
+          return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 403, headers: noCacheHeaders });
+        }
+        const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+        const rl = checkEdgeRateLimit(clientIp, 'sr_queue_post', 12, 60_000);
+        if (!rl.allowed) {
+          return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
+        }
+      }
+      try {
+        const body = await request.json().catch(() => ({}));
+        const current = await readOverlaySyncState();
+        if (Array.isArray(body.queue)) {
+          current.slotRequests = body.queue.slice(0, 100);
+          current.overlayEvents = current.overlayEvents || {};
+          current.overlayEvents['overlay-slotrequests'] = {
+            target: 'overlay-slotrequests',
+            type: 'SYNC_QUEUE',
+            queue: current.slotRequests,
+            ts: body.ts || Date.now()
+          };
+          await writeOverlaySyncState(current);
+        }
+        return new Response(JSON.stringify({ ok: true, slotRequests: current.slotRequests || [] }), { headers: noCacheHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
+      }
     }
 
     if (url.pathname === '/api/kick/chat/live' && request.method === 'GET') {

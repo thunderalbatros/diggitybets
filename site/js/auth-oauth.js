@@ -130,7 +130,7 @@ class OAuthEngine {
           username: data2?.user?.username || clean,
           avatarUrl,
           kick_id: kickId,
-          isSub: true,
+          isSub: Boolean(isAdmin),
           isAdmin,
           verified: true
         });
@@ -306,7 +306,7 @@ class OAuthEngine {
         username: raw,
         avatarUrl,
         kick_id: kickId,
-        isSub: true,
+        isSub: Boolean(isAdmin),
         isAdmin,
         verified: true
       });

@@ -808,6 +808,10 @@ class BonusHuntController {
       ts: packet.ts || Date.now()
     };
     try {
+      localStorage.setItem('hunthub_slot_requests', JSON.stringify(this.slotRequests));
+    } catch (_) {}
+
+    try {
       if (typeof BroadcastChannel !== 'undefined') {
         if (!this.bcSrWheel) {
           this.bcSrWheel = new BroadcastChannel('hunthub_sr_wheel');
@@ -822,15 +826,55 @@ class BonusHuntController {
       } catch (_) {}
     }
 
+    const adminUser = localStorage.getItem('hunthub_kick_username') || 'diggitybets';
+    const adminToken =
+      localStorage.getItem('hunthub_admin_token') ||
+      localStorage.getItem('hunthub_overlay_sync_token') ||
+      localStorage.getItem('hunthub_auth_token') ||
+      '';
+
+    try {
+      fetch('/api/sr/queue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-user': adminUser,
+          'x-admin-token': adminToken
+        },
+        body: JSON.stringify({
+          action: payload.type || 'SYNC_QUEUE',
+          queue: this.slotRequests,
+          payload
+        })
+      }).catch(() => {});
+    } catch (_) {}
+
+    try {
+      fetch('/api/overlay/celebration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-user': adminUser,
+          'x-admin-token': adminToken
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          targetOverlay: 'overlay-slotrequests',
+          ...payload
+        })
+      }).catch(() => {});
+    } catch (_) {}
+
     try {
       fetch('/api/sync/state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
-          'x-admin-token': localStorage.getItem('hunthub_admin_token') || ''
+          'x-admin-user': adminUser,
+          'x-admin-token': adminToken
         },
         body: JSON.stringify({
+          slotRequests: this.slotRequests,
           overlayEvent: {
             target: 'overlay-slotrequests',
             ...payload
@@ -912,9 +956,17 @@ class BonusHuntController {
     this.save();
     this.renderSlotRequests();
     this.drawSlotWheel(this.wheelAngle);
-    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE' });
+    this.broadcastSlotRequestsOverlay({ type: 'SYNC_QUEUE', addedEntry: entry });
     if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
       window.diggityIntelSuite.updateVaultSrQuotaUI();
+    }
+
+    // Announce !sr entry in live chat window + DiggityBot
+    if (window.adminHub && typeof window.adminHub.announceEventChatMessage === 'function') {
+      window.adminHub.announceEventChatMessage(
+        `@${cleanUser} has entered the roulette queue with ${entry.name}`,
+        { icon: '🎰', type: 'SR_ENTRY', username: cleanUser, slotName: entry.name }
+      );
     }
 
     const newCount = userRequests.length + 1;
@@ -1131,6 +1183,22 @@ class BonusHuntController {
     if (spinBtn) {
       spinBtn.addEventListener('click', () => this.spinSlotRequestsWheel());
     }
+
+    window.addEventListener('hashchange', () => {
+      if (window.location.hash === '#control-panel') {
+        this.renderSlotRequests();
+        this.drawSlotWheel(this.wheelAngle);
+      }
+    });
+    document.addEventListener('click', (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('[data-cp-module="slotrequests"], [data-target="#control-panel"]') : null;
+      if (btn) {
+        setTimeout(() => {
+          this.renderSlotRequests();
+          this.drawSlotWheel(this.wheelAngle);
+        }, 40);
+      }
+    });
   }
 
   initSlotWheel() {
@@ -1138,9 +1206,6 @@ class BonusHuntController {
   }
 
   drawSlotWheel(angle) {
-    if (typeof window.isControlPanelModuleActive === 'function' && !window.isControlPanelModuleActive('slotrequests')) {
-      return;
-    }
     const canvas = document.getElementById('bh-wheel-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -1298,7 +1363,8 @@ class BonusHuntController {
             slotName: winner.name,
             slotImg: winner.img || winner.image || '',
             statValue: winner.provider || 'SLOT REQUEST',
-            prize: `Picked on !sr Wheel (${winner.name})!`
+            prize: `Picked on !sr Wheel (${winner.name})!`,
+            chatMessage: `@${cleanSrUser} has been picked on roulette with (${winner.name})`
           });
         }
 

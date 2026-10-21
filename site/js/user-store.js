@@ -760,6 +760,14 @@ class UserStoreController {
       localStorage.removeItem('hunthub_is_sub');
       localStorage.removeItem('hunthub_is_admin');
       localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_daily_streak_v2_guest');
+      localStorage.setItem('hunthub_balance', '0');
+      if (window.houseGames) {
+        window.houseGames.balance = 0;
+        if (typeof window.houseGames.updateBalanceUI === 'function') {
+          window.houseGames.updateBalanceUI();
+        }
+      }
       if (window.oauthEngine) {
         window.oauthEngine.updateAdminDeckUI(false);
       }
@@ -1303,7 +1311,7 @@ class UserStoreController {
 
       if (!entry) {
         if (userEl) userEl.textContent = '—';
-        if (kickEl) kickEl.textContent = 'ESPACIO VACÍO';
+        if (kickEl) kickEl.textContent = 'OPEN SLOT';
         if (wagerEl) wagerEl.textContent = '$0.00';
         if (prizeEl) prizeEl.textContent = `${icon} $${prizeAmt.toLocaleString()} USD`;
         if (avatarEl) {
@@ -1333,7 +1341,7 @@ class UserStoreController {
         rank,
         isEmpty: true,
         casinoUser: '—',
-        kickUser: 'ESPACIO VACÍO · ESPERANDO REFERIDO',
+        kickUser: 'OPEN SLOT · AWAITING REFERRAL',
         wager: 0,
         prize: this.getStakePrizeForRank(rank)
       };
@@ -1371,13 +1379,13 @@ class UserStoreController {
               <span style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.22); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 11px; font-weight: 800; color: #cbd5e1;">#${item.rank}</span>
               <div>
                 <strong style="color: #e2e8f0; font-size: 13.5px;">—</strong>
-                <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">ESPACIO VACÍO · ESPERANDO REFERIDO</div>
+                <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">OPEN SLOT · AWAITING REFERRAL</div>
               </div>
             </div>
           </td>
           <td>
             <span class="reward-badge-pill" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.16); color: #cbd5e1; font-size: 10px;">
-              ⏳ DISPONIBLE (CODE: DIGGITY)
+              ⏳ AVAILABLE (CODE: DIGGITY)
             </span>
           </td>
           <td style="font-family: var(--font-display); font-weight: 800; color: #94a3b8;">
@@ -1512,7 +1520,7 @@ class UserStoreController {
       `;
     }
     if (tier1) {
-      tier1.innerHTML = p1 ? `<span class="kick-podium-tier-pill active-tier">👑 ${esc(p1.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
+      tier1.innerHTML = p1 ? `<span class="kick-podium-tier-pill active-tier">👑 ${esc(p1.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">OPEN SLOT</span>`;
     }
 
     const u2 = document.getElementById('podium-2-user');
@@ -1534,7 +1542,7 @@ class UserStoreController {
       `;
     }
     if (tier2) {
-      tier2.innerHTML = p2 ? `<span class="kick-podium-tier-pill active-tier">🥈 ${esc(p2.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
+      tier2.innerHTML = p2 ? `<span class="kick-podium-tier-pill active-tier">🥈 ${esc(p2.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">OPEN SLOT</span>`;
     }
 
     const u3 = document.getElementById('podium-3-user');
@@ -1556,7 +1564,7 @@ class UserStoreController {
       `;
     }
     if (tier3) {
-      tier3.innerHTML = p3 ? `<span class="kick-podium-tier-pill active-tier">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">ESPACIO VACÍO</span>`;
+      tier3.innerHTML = p3 ? `<span class="kick-podium-tier-pill active-tier">⚡ ${esc(p3.tier || 'VIP')}</span>` : `<span class="kick-podium-tier-pill">OPEN SLOT</span>`;
     }
 
     // Update stats strip cards
@@ -1569,13 +1577,13 @@ class UserStoreController {
     const statTourneyDesc = document.getElementById('stat-tourney-desc');
     const topTourney = [...list].sort((a,b) => (b.tourneysWon || 0) - (a.tourneysWon || 0))[0];
     if (statTourneyUser) statTourneyUser.textContent = (topTourney && topTourney.tourneysWon > 0) ? topTourney.kickUser : '—';
-    if (statTourneyDesc) statTourneyDesc.textContent = (topTourney && topTourney.tourneysWon > 0) ? `${topTourney.tourneysWon} Bracket Tournament Titles` : 'Esperando campeones...';
+    if (statTourneyDesc) statTourneyDesc.textContent = (topTourney && topTourney.tourneysWon > 0) ? `${topTourney.tourneysWon} Bracket Tournament Titles` : 'Awaiting champions...';
 
     const statSniperUser = document.getElementById('stat-sniper-user');
     const statSniperDesc = document.getElementById('stat-sniper-desc');
     const topSniper = [...list].sort((a,b) => (b.huntHits || 0) - (a.huntHits || 0))[0];
     if (statSniperUser) statSniperUser.textContent = (topSniper && topSniper.huntHits > 0) ? topSniper.kickUser : '—';
-    if (statSniperDesc) statSniperDesc.textContent = (topSniper && topSniper.huntHits > 0) ? `${topSniper.huntHits} Exact Payout Guesses` : 'Esperando aciertos...';
+    if (statSniperDesc) statSniperDesc.textContent = (topSniper && topSniper.huntHits > 0) ? `${topSniper.huntHits} Exact Payout Guesses` : 'Awaiting exact hits...';
 
     const statRewardsPool = document.getElementById('stat-rewards-pool');
     const totalDigDistributed = list.reduce((acc, u) => acc + (Number(u.totalDig) || 0), 0);
@@ -1587,8 +1595,8 @@ class UserStoreController {
         <tr>
           <td colspan="7" style="text-align: center; padding: 40px 16px; color: #64748b;">
             <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
-            <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #cbd5e1;">ESPACIO VACÍO · ESPERANDO ACTIVIDAD DE CHAT</div>
-            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">Los espectadores más activos de Kick ganan <strong style="color: var(--gold);">$20 USD (#1)</strong>, <strong style="color: #e2e8f0;">$10 USD (#2)</strong> (<strong style="color: var(--kick-green);">2X bajo código diggity</strong>) y <strong style="color: #fde68a;">VIP Badge Kick Role (#3)</strong>.</div>
+            <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; color: #cbd5e1;">OPEN SLOT · AWAITING LIVE CHAT ACTIVITY</div>
+            <div style="font-size: 12px; margin-top: 6px; color: #64748b;">The most active Kick viewers win <strong style="color: var(--gold);">$20 USD (#1)</strong>, <strong style="color: #e2e8f0;">$10 USD (#2)</strong> (<strong style="color: var(--kick-green);">2X under code diggity</strong>) and <strong style="color: #fde68a;">VIP Badge Kick Role (#3)</strong>.</div>
           </td>
         </tr>
       `;

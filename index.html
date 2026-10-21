@@ -127,6 +127,10 @@
           <span class="nav-item-icon">🕹️</span>
           <span class="nav-item-text">House Games</span>
         </a>
+        <a href="#bounties" class="nav-link-btn has-badge" data-target="#bounties" title="Only on Stake Bounties ($3–$20 USD Instant Cash — Code: diggity)">
+          <span class="nav-item-icon">🎯</span>
+          <span class="nav-item-text">Bounties</span>
+        </a>
         <a href="#battle" class="nav-link-btn" data-target="#battle" title="1v1 Battle Arena (KOTH)">
           <span class="nav-item-icon">⚔️</span>
           <span class="nav-item-text">1v1 Battle KOH</span>
@@ -154,10 +158,6 @@
         <a href="#stake-leaderboard" class="nav-link-btn has-badge" data-target="#stake-leaderboard" title="Stake Wager Leaderboard ($1,500 Pool — Code: diggity)">
           <span class="nav-item-icon">⚡</span>
           <span class="nav-item-text">Stake Leaderboard</span>
-        </a>
-        <a href="#bounties" class="nav-link-btn has-badge" data-target="#bounties" title="Only on Stake Bountys ($3–$20 USD Instant Cash — Code: diggity)">
-          <span class="nav-item-icon">🎯</span>
-          <span class="nav-item-text">Bountys</span>
         </a>
         <a href="#leaderboard" class="nav-link-btn has-badge" data-target="#leaderboard" title="Kick Leaderboard ($DIG)">
           <span class="nav-item-icon">🏆</span>
@@ -1914,23 +1914,27 @@
           <div class="vault-tray-title-block">
             <div class="vault-tray-badge">
               <span class="vault-tray-badge-dot"></span>
-              <span>RONDA DE CARTAS EN VIVO · !SR ROULETTE ONLY</span>
+              <span>LIVE CARD ROUND · !SR ROULETTE ONLY</span>
             </div>
             <h3 class="vault-tray-title">
-              🃏 CARTAS DE LA RONDA (<span id="vault-deck-count">0</span>/10)
+              🃏 ROUND CARDS (<span id="vault-deck-count">0</span>/10)
             </h3>
             <p class="vault-tray-subtitle">
-              Guarda hasta 10 slots por ronda y envía tus seleccionadas a la <strong>Ruleta (!sr slotname)</strong> · Máximo <strong>3 Slot Requests activas por espectador</strong> (cuando una gana en la ruleta, se borra y libera 1 espacio)
+              Save up to 10 slots per round and send your selected cards to the <strong>!sr Roulette (!sr slotname)</strong> · Maximum <strong>3 active Slot Requests per viewer</strong> (when one wins on the roulette, it clears and frees 1 slot)
             </p>
           </div>
           <div class="vault-tray-actions">
-            <button type="button" id="btn-vault-deck-queue-wheel" class="btn-chat-toggle vault-btn-gold" title="Enviar cartas seleccionadas a la Ruleta !sr (Máx 3 activas por espectador)">
-              🎡 Cargar a Ruleta !sr (<span id="vault-deck-btn-wheel-count">0</span>)
+            <button type="button" id="btn-vault-deck-queue-wheel" class="btn-chat-toggle vault-btn-gold" title="Send selected cards to the !sr Roulette (Max 3 active per viewer)">
+              🎡 Load to !sr Roulette (<span id="vault-deck-btn-wheel-count">0</span>)
             </button>
-            <button type="button" id="btn-vault-deck-clear" class="btn-chat-toggle vault-btn-danger" title="Limpiar todas las cartas para iniciar una nueva ronda">
-              🧹 Nueva Ronda
+            <button type="button" id="btn-vault-deck-clear" class="btn-chat-toggle vault-btn-danger" title="Clear all cards to start a new round">
+              🧹 New Round
             </button>
           </div>
+        </div>
+
+        <!-- Live Visual Status Confirmation Card for !sr Roulette Actions -->
+        <div id="vault-sr-status-card" class="vault-sr-status-card" style="display: none; margin: 0 0 14px 0; padding: 12px 16px; border-radius: 12px; background: linear-gradient(135deg, rgba(83, 252, 24, 0.14) 0%, rgba(14, 22, 36, 0.96) 100%); border: 1.5px solid rgba(83, 252, 24, 0.55); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 18px rgba(83, 252, 24, 0.18); align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;" role="status" aria-live="polite">
         </div>
 
         <!-- 10 Slots Grid -->
@@ -2196,7 +2200,7 @@
               <svg viewBox="0 0 64 64" width="60" height="60"><circle cx="32" cy="32" r="30" fill="#0f172a" stroke="#e2e8f0" stroke-width="2"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#e2e8f0" text-anchor="middle">#2</text></svg>
             </div>
             <div class="podium-user" id="stake-podium-2-user">—</div>
-            <div class="podium-kick" id="stake-podium-2-kick">ESPACIO VACÍO</div>
+            <div class="podium-kick" id="stake-podium-2-kick">OPEN SLOT</div>
             <div class="stake-podium-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
               <span class="wager-val" id="stake-podium-2-wager">$0.00</span>
@@ -2224,7 +2228,7 @@
               <svg viewBox="0 0 64 64" width="72" height="72"><circle cx="32" cy="32" r="30" fill="#261b05" stroke="#ffd700" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="#ffd700" text-anchor="middle">#1</text></svg>
             </div>
             <div class="podium-user" id="stake-podium-1-user" style="font-size: 20px; color: var(--gold);">—</div>
-            <div class="podium-kick" id="stake-podium-1-kick">ESPACIO VACÍO</div>
+            <div class="podium-kick" id="stake-podium-1-kick">OPEN SLOT</div>
             <div class="stake-podium-wager-box gold-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
               <span class="wager-val" id="stake-podium-1-wager" style="color: var(--gold);">$0.00</span>
@@ -2249,7 +2253,7 @@
               <svg viewBox="0 0 64 64" width="60" height="60"><circle cx="32" cy="32" r="30" fill="#231208" stroke="#cd7f32" stroke-width="2"/><text x="32" y="39" font-family="'Chakra Petch', sans-serif" font-size="22" font-weight="800" fill="#cd7f32" text-anchor="middle">#3</text></svg>
             </div>
             <div class="podium-user" id="stake-podium-3-user">—</div>
-            <div class="podium-kick" id="stake-podium-3-kick">ESPACIO VACÍO</div>
+            <div class="podium-kick" id="stake-podium-3-kick">OPEN SLOT</div>
             <div class="stake-podium-wager-box">
               <span class="wager-label">TOTAL WAGERED</span>
               <span class="wager-val" id="stake-podium-3-wager">$0.00</span>
@@ -2308,13 +2312,13 @@
     </section>
 
     <!-- ========================================================
-         SECTION 6A-2: ONLY ON STAKE BOUNTYS ($3 - $20 USD CHALLENGES)
+         SECTION 6A-2: ONLY ON STAKE BOUNTIES ($3 - $20 USD CHALLENGES)
          ======================================================== -->
     <section class="section-container view-section" id="bounties">
       <div class="section-header-row">
         <div>
           <h2 class="section-title">
-            <span>🎯</span> ONLY ON STAKE <span class="accent">BOUNTYS ($3 – $20 USD)</span>
+            <span>🎯</span> ONLY ON STAKE <span class="accent">BOUNTIES ($3 – $20 USD)</span>
           </h2>
           <p class="section-subtitle">
             Hit the target multiplier on featured <strong>Only on Stake</strong> partner studio slots under referral code <strong style="color: var(--kick-green);">diggity</strong> and claim instant USD cash bounties!
@@ -2379,7 +2383,7 @@
             </span>
           </div>
           <a href="#watch" data-target="#watch" class="reward-badge-pill nav-link-btn" style="text-decoration: none; background: rgba(255, 215, 0, 0.14); border: 1px solid rgba(255, 215, 0, 0.45); color: var(--gold); font-size: 10.5px; font-weight: 800; padding: 7px 14px; min-height: 34px; display: inline-flex; align-items: center;">
-            🤝 Promote Your Studio on Bountys ↗
+            🤝 Promote Your Studio on Bounties ↗
           </a>
         </div>
 
@@ -2563,7 +2567,7 @@
               <svg viewBox="0 0 64 64" width="66" height="66" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 18px rgba(0,230,118,0.45);"><circle cx="32" cy="32" r="30" fill="#091812" stroke="#00e676" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="#00e676" text-anchor="middle">#2</text></svg>
             </div>
             <div class="kick-podium-user" id="podium-2-user" style="color: #ffffff;">—</div>
-            <div class="podium-kick" id="podium-2-tier"><span class="kick-podium-tier-pill">ESPACIO VACÍO</span></div>
+            <div class="podium-kick" id="podium-2-tier"><span class="kick-podium-tier-pill">OPEN SLOT</span></div>
             <div class="kick-podium-points-box">
               <span class="points-label">ACTIVITY POINTS</span>
               <span class="points-val" id="podium-2-points">0 $DIG</span>
@@ -2593,7 +2597,7 @@
               <svg viewBox="0 0 64 64" width="76" height="76" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 26px rgba(83,252,24,0.7);"><circle cx="32" cy="32" r="30" fill="#0a1a0f" stroke="#53fc18" stroke-width="3"/><text x="32" y="41" font-family="'Chakra Petch', sans-serif" font-size="28" font-weight="900" fill="#53fc18" text-anchor="middle">#1</text></svg>
             </div>
             <div class="kick-podium-user champion-user" id="podium-1-user">—</div>
-            <div class="podium-kick" id="podium-1-tier"><span class="kick-podium-tier-pill">ESPACIO VACÍO</span></div>
+            <div class="podium-kick" id="podium-1-tier"><span class="kick-podium-tier-pill">OPEN SLOT</span></div>
             <div class="kick-podium-points-box champion-points-box">
               <span class="points-label">ACTIVITY POINTS</span>
               <span class="points-val champion-val" id="podium-1-points">0 $DIG</span>
@@ -2620,7 +2624,7 @@
               <svg viewBox="0 0 64 64" width="66" height="66" style="border-radius:50%;display:inline-block;vertical-align:middle;box-shadow:0 0 18px rgba(83,252,24,0.4);"><circle cx="32" cy="32" r="30" fill="#091812" stroke="#53fc18" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="#53fc18" text-anchor="middle">#3</text></svg>
             </div>
             <div class="kick-podium-user" id="podium-3-user" style="color: #ffffff;">—</div>
-            <div class="podium-kick" id="podium-3-tier"><span class="kick-podium-tier-pill">ESPACIO VACÍO</span></div>
+            <div class="podium-kick" id="podium-3-tier"><span class="kick-podium-tier-pill">OPEN SLOT</span></div>
             <div class="kick-podium-points-box">
               <span class="points-label">ACTIVITY POINTS</span>
               <span class="points-val" id="podium-3-points">0 $DIG</span>
@@ -4331,12 +4335,12 @@
       <div class="footer-links-row">
         <a href="#watch">Live Stream</a>
         <a href="#house-games">House Games</a>
+        <a href="#bounties">Bounties</a>
         <a href="#battle">1v1 Battle KOH</a>
         <a href="#tournament">Tournament</a>
         <a href="#bonushunt">Bonus Hunt</a>
         <a href="#slot-intel">Slot Radar &amp; Lab</a>
         <a href="#store">Rewards Store</a>
-        <a href="#bounties">Bountys</a>
         <a href="#leaderboard">Kick Leaderboard</a>
         <a href="#profile">Profile</a>
       </div>
@@ -4359,19 +4363,19 @@
   <script defer src="site/js/vendor/lazyload.min.js?v=33.0"></script>
   <script defer src="site/js/vendor/thumbhash.min.js?v=33.0"></script>
   <script defer src="site/js/avatar-generator.js?v=30.0"></script>
-  <script defer src="site/js/user-store.js?v=35.0"></script>
-  <script defer src="site/js/auth-oauth.js?v=35.0"></script>
-  <script defer src="site/js/admin-hub.js?v=35.0"></script>
+  <script defer src="site/js/user-store.js?v=36.0"></script>
+  <script defer src="site/js/auth-oauth.js?v=36.0"></script>
+  <script defer src="site/js/admin-hub.js?v=36.0"></script>
   <script defer src="site/js/house-games.js?v=30.0"></script>
-  <script defer src="site/js/tournament-prediction.js?v=35.0"></script>
-  <script defer src="site/js/bonushunt.js?v=35.0"></script>
-  <script defer src="site/js/diggity-intel-suite.js?v=35.0"></script>
-  <script defer src="site/js/bounty-system.js?v=33.0"></script>
+  <script defer src="site/js/tournament-prediction.js?v=36.0"></script>
+  <script defer src="site/js/bonushunt.js?v=36.0"></script>
+  <script defer src="site/js/diggity-intel-suite.js?v=36.0"></script>
+  <script defer src="site/js/bounty-system.js?v=36.0"></script>
   <script defer src="site/js/viral-share.js?v=30.0"></script>
   <script defer src="site/js/motion-fx.js?v=30.0"></script>
   <script defer src="site/js/luxury-primitives.js?v=30.0"></script>
   <script defer src="site/js/sonner-toast.js?v=30.0"></script>
-  <script defer src="site/js/app.js?v=35.0"></script>
+  <script defer src="site/js/app.js?v=36.0"></script>
   <!-- Toast Notification Overlay Container (Fixed at viewport bottom-right) -->
   <div id="hg-toast" class="hg-toast" role="status" aria-live="polite"></div>
 

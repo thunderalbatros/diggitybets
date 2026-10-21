@@ -21,14 +21,14 @@ class TournamentPredictionController {
     this.isActive = true;
 
     this.defaultSlots = [
-      { id: 'seed_1', username: '@Seed1', slotName: 'Wanted Dead or a Wild', name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format' },
-      { id: 'seed_2', username: '@Seed2', slotName: 'Gates of Olympus 1000', name: 'Gates of Olympus 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format' },
-      { id: 'seed_3', username: '@Seed3', slotName: 'Le Bandit', name: 'Le Bandit', provider: 'Hacksaw Gaming', img: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format' },
-      { id: 'seed_4', username: '@Seed4', slotName: 'San Quentin xWays', name: 'San Quentin xWays', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format' },
-      { id: 'seed_5', username: '@Seed5', slotName: 'Sweet Bonanza 1000', name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format' },
-      { id: 'seed_6', username: '@Seed6', slotName: 'Ghost Rush', name: 'Ghost Rush', provider: 'Paperclip Gaming', img: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format' },
-      { id: 'seed_7', username: '@Seed7', slotName: 'Tombstone R.I.P.', name: 'Tombstone R.I.P.', provider: 'Nolimit City', img: 'https://mediumrare.imgix.net/40f3f2cfeadebaa5169a9636218f289a34209bd6e91d44de733ecdf69b4b93fe?w=360&auto=format' },
-      { id: 'seed_8', username: '@Seed8', slotName: 'Sugar Rush 1000', name: 'Sugar Rush 1000', provider: 'Pragmatic Play', img: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format' }
+      { id: 'seed_1', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/9ff267150fab30e5f0cff7f09456fa2e5e966015c7fe65969104f4c4c442a746?w=360&auto=format', isTbd: true },
+      { id: 'seed_2', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/fdf333e96a5e21555bbb4e9e04a3ee4e1986c9cca9aa75141597041cc8334d23?w=360&auto=format', isTbd: true },
+      { id: 'seed_3', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/8ade942d35d2cdbddf7888f303be4cf4bda8c650a112b3c53f7c6f3ccad81254?w=360&auto=format', isTbd: true },
+      { id: 'seed_4', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/ca243d6c3db42259d6859b80717eb378eb64e41a9d1b1f7fdeadde68d59d9ad5?w=360&auto=format', isTbd: true },
+      { id: 'seed_5', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/73754d4bf421b78fbd3895bbc7890d379797588cb699d6cbe47f3656aa93613b?w=360&auto=format', isTbd: true },
+      { id: 'seed_6', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/742a1d7958a9ffa215e19cc72c684abe9412f71fcf426b57909b5b817f9cd9d4?w=360&auto=format', isTbd: true },
+      { id: 'seed_7', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/40f3f2cfeadebaa5169a9636218f289a34209bd6e91d44de733ecdf69b4b93fe?w=360&auto=format', isTbd: true },
+      { id: 'seed_8', username: '', displayName: 'TBD', slotName: 'Awaiting Spectator', name: 'Awaiting Spectator', provider: 'Kick !tourney', img: 'https://mediumrare.imgix.net/14d5410c6cf4c303d291262a10e949dc14b0ac2eca2a7a730b0401919c01358e?w=360&auto=format', isTbd: true }
     ];
     this.slots = [...this.defaultSlots];
     this.entryById = new Map();
@@ -69,26 +69,13 @@ class TournamentPredictionController {
     const seedId = `seed_${seedIndex}`;
     const fallback = this.defaultSlots[seedIndex - 1] || this.defaultSlots[0];
     if (!rawPlayer || typeof rawPlayer !== 'object') {
-      if (seedIndex >= 1 && seedIndex <= 8) {
-        return {
-          id: fallback.id,
-          seed: seedIndex,
-          username: fallback.username,
-          displayName: fallback.username.replace(/^@/, ''),
-          slotName: fallback.slotName,
-          name: fallback.name,
-          provider: fallback.provider,
-          img: fallback.img,
-          isTbd: false
-        };
-      }
       return {
         id: seedId,
         seed: seedIndex,
         username: '',
         displayName: 'TBD',
-        slotName: 'Awaiting Player',
-        name: 'Awaiting Player',
+        slotName: 'Awaiting Spectator',
+        name: 'Awaiting Spectator',
         provider: 'Kick !tourney',
         img: fallback.img,
         isTbd: true
@@ -96,27 +83,15 @@ class TournamentPredictionController {
     }
     const rawUser = String(rawPlayer.username || rawPlayer.displayName || rawPlayer.name || '').trim().replace(/^@/, '');
     const rawSlot = String(rawPlayer.slotName || rawPlayer.slot || '').trim();
-    if (!rawUser && !rawSlot) {
-      if (seedIndex >= 1 && seedIndex <= 8) {
-        return {
-          id: fallback.id,
-          seed: seedIndex,
-          username: fallback.username,
-          displayName: fallback.username.replace(/^@/, ''),
-          slotName: fallback.slotName,
-          name: fallback.name,
-          provider: fallback.provider,
-          img: fallback.img,
-          isTbd: false
-        };
-      }
+    const isDemoSeed = /^seed[1-8]$/i.test(rawUser) || /^tbd$/i.test(rawUser) || /^awaiting/i.test(rawUser);
+    if ((!rawUser && !rawSlot) || isDemoSeed) {
       return {
         id: seedId,
         seed: seedIndex,
         username: '',
         displayName: 'TBD',
-        slotName: 'Awaiting Player',
-        name: 'Awaiting Player',
+        slotName: 'Awaiting Spectator',
+        name: 'Awaiting Spectator',
         provider: 'Kick !tourney',
         img: fallback.img,
         isTbd: true
@@ -223,13 +198,13 @@ class TournamentPredictionController {
         const entry = {
           id: slot.id,
           seed: idx + 1,
-          username: slot.username,
-          displayName: slot.username.replace(/^@/, ''),
-          slotName: slot.slotName,
-          name: slot.name,
-          provider: slot.provider,
+          username: '',
+          displayName: 'TBD',
+          slotName: 'Awaiting Spectator',
+          name: 'Awaiting Spectator',
+          provider: 'Kick !tourney',
           img: slot.img,
-          isTbd: false
+          isTbd: true
         };
         this.entryById.set(entry.id, entry);
         return entry;
