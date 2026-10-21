@@ -678,10 +678,18 @@ class CelebrationOverlayApp {
           msg = `Congratulations ${formattedUser} has won the gtb!`;
         } else if (rawType.includes('GIVEAWAY') || rawType.includes('RAFFLE') || rawCat.includes('GIVEAWAY') || rawCat.includes('RAFFLE')) {
           msg = `Congratulations ${formattedUser} has won the giveaway!`;
+        } else if (rawType.includes('CASHOUT')) {
+          const m = String(prize || '').match(/\$\s*(\d+(?:\.\d+)?)/);
+          const amt = m ? Math.round(Number(m[1])) : 5;
+          msg = `Congratulations ${formattedUser} you won $${amt} prize`;
+        } else if (rawType.includes('KOTH_CHAMPION')) {
+          msg = `${formattedUser} is the King of the Hill !`;
         } else if (isTourney) {
-          msg = `Congratulations ${formattedUser} has won the tourney!`;
+          msg = `${formattedUser} has won the tourney`;
         } else if (rawType.includes('BATTLE') || rawType.includes('KOTH') || rawCat.includes('BATTLE') || rawCat.includes('HILL')) {
-          msg = `Congratulations ${formattedUser} has won the battle!`;
+          msg = `${formattedUser} has won the battle`;
+        } else if (slotName) {
+          msg = `${formattedUser} has been picked on roulette with (${slotName})`;
         } else {
           msg = `Congratulations ${formattedUser} has been picked!`;
         }

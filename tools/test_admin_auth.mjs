@@ -325,6 +325,51 @@ await test('Spectator Privilege Isolation: @emers0n never gets isAdmin:true, ove
   assert.equal(emersonSess.json.adminToken, undefined, 'Spectator @emers0n must never receive adminToken');
 });
 
+await test('DiggityBot Unique Event Announcements: blocks @Winner/@PlayerA, deduplicates within 8s, and formats !cashout as Congratulations @username you won $X prize', async () => {
+  const adminToken = await issueAdminToken({ username: 'diggitybets', kickId: 88254585, role: 'admin' }, SECRET);
+  const adminHeaders = { 'x-admin-token': adminToken, origin: 'https://diggitybets.vip' };
+
+  // 1. Placeholder usernames (@Winner, @PlayerA, @PlayerB) must be blocked immediately
+  const blockedWinner = await callEndpoint('/api/kick/chat/announce', 'POST', adminHeaders, {
+    eventType: 'battle',
+    username: 'Winner',
+    customMessage: 'Congratulations @Winner has won the battle!'
+  }, withSecret);
+  assert.equal(blockedWinner.json.ok, false, '@Winner placeholder announcement must be rejected');
+  assert.equal(blockedWinner.json.skipped, true);
+
+  // 2. !cashout at $5, $10, $15, $20 formats strictly as "Congratulations @username you won $X prize"
+  for (const prizeUsd of [5, 10, 15, 20]) {
+    const user = `tarkansky_${prizeUsd}`;
+    const cashoutRes = await callEndpoint('/api/kick/chat/announce', 'POST', adminHeaders, {
+      eventType: 'koth_cashout',
+      username: user,
+      prize: `$${prizeUsd} USD`
+    }, withSecret);
+    assert.equal(cashoutRes.json.ok, true);
+    assert.equal(
+      cashoutRes.json.announcement.message,
+      `Congratulations @${user} you won $${prizeUsd} prize`,
+      `!cashout for $${prizeUsd} must format as 'Congratulations @${user} you won $${prizeUsd} prize'`
+    );
+  }
+
+  // 3. Duplicate announcement within 8s for same user & event must be deduplicated
+  const firstBattle = await callEndpoint('/api/kick/chat/announce', 'POST', adminHeaders, {
+    eventType: 'battle',
+    username: 'tarkansky'
+  }, withSecret);
+  assert.equal(firstBattle.json.ok, true);
+  assert.equal(firstBattle.json.announcement.message, '@tarkansky has won the battle');
+
+  const duplicateBattle = await callEndpoint('/api/kick/chat/announce', 'POST', adminHeaders, {
+    eventType: 'battle',
+    username: 'tarkansky'
+  }, withSecret);
+  assert.equal(duplicateBattle.json.ok, true);
+  assert.equal(duplicateBattle.json.deduplicated, true, 'Duplicate battle win within 8s must be deduplicated');
+});
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\nAdmin & Endpoint Auth tests: ${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

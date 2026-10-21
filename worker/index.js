@@ -8,6 +8,7 @@ let d1Initialized = false;
 let lastRetentionPruneAt = 0;
 let lastEdgeChatPollAt = 0;
 let cachedStreamLiveStatus = { isLive: false, checkedAt: 0 };
+const recentBotChatDispatches = new Map();
 
 async function checkDiggityStreamLiveStatus() {
   const now = Date.now();
@@ -2110,6 +2111,12 @@ const hunthubWorker = {
           } catch (_) {}
         }
       }
+      if (Array.isArray(mem.chatAnnouncements)) {
+        mem.chatAnnouncements = mem.chatAnnouncements.filter(a => a && a.message && !/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(String(a.message)));
+      }
+      if (Array.isArray(mem.recentChatMessages)) {
+        mem.recentChatMessages = mem.recentChatMessages.filter(m => m && m.content && !/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(String(m.content)));
+      }
       return mem;
     };
 
@@ -2398,26 +2405,31 @@ const hunthubWorker = {
                   const botMsg = targetMode === 'tourney'
                     ? `@${cleanUser} entered with ${meta.name} for tourney`
                     : `@${cleanUser} has entered with ${meta.name} to battle`;
-                  recentMsgs.push({
-                    id: 'bot_' + msgId,
-                    username: 'DiggityBot',
-                    content: botMsg,
-                    isCommand: false,
-                    isBotAnnouncement: true,
-                    createdAt: new Date(now).toISOString(),
-                    ts: now
-                  });
                   syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
-                  syncCurrent.chatAnnouncements.push({
-                    id: 'ann_' + msgId,
-                    username: `@${cleanUser}`,
-                    eventType: targetMode === 'tourney' ? 'tourney_entry' : 'battle_entry',
-                    message: botMsg,
-                    slotName: meta.name,
-                    ts: now
-                  });
-                  if (typeof dispatchKickBotChatMessage === 'function') {
-                    ctx.waitUntil(dispatchKickBotChatMessage(botMsg).catch(() => null));
+                  const alreadyAnnounced = syncCurrent.chatAnnouncements.some(a =>
+                    a && String(a.message || '').trim().toLowerCase() === botMsg.toLowerCase() && (now - Number(a.ts || 0)) < 25000
+                  );
+                  if (!alreadyAnnounced) {
+                    recentMsgs.push({
+                      id: 'bot_' + msgId,
+                      username: 'DiggityBot',
+                      content: botMsg,
+                      isCommand: false,
+                      isBotAnnouncement: true,
+                      createdAt: new Date(now).toISOString(),
+                      ts: now
+                    });
+                    syncCurrent.chatAnnouncements.push({
+                      id: 'ann_' + msgId,
+                      username: `@${cleanUser}`,
+                      eventType: targetMode === 'tourney' ? 'tourney_entry' : 'battle_entry',
+                      message: botMsg,
+                      slotName: meta.name,
+                      ts: now
+                    });
+                    if (typeof dispatchKickBotChatMessage === 'function') {
+                      ctx.waitUntil(dispatchKickBotChatMessage(botMsg).catch(() => null));
+                    }
                   }
                 }
               }
@@ -2451,26 +2463,31 @@ const hunthubWorker = {
                 };
                 if (!isFirstBackfill && (now - msgTs) < 120000) {
                   const botSrMsg = `@${cleanUser} has entered the roulette queue with ${meta.name}`;
-                  recentMsgs.push({
-                    id: 'bot_sr_' + msgId,
-                    username: 'DiggityBot',
-                    content: botSrMsg,
-                    isCommand: false,
-                    isBotAnnouncement: true,
-                    createdAt: new Date(now).toISOString(),
-                    ts: now
-                  });
                   syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
-                  syncCurrent.chatAnnouncements.push({
-                    id: 'ann_sr_' + msgId,
-                    username: `@${cleanUser}`,
-                    eventType: 'sr_entry',
-                    message: botSrMsg,
-                    slotName: meta.name,
-                    ts: now
-                  });
-                  if (typeof dispatchKickBotChatMessage === 'function') {
-                    ctx.waitUntil(dispatchKickBotChatMessage(botSrMsg).catch(() => null));
+                  const alreadySrAnnounced = syncCurrent.chatAnnouncements.some(a =>
+                    a && String(a.message || '').trim().toLowerCase() === botSrMsg.toLowerCase() && (now - Number(a.ts || 0)) < 25000
+                  );
+                  if (!alreadySrAnnounced) {
+                    recentMsgs.push({
+                      id: 'bot_sr_' + msgId,
+                      username: 'DiggityBot',
+                      content: botSrMsg,
+                      isCommand: false,
+                      isBotAnnouncement: true,
+                      createdAt: new Date(now).toISOString(),
+                      ts: now
+                    });
+                    syncCurrent.chatAnnouncements.push({
+                      id: 'ann_sr_' + msgId,
+                      username: `@${cleanUser}`,
+                      eventType: 'sr_entry',
+                      message: botSrMsg,
+                      slotName: meta.name,
+                      ts: now
+                    });
+                    if (typeof dispatchKickBotChatMessage === 'function') {
+                      ctx.waitUntil(dispatchKickBotChatMessage(botSrMsg).catch(() => null));
+                    }
                   }
                 }
               }
@@ -2853,11 +2870,11 @@ const hunthubWorker = {
       }
     }
 
-    const formatWinnerAnnouncementText = (username, eventType, customMessage, slotName = '') => {
+    const formatWinnerAnnouncementText = (username, eventType, customMessage, slotName = '', prize = '') => {
       if (customMessage && String(customMessage).trim().length > 0) {
         return String(customMessage).trim().slice(0, 480);
       }
-      const cleanUser = '@' + String(username || 'Viewer').trim().replace(/^@+/, '');
+      const cleanUser = '@' + String(username || '').trim().replace(/^@+/, '');
       const typeNorm = String(eventType || 'picked').trim().toLowerCase();
       if (typeNorm === 'sr_entry') {
         return `${cleanUser} has entered the roulette queue with ${slotName || 'Slot'}`;
@@ -2871,10 +2888,15 @@ const hunthubWorker = {
       if (typeNorm === 'sr_wheel_picked' || typeNorm === 'wheel_picked' || typeNorm === 'slot_wheel_picked') {
         return `${cleanUser} has been picked on roulette with (${slotName || 'Slot'})`;
       }
+      if (typeNorm === 'koth_cashout' || typeNorm === 'cashout') {
+        const m = String(prize || '').match(/\$\s*(\d+(?:\.\d+)?)/);
+        const amount = m ? Math.round(Number(m[1])) : 5;
+        return `Congratulations ${cleanUser} you won $${amount} prize`;
+      }
       if (typeNorm === 'koth_champion') {
         return `${cleanUser} is the King of the Hill !`;
       }
-      if (typeNorm === 'battle' || typeNorm === '1v1' || typeNorm === 'battle_win' || typeNorm === 'koth_cashout') {
+      if (typeNorm === 'battle' || typeNorm === '1v1' || typeNorm === 'battle_win') {
         return `${cleanUser} has won the battle`;
       }
       if (typeNorm === 'tourney' || typeNorm === 'tournament' || typeNorm === 'bracket' || typeNorm === 'tourney_champion') {
@@ -2896,7 +2918,22 @@ const hunthubWorker = {
     };
 
     const dispatchKickBotChatMessage = async (messageText) => {
-      if (!messageText) return { sent: false, reason: 'empty_message' };
+      const cleanText = String(messageText || '').trim();
+      if (!cleanText) return { sent: false, reason: 'empty_message' };
+      if (/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(cleanText)) {
+        return { sent: false, reason: 'placeholder_blocked' };
+      }
+      const nowMs = Date.now();
+      for (const [k, ts] of recentBotChatDispatches.entries()) {
+        if ((nowMs - ts) > 15000) recentBotChatDispatches.delete(k);
+      }
+      const msgKey = cleanText.toLowerCase();
+      const prevTs = recentBotChatDispatches.get(msgKey);
+      if (prevTs && (nowMs - prevTs) < 8000) {
+        return { sent: false, deduplicated: true, reason: 'duplicate_within_8s' };
+      }
+      recentBotChatDispatches.set(msgKey, nowMs);
+
       let accessToken = env?.KICK_BOT_TOKEN || env?.KICK_ACCESS_TOKEN || '';
       let refreshToken = '';
       let broadcasterId = Number(env?.KICK_BROADCASTER_ID || 88254585);
@@ -3015,13 +3052,37 @@ const hunthubWorker = {
             return new Response(JSON.stringify({ ok: false, error: 'Rate limit exceeded' }), { status: 429, headers: noCacheHeaders });
           }
         }
-        const cleanUser = '@' + String(body.username || body.winner || 'Viewer').trim().replace(/^@+/, '');
+        const rawUserToken = String(body.username || body.winner || '').trim().split(/[\s(]/)[0].replace(/^@+/, '');
+        const blockedPlaceholders = new Set(['', 'winner', 'playera', 'playerb', 'player', 'viewer', 'challenger', 'king', 'none', 'tbd', 'waiting']);
+        if (blockedPlaceholders.has(rawUserToken.toLowerCase()) && rawUserToken.toLowerCase() !== 'diggitybot') {
+          return new Response(JSON.stringify({ ok: false, skipped: true, reason: 'placeholder_username' }), { headers: noCacheHeaders });
+        }
+        const cleanUser = '@' + rawUserToken;
         const slotName = String(body.slotName || '').trim().slice(0, 120);
-        const message = formatWinnerAnnouncementText(cleanUser, eventType, body.customMessage || body.message, slotName);
+        const prizeText = String(body.prize || '').trim().slice(0, 80);
+        const message = formatWinnerAnnouncementText(cleanUser, eventType, body.customMessage || body.message, slotName, prizeText);
+        if (/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(message)) {
+          return new Response(JSON.stringify({ ok: false, skipped: true, reason: 'placeholder_in_message' }), { headers: noCacheHeaders });
+        }
         const nowTs = Number(body.timestamp || body.ts || Date.now());
 
         const current = await readOverlaySyncState();
         current.chatAnnouncements = Array.isArray(current.chatAnnouncements) ? current.chatAnnouncements : [];
+        const duplicateExisting = current.chatAnnouncements.find(a =>
+          a && (nowTs - Number(a.ts || 0)) < 8000 && (
+            String(a.message || '').trim().toLowerCase() === message.trim().toLowerCase() ||
+            (String(a.eventType || '').toLowerCase() === eventType && String(a.username || '').toLowerCase() === cleanUser.toLowerCase())
+          )
+        );
+        if (duplicateExisting) {
+          return new Response(JSON.stringify({
+            ok: true,
+            deduplicated: true,
+            announcement: duplicateExisting,
+            celebrationEvent: current.celebrationEvent || null
+          }), { headers: noCacheHeaders });
+        }
+
         const annId = body.id || ('ann_' + nowTs + '_' + Math.random().toString(36).slice(2, 6));
         const announcementItem = {
           id: annId,
@@ -3029,7 +3090,7 @@ const hunthubWorker = {
           eventType,
           message,
           slotName,
-          prize: String(body.prize || '').trim().slice(0, 80),
+          prize: prizeText,
           ts: nowTs
         };
         current.chatAnnouncements.push(announcementItem);
