@@ -4,6 +4,14 @@
 > **Last Updated:** 2026-10-21  
 > **Manager:** Antigravity Tech Lead  
 
+### 2026-10-21 — Economy hardening (cron chat + caps + RTP)
+- Cloudflare Cron `* * * * *` polls Kick chat every minute (chat-to-earn works with nobody on the site; still live-only).
+- House games net-profit cap: +500 $DIG / rolling 24 h and +1,000 / rolling 7 days (server ledger, partial pay at cap).
+- Daily streak reward computed server-side (`users.streak_day`); client amount ignored.
+- Blackjack: infinite-deck RNG (RTP 99.46-99.59%; old 1-deck reshuffle gave the player +0.2% edge).
+- Crash auto-cashes at the max-win multiplier; Dice/Limbo block targets above it; Plinko/Keno block mode+bet combos < 90% real RTP. Misleading "10,000x / 1,000,000x MAX" badges replaced by "MAX +500 $DIG".
+- Store anchor kept: $20 Bonus Split = 3,000 $DIG ≈ 1 week of chat + site open (~390 $DIG/h × ~7 h + streak).
+
 ---
 
 ## 1. Current Phase Overview

@@ -131,6 +131,7 @@ async function initD1(db) {
           last_watch_reward_at INTEGER NOT NULL DEFAULT 0,
           last_chat_reward_at INTEGER NOT NULL DEFAULT 0,
           last_streak_claim_date TEXT DEFAULT '',
+          streak_day INTEGER NOT NULL DEFAULT 0,
           risk_score INTEGER NOT NULL DEFAULT 0,
           is_shadowbanned INTEGER NOT NULL DEFAULT 0,
           kick_created_at INTEGER,
@@ -226,6 +227,7 @@ async function initD1(db) {
         `ALTER TABLE users ADD COLUMN last_watch_reward_at INTEGER NOT NULL DEFAULT 0`,
         `ALTER TABLE users ADD COLUMN last_chat_reward_at INTEGER NOT NULL DEFAULT 0`,
         `ALTER TABLE users ADD COLUMN last_streak_claim_date TEXT DEFAULT ''`,
+        `ALTER TABLE users ADD COLUMN streak_day INTEGER NOT NULL DEFAULT 0`,
         `ALTER TABLE raffle_tickets ADD COLUMN raffle_id TEXT DEFAULT 'weekly_raffle'`,
         `ALTER TABLE raffle_tickets ADD COLUMN ticket_number INTEGER DEFAULT 0`,
         `CREATE INDEX IF NOT EXISTS idx_users_monthly_desc ON users(monthly_points DESC, points_balance DESC)`
@@ -602,7 +604,7 @@ async function verifyTurnstileToken(token, secretKey, remoteIp) {
   }
 }
 
-export default {
+const hunthubWorker = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const allowedOrigin = resolveTrustedOrigin(request);
@@ -1625,7 +1627,6 @@ export default {
         const MAX_BET = 50;
         const MAX_WIN_CAP = 500;
         const MAX_SINGLE_CREDIT = 2 * (MAX_BET + MAX_WIN_CAP);
-        const MAX_NET_PER_HOUR = 3000;
         const fail = (status, error) => new Response(JSON.stringify({ success: false, error, maxBet: MAX_BET, maxWinCap: MAX_WIN_CAP }), { status, headers: corsHeaders });
 
         if (action !== 'debit' && action !== 'credit') return fail(400, 'ACTION_REQUIRED: use action=debit|credit (client multipliers are no longer trusted)');
@@ -1649,7 +1650,35 @@ export default {
         const nowMs = Date.now();
         let newBalance = Number(userRow.points_balance || 0);
 
+        // Net game profit caps (credits - debits): house games can add at most ~1/3 of the weekly store anchor
+        // (bonus_split_20 = 3000), even for a tampered client. Honest play has negative EV and rarely gets close.
+        const DAILY_NET_CAP = 500;
+        const WEEKLY_NET_CAP = 1000;
+        const since24h = nowMs - 86_400_000;
+        const since7d = nowMs - 7 * 86_400_000;
+        const agg = await env.DB.prepare(`
+          SELECT
+            COALESCE(SUM(CASE WHEN type = 'game_debit' AND created_at >= ?2 THEN ABS(amount) END), 0) AS d24,
+            COALESCE(SUM(CASE WHEN type = 'game_debit' AND created_at >= ?2 THEN 1 END), 0) AS n24,
+            COALESCE(SUM(CASE WHEN type = 'game_credit' AND created_at >= ?2 THEN ABS(amount) END), 0) AS c24,
+            COALESCE(SUM(CASE WHEN type = 'game_debit' THEN ABS(amount) END), 0) AS d7,
+            COALESCE(SUM(CASE WHEN type = 'game_credit' THEN ABS(amount) END), 0) AS c7
+          FROM point_transactions
+          WHERE user_id = ?1 AND type IN ('game_debit', 'game_credit') AND created_at >= ?3
+        `).bind(userRow.id, since24h, since7d).first();
+        const d24 = Number(agg?.d24) || 0, n24 = Number(agg?.n24) || 0, c24 = Number(agg?.c24) || 0;
+        const d7 = Number(agg?.d7) || 0, c7 = Number(agg?.c7) || 0;
+        const remaining24 = d24 + DAILY_NET_CAP - c24;
+        const remaining7 = d7 + WEEKLY_NET_CAP - c7;
+        const capReached = (scope) => new Response(JSON.stringify({
+          success: false,
+          error: `GAME_PROFIT_CAP_REACHED: house games net profit cap reached (${scope}). Daily +${DAILY_NET_CAP}, weekly +${WEEKLY_NET_CAP} $DIG.`,
+          capScope: scope, dailyCap: DAILY_NET_CAP, weeklyCap: WEEKLY_NET_CAP, newBalance
+        }), { status: 403, headers: corsHeaders });
+
         if (action === 'debit') {
+          if (remaining24 <= 0) return capReached('daily');
+          if (remaining7 <= 0) return capReached('weekly');
           const upd = await env.DB.prepare('UPDATE users SET points_balance = points_balance - ?1 WHERE id = ?2 AND points_balance >= ?1').bind(amount, userRow.id).run();
           if (!upd?.meta?.changes) {
             return new Response(JSON.stringify({ success: false, error: 'INSUFFICIENT_BALANCE: Not enough $DIG points in server ledger', newBalance }), { status: 400, headers: corsHeaders });
@@ -1658,26 +1687,20 @@ export default {
           await env.DB.prepare('INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
             .bind(crypto.randomUUID(), userRow.id, -amount, newBalance, 'game_debit', gameName, null, nowMs).run();
         } else {
-          const since = nowMs - 3_600_000;
-          const rows = await env.DB.prepare(`
-            SELECT type, COUNT(*) AS n, COALESCE(SUM(ABS(amount)), 0) AS s
-            FROM point_transactions
-            WHERE user_id = ?1 AND type IN ('game_debit', 'game_credit') AND created_at >= ?2
-            GROUP BY type
-          `).bind(userRow.id, since).all();
-          let debits = 0, debitCount = 0, credits = 0;
-          for (const r of (rows?.results || [])) {
-            if (r.type === 'game_debit') { debits = Number(r.s) || 0; debitCount = Number(r.n) || 0; }
-            if (r.type === 'game_credit') credits = Number(r.s) || 0;
-          }
-          const allowedCredits = debits + Math.min(MAX_WIN_CAP * debitCount, MAX_NET_PER_HOUR);
-          if (debitCount === 0 || credits + amount > allowedCredits) {
+          if (n24 === 0) {
             return new Response(JSON.stringify({ success: false, error: 'CREDIT_REJECTED: no matching bets in server ledger', newBalance }), { status: 400, headers: corsHeaders });
           }
-          await env.DB.prepare('UPDATE users SET points_balance = points_balance + ?1 WHERE id = ?2').bind(amount, userRow.id).run();
-          newBalance += amount;
+          // Per-round sanity (each recorded bet can return at most bet + MAX_WIN_CAP) plus the daily/weekly caps
+          const remainingByRounds = d24 + MAX_WIN_CAP * n24 - c24;
+          const payable = Math.floor(Math.min(amount, remainingByRounds, remaining24, remaining7));
+          if (payable <= 0) return capReached(remaining24 <= remaining7 ? 'daily' : 'weekly');
+          await env.DB.prepare('UPDATE users SET points_balance = points_balance + ?1 WHERE id = ?2').bind(payable, userRow.id).run();
+          newBalance += payable;
           await env.DB.prepare('INSERT INTO point_transactions (id, user_id, amount, balance_after, type, reference_id, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
-            .bind(crypto.randomUUID(), userRow.id, amount, newBalance, 'game_credit', gameName, null, nowMs).run();
+            .bind(crypto.randomUUID(), userRow.id, payable, newBalance, 'game_credit', gameName, null, nowMs).run();
+          if (payable < amount) {
+            return new Response(JSON.stringify({ success: true, action, game: gameName, amount: payable, requested: amount, capped: true, newBalance, maxBet: MAX_BET, maxWinCap: MAX_WIN_CAP, dailyCap: DAILY_NET_CAP, weeklyCap: WEEKLY_NET_CAP }), { headers: corsHeaders });
+          }
         }
 
         return new Response(JSON.stringify({ success: true, action, game: gameName, amount, newBalance, maxBet: MAX_BET, maxWinCap: MAX_WIN_CAP }), { headers: corsHeaders });
@@ -2644,16 +2667,23 @@ export default {
             let nextBal = curDbBal;
             let nextMonthly = curDbMonthly;
 
-            // Optional daily streak claim credit (validated once per UTC day ONLY when stream is LIVE)
+            // Daily streak claim (once per UTC day, ONLY while LIVE). The server computes the day and reward from its
+            // own record; the client value is only a claim signal and its amount is ignored.
+            const STREAK_REWARDS = [50, 75, 100, 125, 150, 200, 300];
             const todayKey = new Date().toISOString().slice(0, 10);
-            const streakDelta = Math.floor(Number(body.streakBonusDelta) || 0);
+            const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+            const wantsStreakClaim = Number(body.streakBonusDelta) > 0;
             let nextStreakDate = existingUser.last_streak_claim_date || '';
-            if (streakDelta >= 15 && streakDelta <= 300 && nextStreakDate !== todayKey) {
+            let nextStreakDay = Number(existingUser.streak_day || 0);
+            if (wantsStreakClaim && nextStreakDate !== todayKey) {
               const isStreamLive = await checkDiggityStreamLiveStatus();
               if (isStreamLive) {
-                nextBal += streakDelta;
-                nextMonthly += streakDelta;
+                const dayNum = nextStreakDate === yesterdayKey ? (nextStreakDay % STREAK_REWARDS.length) + 1 : 1;
+                const reward = STREAK_REWARDS[dayNum - 1];
+                nextBal += reward;
+                nextMonthly += reward;
                 nextStreakDate = todayKey;
+                nextStreakDay = dayNum;
               }
             }
 
@@ -2668,6 +2698,7 @@ export default {
                   hunt_hits = ?7,
                   is_sub = ?8,
                   last_streak_claim_date = ?9,
+                  streak_day = ?12,
                   last_seen_at = ?10
               WHERE id = ?11
             `).bind(
@@ -2681,7 +2712,8 @@ export default {
               isSubInt,
               nextStreakDate,
               nowSec,
-              existingUser.id
+              existingUser.id,
+              nextStreakDay
             ).run();
           }
         }
@@ -4032,5 +4064,15 @@ export default {
       status: 404,
       headers: corsHeaders
     });
+  },
+
+  // Cron Trigger (wrangler.toml [triggers]): polls Kick chat every minute so chat-to-earn, !commands and
+  // guesses are processed even when nobody has the site or the OBS overlays open. Points are still only
+  // awarded while kick.com/diggitybets is LIVE (checked inside the ingestion routine).
+  async scheduled(event, env, ctx) {
+    const req = new Request('https://diggitybets.vip/api/kick/chat/live?source=cron');
+    ctx.waitUntil(hunthubWorker.fetch(req, env, ctx).catch(() => null));
   }
 };
+
+export default hunthubWorker;

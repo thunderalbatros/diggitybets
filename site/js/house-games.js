@@ -39,7 +39,7 @@ class StakeOriginalsController {
 
     // 2. Plinko State
     this.plinkoBet = 10;
-    this.plinkoRisk = 'high'; // 'low', 'medium', 'high'
+    this.plinkoRisk = 'medium'; // 'low', 'medium', 'high' (medium keeps >= 90% RTP for bets 5, 7 and 10-50 under the win cap)
     this.plinkoRows = 10;
     this.plinkoActiveBalls = [];
     this.plinkoHistory = [0.9, 0.3, 3, 0.2, 10];
@@ -235,12 +235,26 @@ class StakeOriginalsController {
       if (data && data.success === false && typeof data.error === 'string' && data.error.startsWith('INSUFFICIENT_BALANCE')) {
         this.showToast('⚠️ Tu saldo en el servidor es menor al mostrado. Se sincronizó con el servidor.', 'loss');
       }
+      if (data && data.success === false && typeof data.error === 'string' && data.error.startsWith('GAME_PROFIT_CAP_REACHED')) {
+        this._gameCapUntil = Date.now() + 30 * 60_000;
+        this.showGameCapToast(data.capScope);
+      }
+      if (data && data.success === true && data.capped) {
+        this._gameCapUntil = Date.now() + 30 * 60_000;
+        this.showToast(`🏆 Llegaste al tope de ganancia en House Games: se acreditaron ${data.amount} de ${data.requested} $DIG.`, 'loss');
+      }
       if (data && typeof data.newBalance === 'number' && Number.isFinite(data.newBalance) && this._ledgerPending === 0) {
         this.balance = Math.max(0, data.newBalance);
         localStorage.setItem('hunthub_balance', String(this.balance));
         this.renderBalance();
       }
     });
+  }
+
+  /** Explains the server-side net profit cap for house games (+500 per 24 h, +1,000 per 7 days). */
+  showGameCapToast(scope) {
+    const which = scope === 'weekly' ? 'semanal (+1.000 $DIG en 7 días)' : 'diario (+500 $DIG en 24 h)';
+    this.showToast(`🏆 Llegaste al tope ${which} de ganancia en House Games. Los $DIG se siguen ganando chateando en el stream.`, 'loss');
   }
 
   /** Credits a settled win/push to the balance and records it on the server ledger. */
@@ -252,12 +266,85 @@ class StakeOriginalsController {
   }
 
   /**
+   * Exact RTP of a paytable after the per-round win cap and integer flooring of payouts.
+   * probs[i] is the chance of outcome i and mults[i] its multiplier.
+   */
+  effectiveRtp(bet, probs, mults) {
+    const b = Math.floor(Number(bet) || 0);
+    if (b <= 0) return 0;
+    let rtp = 0;
+    for (let i = 0; i < mults.length; i++) {
+      rtp += (probs[i] || 0) * Math.min(Math.floor(b * mults[i]), b + this.maxWinCap) / b;
+    }
+    return rtp;
+  }
+
+  /**
+   * Blocks a mode + bet whose real RTP falls under minRtp (the win cap kills top prizes on big bets and rounding
+   * eats small payouts on tiny bets) and tells the player which bets are valid for that mode.
+   */
+  blockIfRtpTooLow(bet, probs, mults, minRtp = 0.90) {
+    if (this.effectiveRtp(bet, probs, mults) >= minRtp) return false;
+    const ok = [];
+    for (let b = 1; b <= this.maxBet; b++) if (this.effectiveRtp(b, probs, mults) >= minRtp) ok.push(b);
+    const ranges = [];
+    for (let i = 0; i < ok.length; i++) {
+      let j = i;
+      while (j + 1 < ok.length && ok[j + 1] === ok[j] + 1) j++;
+      ranges.push(i === j ? `${ok[i]}` : `${ok[i]}-${ok[j]}`);
+      i = j;
+    }
+    this.showToast(ok.length
+      ? `⚠️ Con esta apuesta el tope de +${this.maxWinCap} $DIG deja este modo por debajo de 90% RTP. Apuestas válidas: ${ranges.join(', ')} $DIG.`
+      : '⚠️ Este modo está desactivado temporalmente: con el tope de ganancia por ronda queda por debajo de 90% RTP. Elegí otro riesgo.', 'loss');
+    return true;
+  }
+
+  /** Outcome probabilities for a plinko board: binomial(rows, 0.5). */
+  plinkoProbs(rows) {
+    const probs = [];
+    let c = 1;
+    for (let k = 0; k <= rows; k++) {
+      probs.push(c / 2 ** rows);
+      c = (c * (rows - k)) / (k + 1);
+    }
+    return probs;
+  }
+
+  /** Keno hit probabilities: hypergeometric, 10 numbers drawn from 40. */
+  kenoProbs(picks) {
+    const nCr = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r; };
+    const probs = [];
+    for (let h = 0; h <= picks; h++) probs.push((nCr(picks, h) * nCr(40 - picks, 10 - h)) / nCr(40, 10));
+    return probs;
+  }
+
+  /**
+   * Max win per round is bet + 500 $DIG. A target multiplier above (bet + 500) / bet cannot be paid in full
+   * while its win chance keeps shrinking (e.g. 100x with a 50 bet had an effective RTP of ~10%), so block it.
+   */
+  blockIfAboveWinCap(bet, multiplier) {
+    const b = Math.floor(Number(bet) || 0);
+    if (b <= 0) return false;
+    const capMult = (b + this.maxWinCap) / b;
+    if (Number(multiplier) > capMult + 1e-9) {
+      this.showToast(`⚠️ Ganancia máxima por ronda: +${this.maxWinCap} $DIG. Con ${b} $DIG el multiplicador máximo es ${capMult.toFixed(2)}x. Bajá el multiplicador o la apuesta.`, 'loss');
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Strict bet deduction: Enforces MAX BET = 50 $DIG and blocks bets if balance is insufficient.
    * Viewers earn $DIG points organically by watching kick.com/diggitybets.
    */
   checkAndDeductBet(betAmount) {
     if (!Number.isFinite(betAmount) || betAmount <= 0) {
       this.showToast('⚠️ Ingresá un monto de apuesta válido en $DIG.', 'loss');
+      return false;
+    }
+    if (this._gameCapUntil && Date.now() < this._gameCapUntil) {
+      this.showGameCapToast('daily');
       return false;
     }
     if (betAmount > this.maxBet) {
@@ -456,6 +543,8 @@ class StakeOriginalsController {
 
   async dropPlinkoBalls(count = 1) {
     const totalCost = this.plinkoBet * count;
+    const riskPayouts = this.plinkoPayouts[this.plinkoRisk] || this.plinkoPayouts.medium;
+    if (this.blockIfRtpTooLow(this.plinkoBet, this.plinkoProbs(this.plinkoRows), riskPayouts)) return;
     if (!this.checkAndDeductBet(totalCost)) return;
 
     for (let i = 0; i < count; i++) {
@@ -787,6 +876,32 @@ class StakeOriginalsController {
     return Math.floor(this.csprngFloat() * bound);
   }
 
+  /**
+   * Infinite-deck blackjack shoe: `count` independent cards (0..51). Provably fair when pfEngine is present
+   * (8 cards per HMAC-SHA256 round hash, 32 bits each; modulo bias 48/2^32 is negligible), CSPRNG otherwise.
+   */
+  async buildInfiniteShoe(count = 96) {
+    const shoe = [];
+    const pf = window.pfEngine;
+    if (pf && typeof pf.generateRoundHash === 'function') {
+      try {
+        const baseNonce = pf.nonce;
+        for (let i = 0; shoe.length < count; i++) {
+          const hash = await pf.generateRoundHash(pf.serverSeed, pf.clientSeed, `${baseNonce}:bj:${i}`);
+          for (let k = 0; k + 8 <= hash.length && shoe.length < count; k += 8) {
+            shoe.push(parseInt(hash.substring(k, k + 8), 16) % 52);
+          }
+        }
+        if (typeof pf.nextNonce === 'function') pf.nextNonce();
+        return shoe;
+      } catch (_) {
+        shoe.length = 0;
+      }
+    }
+    while (shoe.length < count) shoe.push(this.unbiasedRandomInt(52));
+    return shoe;
+  }
+
   generateDeck(size = 52) {
     const deck = Array.from({ length: size }, (_, i) => i);
     for (let i = deck.length - 1; i > 0; i--) {
@@ -1096,6 +1211,14 @@ class StakeOriginalsController {
       // Check Auto-Cashout (settles at the exact configured multiplier)
       if (this.crashAutoCashout && currentMult >= this.crashAutoCashout) {
         this.crashCurrentMultiplier = this.crashAutoCashout;
+        this.cashoutCrash();
+        return;
+      }
+
+      // Max-win auto-cashout: past (bet + maxWinCap) / bet the payout is capped, so settle there to keep RTP intact
+      const capMult = Math.floor(((this.crashBet + this.maxWinCap) / this.crashBet) * 100) / 100;
+      if (this.crashBet > 0 && currentMult >= capMult) {
+        this.crashCurrentMultiplier = capMult;
         this.cashoutCrash();
         return;
       }
@@ -1448,6 +1571,7 @@ class StakeOriginalsController {
     const betInput = document.getElementById('dice-bet-input');
     const bet = betInput ? (parseInt(betInput.value, 10) || 20) : 20;
 
+    if (this.blockIfAboveWinCap(bet, this.diceMultiplier)) return;
     if (!this.checkAndDeductBet(bet)) return;
     this.isRollingDice = true;
     if (window.soundEngine) window.soundEngine.playDiceRoll();
@@ -1563,14 +1687,10 @@ class StakeOriginalsController {
       splitBtn.disabled = true;
     }
 
-    let hash = 'bj_' + Date.now();
-    if (window.pfEngine && typeof window.pfEngine.generateRoundHash === 'function') {
-      hash = await window.pfEngine.generateRoundHash();
-      this.bjDeck = window.pfEngine.getShuffledDeck(hash);
-      window.pfEngine.nextNonce();
-    } else {
-      this.bjDeck = this.generateDeck(52);
-    }
+    // Infinite-deck shoe (Stake-style RNG): every card is an independent 1/52 draw.
+    // Measured with basic strategy: RTP 99.46% (house edge ~0.54%). The previous single 52-card deck
+    // reshuffled every hand gave the PLAYER the edge (RTP ~100.16%). See tools/audit_house_games_rtp.mjs.
+    this.bjDeck = await this.buildInfiniteShoe(96);
 
     this.bjDealerHand = [this.bjDeck.pop(), this.bjDeck.pop()];
     this.bjPlayerHand = [this.bjDeck.pop(), this.bjDeck.pop()];
@@ -3073,6 +3193,7 @@ class StakeOriginalsController {
     const betInput = document.getElementById('limbo-bet-input');
     const bet = betInput ? (parseInt(betInput.value, 10) || 10) : 10;
 
+    if (this.blockIfAboveWinCap(bet, this.limboTarget)) return;
     if (!this.checkAndDeductBet(bet)) return;
     this.limboBet = bet;
     this.isRollingLimbo = true;
@@ -3755,6 +3876,8 @@ class StakeOriginalsController {
     const betInput = document.getElementById('keno-bet-input');
     if (betInput) this.kenoBet = Math.max(1, parseInt(betInput.value, 10) || 10);
 
+    const kenoRow = this.kenoPaytables[this.kenoSelected.size]?.[this.kenoRisk];
+    if (kenoRow && this.blockIfRtpTooLow(this.kenoBet, this.kenoProbs(this.kenoSelected.size), kenoRow)) return;
     if (!this.checkAndDeductBet(this.kenoBet)) return;
 
     this.kenoIsDrawing = true;

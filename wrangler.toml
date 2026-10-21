@@ -21,6 +21,11 @@ not_found_handling = "none"
 [observability]
 enabled = true
 
+# Free plan Cron Trigger (5 per account, minimum 1/min): polls Kick chat every minute so chat-to-earn
+# and !commands work even when nobody has the site/overlays open. See scheduled() in worker/index.js.
+[triggers]
+crons = ["* * * * *"]
+
 # Cloudflare D1 Serverless SQLite (Global cross-region sync between USA OBS & Argentina Control Panel)
 [[d1_databases]]
 binding = "DB"
