@@ -8953,8 +8953,12 @@ html.lenis, html.lenis body {
    (Derived from ConnorAtherton/loaders.css & verlok/vanilla-lazyload)
    ======================================================== */
 .lazy {
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lazy[data-src]:not([src]) {
+  opacity: 0;
   will-change: opacity;
 }
 

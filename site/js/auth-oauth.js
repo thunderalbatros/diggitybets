@@ -470,6 +470,9 @@ class OAuthEngine {
         window.userStore.avatarType = 'img';
       }
       window.userStore.updateUserUI();
+      if (typeof window.userStore.syncGlobalLeaderboardAndUser === 'function') {
+        window.userStore.syncGlobalLeaderboardAndUser();
+      }
     }
 
     // Dynamic Admin Deck Unlock

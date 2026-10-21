@@ -283,7 +283,7 @@ export class OverlayServer {
         const codeVerifier = crypto.randomBytes(32).toString('hex');
         const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
-        const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+        const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM';
         const host = req.headers.host || '';
         const redirectBase = host.includes('diggitybets.vip') ? 'https://diggitybets.vip' : (host.includes('3000') || host.includes('3001') ? `http://${host}` : 'http://127.0.0.1:3000');
         const redirectUri = `${redirectBase}/api/auth/callback`;
@@ -334,7 +334,7 @@ export class OverlayServer {
             const { code, code_verifier, redirect_uri } = JSON.parse(body);
             let userData: any = { username: 'KickUser_' + (code ? code.substring(0, 5) : 'Guest'), id: 0 };
 
-            const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M4QTKTY268TVY3DZCMC2EBHQ';
+            const clientId = config.kickClientId || process.env.KICK_CLIENT_ID || '01M5D4P0C5ERRS21YX12VXDMZM';
             const clientSecret = config.kickClientSecret || process.env.KICK_CLIENT_SECRET || '';
 
             if (clientId && clientSecret && code && code_verifier) {

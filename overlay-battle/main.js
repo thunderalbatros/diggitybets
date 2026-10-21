@@ -139,14 +139,10 @@ class BattleOverlayApp {
       // Selecting Player A starts a new battle: Player B must remain empty until selected
       this.currentState.playerB = null;
     } else if (slotKey === 'B') {
-      const cleanA = String(this.currentState.playerA?.username || this.currentState.playerA?.displayName || '').trim().toLowerCase().replace(/^@/, '');
-      const cleanB = String(player?.username || player?.displayName || '').trim().toLowerCase().replace(/^@/, '');
-      if (cleanA && cleanB && cleanA === cleanB) {
-        return;
-      }
       this.currentState.playerB = player;
     }
 
+    this._lastLocalAssignAt = Date.now();
     this.currentState.winner = null;
     this.currentState._kothIncremented = false;
 
@@ -663,6 +659,11 @@ class BattleOverlayApp {
             data?.overlays?.battle ||
             null;
           if (battleState) {
+            const remoteEmpty = !battleState.playerA && !battleState.playerB;
+            const localHasPlayers = Boolean(this.currentState && (this.currentState.playerA || this.currentState.playerB));
+            if (remoteEmpty && localHasPlayers && this._lastLocalAssignAt && (Date.now() - this._lastLocalAssignAt) < 15000) {
+              return;
+            }
             const sig = JSON.stringify({
               status: battleState.status,
               gameMode: battleState.gameMode,
@@ -687,20 +688,12 @@ class BattleOverlayApp {
   handleStateUpdate(state) {
     if (!state) return;
 
-    // Prevent Player A from ever appearing duplicated in Player B
+    // Normalize empty player objects
     if (state.playerA && !(state.playerA.username || state.playerA.displayName || state.playerA.name)) {
       state.playerA = null;
     }
     if (state.playerB && !(state.playerB.username || state.playerB.displayName || state.playerB.name)) {
       state.playerB = null;
-    }
-    if (state.playerA && state.playerB) {
-      const cleanA = String(state.playerA.username || state.playerA.displayName || state.playerA.name || '').trim().toLowerCase().replace(/^@/, '');
-      const cleanB = String(state.playerB.username || state.playerB.displayName || state.playerB.name || '').trim().toLowerCase().replace(/^@/, '');
-      if (cleanA && cleanA === cleanB) {
-        state.playerB = null;
-        if (state.status === 'READY') state.status = 'LOBBY';
-      }
     }
 
     const oldStatus = this.currentState ? this.currentState.status : null;

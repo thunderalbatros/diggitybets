@@ -423,6 +423,37 @@
       } else {
         isSpinning = false;
         showWinnerShowcase(winnerEntry);
+        if (winnerEntry) {
+          const winUserClean = String(winnerEntry.user || winnerEntry.caller || '').trim().replace(/^@+/, '').toLowerCase();
+          const winNameClean = String(winnerEntry.name || '').trim().toLowerCase();
+          const rmIdx = requests.findIndex((r) =>
+            String(r.name || '').trim().toLowerCase() === winNameClean &&
+            String(r.user || r.caller || '').trim().replace(/^@+/, '').toLowerCase() === winUserClean
+          );
+          if (rmIdx >= 0) {
+            requests.splice(rmIdx, 1);
+            wheelBufferDirty = true;
+            drawWheel(wheelRotation);
+            try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(requests)); } catch (_) {}
+            try {
+              if (typeof BroadcastChannel !== 'undefined') {
+                new BroadcastChannel(CHANNEL_NAME).postMessage({ type: 'SYNC_QUEUE', queue: requests, ts: Date.now() });
+              }
+            } catch (_) {}
+            const adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
+            fetch('/api/overlay/celebration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                targetOverlay: 'overlay-slotrequests',
+                type: 'SYNC_QUEUE',
+                queue: requests,
+                ts: Date.now()
+              })
+            }).catch(() => {});
+          }
+        }
       }
     }
 
@@ -519,63 +550,198 @@
     } catch (_) {}
   }
 
-  // 4. Direct Kick Centrifugo WebSocket Listener for !sr / !slot
+  // 4. Direct Kick Centrifugo v6 + Pusher v7 WebSocket Listener for !sr / !slot
   function connectKickDirectSr() {
-    try {
-      const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          event: 'pusher:subscribe',
-          data: { auth: '', channel: 'chatrooms.86765775.v2' }
-        }));
-      };
-      ws.onmessage = (evt) => {
-        try {
-          const msg = JSON.parse(evt.data);
-          if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
-          const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-          const rawText = String(d?.content || '').trim();
-          const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
-          const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
-          if (!sender || !rawText.startsWith('!')) return;
+    let chatChannels = ['chatrooms.86765775.v2'];
+    const seenMap = new Map();
 
-          const parts = rawText.split(/\s+/);
-          const cmd = parts[0].toLowerCase();
-          const arg = parts.slice(1).join(' ').trim();
-          if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
-            if (avatar) avatarCache.set(sender.toLowerCase(), avatar);
-            const meta = resolveSlotMeta(arg);
-            const existingIdx = requests.findIndex(r => String(r.user || '').toLowerCase().replace(/^@/, '') === sender.toLowerCase());
-            const entry = {
-              id: Date.now() + Math.random(),
-              name: meta.name || arg,
-              provider: meta.provider || 'OFFICIAL SLOT',
-              img: meta.img || '',
-              user: `@${sender}`
-            };
-            if (existingIdx >= 0) {
-              requests[existingIdx] = entry;
-            } else {
-              requests.push(entry);
-            }
-            try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(requests)); } catch (_) {}
-            wheelBufferDirty = true;
-            if (!isSpinning) drawWheel(wheelRotation);
-            fetch('/api/overlay/celebration', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                targetOverlay: 'overlay-slotrequests',
-                type: 'SYNC_QUEUE',
-                queue: requests,
-                ts: Date.now()
-              })
-            }).catch(() => {});
+    function extractKickChatMsg(packet) {
+      if (!packet || typeof packet !== 'object') return null;
+      let pubData = packet?.push?.pub?.data ?? packet?.pub?.data ?? packet?.result?.data ?? (packet?.event ? packet : null);
+      if (typeof pubData === 'string') {
+        try { pubData = JSON.parse(pubData); } catch (_) { return null; }
+      }
+      if (!pubData || typeof pubData !== 'object') return null;
+      if (pubData.data) {
+        if (pubData.event && !String(pubData.event).includes('ChatMessageEvent') && pubData.event !== 'message') {
+          return null;
+        }
+        return typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+      }
+      if (typeof pubData.content === 'string' && pubData.sender) {
+        return pubData;
+      }
+      return null;
+    }
+
+    function handleSrMessage(d) {
+      if (!d || typeof d !== 'object') return;
+      const rawText = String(d?.content || '').trim();
+      const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+      const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+      if (!sender || !rawText.startsWith('!')) return;
+
+      const msgKey = d.id ? String(d.id) : `${sender.toLowerCase()}:${rawText.toLowerCase()}`;
+      const now = Date.now();
+      if (now - (seenMap.get(msgKey) || 0) < 2000) return;
+      seenMap.set(msgKey, now);
+
+      const parts = rawText.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const arg = parts.slice(1).join(' ').trim();
+      if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+        if (avatar) avatarCache.set(sender.toLowerCase(), avatar);
+        const meta = resolveSlotMeta(arg);
+        const slotTitle = meta.name || arg;
+        const userActiveReqs = requests.filter(r => String(r.user || '').toLowerCase().replace(/^@/, '') === sender.toLowerCase());
+        const sameSlotIdx = requests.findIndex(r =>
+          String(r.user || '').toLowerCase().replace(/^@/, '') === sender.toLowerCase() &&
+          String(r.name || '').toLowerCase() === slotTitle.toLowerCase()
+        );
+        const entry = {
+          id: Date.now() + Math.random(),
+          name: slotTitle,
+          provider: meta.provider || 'OFFICIAL SLOT',
+          img: meta.img || '',
+          image: meta.img || '',
+          user: `@${sender}`,
+          caller: `@${sender}`
+        };
+        if (sameSlotIdx >= 0 || userActiveReqs.length >= 3) {
+          return;
+        }
+        requests.push(entry);
+        try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(requests)); } catch (_) {}
+        try {
+          if (typeof BroadcastChannel !== 'undefined') {
+            new BroadcastChannel(CHANNEL_NAME).postMessage({ type: 'SYNC_QUEUE', queue: requests, ts: Date.now() });
           }
         } catch (_) {}
-      };
-      ws.onclose = () => setTimeout(connectKickDirectSr, 6000);
-    } catch (_) {}
+        wheelBufferDirty = true;
+        if (!isSpinning) drawWheel(wheelRotation);
+        const adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
+        fetch('/api/overlay/celebration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            targetOverlay: 'overlay-slotrequests',
+            type: 'SYNC_QUEUE',
+            queue: requests,
+            ts: Date.now()
+          })
+        }).catch(() => {});
+      }
+    }
+
+    async function connectCentrifugo() {
+      try {
+        let token = '';
+        let wsUrl = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+        try {
+          const res = await fetch('/api/kick/stream-status');
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
+              try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
+            }
+            if (data?.realtime?.token) token = data.realtime.token;
+            if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;
+            if (Array.isArray(data?.realtime?.channels) && data.realtime.channels.length > 0) {
+              chatChannels = data.realtime.channels;
+            }
+          }
+        } catch (_) {}
+
+        if (!token) {
+          setTimeout(connectCentrifugo, 6000);
+          return;
+        }
+
+        const cws = new WebSocket(wsUrl);
+        let lastAct = Date.now();
+        const watchdog = setInterval(() => {
+          if (Date.now() - lastAct > 45000) {
+            try { cws.close(); } catch (_) {}
+          }
+        }, 12000);
+
+        cws.onopen = () => {
+          lastAct = Date.now();
+          cws.send(JSON.stringify({ id: 1, connect: { token } }));
+        };
+        cws.onmessage = (evt) => {
+          lastAct = Date.now();
+          try {
+            const lines = String(evt.data || '').split('\n');
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+              if (line === '{}') {
+                if (cws.readyState === WebSocket.OPEN) cws.send('{}');
+                continue;
+              }
+              const packet = JSON.parse(line);
+              if (packet.id === 1 && packet.connect) {
+                chatChannels.forEach((ch, idx) => {
+                  if (cws.readyState === WebSocket.OPEN) {
+                    cws.send(JSON.stringify({ id: idx + 2, subscribe: { channel: ch } }));
+                  }
+                });
+                continue;
+              }
+              const msg = extractKickChatMsg(packet);
+              if (msg) handleSrMessage(msg);
+            }
+          } catch (_) {}
+        };
+        cws.onclose = () => {
+          clearInterval(watchdog);
+          setTimeout(connectCentrifugo, 5000);
+        };
+      } catch (_) {
+        setTimeout(connectCentrifugo, 6000);
+      }
+    }
+
+    function connectPusher() {
+      try {
+        const ws = new WebSocket('wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        let pingTimer = null;
+        ws.onopen = () => {
+          chatChannels.forEach((ch) => {
+            ws.send(JSON.stringify({
+              event: 'pusher:subscribe',
+              data: { auth: '', channel: ch }
+            }));
+          });
+          pingTimer = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            }
+          }, 25000);
+        };
+        ws.onmessage = (evt) => {
+          try {
+            const packet = JSON.parse(evt.data);
+            const msg = extractKickChatMsg(packet);
+            if (msg) handleSrMessage(msg);
+          } catch (_) {}
+        };
+        ws.onclose = () => {
+          if (pingTimer) clearInterval(pingTimer);
+          setTimeout(connectPusher, 4000);
+        };
+        ws.onerror = () => {
+          try { ws.close(); } catch (_) {}
+        };
+      } catch (_) {
+        setTimeout(connectPusher, 5000);
+      }
+    }
+
+    connectCentrifugo();
+    connectPusher();
   }
 
   // Initial Boot

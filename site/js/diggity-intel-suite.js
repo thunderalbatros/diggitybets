@@ -3350,7 +3350,7 @@
 
         const btn = document.getElementById('btn-claim-daily-streak');
         if (btn && !alreadyClaimedToday) {
-          btn.onclick = () => {
+          btn.onclick = async () => {
             if (!isLoggedIn) {
               if (window.sonner) {
                 window.sonner.toast({
@@ -3361,6 +3361,29 @@
               }
               const linkBtn = document.getElementById('btn-link-kick') || document.getElementById('btn-profile-link-kick');
               if (linkBtn) linkBtn.scrollIntoView({ behavior: 'smooth' });
+              return;
+            }
+
+            let streamLiveNow = Boolean(window.hunthubStreamLive);
+            if (!streamLiveNow) {
+              try {
+                const stRes = await fetch('/api/kick/stream-status', { cache: 'no-store' });
+                if (stRes.ok) {
+                  const stData = await stRes.json();
+                  streamLiveNow = Boolean(stData.isStreamLive);
+                  window.hunthubStreamLive = streamLiveNow;
+                }
+              } catch (_) {}
+            }
+
+            if (!streamLiveNow) {
+              if (window.sonner) {
+                window.sonner.toast({
+                  title: 'Stream Offline 📺',
+                  message: '$DIG points can only be generated when @diggitybets is LIVE on Kick and you are active on the stream!',
+                  type: 'danger'
+                });
+              }
               return;
             }
 
@@ -3377,16 +3400,16 @@
             localStorage.setItem('hunthub_daily_streak_v1', JSON.stringify(newState));
 
             if (window.houseGames && typeof window.houseGames.adjustBalance === 'function') {
-              window.houseGames.adjustBalance(rewardAmt);
+              window.houseGames.adjustBalance(rewardAmt, { isActivityReward: true });
             } else {
-              const cur = parseInt(localStorage.getItem('hunthub_points') || '1000', 10) || 1000;
+              const cur = parseInt(localStorage.getItem('hunthub_points') || '0', 10) || 0;
               localStorage.setItem('hunthub_points', String(cur + rewardAmt));
             }
             if (window.userStore && typeof window.userStore.syncAllPointDisplays === 'function') {
               window.userStore.syncAllPointDisplays();
             }
             if (window.userStore && typeof window.userStore.syncStateToBackend === 'function') {
-              window.userStore.syncStateToBackend();
+              window.userStore.syncStateToBackend({ streakBonusDelta: rewardAmt });
             }
             if (window.sonner) {
               window.sonner.toast({

@@ -151,12 +151,9 @@ class StakeOriginalsController {
     this.renderBalance(prev);
     if (window.userStore) {
       window.userStore.points = this.balance;
-      // Accumulate positive $DIG earned into the Monthly Kick Leaderboard (spending never subtracts)
-      if (amount > 0 && opts.skipLeaderboard !== true && window.userStore.username && typeof window.userStore.awardChatterHistoricalPoints === 'function') {
-        const netEarned = opts.bet ? Math.max(0, amount - opts.bet) : amount;
-        if (netEarned > 0) {
-          window.userStore.awardChatterHistoricalPoints(window.userStore.username, netEarned);
-        }
+      // Only genuine stream/activity rewards (not casino game payouts) accumulate into the Monthly Kick Leaderboard
+      if (amount > 0 && opts.isActivityReward === true && window.userStore.username && typeof window.userStore.awardChatterHistoricalPoints === 'function') {
+        window.userStore.awardChatterHistoricalPoints(window.userStore.username, amount);
       }
     }
 
@@ -207,9 +204,12 @@ class StakeOriginalsController {
   async syncServerBet(game, betAmount, rawMultiplier = 0, extra = {}) {
     try {
       const username = (localStorage.getItem('hunthub_kick_username') || '').replace(/^@+/, '').trim();
+      const headers = (window.userStore && typeof window.userStore.getAuthHeaders === 'function')
+        ? window.userStore.getAuthHeaders(true)
+        : { 'Content-Type': 'application/json' };
       const res = await fetch('/api/games/bet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           username: username || undefined,
           game,

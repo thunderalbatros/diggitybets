@@ -168,6 +168,26 @@ async function minifyDistAssets() {
 
 await minifyDistAssets();
 
+// 4c. Inject automatic build cache-buster (?v=<buildTs>) into all HTML files in dist/
+const buildTs = Date.now();
+function injectHtmlCacheBusters(dirPath) {
+  for (const item of fs.readdirSync(dirPath)) {
+    const full = path.join(dirPath, item);
+    const st = fs.statSync(full);
+    if (st.isDirectory()) {
+      injectHtmlCacheBusters(full);
+    } else if (item.endsWith('.html')) {
+      const html = fs.readFileSync(full, 'utf8');
+      const updated = html
+        .replace(/(<(?:script|link)\b[^>]*?\b(?:src|href)=["'])(?!https?:\/\/|\/\/|data:)([^"'?#]+\.(?:js|css))(?:\?[^"']*)?(["'])/gi, `$1$2?v=${buildTs}$3`);
+      if (updated !== html) {
+        fs.writeFileSync(full, updated, 'utf8');
+      }
+    }
+  }
+}
+injectHtmlCacheBusters(dist);
+
 // 5. Generate Cloudflare _headers (Security, Hardened CSP, HSTS, COOP, Brotli, Caching)
 console.log('• Generating Cloudflare _headers...');
 const headersContent = `/*
@@ -177,13 +197,13 @@ const headersContent = `/*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self' https: data: blob:; script-src 'self' 'inline-speculation-rules' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss: ws://127.0.0.1:8080 ws://localhost:8080 ws://127.0.0.1:3001 http://127.0.0.1:3001; frame-src 'self' https://player.kick.com https://kick.com https://challenges.cloudflare.com; require-trusted-types-for 'script'; trusted-types default dompurify; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
+  Content-Security-Policy: default-src 'self' https: data: blob:; script-src 'self' 'inline-speculation-rules' https://challenges.cloudflare.com https://static.cloudflareinsights.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss: ws://127.0.0.1:8080 ws://localhost:8080 ws://127.0.0.1:3001 http://127.0.0.1:3001; frame-src 'self' https://player.kick.com https://kick.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
 
 /site/css/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 /site/js/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 /data/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

@@ -6,19 +6,115 @@
 
 let d1Initialized = false;
 let lastRetentionPruneAt = 0;
+let lastEdgeChatPollAt = 0;
+let cachedStreamLiveStatus = { isLive: false, checkedAt: 0 };
+
+async function checkDiggityStreamLiveStatus() {
+  const now = Date.now();
+  if ((now - cachedStreamLiveStatus.checkedAt) < 20_000) {
+    return cachedStreamLiveStatus.isLive;
+  }
+  let isLive = false;
+  try {
+    const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
+      headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+    });
+    if (kickRes.ok) {
+      const kickData = await kickRes.json();
+      isLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
+      cachedStreamLiveStatus = { isLive, checkedAt: now };
+      return isLive;
+    }
+  } catch (_) {}
+
+  try {
+    const pubRes = await fetch('https://api.kick.com/public/v1/channels?broadcaster_user_id=88254585', {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'HuntHub-Proxy/1.0' }
+    });
+    if (pubRes.ok) {
+      const pubData = await pubRes.json();
+      const ch = Array.isArray(pubData?.data) ? pubData.data[0] : pubData?.data;
+      isLive = Boolean(ch?.stream?.is_live === true || ch?.livestream?.is_live === true);
+    }
+  } catch (_) {}
+
+  cachedStreamLiveStatus = { isLive, checkedAt: now };
+  return isLive;
+}
 let cachedDuoQueues = {
   battleQueue: [],
   tourneyQueue: [],
+  enteredBattleUsers: [],
+  enteredTourneyUsers: [],
   mode: 'battle',
   counts: { battle: 0, tourney: 0 }
 };
+
+function getCurrentUtcMonthCycle(date = new Date()) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+async function ensureD1MonthlyCycle(db) {
+  if (!db) return getCurrentUtcMonthCycle();
+  const currentCycle = getCurrentUtcMonthCycle();
+  try {
+    await db.prepare(`
+      UPDATE users
+      SET monthly_cycle = ?1,
+          monthly_points = CASE WHEN monthly_points > 0 THEN monthly_points ELSE points_balance END
+      WHERE monthly_cycle IS NULL OR monthly_cycle = ''
+    `).bind(currentCycle).run();
+
+    const staleRow = await db.prepare(`
+      SELECT monthly_cycle FROM users
+      WHERE monthly_cycle != '' AND monthly_cycle IS NOT NULL AND monthly_cycle != ?1
+      LIMIT 1
+    `).bind(currentCycle).first();
+
+    if (staleRow && staleRow.monthly_cycle) {
+      const prevCycle = String(staleRow.monthly_cycle);
+      try {
+        const prevTop = await db.prepare(`
+          SELECT username, display_name, avatar, monthly_points, points_balance, tourneys_won, hunt_hits, stake_verified, is_sub
+          FROM users
+          WHERE monthly_cycle = ?1
+            AND LOWER(username) NOT IN ('diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements')
+            AND is_shadowbanned = 0
+          ORDER BY monthly_points DESC, points_balance DESC
+          LIMIT 20
+        `).bind(prevCycle).all();
+        const archiveKey = `leaderboard_archive_${prevCycle}`;
+        await db.prepare(`
+          INSERT INTO kv_store (key, value_json, updated_at)
+          VALUES (?1, ?2, ?3)
+          ON CONFLICT(key) DO NOTHING
+        `).bind(archiveKey, JSON.stringify(prevTop.results || []), Date.now()).run();
+      } catch (_) {}
+
+      await db.prepare(`
+        UPDATE users
+        SET monthly_points = 0,
+            monthly_cycle = ?1
+        WHERE monthly_cycle != ?1
+      `).bind(currentCycle).run();
+    }
+  } catch (_) {}
+  return currentCycle;
+}
 
 async function initD1(db) {
   if (!db) return;
   try {
     if (!d1Initialized) {
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
+      const statements = [
+        `CREATE TABLE IF NOT EXISTS kv_store (
+          key TEXT PRIMARY KEY,
+          value_json TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        )`,
+        `CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
           kick_id INTEGER UNIQUE NOT NULL,
           username TEXT NOT NULL,
@@ -27,6 +123,14 @@ async function initD1(db) {
           stake_username TEXT UNIQUE,
           stake_verified INTEGER NOT NULL DEFAULT 0,
           points_balance INTEGER NOT NULL DEFAULT 0,
+          monthly_points INTEGER NOT NULL DEFAULT 0,
+          monthly_cycle TEXT DEFAULT '',
+          tourneys_won INTEGER NOT NULL DEFAULT 0,
+          hunt_hits INTEGER NOT NULL DEFAULT 0,
+          is_sub INTEGER NOT NULL DEFAULT 0,
+          last_watch_reward_at INTEGER NOT NULL DEFAULT 0,
+          last_chat_reward_at INTEGER NOT NULL DEFAULT 0,
+          last_streak_claim_date TEXT DEFAULT '',
           risk_score INTEGER NOT NULL DEFAULT 0,
           is_shadowbanned INTEGER NOT NULL DEFAULT 0,
           kick_created_at INTEGER,
@@ -42,9 +146,8 @@ async function initD1(db) {
           crypto_sol TEXT,
           x_handle TEXT,
           ig_handle TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS user_devices (
+        )`,
+        `CREATE TABLE IF NOT EXISTS user_devices (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           device_hash TEXT NOT NULL,
@@ -52,17 +155,15 @@ async function initD1(db) {
           first_seen_at INTEGER NOT NULL,
           last_seen_at INTEGER NOT NULL,
           UNIQUE(user_id, device_hash)
-        );
-
-        CREATE TABLE IF NOT EXISTS alt_clusters (
+        )`,
+        `CREATE TABLE IF NOT EXISTS alt_clusters (
           cluster_id TEXT PRIMARY KEY,
           primary_user_id TEXT NOT NULL,
           associated_user_id TEXT NOT NULL,
           reason TEXT NOT NULL,
           detected_at INTEGER NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS point_transactions (
+        )`,
+        `CREATE TABLE IF NOT EXISTS point_transactions (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           amount INTEGER NOT NULL,
@@ -71,9 +172,8 @@ async function initD1(db) {
           reference_id TEXT,
           metadata_json TEXT,
           created_at INTEGER NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS stake_verification_requests (
+        )`,
+        `CREATE TABLE IF NOT EXISTS stake_verification_requests (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           kick_username TEXT NOT NULL,
@@ -83,9 +183,8 @@ async function initD1(db) {
           share_url TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'PENDING',
           created_at INTEGER NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS store_redemptions (
+        )`,
+        `CREATE TABLE IF NOT EXISTS store_redemptions (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           kick_username TEXT NOT NULL,
@@ -93,30 +192,52 @@ async function initD1(db) {
           cost_points INTEGER NOT NULL,
           status TEXT NOT NULL DEFAULT 'PENDING',
           created_at INTEGER NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS raffle_tickets (
+        )`,
+        `CREATE TABLE IF NOT EXISTS raffle_tickets (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           kick_username TEXT NOT NULL,
-          ticket_count INTEGER NOT NULL,
-          week_number INTEGER NOT NULL,
+          ticket_count INTEGER NOT NULL DEFAULT 1,
+          week_number INTEGER NOT NULL DEFAULT 0,
+          raffle_id TEXT DEFAULT 'weekly_raffle',
+          ticket_number INTEGER DEFAULT 0,
           created_at INTEGER NOT NULL
-        );
+        )`,
+        `CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username))`,
+        `CREATE INDEX IF NOT EXISTS idx_users_points_desc ON users(points_balance DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_user_devices_hash ON user_devices(device_hash, last_seen_at)`,
+        `CREATE INDEX IF NOT EXISTS idx_point_tx_user_created ON point_transactions(user_id, created_at DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_stake_req_created ON stake_verification_requests(created_at DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_store_redemptions_created ON store_redemptions(created_at DESC)`
+      ];
 
-        CREATE TABLE IF NOT EXISTS kv_store (
-          key TEXT PRIMARY KEY,
-          value_json TEXT NOT NULL,
-          updated_at INTEGER NOT NULL
-        );
+      for (const sql of statements) {
+        try {
+          await db.prepare(sql).run();
+        } catch (_) {}
+      }
 
-        CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));
-        CREATE INDEX IF NOT EXISTS idx_users_points_desc ON users(points_balance DESC);
-        CREATE INDEX IF NOT EXISTS idx_user_devices_hash ON user_devices(device_hash, last_seen_at);
-        CREATE INDEX IF NOT EXISTS idx_point_tx_user_created ON point_transactions(user_id, created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_stake_req_created ON stake_verification_requests(created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_store_redemptions_created ON store_redemptions(created_at DESC);
-      `);
+      const migrations = [
+        `ALTER TABLE users ADD COLUMN monthly_points INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN monthly_cycle TEXT DEFAULT ''`,
+        `ALTER TABLE users ADD COLUMN tourneys_won INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN hunt_hits INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN is_sub INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN last_watch_reward_at INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN last_chat_reward_at INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE users ADD COLUMN last_streak_claim_date TEXT DEFAULT ''`,
+        `ALTER TABLE raffle_tickets ADD COLUMN raffle_id TEXT DEFAULT 'weekly_raffle'`,
+        `ALTER TABLE raffle_tickets ADD COLUMN ticket_number INTEGER DEFAULT 0`,
+        `CREATE INDEX IF NOT EXISTS idx_users_monthly_desc ON users(monthly_points DESC, points_balance DESC)`
+      ];
+
+      for (const mig of migrations) {
+        try {
+          await db.prepare(mig).run();
+        } catch (_) {}
+      }
+
+      await ensureD1MonthlyCycle(db);
       d1Initialized = true;
     }
 
@@ -212,10 +333,11 @@ function isSameOrTrustedOrigin(request) {
 // and prevent IDOR / crypto wallet hijacking / unauthorized redemptions.
 // Without ADMIN_API_SECRET every protected request is denied (fail closed).
 // ---------------------------------------------------------------------------
-const ADMIN_USERNAMES = ['diggitybets', 'diggity_bets', 'tarkansky'];
-const ADMIN_KICK_IDS = [88254585];
-const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
-const USER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ADMIN_USERNAMES = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'];
+const ADMIN_KICK_IDS = [88254585, 127019532, 1000477168];
+const cachedChannelRooms = { diggitybets: 86765775 };
+const ADMIN_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const USER_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function b64urlEncodeBytes(bytes) {
   let bin = '';
@@ -284,21 +406,9 @@ function parseCookieHeader(cookieHeader, keyName) {
   return '';
 }
 
-async function isAuthorizedAdmin(request, env, explicitToken = '') {
-  if (!isSameOrTrustedOrigin(request)) return false;
-
-  const configuredSecret = env?.ADMIN_API_SECRET || '';
-  if (!configuredSecret) return false; // fail closed: no secret, no admin API
-
-  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  const token = (
-    explicitToken ||
-    request.headers.get('x-admin-token') ||
-    request.headers.get('x-admin-secret') ||
-    authHeader ||
-    ''
-  ).trim();
-  if (!token) return false;
+async function verifyAdminCandidateToken(rawToken, configuredSecret, sessionSecret = '') {
+  const token = String(rawToken || '').trim();
+  if (!token || !configuredSecret) return false;
 
   // Break-glass: the raw secret itself (kept private by the streamer, never shipped to the browser).
   if (constantTimeEqual(token, configuredSecret)) return true;
@@ -308,13 +418,56 @@ async function isAuthorizedAdmin(request, env, explicitToken = '') {
   const [payloadB64, sig] = parts;
   try {
     const expectedSig = await hmacSha256B64Url(configuredSecret, payloadB64);
-    if (!constantTimeEqual(sig, expectedSig)) return false;
+    let sigValid = constantTimeEqual(sig, expectedSig);
+    if (!sigValid && sessionSecret && sessionSecret !== configuredSecret) {
+      const expectedSessionSig = await hmacSha256B64Url(sessionSecret, payloadB64);
+      sigValid = constantTimeEqual(sig, expectedSessionSig);
+    }
+    if (!sigValid) return false;
     const payload = JSON.parse(b64urlDecodeText(payloadB64));
     if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) return false;
     return isAdminIdentity(payload.u, payload.k);
   } catch (_) {
     return false;
   }
+}
+
+async function isAuthorizedAdmin(request, env, explicitToken = '') {
+  if (!isSameOrTrustedOrigin(request)) return false;
+
+  const configuredSecret = env?.ADMIN_API_SECRET || '';
+  if (!configuredSecret) return false; // fail closed: no secret, no admin API
+  const sessionSecret = env?.USER_SESSION_SECRET || configuredSecret;
+
+  const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const cookieHeader = request.headers.get('cookie') || '';
+  let queryToken = '';
+  try {
+    const reqUrl = new URL(request.url);
+    queryToken = reqUrl.searchParams.get('admin_token') || '';
+    if (!queryToken) {
+      const ref = request.headers.get('referer') || '';
+      if (ref) queryToken = new URL(ref).searchParams.get('admin_token') || '';
+    }
+  } catch (_) {}
+
+  const candidates = [
+    explicitToken,
+    request.headers.get('x-admin-token'),
+    request.headers.get('x-admin-secret'),
+    authHeader,
+    request.headers.get('x-user-token'),
+    parseCookieHeader(cookieHeader, 'hh_admin'),
+    parseCookieHeader(cookieHeader, 'hh_session'),
+    queryToken
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && await verifyAdminCandidateToken(candidate, configuredSecret, sessionSecret)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function verifyUserSession(request, env, expectedUsername = '') {
@@ -474,7 +627,11 @@ export default {
 
     // Auto-init D1 schema and 90-day retention pruning on API requests
     if (env.DB && url.pathname.startsWith('/api/')) {
-      ctx.waitUntil(initD1(env.DB));
+      if (!d1Initialized) {
+        await initD1(env.DB);
+      } else {
+        ctx.waitUntil(initD1(env.DB));
+      }
     }
 
     // 2. Static Assets binding (Cloudflare Workers Static Assets)
@@ -628,7 +785,7 @@ export default {
     if ((url.pathname === '/api/kick/stream-status' || url.pathname === '/api/kick/realtime-token') && (request.method === 'GET' || request.method === 'POST')) {
       let isStreamLive = false;
       let viewerCount = 0;
-      let chatroomId = 86765775; // Verified diggitybets Kick chatroom ID
+      let chatroomId = cachedChannelRooms.diggitybets || 86765775; // Verified diggitybets Kick chatroom ID
 
       try {
         const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
@@ -640,9 +797,26 @@ export default {
           viewerCount = Number(kickData?.livestream?.viewer_count || 0);
           if (kickData?.chatroom?.id) {
             chatroomId = Number(kickData.chatroom.id);
+            cachedChannelRooms.diggitybets = chatroomId;
           }
         }
       } catch (e) {}
+
+      // Resolve tarkansky & diggitybot chatroom IDs once per isolate so testing in any of the 3 channels works seamlessly
+      if (!cachedChannelRooms.tarkansky || !cachedChannelRooms.diggitybot) {
+        try {
+          await Promise.all(['tarkansky', 'diggitybot'].map(async (slug) => {
+            if (cachedChannelRooms[slug]) return;
+            const r = await fetch(`https://kick.com/api/v2/channels/${slug}`, {
+              headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+            });
+            if (r.ok) {
+              const d = await r.json();
+              if (d?.chatroom?.id) cachedChannelRooms[slug] = Number(d.chatroom.id);
+            }
+          }));
+        } catch (_) {}
+      }
 
       // Obtain Centrifugo realtime connection token
       let token = '';
@@ -664,17 +838,38 @@ export default {
         }
       } catch (e) {}
 
+      const allRoomIds = Array.from(new Set([
+        chatroomId,
+        cachedChannelRooms.tarkansky,
+        cachedChannelRooms.diggitybot
+      ].filter((id) => Number(id) > 0)));
+      const allChannels = allRoomIds.map((id) => `chatrooms.${id}.v2`);
+
+      const referer = request.headers.get('referer') || '';
+      const isTrustedPage = isSameOrTrustedOrigin(request) && (
+        referer.includes('diggitybets.vip') ||
+        referer.includes('diggitybets.pages.dev') ||
+        referer.includes('127.0.0.1') ||
+        referer.includes('localhost')
+      );
+      const overlaySyncToken = (isTrustedPage && env.ADMIN_API_SECRET)
+        ? await issueAdminToken({ username: 'diggitybot', kickId: 1000477168 }, env.ADMIN_API_SECRET)
+        : undefined;
+
       return new Response(JSON.stringify({
         success: true,
         channel: 'diggitybets',
         isStreamLive,
         viewerCount,
         chatroomId,
+        chatroomIds: allRoomIds,
+        overlaySyncToken,
         realtime: {
           provider: 'centrifugo',
           wsUrl: 'wss://realtime.us-west-2.platform.kick.com/connection/websocket',
           token,
-          channel: `chatrooms.${chatroomId}.v2`
+          channel: `chatrooms.${chatroomId}.v2`,
+          channels: allChannels
         }
       }), { headers: corsHeaders });
     }
@@ -689,13 +884,15 @@ export default {
         if (kickRes.ok) {
           const kickData = await kickRes.json();
           const kickId = Number(kickData?.user?.id || kickData?.id || 0);
+          const roomId = Number(kickData?.chatroom?.id || 0);
           const cleanName = String(kickData?.user?.username || username).trim();
-          const isAdmin = cleanName.toLowerCase() === 'diggitybets' || cleanName.toLowerCase() === 'tarkansky' || kickId === 88254585;
+          const isAdmin = isAdminIdentity(cleanName, kickId);
           const isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
           return new Response(JSON.stringify({
             success: true,
             username: cleanName,
             kick_id: kickId,
+            chatroom_id: roomId,
             avatarUrl: kickData?.user?.profile_pic || '',
             isAdmin,
             isStreamLive,
@@ -816,13 +1013,17 @@ export default {
           });
           if (userRes.ok) {
             const kickApiData = await userRes.json();
-            if (kickApiData.data && kickApiData.data[0]) {
-              const user = kickApiData.data[0];
-              userData.username = user.name || user.username || 'KickUser';
-              userData.avatarUrl = user.profile_picture || '';
-              userData.id = user.user_id || user.id || 0;
+            const userObj = (Array.isArray(kickApiData?.data) ? kickApiData.data[0] : kickApiData?.data) || kickApiData;
+            if (userObj && (userObj.name || userObj.username)) {
+              userData.username = userObj.name || userObj.username || 'KickUser';
+              userData.avatarUrl = userObj.profile_picture || userObj.profile_pic || '';
+              userData.id = userObj.user_id || userObj.id || 0;
             }
           }
+        }
+
+        if ((!userData.username || userData.username === 'KickViewer') && cleanUsernameHint) {
+          userData.username = cleanUsernameHint;
         }
 
         if (!tokenRes.ok) {
@@ -853,7 +1054,7 @@ export default {
 
         const cleanUsername = String(userData.username || '').trim().toLowerCase().replace(/^@/, '');
         const kickIdNum = Number(userData.id) || 0;
-        const isAdmin = (cleanUsername === 'diggitybets' || cleanUsername === 'diggity_bets' || cleanUsername === 'tarkansky' || kickIdNum === 88254585);
+        const isAdmin = isAdminIdentity(cleanUsername, kickIdNum);
         const isBotAccount = (cleanUsername === 'diggitybot' || cleanUsername === 'diggity_bot' || cleanUsername === 'hunthubbot');
         const hasChatWrite = String(tokenData?.scope || '').includes('chat:write');
 
@@ -861,12 +1062,13 @@ export default {
         if (userData.username) {
           try {
             const now = Math.floor(Date.now() / 1000);
+            const curCycle = getCurrentUtcMonthCycle();
             if (env.DB) {
               await env.DB.prepare(`
-                INSERT INTO users (id, kick_id, username, display_name, avatar, first_seen_at, last_seen_at)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
-                ON CONFLICT(kick_id) DO UPDATE SET last_seen_at = ?6, avatar = ?5
-              `).bind(crypto.randomUUID(), kickIdNum || Math.floor(Date.now() / 1000), cleanUsername, userData.username, userData.avatarUrl || '', now).run();
+                INSERT INTO users (id, kick_id, username, display_name, avatar, monthly_cycle, first_seen_at, last_seen_at)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
+                ON CONFLICT(kick_id) DO UPDATE SET last_seen_at = ?7, avatar = CASE WHEN ?5 != '' THEN ?5 ELSE users.avatar END
+              `).bind(crypto.randomUUID(), kickIdNum || Math.floor(Date.now() / 1000), cleanUsername, userData.username, userData.avatarUrl || '', curCycle, now).run();
             }
 
             if ((isBotAccount || (isAdmin && hasChatWrite)) && tokenData?.access_token) {
@@ -912,9 +1114,12 @@ export default {
         const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
         const issuedUserToken = await issueUserToken({ username: cleanUsername, kickId: kickIdNum }, sessionSecret);
         const issuedAdminToken = isAdmin ? await issueAdminToken({ username: cleanUsername, kickId: kickIdNum }, env.ADMIN_API_SECRET) : '';
-        const responseHeaders = { ...corsHeaders };
+        const responseHeaders = new Headers(corsHeaders);
         if (issuedUserToken) {
-          responseHeaders['Set-Cookie'] = `hh_session=${encodeURIComponent(issuedUserToken)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`;
+          responseHeaders.append('Set-Cookie', `hh_session=${encodeURIComponent(issuedUserToken)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`);
+        }
+        if (issuedAdminToken) {
+          responseHeaders.append('Set-Cookie', `hh_admin=${encodeURIComponent(issuedAdminToken)}; Path=/; SameSite=Lax; Max-Age=2592000; Secure`);
         }
 
         return new Response(JSON.stringify({
@@ -935,6 +1140,28 @@ export default {
           headers: corsHeaders
         });
       }
+    }
+
+    if (url.pathname === '/api/auth/session' && request.method === 'GET') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      const session = await verifyUserSession(request, env);
+      const isAdmin = await isAuthorizedAdmin(request, env);
+      if (!session.ok && !isAdmin) {
+        return new Response(JSON.stringify({ authenticated: false, isAdmin: false }), { headers: noCacheHeaders });
+      }
+      const cleanUser = String(session.username || 'diggitybets').trim().toLowerCase().replace(/^@+/, '');
+      const kickId = Number(session.kickId) || (isAdmin ? 88254585 : 0);
+      const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
+      const userToken = await issueUserToken({ username: cleanUser, kickId }, sessionSecret);
+      const adminToken = isAdmin ? await issueAdminToken({ username: cleanUser, kickId }, env.ADMIN_API_SECRET) : '';
+      return new Response(JSON.stringify({
+        authenticated: true,
+        isAdmin,
+        username: cleanUser,
+        kick_id: kickId,
+        userToken: userToken || undefined,
+        adminToken: adminToken || undefined
+      }), { headers: noCacheHeaders });
     }
 
     // 7. Discord OAuth2 Token Exchange Endpoint
@@ -1265,13 +1492,14 @@ export default {
       return new Response(JSON.stringify({ catalog }), { headers: corsHeaders });
     }
 
-    // 12B. Phase 6 Watch-to-Earn Heartbeat (+100 $DIG every 15m ONLY when kick.com/diggitybets is LIVE + viewer is actively participating)
+    // 12B. Phase 6 Watch-to-Earn Heartbeat (Every 5 minutes: +15 $DIG active stream tab + +5 $DIG live chat bonus = 180-240 $DIG/hr -> 3,000 $DIG/week = $20 Bonus Buy Split)
     if (url.pathname === '/api/watch/heartbeat' && request.method === 'POST') {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       try {
         const body = await request.json().catch(() => ({}));
         const username = String(body.username || '').trim().replace(/^@/, '');
         const verifiedChatActive = Boolean(body.verifiedChatActive);
+        const activeTabPresent = body.activeTabPresent !== false;
         const lastChatActivityMs = Number(body.lastChatActivityMs ?? Infinity);
         if (!username) {
           return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: 'UNAUTHENTICATED' }), { status: 400, headers: corsHeaders });
@@ -1281,8 +1509,8 @@ export default {
           return new Response(JSON.stringify({ awarded: false, amount: 0, isStreamLive: false, reason: session.reason }), { status: 403, headers: corsHeaders });
         }
 
-        // Rate limit: 1 heartbeat award per 10 minutes per IP+username
-        const rl = checkEdgeRateLimit(`${clientIp}:${username.toLowerCase()}`, 'watch_heartbeat', 1, 600_000);
+        // Rate limit: 1 heartbeat award per ~5 minutes (280s window) per IP+username
+        const rl = checkEdgeRateLimit(`${clientIp}:${username.toLowerCase()}`, 'watch_heartbeat', 1, 280_000);
         if (!rl.allowed) {
           return new Response(JSON.stringify({
             awarded: false,
@@ -1297,17 +1525,10 @@ export default {
           ctx.waitUntil(recordServerUserDevice(env.DB, username, deviceHash, clientIp));
         }
 
-        // 1. Verify that https://kick.com/diggitybets is currently LIVE
-        let isStreamLive = false;
-        try {
-          const kickRes = await fetch('https://kick.com/api/v2/channels/diggitybets', {
-            headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
-          });
-          if (kickRes.ok) {
-            const kickData = await kickRes.json();
-            isStreamLive = Boolean(kickData?.livestream && kickData.livestream.is_live !== false);
-          }
-        } catch (_) {}
+        // 1. Strictly verify that https://kick.com/diggitybets is currently ONLINE (LIVE)
+        const isStreamLive = await checkDiggityStreamLiveStatus();
+        const memSync = globalThis.__HUNTHUB_OVERLAY_SYNC__ || {};
+        const nowMs = Date.now();
 
         if (!isStreamLive) {
           return new Response(JSON.stringify({
@@ -1318,29 +1539,60 @@ export default {
           }), { headers: corsHeaders });
         }
 
-        // 2. Verify active participation & permanence in kick.com/diggitybets (no passive/AFK farming)
-        if (!verifiedChatActive || !Number.isFinite(lastChatActivityMs) || lastChatActivityMs > 900_000) {
+        // 2. Verify active spectator presence (active tab open or active in Kick chat)
+        const lowerUser = username.toLowerCase();
+        const serverChatterEntry = Array.isArray(memSync.activeChatters)
+          ? memSync.activeChatters.find(c => String(c?.username || c?.user || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser)
+          : null;
+        const isChatActiveOnEdge = Boolean(serverChatterEntry && (nowMs - Number(serverChatterEntry.lastSeenAt || 0)) <= 900_000);
+        const isChatActiveClient = Boolean(verifiedChatActive && Number.isFinite(lastChatActivityMs) && lastChatActivityMs <= 900_000);
+        const isChatActive = isChatActiveOnEdge || isChatActiveClient;
+
+        if (!activeTabPresent && !isChatActive) {
           return new Response(JSON.stringify({
             awarded: false,
             amount: 0,
             isStreamLive: true,
-            reason: 'INACTIVE_VIEWER_NO_CHAT'
+            reason: 'INACTIVE_VIEWER'
           }), { headers: corsHeaders });
         }
 
+        // Coherent Store Math: +15 $DIG per 5m active stream tab (180 $DIG/hr) + +5 $DIG live chat bonus = +20 $DIG per 5m (240 $DIG/hr -> 3,000 $DIG in 1 week = $20 Bonus Buy Split)
+        const rewardAmount = isChatActive ? 20 : 15;
+        let pointsBalance = undefined;
+        let monthlyPoints = undefined;
+
         if (env.DB) {
           try {
+            const curCycle = await ensureD1MonthlyCycle(env.DB);
+            const nowSec = Math.floor(nowMs / 1000);
             await env.DB.prepare(`
-              UPDATE users SET points_balance = points_balance + 100, last_seen_at = ?2
-              WHERE LOWER(username) = LOWER(?1)
-            `).bind(username, Math.floor(Date.now() / 1000)).run();
+              UPDATE users
+              SET points_balance = points_balance + ?1,
+                  monthly_points = monthly_points + ?1,
+                  monthly_cycle = ?2,
+                  last_watch_reward_at = ?3,
+                  last_seen_at = ?3
+              WHERE LOWER(username) = LOWER(?4)
+            `).bind(rewardAmount, curCycle, nowSec, username).run();
+
+            const updatedRow = await env.DB.prepare(`
+              SELECT points_balance, monthly_points FROM users WHERE LOWER(username) = LOWER(?1)
+            `).bind(username).first();
+            if (updatedRow) {
+              pointsBalance = Number(updatedRow.points_balance || 0);
+              monthlyPoints = Number(updatedRow.monthly_points || 0);
+            }
           } catch (_) {}
         }
 
         return new Response(JSON.stringify({
           awarded: true,
-          amount: 100,
+          amount: rewardAmount,
+          pointsBalance,
+          monthlyPoints,
           isStreamLive: true,
+          chatBonusApplied: isChatActive,
           reason: 'LIVE_ACTIVE_VIEWER_VERIFIED'
         }), { headers: corsHeaders });
       } catch (err) {
@@ -1829,8 +2081,13 @@ export default {
             battleState: nextState.battleState || null,
             tourneyState: nextState.tourneyState || null,
             bonushuntState: nextState.bonushuntState || null,
+            guessesLocked: Boolean(nextState.guessesLocked),
+            guesses: Array.isArray(nextState.guesses) ? nextState.guesses.slice(0, 500) : [],
             slotRequests: Array.isArray(nextState.slotRequests) ? nextState.slotRequests.slice(0, 100) : [],
             activeChatters: Array.isArray(nextState.activeChatters) ? nextState.activeChatters.slice(0, 150) : [],
+            recentChatMessages: Array.isArray(nextState.recentChatMessages) ? nextState.recentChatMessages.slice(-50) : [],
+            processedChatMsgIds: Array.isArray(nextState.processedChatMsgIds) ? nextState.processedChatMsgIds.slice(-350) : [],
+            lastChatBackfillV3: Boolean(nextState.lastChatBackfillV3),
             chatAnnouncements: Array.isArray(nextState.chatAnnouncements) ? nextState.chatAnnouncements.slice(-50) : [],
             spotlightState: nextState.spotlightState || null,
             companionCaptures: Array.isArray(nextState.companionCaptures) ? nextState.companionCaptures.slice(-20) : [],
@@ -1859,6 +2116,602 @@ export default {
         }
       }
     };
+
+    const duoCacheKey = new Request('https://diggitybets.vip/__edge_cache__/duo_queues_v2');
+
+    const readDuoQueues = async () => {
+      let state = cachedDuoQueues;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          const match = await caches.default.match(duoCacheKey);
+          if (match) {
+            const data = await match.json();
+            if (data && (data.updatedAt || 0) >= (state.updatedAt || 0)) {
+              state = data;
+              cachedDuoQueues = data;
+            }
+          }
+        }
+      } catch (_) {}
+
+      if (env.DB) {
+        try {
+          const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'duo_queues_v1'").first();
+          if (row && row.value_json) {
+            const parsed = JSON.parse(row.value_json);
+            const d1Ts = Number(row.updated_at || parsed.updatedAt || 0);
+            if (parsed && d1Ts >= Number(state.updatedAt || 0)) {
+              state = { ...cachedDuoQueues, ...parsed, updatedAt: d1Ts };
+              cachedDuoQueues = state;
+            }
+          }
+        } catch (_) {}
+      }
+      return state;
+    };
+
+    const writeDuoQueues = async (next) => {
+      next.updatedAt = Date.now();
+      cachedDuoQueues = next;
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          await caches.default.put(duoCacheKey, new Response(JSON.stringify(next), {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+          }));
+        }
+      } catch (_) {}
+
+      if (env.DB) {
+        try {
+          await env.DB.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES ('duo_queues_v1', ?1, ?2)
+            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+          `).bind(JSON.stringify(next), next.updatedAt).run();
+        } catch (_) {}
+      }
+    };
+
+    const formatSlotTitle = (rawInput) => {
+      const cleaned = String(rawInput || '').trim().replace(/\s+/g, ' ').slice(0, 72);
+      if (!cleaned) return { name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming' };
+      const smallWords = new Set(['of', 'the', 'or', 'a', 'an', 'in', 'on', 'to', 'and', 'vs']);
+      const title = cleaned.split(' ').map((w, idx) => {
+        const lower = w.toLowerCase();
+        if (/^\d+x?$/i.test(w)) return w.toUpperCase();
+        if (idx > 0 && smallWords.has(lower)) return lower;
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      }).join(' ');
+      const low = title.toLowerCase();
+      let provider = 'Casino Slot';
+      if (low.includes('bonanza') || low.includes('olympus') || low.includes('sugar rush') || low.includes('dog house') || low.includes('starlight') || low.includes('zeus') || low.includes('big bass') || low.includes('fruit party') || low.includes('gates')) {
+        provider = 'Pragmatic Play';
+      } else if (low.includes('wanted') || low.includes('le bandit') || low.includes('chaos crew') || low.includes('rip city') || low.includes('fist of') || low.includes('hand of anubis') || low.includes('slayers') || low.includes('dork unit') || low.includes('sixsixsix') || low.includes('sky drop')) {
+        provider = 'Hacksaw Gaming';
+      } else if (low.includes('mental') || low.includes('san quentin') || low.includes('fire in the hole') || low.includes('tombstone') || low.includes('xways') || low.includes('deadwood')) {
+        provider = 'Nolimit City';
+      } else if (low.includes('retro tapes') || low.includes('razor') || low.includes('jammin') || low.includes('big bamboo')) {
+        provider = 'Push Gaming';
+      } else if (low.includes('money train') || low.includes('temple tumble') || low.includes('beast mode')) {
+        provider = 'Relax Gaming';
+      }
+      return { name: title, provider };
+    };
+
+    const ingestLiveKickChatOnEdge = async (forceBackfill = false) => {
+      const now = Date.now();
+      if (!forceBackfill && (now - lastEdgeChatPollAt) < 1800) {
+        return;
+      }
+      lastEdgeChatPollAt = now;
+      try {
+        const syncCurrent = await readOverlaySyncState();
+        const duoCurrent = await readDuoQueues();
+        const isFirstBackfill = !syncCurrent.lastChatBackfillV3 || forceBackfill;
+
+        const allFetchedMsgs = [];
+        // 87054681 = diggitybets live channel.id on web.kick.com; 125758555 = tarkansky channel.id
+        const maxPages = isFirstBackfill ? 20 : 1;
+        let cursor = '';
+        for (let page = 0; page < maxPages; page++) {
+          const histUrl = 'https://web.kick.com/api/v1/chat/87054681/history' + (cursor ? `?cursor=${encodeURIComponent(cursor)}` : '');
+          const res = await fetch(histUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'x-app-platform': 'web',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
+          });
+          if (!res.ok) break;
+          const j = await res.json().catch(() => null);
+          const msgs = Array.isArray(j?.data?.messages) ? j.data.messages : [];
+          for (const m of msgs) allFetchedMsgs.push(m);
+          cursor = j?.data?.cursor ? String(j.data.cursor) : '';
+          if (!cursor || msgs.length === 0) break;
+        }
+
+        // Also check tarkansky test channel (page 0)
+        try {
+          const tRes = await fetch('https://web.kick.com/api/v1/chat/125758555/history', {
+            headers: {
+              'Accept': 'application/json',
+              'x-app-platform': 'web',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
+          });
+          if (tRes.ok) {
+            const tj = await tRes.json().catch(() => null);
+            const tMsgs = Array.isArray(tj?.data?.messages) ? tj.data.messages : [];
+            for (const m of tMsgs) allFetchedMsgs.push(m);
+          }
+        } catch (_) {}
+
+        if (allFetchedMsgs.length === 0 && !isFirstBackfill) return;
+
+        // Sort oldest -> newest so first-call-wins rules execute in exact chronological order
+        allFetchedMsgs.sort((a, b) => {
+          const ta = new Date(a?.created_at || 0).getTime() || 0;
+          const tb = new Date(b?.created_at || 0).getTime() || 0;
+          return ta - tb;
+        });
+
+        const processedIds = Array.isArray(syncCurrent.processedChatMsgIds) && !isFirstBackfill
+          ? [...syncCurrent.processedChatMsgIds]
+          : [];
+        const processedSet = new Set(processedIds);
+
+        const recentMsgs = Array.isArray(syncCurrent.recentChatMessages) && !isFirstBackfill
+          ? [...syncCurrent.recentChatMessages]
+          : [];
+        const chatterMap = new Map();
+        for (const c of (syncCurrent.activeChatters || [])) {
+          const cname = String(c.username || c.user || '').trim().replace(/^@+/, '');
+          if (cname) chatterMap.set(cname.toLowerCase(), { username: cname, avatar: c.avatar || '', lastSeenAt: Number(c.lastSeenAt || now) });
+        }
+
+        const duoNext = {
+          ...duoCurrent,
+          battleQueue: Array.isArray(duoCurrent.battleQueue) ? [...duoCurrent.battleQueue] : [],
+          tourneyQueue: Array.isArray(duoCurrent.tourneyQueue) ? [...duoCurrent.tourneyQueue] : [],
+          enteredBattleUsers: Array.isArray(duoCurrent.enteredBattleUsers) ? [...duoCurrent.enteredBattleUsers] : [],
+          enteredTourneyUsers: Array.isArray(duoCurrent.enteredTourneyUsers) ? [...duoCurrent.enteredTourneyUsers] : []
+        };
+
+        let syncMutated = isFirstBackfill;
+        let duoMutated = false;
+        const ignoredBots = new Set(['diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements']);
+        const chatRewardCandidates = new Map();
+
+        for (const m of allFetchedMsgs) {
+          const msgId = String(m?.id || '');
+          if (!msgId || processedSet.has(msgId)) continue;
+          processedSet.add(msgId);
+          processedIds.push(msgId);
+
+          const cleanUser = String(m?.sender?.username || m?.sender?.slug || '').trim().replace(/^@+/, '');
+          const lowerUser = cleanUser.toLowerCase();
+          const rawText = String(m?.content || '').trim();
+          if (!cleanUser || !rawText || ignoredBots.has(lowerUser)) continue;
+
+          const msgTs = new Date(m?.created_at || now).getTime() || now;
+          const isCmd = rawText.startsWith('!');
+          recentMsgs.push({
+            id: msgId,
+            username: cleanUser,
+            content: rawText,
+            isCommand: isCmd,
+            createdAt: m?.created_at || new Date(now).toISOString(),
+            ts: msgTs
+          });
+          chatterMap.set(lowerUser, {
+            username: cleanUser,
+            avatar: m?.sender?.profile_pic || '',
+            lastSeenAt: msgTs
+          });
+          chatRewardCandidates.set(lowerUser, {
+            cleanUser,
+            avatar: m?.sender?.profile_pic || '',
+            msgTs
+          });
+          syncMutated = true;
+
+          if (isCmd) {
+            const parts = rawText.split(/\s+/);
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ').trim();
+
+            if ((cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') && arg.length >= 1) {
+              const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
+              const meta = formatSlotTitle(arg);
+              const list = targetMode === 'tourney' ? duoNext.tourneyQueue : duoNext.battleQueue;
+              const enteredList = targetMode === 'tourney' ? duoNext.enteredTourneyUsers : duoNext.enteredBattleUsers;
+              const existingIdx = list.findIndex(item => String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser);
+              const alreadyEntered = enteredList.includes(lowerUser);
+              if (existingIdx === -1 && !alreadyEntered) {
+                list.push({
+                  username: cleanUser,
+                  user: cleanUser,
+                  avatar: m?.sender?.profile_pic || '',
+                  slotName: meta.name,
+                  slot: meta.name,
+                  slotProvider: meta.provider,
+                  addedAt: msgTs
+                });
+                enteredList.push(lowerUser);
+                duoMutated = true;
+              }
+            } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+              const meta = formatSlotTitle(arg);
+              const reqList = Array.isArray(syncCurrent.slotRequests) ? [...syncCurrent.slotRequests] : [];
+              const handle = `@${cleanUser}`;
+              const userActiveReqs = reqList.filter(r => String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser);
+              const sameSlotIdx = reqList.findIndex(r =>
+                String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser &&
+                String(r.name || '').toLowerCase().trim() === meta.name.toLowerCase().trim()
+              );
+              if (sameSlotIdx === -1 && userActiveReqs.length < 3) {
+                reqList.push({
+                  id: msgTs + Math.random(),
+                  name: meta.name,
+                  provider: meta.provider,
+                  img: '',
+                  image: '',
+                  user: handle,
+                  caller: handle,
+                  ts: msgTs
+                });
+                syncCurrent.slotRequests = reqList.slice(0, 100);
+                syncCurrent.overlayEvents = syncCurrent.overlayEvents || {};
+                syncCurrent.overlayEvents['overlay-slotrequests'] = {
+                  target: 'overlay-slotrequests',
+                  type: 'SYNC_QUEUE',
+                  queue: syncCurrent.slotRequests,
+                  ts: now
+                };
+              }
+            } else if ((cmd === '!guess' || cmd === '!gtb') && arg.length >= 1) {
+              const isLocked = Boolean(syncCurrent.guessesLocked || syncCurrent.bonushuntState?.guessesLocked);
+              if (!isLocked) {
+                const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
+                if (!isNaN(numVal) && numVal > 0) {
+                  const guesses = Array.isArray(syncCurrent.guesses)
+                    ? [...syncCurrent.guesses]
+                    : (Array.isArray(syncCurrent.bonushuntState?.guesses) ? [...syncCurrent.bonushuntState.guesses] : []);
+                  const existingIdx = guesses.findIndex(g => String(g?.username || g?.user || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser);
+                  const guessEntry = {
+                    user: `@${cleanUser}`,
+                    username: cleanUser,
+                    guess: numVal,
+                    amount: numVal,
+                    ts: msgTs
+                  };
+                  if (existingIdx >= 0) guesses[existingIdx] = guessEntry;
+                  else guesses.push(guessEntry);
+                  syncCurrent.guesses = guesses;
+                  if (syncCurrent.bonushuntState && typeof syncCurrent.bonushuntState === 'object') {
+                    syncCurrent.bonushuntState.guesses = guesses;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (duoMutated) {
+          duoNext.counts = {
+            battle: duoNext.battleQueue.length,
+            tourney: duoNext.tourneyQueue.length
+          };
+          await writeDuoQueues(duoNext);
+        }
+
+        if (syncMutated) {
+          syncCurrent.lastChatBackfillV3 = true;
+          syncCurrent.processedChatMsgIds = processedIds.slice(-350);
+          syncCurrent.recentChatMessages = recentMsgs.slice(-50);
+          syncCurrent.activeChatters = Array.from(chatterMap.values()).sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, 150);
+          await writeOverlaySyncState(syncCurrent);
+        }
+
+        // Server-side automatic Chat-to-Earn ONLY when kick.com/diggitybets is ONLINE (LIVE) (+5 $DIG per active chat window, 120s cooldown)
+        if (env.DB && chatRewardCandidates.size > 0) {
+          try {
+            const isStreamLive = await checkDiggityStreamLiveStatus();
+            if (isStreamLive) {
+              const curCycle = await ensureD1MonthlyCycle(env.DB);
+              const nowSec = Math.floor(now / 1000);
+              for (const [lowerUser, cand] of chatRewardCandidates.entries()) {
+                if ((now - cand.msgTs) > 15 * 60 * 1000) continue;
+                const uRow = await env.DB.prepare(`
+                  SELECT id, last_chat_reward_at, avatar FROM users WHERE LOWER(username) = LOWER(?1)
+                `).bind(lowerUser).first();
+                if (uRow && (nowSec - Number(uRow.last_chat_reward_at || 0)) >= 120) {
+                  await env.DB.prepare(`
+                    UPDATE users
+                    SET points_balance = points_balance + 5,
+                        monthly_points = monthly_points + 5,
+                        monthly_cycle = ?1,
+                        last_chat_reward_at = ?2,
+                        last_seen_at = ?2,
+                        avatar = CASE WHEN ?3 != '' THEN ?3 ELSE avatar END
+                    WHERE id = ?4
+                  `).bind(curCycle, nowSec, cand.avatar || '', uRow.id).run();
+                }
+              }
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
+    };
+
+    const buildGlobalMonthlyLeaderboard = async (db, viewerUsername = '') => {
+      const monthCycle = await ensureD1MonthlyCycle(db);
+      let leaderboard = [];
+      let totalTrackedUsers = 0;
+      let viewerProfile = null;
+      if (!db) {
+        return { monthCycle, leaderboard, totalTrackedUsers, viewerProfile };
+      }
+      try {
+        const countRow = await db.prepare(`
+          SELECT COUNT(*) AS cnt FROM users
+          WHERE LOWER(username) NOT IN ('diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements')
+            AND is_shadowbanned = 0
+        `).first();
+        totalTrackedUsers = Number(countRow?.cnt || 0);
+
+        const topRes = await db.prepare(`
+          SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified,
+                 points_balance, monthly_points, tourneys_won, hunt_hits, is_sub, first_seen_at, last_seen_at
+          FROM users
+          WHERE LOWER(username) NOT IN ('diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements')
+            AND is_shadowbanned = 0
+          ORDER BY monthly_points DESC, points_balance DESC, first_seen_at ASC
+          LIMIT 20
+        `).all();
+
+        const rows = topRes.results || [];
+        leaderboard = rows.map((r, idx) => {
+          const rank = idx + 1;
+          const rawDisplay = String(r.display_name || r.username || 'Viewer').trim().replace(/^@+/, '');
+          const mPts = Math.max(0, Number(r.monthly_points || 0));
+          const pBal = Math.max(0, Number(r.points_balance || 0));
+          const isStakeVip = Number(r.stake_verified) === 1;
+          const isSub = Number(r.is_sub) === 1;
+          const tier = isStakeVip ? 'DIAMOND' : (isSub ? 'GOLD' : (mPts >= 1500 ? 'EMERALD' : 'SILVER'));
+          return {
+            rank,
+            username: String(r.username || '').toLowerCase(),
+            kickUser: `@${rawDisplay}`,
+            avatar: r.avatar || '',
+            totalDig: mPts,
+            monthlyDig: mPts,
+            pointsBalance: pBal,
+            tourneysWon: Number(r.tourneys_won || 0),
+            huntHits: Number(r.hunt_hits || 0),
+            stakeVerified: isStakeVip,
+            isSub,
+            tier,
+            status: rank === 1 ? 'LEGEND' : 'ACTIVE',
+            lastActiveTs: Number(r.last_seen_at || 0) * 1000
+          };
+        });
+
+        const cleanViewer = String(viewerUsername || '').trim().replace(/^@+/, '').toLowerCase();
+        if (cleanViewer) {
+          const vRow = await db.prepare(`
+            SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified,
+                   points_balance, monthly_points, tourneys_won, hunt_hits, is_sub, first_seen_at, last_seen_at
+            FROM users
+            WHERE LOWER(username) = LOWER(?1)
+          `).bind(cleanViewer).first();
+
+          if (vRow) {
+            const vMonthly = Math.max(0, Number(vRow.monthly_points || 0));
+            const vBal = Math.max(0, Number(vRow.points_balance || 0));
+            const vFirst = Number(vRow.first_seen_at || 0);
+            const isExcludedStreamer = cleanViewer === 'diggitybets' || cleanViewer === 'diggity_bets';
+            let globalRank = 0;
+            if (!isExcludedStreamer) {
+              const higherRow = await db.prepare(`
+                SELECT COUNT(*) AS higher FROM users
+                WHERE LOWER(username) NOT IN ('diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements')
+                  AND is_shadowbanned = 0
+                  AND LOWER(username) != LOWER(?1)
+                  AND (
+                    monthly_points > ?2
+                    OR (monthly_points = ?2 AND points_balance > ?3)
+                    OR (monthly_points = ?2 AND points_balance = ?3 AND first_seen_at < ?4)
+                  )
+              `).bind(cleanViewer, vMonthly, vBal, vFirst).first();
+              globalRank = Number(higherRow?.higher || 0) + 1;
+            }
+
+            const rawDisplay = String(vRow.display_name || vRow.username || cleanViewer).trim().replace(/^@+/, '');
+            viewerProfile = {
+              rank: globalRank,
+              username: cleanViewer,
+              kickUser: `@${rawDisplay}`,
+              kickId: Number(vRow.kick_id || 0),
+              avatar: vRow.avatar || '',
+              pointsBalance: vBal,
+              monthlyPoints: vMonthly,
+              tourneysWon: Number(vRow.tourneys_won || 0),
+              huntHits: Number(vRow.hunt_hits || 0),
+              stakeVerified: Number(vRow.stake_verified) === 1,
+              stakeUsername: vRow.stake_username || '',
+              isSub: Number(vRow.is_sub) === 1
+            };
+          }
+        }
+      } catch (_) {}
+      return { monthCycle, leaderboard, totalTrackedUsers, viewerProfile };
+    };
+
+    if (url.pathname === '/api/leaderboard/monthly' && request.method === 'GET') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      await ingestLiveKickChatOnEdge();
+      const viewerUsername = url.searchParams.get('username') || '';
+      const result = await buildGlobalMonthlyLeaderboard(env.DB, viewerUsername);
+      return new Response(JSON.stringify({
+        ok: true,
+        ...result,
+        updatedAt: Date.now()
+      }), { headers: noCacheHeaders });
+    }
+
+    if (url.pathname === '/api/leaderboard/sync-user' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!isSameOrTrustedOrigin(request)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Forbidden origin' }), { status: 403, headers: noCacheHeaders });
+      }
+      try {
+        await ingestLiveKickChatOnEdge();
+        const body = await request.json().catch(() => ({}));
+        const rawUsername = String(body.username || '').trim().replace(/^@+/, '');
+        const cleanUser = rawUsername.toLowerCase();
+        const ignored = new Set(['', 'viewer', 'guest', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements']);
+
+        if (!cleanUser || cleanUser.length > 64 || ignored.has(cleanUser) || cleanUser.startsWith('kickuser_')) {
+          const lbOnly = await buildGlobalMonthlyLeaderboard(env.DB, '');
+          return new Response(JSON.stringify({ ok: true, ...lbOnly }), { headers: noCacheHeaders });
+        }
+
+        const nowSec = Math.floor(Date.now() / 1000);
+        const curCycle = await ensureD1MonthlyCycle(env.DB);
+        let existingUser = null;
+        if (env.DB) {
+          existingUser = await env.DB.prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?1)').bind(cleanUser).first();
+        }
+
+        let kickId = Number(existingUser?.kick_id || body.kickId || 0);
+        let displayName = existingUser?.display_name || rawUsername;
+        let avatarUrl = existingUser?.avatar || (typeof body.avatar === 'string' && body.avatar.startsWith('http') ? body.avatar : '');
+
+        if (!existingUser || !avatarUrl || !kickId || kickId > 1_700_000_000) {
+          try {
+            const pRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(cleanUser)}`, {
+              headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
+            });
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              if (pData?.user?.profile_pic) avatarUrl = pData.user.profile_pic;
+              const fetchedKickId = Number(pData?.user?.id || pData?.id || 0);
+              if (fetchedKickId > 0) kickId = fetchedKickId;
+              if (pData?.user?.username) displayName = pData.user.username;
+            }
+          } catch (_) {}
+        }
+
+        if (!kickId) {
+          // Deterministic positive integer hash fallback if Kick API is temporarily unreachable
+          let h = 5381;
+          for (let i = 0; i < cleanUser.length; i++) {
+            h = ((h << 5) + h) + cleanUser.charCodeAt(i);
+          }
+          kickId = 900_000_000 + (Math.abs(h) % 99_000_000);
+        }
+
+        const isSubInt = body.isSub ? 1 : Number(existingUser?.is_sub || 0);
+        const tourneysWon = Math.max(Number(existingUser?.tourneys_won || 0), Math.min(100, Math.floor(Number(body.tourneysWon) || 0)));
+        const huntHits = Math.max(Number(existingUser?.hunt_hits || 0), Math.min(500, Math.floor(Number(body.huntHits) || 0)));
+
+        if (env.DB) {
+          if (!existingUser) {
+            await env.DB.prepare(`
+              INSERT INTO users (
+                id, kick_id, username, display_name, avatar,
+                points_balance, monthly_points, monthly_cycle,
+                tourneys_won, hunt_hits, is_sub,
+                first_seen_at, last_seen_at
+              )
+              VALUES (?1, ?2, ?3, ?4, ?5, 0, 0, ?6, ?7, ?8, ?9, ?10, ?10)
+              ON CONFLICT(kick_id) DO UPDATE SET
+                username = ?3,
+                display_name = ?4,
+                avatar = CASE WHEN ?5 != '' THEN ?5 ELSE users.avatar END,
+                monthly_cycle = ?6,
+                last_seen_at = ?10
+            `).bind(
+              crypto.randomUUID(),
+              kickId,
+              cleanUser,
+              displayName,
+              avatarUrl || '',
+              curCycle,
+              tourneysWon,
+              huntHits,
+              isSubInt,
+              nowSec
+            ).run();
+          } else {
+            // Existing user in D1: D1 is the single source of truth; do not overwrite with stale localStorage points
+            const curDbBal = Number(existingUser.points_balance || 0);
+            const curDbMonthly = Number(existingUser.monthly_points || 0);
+            let nextBal = curDbBal;
+            let nextMonthly = curDbMonthly;
+
+            // Optional daily streak claim credit (validated once per UTC day ONLY when stream is LIVE)
+            const todayKey = new Date().toISOString().slice(0, 10);
+            const streakDelta = Math.floor(Number(body.streakBonusDelta) || 0);
+            let nextStreakDate = existingUser.last_streak_claim_date || '';
+            if (streakDelta >= 15 && streakDelta <= 300 && nextStreakDate !== todayKey) {
+              const isStreamLive = await checkDiggityStreamLiveStatus();
+              if (isStreamLive) {
+                nextBal += streakDelta;
+                nextMonthly += streakDelta;
+                nextStreakDate = todayKey;
+              }
+            }
+
+            await env.DB.prepare(`
+              UPDATE users
+              SET display_name = ?1,
+                  avatar = CASE WHEN ?2 != '' THEN ?2 ELSE avatar END,
+                  points_balance = ?3,
+                  monthly_points = ?4,
+                  monthly_cycle = ?5,
+                  tourneys_won = ?6,
+                  hunt_hits = ?7,
+                  is_sub = ?8,
+                  last_streak_claim_date = ?9,
+                  last_seen_at = ?10
+              WHERE id = ?11
+            `).bind(
+              displayName,
+              avatarUrl || '',
+              nextBal,
+              nextMonthly,
+              curCycle,
+              tourneysWon,
+              huntHits,
+              isSubInt,
+              nextStreakDate,
+              nowSec,
+              existingUser.id
+            ).run();
+          }
+        }
+
+        const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
+        const issuedUserToken = await issueUserToken({ username: cleanUser, kickId }, sessionSecret);
+        const result = await buildGlobalMonthlyLeaderboard(env.DB, cleanUser);
+
+        const responseHeaders = new Headers(noCacheHeaders);
+        if (issuedUserToken) {
+          responseHeaders.append('Set-Cookie', `hh_session=${encodeURIComponent(issuedUserToken)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`);
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          userToken: issuedUserToken || undefined,
+          ...result,
+          updatedAt: Date.now()
+        }), { headers: responseHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 400, headers: noCacheHeaders });
+      }
+    }
 
     const formatWinnerAnnouncementText = (username, eventType, customMessage) => {
       if (customMessage && String(customMessage).trim().length > 0) {
@@ -2041,6 +2894,7 @@ export default {
     if (url.pathname === '/api/overlay/celebration') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
+        await ingestLiveKickChatOnEdge();
         const syncState = await readOverlaySyncState();
         return new Response(JSON.stringify({
           success: true,
@@ -2057,9 +2911,17 @@ export default {
         try {
           const body = await request.json();
           const current = await readOverlaySyncState();
+          current.overlayEvents = current.overlayEvents || {};
+          if (body.targetOverlay === 'overlay-slotrequests' || (body.type === 'SYNC_QUEUE' && Array.isArray(body.queue))) {
+            current.overlayEvents['overlay-slotrequests'] = { ...body, ts: body.ts || Date.now() };
+            if (Array.isArray(body.queue)) {
+              current.slotRequests = body.queue.slice(0, 100);
+            }
+            await writeOverlaySyncState(current);
+            return new Response(JSON.stringify({ success: true, overlayEvents: current.overlayEvents }), { headers: noCacheHeaders });
+          }
           const eventPayload = body.celebration || body.data || body;
           current.celebrationEvent = { ...eventPayload, timestamp: eventPayload.timestamp || eventPayload.ts || Date.now() };
-          current.overlayEvents = current.overlayEvents || {};
           current.overlayEvents['overlay-celebration'] = current.celebrationEvent;
           await writeOverlaySyncState(current);
           return new Response(JSON.stringify({ success: true, celebrationEvent: current.celebrationEvent }), { headers: noCacheHeaders });
@@ -2351,64 +3213,10 @@ export default {
       }
     }
 
-    const duoCacheKey = new Request('https://diggitybets.vip/__edge_cache__/duo_queues_v2');
-
-    const readDuoQueues = async () => {
-      let state = cachedDuoQueues;
-      try {
-        if (typeof caches !== 'undefined' && caches.default) {
-          const match = await caches.default.match(duoCacheKey);
-          if (match) {
-            const data = await match.json();
-            if (data && (data.updatedAt || 0) >= (state.updatedAt || 0)) {
-              state = data;
-              cachedDuoQueues = data;
-            }
-          }
-        }
-      } catch (_) {}
-
-      if (env.DB) {
-        try {
-          const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'duo_queues_v1'").first();
-          if (row && row.value_json) {
-            const parsed = JSON.parse(row.value_json);
-            const d1Ts = Number(row.updated_at || parsed.updatedAt || 0);
-            if (parsed && d1Ts >= Number(state.updatedAt || 0)) {
-              state = { ...cachedDuoQueues, ...parsed, updatedAt: d1Ts };
-              cachedDuoQueues = state;
-            }
-          }
-        } catch (_) {}
-      }
-      return state;
-    };
-
-    const writeDuoQueues = async (next) => {
-      next.updatedAt = Date.now();
-      cachedDuoQueues = next;
-      try {
-        if (typeof caches !== 'undefined' && caches.default) {
-          await caches.default.put(duoCacheKey, new Response(JSON.stringify(next), {
-            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
-          }));
-        }
-      } catch (_) {}
-
-      if (env.DB) {
-        try {
-          await env.DB.prepare(`
-            INSERT INTO kv_store (key, value_json, updated_at)
-            VALUES ('duo_queues_v1', ?1, ?2)
-            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
-          `).bind(JSON.stringify(next), next.updatedAt).run();
-        } catch (_) {}
-      }
-    };
-
     if (url.pathname === '/api/sync/state') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       if (request.method === 'GET') {
+        await ingestLiveKickChatOnEdge();
         const syncState = await readOverlaySyncState();
         const duoState = await readDuoQueues();
         const adminAuthed = await isAuthorizedAdmin(request, env);
@@ -2426,8 +3234,11 @@ export default {
           tourneyState: syncState.tourneyState || null,
           bonushunt: syncState.bonushuntState || null,
           bonushuntState: syncState.bonushuntState || null,
+          guessesLocked: Boolean(syncState.guessesLocked || syncState.bonushuntState?.guessesLocked),
+          guesses: Array.isArray(syncState.guesses) ? syncState.guesses : (Array.isArray(syncState.bonushuntState?.guesses) ? syncState.bonushuntState.guesses : []),
           slotRequests: Array.isArray(syncState.slotRequests) ? syncState.slotRequests : [],
           activeChatters: Array.isArray(syncState.activeChatters) ? syncState.activeChatters : [],
+          recentChatMessages: Array.isArray(syncState.recentChatMessages) ? syncState.recentChatMessages : [],
           chatAnnouncements: Array.isArray(syncState.chatAnnouncements) ? syncState.chatAnnouncements : [],
           duoQueues: duoState,
           companionCaptures: Array.isArray(syncState.companionCaptures) ? syncState.companionCaptures : [],
@@ -2439,8 +3250,8 @@ export default {
         if (env.DB) {
           try {
             const userQuery = adminAuthed
-              ? 'SELECT * FROM users ORDER BY points_balance DESC LIMIT 250'
-              : 'SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified, points_balance, first_seen_at, last_seen_at FROM users ORDER BY points_balance DESC LIMIT 250';
+              ? 'SELECT * FROM users ORDER BY monthly_points DESC, points_balance DESC LIMIT 250'
+              : 'SELECT id, kick_id, username, display_name, avatar, stake_username, stake_verified, points_balance, monthly_points, tourneys_won, hunt_hits, is_sub, first_seen_at, last_seen_at FROM users ORDER BY monthly_points DESC, points_balance DESC LIMIT 250';
             const users = await env.DB.prepare(userQuery).all();
             state.users = users.results || [];
             if (adminAuthed) {
@@ -2483,8 +3294,11 @@ export default {
             if (body.overlayEvent.target === 'overlay-bonushunt' && body.overlayEvent.data?.state) {
               current.bonushuntState = body.overlayEvent.data.state;
             }
-            if (body.overlayEvent.target === 'overlay-slotrequests' && Array.isArray(body.overlayEvent.data?.requests)) {
-              current.slotRequests = body.overlayEvent.data.requests;
+            if (body.overlayEvent.target === 'overlay-slotrequests') {
+              const srQueue = body.overlayEvent.queue || body.overlayEvent.data?.queue || body.overlayEvent.data?.requests;
+              if (Array.isArray(srQueue)) {
+                current.slotRequests = srQueue.slice(0, 100);
+              }
             }
           }
           if (body.celebrationEvent) {
@@ -2503,6 +3317,38 @@ export default {
         }
         if (body.bonushuntState || body.bonushunt) {
           current.bonushuntState = body.bonushuntState || body.bonushunt;
+          if (typeof current.bonushuntState?.guessesLocked === 'boolean') {
+            current.guessesLocked = current.bonushuntState.guessesLocked;
+          }
+          mutated = true;
+        }
+        if (typeof body.guessesLocked === 'boolean') {
+          current.guessesLocked = body.guessesLocked;
+          if (current.bonushuntState && typeof current.bonushuntState === 'object') {
+            current.bonushuntState.guessesLocked = body.guessesLocked;
+          }
+          mutated = true;
+        }
+        if (Array.isArray(body.guesses)) {
+          const dedupGuesses = [];
+          const seenGuessUsers = new Set();
+          for (const g of body.guesses) {
+            const uClean = String(g?.username || g?.user || '').trim().replace(/^@+/, '').toLowerCase();
+            const val = Number(g?.guess ?? g?.amount ?? 0);
+            if (!uClean || !val || isNaN(val) || val <= 0 || seenGuessUsers.has(uClean)) continue;
+            seenGuessUsers.add(uClean);
+            dedupGuesses.push({
+              user: `@${String(g?.username || g?.user || '').trim().replace(/^@+/, '')}`,
+              username: String(g?.username || g?.user || '').trim().replace(/^@+/, ''),
+              guess: val,
+              amount: val,
+              ts: g.ts || Date.now()
+            });
+          }
+          current.guesses = dedupGuesses;
+          if (current.bonushuntState && typeof current.bonushuntState === 'object') {
+            current.bonushuntState.guesses = dedupGuesses;
+          }
           mutated = true;
         }
         if (Array.isArray(body.slotRequests)) {
@@ -2572,10 +3418,90 @@ export default {
       try {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
-        if (body.state) {
+        const baseBattle = current.battleState || {
+          id: 'worker_battle',
+          status: 'LOBBY',
+          round: '1v1',
+          gameMode: 'BONUS_BUY',
+          betAmount: 10,
+          prizePool: '$20 USD',
+          prizeText: '$20 Prize Pool',
+          playerA: null,
+          playerB: null,
+          winnerSlot: null,
+          kothActive: true,
+          reigningKing: null,
+          currentStreak: 0,
+          maxStreak: 4,
+          kothPrizeAmount: 20,
+          awaitingKingDecision: false
+        };
+
+        if (url.pathname === '/api/battle/reset') {
+          current.battleState = {
+            ...baseBattle,
+            status: 'LOBBY',
+            playerA: null,
+            playerB: null,
+            winnerSlot: null,
+            winner: null,
+            awaitingKingDecision: false
+          };
+          try {
+            const duo = await readDuoQueues();
+            duo.enteredBattleUsers = [];
+            await writeDuoQueues(duo);
+          } catch (_) {}
+        } else if (url.pathname === '/api/battle/join' || (body.user && (body.slot || body.slotName))) {
+          const cleanUser = String(body.user || body.username || '').trim().replace(/^@+/, '');
+          const cleanSlot = String(body.slot || body.slotName || 'Wildcard Slot').trim();
+          const corner = String(body.targetCorner || '').trim().toUpperCase();
+          const entry = {
+            username: cleanUser,
+            slot: cleanSlot,
+            slotName: cleanSlot,
+            avatar: body.avatar || '',
+            bet: Number(body.bet) || Number(baseBattle.betAmount) || 10,
+            pay: Number(body.pay) || 0,
+            mult: Number(body.mult) || 0,
+            score: Number(body.score) || 0
+          };
+          const nextBattle = { ...baseBattle };
+          if (corner === 'A') {
+            nextBattle.playerA = entry;
+          } else if (corner === 'B') {
+            nextBattle.playerB = entry;
+          } else if (!nextBattle.playerA || !nextBattle.playerA.username) {
+            nextBattle.playerA = entry;
+          } else {
+            nextBattle.playerB = entry;
+          }
+          nextBattle.status = (nextBattle.playerA && nextBattle.playerB) ? 'READY' : 'LOBBY';
+          nextBattle.winnerSlot = null;
+          current.battleState = nextBattle;
+        } else if (url.pathname === '/api/battle/resolve' || url.pathname === '/api/battle/resolve-koth') {
+          const nextBattle = { ...baseBattle };
+          if (nextBattle.playerA) {
+            const betA = Number(body.betA ?? nextBattle.playerA.bet) || 10;
+            const payA = Number(body.payA ?? nextBattle.playerA.pay) || 0;
+            const multA = Number(body.scoreA ?? (betA > 0 ? payA / betA : 0)) || 0;
+            nextBattle.playerA = { ...nextBattle.playerA, bet: betA, pay: payA, mult: multA, score: multA };
+          }
+          if (nextBattle.playerB) {
+            const betB = Number(body.betB ?? nextBattle.playerB.bet) || 10;
+            const payB = Number(body.payB ?? nextBattle.playerB.pay) || 0;
+            const multB = Number(body.scoreB ?? (betB > 0 ? payB / betB : 0)) || 0;
+            nextBattle.playerB = { ...nextBattle.playerB, bet: betB, pay: payB, mult: multB, score: multB };
+          }
+          const mA = Number(nextBattle.playerA?.mult || 0);
+          const mB = Number(nextBattle.playerB?.mult || 0);
+          nextBattle.winnerSlot = body.winnerSlot || (mA >= mB ? 'A' : 'B');
+          nextBattle.status = 'COMPLETED';
+          current.battleState = nextBattle;
+        } else if (body.state) {
           current.battleState = body.state;
         } else if (body.playerA !== undefined || body.playerB !== undefined || body.status !== undefined) {
-          current.battleState = { ...(current.battleState || {}), ...body };
+          current.battleState = { ...baseBattle, ...body };
         }
         await writeOverlaySyncState(current);
         return new Response(JSON.stringify({ status: 'ok', success: true, state: current.battleState }), { headers: noCacheHeaders });
@@ -2595,7 +3521,15 @@ export default {
         betPerRound: 10,
         prizeText: '1st: $150 · 2nd: $50',
         participants: [],
-        matches: []
+        matches: [
+          { id: 'm1', round: 'QF', label: 'QF 1', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm2', round: 'QF', label: 'QF 2', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm3', round: 'QF', label: 'QF 3', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm4', round: 'QF', label: 'QF 4', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm5', round: 'SF', label: 'SF 1', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm6', round: 'SF', label: 'SF 2', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm7', round: 'FINAL', label: 'GRAND FINAL', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' }
+        ]
       };
       return new Response(JSON.stringify({
         state: syncState.tourneyState || defaultTourney,
@@ -2611,10 +3545,94 @@ export default {
       try {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
-        if (body.state) {
+        const freshMatches = () => [
+          { id: 'm1', round: 'QF', label: 'QF 1', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm2', round: 'QF', label: 'QF 2', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm3', round: 'QF', label: 'QF 3', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm4', round: 'QF', label: 'QF 4', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm5', round: 'SF', label: 'SF 1', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm6', round: 'SF', label: 'SF 2', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' },
+          { id: 'm7', round: 'FINAL', label: 'GRAND FINAL', playerA: null, playerB: null, winnerSlot: null, status: 'PENDING' }
+        ];
+        const baseTourney = current.tourneyState || {
+          id: 'worker_tourney',
+          title: '8-Bracket Slot Championship',
+          status: 'LOBBY',
+          gameMode: 'BONUS_BUY',
+          betPerRound: 10,
+          prizeText: '1st: $150 · 2nd: $50',
+          participants: [],
+          matches: freshMatches()
+        };
+
+        if (url.pathname === '/api/tourney/reset') {
+          current.tourneyState = {
+            ...baseTourney,
+            status: 'LOBBY',
+            participants: [],
+            matches: freshMatches(),
+            champion: null
+          };
+          try {
+            const duo = await readDuoQueues();
+            duo.enteredTourneyUsers = [];
+            await writeDuoQueues(duo);
+          } catch (_) {}
+        } else if (url.pathname === '/api/tourney/join' || (body.user && (body.slotName || body.slot))) {
+          const nextTourney = {
+            ...baseTourney,
+            participants: Array.isArray(baseTourney.participants) ? [...baseTourney.participants] : [],
+            matches: (Array.isArray(baseTourney.matches) && baseTourney.matches.length >= 7) ? [...baseTourney.matches] : freshMatches()
+          };
+          const cleanUser = String(body.user || body.username || '').trim().replace(/^@+/, '');
+          const cleanSlot = String(body.slotName || body.slot || 'Wildcard Slot').trim();
+          let seedNum = Number(body.seed) || 0;
+          if (seedNum < 1 || seedNum > 8) {
+            const takenSeeds = new Set(nextTourney.participants.map(p => Number(p.seed)));
+            for (let s = 1; s <= 8; s++) {
+              if (!takenSeeds.has(s)) { seedNum = s; break; }
+            }
+          }
+          if (seedNum >= 1 && seedNum <= 8) {
+            const participant = {
+              seed: seedNum,
+              username: cleanUser,
+              slotName: cleanSlot,
+              slot: cleanSlot,
+              avatar: body.avatar || '',
+              bet: Number(body.bet) || Number(nextTourney.betPerRound) || 10,
+              pay: 0,
+              mult: 0
+            };
+            const existingIdx = nextTourney.participants.findIndex(p => Number(p.seed) === seedNum);
+            if (existingIdx >= 0) nextTourney.participants[existingIdx] = participant;
+            else nextTourney.participants.push(participant);
+            nextTourney.participants.sort((a, b) => Number(a.seed) - Number(b.seed));
+
+            const qfIdx = Math.floor((seedNum - 1) / 2);
+            const isSlotA = (seedNum % 2) === 1;
+            if (nextTourney.matches[qfIdx]) {
+              const matchCopy = { ...nextTourney.matches[qfIdx] };
+              const pObj = {
+                ...participant,
+                displayName: cleanUser,
+                slotImage: ''
+              };
+              if (isSlotA) {
+                matchCopy.playerA = pObj;
+                matchCopy.player1 = pObj;
+              } else {
+                matchCopy.playerB = pObj;
+                matchCopy.player2 = pObj;
+              }
+              nextTourney.matches[qfIdx] = matchCopy;
+            }
+          }
+          current.tourneyState = nextTourney;
+        } else if (body.state) {
           current.tourneyState = body.state;
         } else if (Array.isArray(body.participants) || Array.isArray(body.matches)) {
-          current.tourneyState = { ...(current.tourneyState || {}), ...body };
+          current.tourneyState = { ...baseTourney, ...body };
         }
         await writeOverlaySyncState(current);
         return new Response(JSON.stringify({ status: 'ok', success: true, state: current.tourneyState }), { headers: noCacheHeaders });
@@ -2666,10 +3684,63 @@ export default {
         try {
           const body = await request.json();
           const current = await readDuoQueues();
-          const next = { ...current };
-          if (Array.isArray(body.battleQueue)) next.battleQueue = body.battleQueue;
-          if (Array.isArray(body.tourneyQueue)) next.tourneyQueue = body.tourneyQueue;
-          if (body.mode) next.mode = body.mode;
+          const dedupFirstCall = (arr) => {
+            if (!Array.isArray(arr)) return [];
+            const seen = new Set();
+            const out = [];
+            for (const item of arr) {
+              const u = String(item?.username || item?.user || item?.chatter || '').trim().replace(/^@+/, '').toLowerCase();
+              if (!u || seen.has(u)) continue;
+              seen.add(u);
+              out.push(item);
+            }
+            return out;
+          };
+          const next = {
+            ...current,
+            battleQueue: Array.isArray(current.battleQueue) ? [...current.battleQueue] : [],
+            tourneyQueue: Array.isArray(current.tourneyQueue) ? [...current.tourneyQueue] : [],
+            enteredBattleUsers: Array.isArray(current.enteredBattleUsers) ? [...current.enteredBattleUsers] : [],
+            enteredTourneyUsers: Array.isArray(current.enteredTourneyUsers) ? [...current.enteredTourneyUsers] : []
+          };
+          if (Array.isArray(body.battleQueue)) {
+            next.battleQueue = dedupFirstCall(body.battleQueue);
+            if (body.battleQueue.length === 0) next.enteredBattleUsers = [];
+          }
+          if (Array.isArray(body.tourneyQueue)) {
+            next.tourneyQueue = dedupFirstCall(body.tourneyQueue);
+            if (body.tourneyQueue.length === 0) next.enteredTourneyUsers = [];
+          }
+          if (body.mode && (Array.isArray(body.battleQueue) || Array.isArray(body.tourneyQueue))) {
+            next.mode = body.mode;
+          }
+          // Support single entry addition from wheel-duo or chat command parser (Strictly 1 entry per spectator per event; only FIRST call is valid)
+          if (body.username && (body.slotName || body.slot)) {
+            const targetMode = (body.mode === 'tourney') ? 'tourney' : 'battle';
+            const cleanUser = String(body.username).trim().replace(/^@+/, '');
+            const lowerUser = cleanUser.toLowerCase();
+            const cleanSlot = String(body.slotName || body.slot).trim();
+            const entryObj = {
+              username: cleanUser,
+              user: cleanUser,
+              avatar: body.avatar || '',
+              slotName: cleanSlot,
+              slot: cleanSlot,
+              slotProvider: body.slotProvider || 'Slot',
+              addedAt: Date.now()
+            };
+            const list = targetMode === 'tourney' ? next.tourneyQueue : next.battleQueue;
+            const enteredList = targetMode === 'tourney' ? next.enteredTourneyUsers : next.enteredBattleUsers;
+            const existingIdx = list.findIndex(item => {
+              const itemUser = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
+              return itemUser === lowerUser;
+            });
+            const alreadyEntered = enteredList.includes(lowerUser);
+            if (existingIdx === -1 && !alreadyEntered) {
+              list.push(entryObj);
+              enteredList.push(lowerUser);
+            }
+          }
           next.counts = {
             battle: next.battleQueue.length,
             tourney: next.tourneyQueue.length
@@ -2680,8 +3751,185 @@ export default {
           return new Response(JSON.stringify({ success: false }), { headers: noCacheHeaders });
         }
       }
+      await ingestLiveKickChatOnEdge();
       const data = await readDuoQueues();
-      return new Response(JSON.stringify(data), { headers: noCacheHeaders });
+      const syncState = await readOverlaySyncState();
+      return new Response(JSON.stringify({
+        ...data,
+        recentChatMessages: Array.isArray(syncState.recentChatMessages) ? syncState.recentChatMessages : [],
+        activeChatters: Array.isArray(syncState.activeChatters) ? syncState.activeChatters : []
+      }), { headers: noCacheHeaders });
+    }
+
+    if (url.pathname === '/api/kick/chat/live' && request.method === 'GET') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      const forceBackfill = url.searchParams.get('backfill') === '1';
+      await ingestLiveKickChatOnEdge(forceBackfill);
+      const syncState = await readOverlaySyncState();
+      const duoState = await readDuoQueues();
+      return new Response(JSON.stringify({
+        ok: true,
+        messages: Array.isArray(syncState.recentChatMessages) ? syncState.recentChatMessages : [],
+        activeChatters: Array.isArray(syncState.activeChatters) ? syncState.activeChatters : [],
+        duoQueues: duoState,
+        slotRequests: Array.isArray(syncState.slotRequests) ? syncState.slotRequests : [],
+        guesses: Array.isArray(syncState.guesses) ? syncState.guesses : []
+      }), { headers: noCacheHeaders });
+    }
+
+    if (url.pathname === '/api/wheel/duo/remove' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
+      try {
+        const body = await request.json().catch(() => ({}));
+        const current = await readDuoQueues();
+        const targetMode = (body.mode === 'tourney') ? 'tourney' : 'battle';
+        const cleanUser = String(body.user || body.username || '').trim().replace(/^@+/, '').toLowerCase();
+        const cleanSlot = String(body.slotName || body.slot || '').trim().toLowerCase();
+        const filterFn = (item) => {
+          const u = String(item.username || item.user || '').trim().replace(/^@+/, '').toLowerCase();
+          const s = String(item.slotName || item.slot || '').trim().toLowerCase();
+          if (cleanUser && cleanSlot) return !(u === cleanUser && s === cleanSlot);
+          if (cleanUser) return u !== cleanUser;
+          return true;
+        };
+        if (targetMode === 'tourney') {
+          current.tourneyQueue = (current.tourneyQueue || []).filter(filterFn);
+        } else {
+          current.battleQueue = (current.battleQueue || []).filter(filterFn);
+        }
+        current.counts = {
+          battle: (current.battleQueue || []).length,
+          tourney: (current.tourneyQueue || []).length
+        };
+        await writeDuoQueues(current);
+        return new Response(JSON.stringify({ success: true, ...current }), { headers: noCacheHeaders });
+      } catch (_) {
+        return new Response(JSON.stringify({ success: false }), { headers: noCacheHeaders });
+      }
+    }
+
+    if (url.pathname === '/api/chat/command' && request.method === 'POST') {
+      const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+      if (!(await isAuthorizedAdmin(request, env))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin authentication required' }), { status: 403, headers: noCacheHeaders });
+      }
+      try {
+        const body = await request.json().catch(() => ({}));
+        const cleanUser = String(body.username || body.user || '').trim().replace(/^@+/, '');
+        const lowerUser = cleanUser.toLowerCase();
+        const rawText = String(body.content || body.message || '').trim();
+        if (cleanUser && rawText.startsWith('!')) {
+          const parts = rawText.split(/\s+/);
+          const cmd = parts[0].toLowerCase();
+          const arg = parts.slice(1).join(' ').trim();
+
+          if (cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') {
+            const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
+            const cleanSlot = arg || (targetMode === 'tourney' ? 'Gates of Olympus 1000' : 'Wanted Dead or a Wild');
+            const duoCurrent = await readDuoQueues();
+            const duoNext = {
+              ...duoCurrent,
+              mode: targetMode,
+              battleQueue: Array.isArray(duoCurrent.battleQueue) ? [...duoCurrent.battleQueue] : [],
+              tourneyQueue: Array.isArray(duoCurrent.tourneyQueue) ? [...duoCurrent.tourneyQueue] : [],
+              enteredBattleUsers: Array.isArray(duoCurrent.enteredBattleUsers) ? [...duoCurrent.enteredBattleUsers] : [],
+              enteredTourneyUsers: Array.isArray(duoCurrent.enteredTourneyUsers) ? [...duoCurrent.enteredTourneyUsers] : []
+            };
+            const entryObj = {
+              username: cleanUser,
+              user: cleanUser,
+              avatar: body.avatar || '',
+              slotName: cleanSlot,
+              slot: cleanSlot,
+              slotProvider: body.slotProvider || 'Casino',
+              addedAt: Date.now()
+            };
+            const list = targetMode === 'tourney' ? duoNext.tourneyQueue : duoNext.battleQueue;
+            const enteredList = targetMode === 'tourney' ? duoNext.enteredTourneyUsers : duoNext.enteredBattleUsers;
+            const existingIdx = list.findIndex(item => {
+              const itemUser = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
+              return itemUser === lowerUser;
+            });
+            const alreadyEntered = enteredList.includes(lowerUser);
+            // Strictly 1 call per spectator per event: only the FIRST call is valid!
+            if (existingIdx === -1 && !alreadyEntered) {
+              list.push(entryObj);
+              enteredList.push(lowerUser);
+              duoNext.counts = {
+                battle: duoNext.battleQueue.length,
+                tourney: duoNext.tourneyQueue.length
+              };
+              await writeDuoQueues(duoNext);
+            }
+          } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+            const syncCurrent = await readOverlaySyncState();
+            const reqList = Array.isArray(syncCurrent.slotRequests) ? [...syncCurrent.slotRequests] : [];
+            const handle = `@${cleanUser}`;
+            const userActiveReqs = reqList.filter(r => String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser);
+            const sameSlotIdx = reqList.findIndex(r =>
+              String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser &&
+              String(r.name || '').toLowerCase().trim() === arg.toLowerCase().trim()
+            );
+            const entry = {
+              id: Date.now() + Math.random(),
+              name: arg,
+              provider: body.slotProvider || 'Official Slot',
+              img: body.slotImg || '',
+              image: body.slotImg || '',
+              user: handle,
+              caller: handle,
+              ts: Date.now()
+            };
+            // Max 3 active slot requests per spectator; once 1 wins on Roulette and is removed, 1 spot opens up
+            if (sameSlotIdx === -1 && userActiveReqs.length < 3) {
+              reqList.push(entry);
+              syncCurrent.slotRequests = reqList.slice(0, 100);
+              syncCurrent.overlayEvents = syncCurrent.overlayEvents || {};
+              syncCurrent.overlayEvents['overlay-slotrequests'] = {
+                target: 'overlay-slotrequests',
+                type: 'SYNC_QUEUE',
+                queue: syncCurrent.slotRequests,
+                ts: Date.now()
+              };
+              await writeOverlaySyncState(syncCurrent);
+            }
+          } else if (cmd === '!guess' || cmd === '!gtb') {
+            const syncCurrent = await readOverlaySyncState();
+            const isLocked = Boolean(syncCurrent.guessesLocked || syncCurrent.bonushuntState?.guessesLocked);
+            if (!isLocked) {
+              const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
+              if (!isNaN(numVal) && numVal > 0) {
+                const guesses = Array.isArray(syncCurrent.guesses)
+                  ? [...syncCurrent.guesses]
+                  : (Array.isArray(syncCurrent.bonushuntState?.guesses) ? [...syncCurrent.bonushuntState.guesses] : []);
+                const existingIdx = guesses.findIndex(g => String(g?.username || g?.user || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser);
+                const guessEntry = {
+                  user: `@${cleanUser}`,
+                  username: cleanUser,
+                  guess: numVal,
+                  amount: numVal,
+                  ts: Date.now()
+                };
+                // 1 active guess per spectator: renews/corrects existing guess if already submitted
+                if (existingIdx >= 0) {
+                  guesses[existingIdx] = guessEntry;
+                } else {
+                  guesses.push(guessEntry);
+                }
+                syncCurrent.guesses = guesses;
+                if (syncCurrent.bonushuntState && typeof syncCurrent.bonushuntState === 'object') {
+                  syncCurrent.bonushuntState.guesses = guesses;
+                }
+                await writeOverlaySyncState(syncCurrent);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      return new Response(JSON.stringify({ status: 'ok', success: true }), { headers: noCacheHeaders });
     }
 
     if (url.pathname === '/api/wheel/duo/mode' && request.method === 'POST') {
@@ -2755,7 +4003,9 @@ export default {
         try {
           const body = await request.json().catch(() => ({}));
           const current = await readOverlaySyncState();
-          const incoming = Array.isArray(body.chatters) ? body.chatters : [];
+          const incoming = Array.isArray(body.chatters)
+            ? body.chatters
+            : (Array.isArray(body.activeChatters) ? body.activeChatters : (Array.isArray(body.pool) ? body.pool : []));
           const mergedMap = new Map();
           const now = Date.now();
           for (const c of (current.activeChatters || [])) {

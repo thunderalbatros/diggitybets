@@ -380,7 +380,27 @@ class AntiFraudEngine {
     });
   };
 
-  // 0d. CSP-Clean Delegated Click Handlers for static buttons in index.html
+  // 0d. CSP-Clean Delegated Click & Image Fallback Handlers for index.html
+  document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.dataset.fallbackApplied === '1') return;
+    img.dataset.fallbackApplied = '1';
+    const explicitFallback = img.getAttribute('data-fallback-src');
+    if (explicitFallback) {
+      img.src = explicitFallback;
+      return;
+    }
+    if (img.classList.contains('pepe-reaction-img') || img.classList.contains('champ-pepe-hero-img')) {
+      if (img.closest('.sad')) img.src = '/site/images/emotes/pepe-sad.png';
+      else if (img.closest('.champ') || img.classList.contains('champ-pepe-hero-img')) img.src = '/site/images/emotes/pepe-champ.png';
+      else img.src = '/site/images/emotes/pepe-ez.jpg';
+      return;
+    }
+    if (img.classList.contains('slot-mini-thumb') || img.classList.contains('bh-slot-thumb') || img.classList.contains('slot-card-img')) {
+      img.src = '/site/images/slots/wanted-dead-or-a-wild.svg';
+    }
+  }, true);
+
   document.addEventListener('click', (e) => {
     const target = e.target && e.target.closest ? e.target.closest('#btn-bh-live-rtp-radar, #btn-copy-raffle-announcement, #btn-close-raffle-winner-modal') : null;
     if (!target) return;

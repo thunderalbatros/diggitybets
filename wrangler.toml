@@ -5,6 +5,9 @@ compatibility_date = "2026-10-14"
 # 100% Free Plan Configuration (100,000 req/day, $0 cost permanently, zero credit card)
 workers_dev = true
 
+[vars]
+KICK_CLIENT_ID = "01M5D4P0C5ERRS21YX12VXDMZM"
+
 # Build step so Cloudflare Workers Builds & local wrangler deploy always generate ./dist
 [build]
 command = "node tools/build_dist.mjs"
@@ -18,11 +21,11 @@ not_found_handling = "none"
 [observability]
 enabled = true
 
-# Cloudflare D1 Serverless SQLite (bound via Cloudflare Dashboard or valid UUID; worker/index.js includes automatic in-memory fallback when unbound)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "hunthub_production"
-# database_id = "YOUR_D1_UUID"
+# Cloudflare D1 Serverless SQLite (Global cross-region sync between USA OBS & Argentina Control Panel)
+[[d1_databases]]
+binding = "DB"
+database_name = "hunthub_production"
+database_id = "8affce60-2beb-4798-ae36-f87d77862c9a"
 
 # Secrets to be configured via `npx wrangler secret put <KEY>` or Cloudflare Dashboard:
 # - KICK_CLIENT_ID

@@ -1,7 +1,7 @@
 # HuntHub — Project Status & Roadmap
 
-> **Current Phase:** Phase 9 (50-Repository Agentic Software Factory Integration: ToM-SWE 3-Tier Memory, Browserbase Diff-UI Adversarial Gate, Stagehand Self-Healing Selector Cache & Oxc Rust Linter) COMPLETED  
-> **Last Updated:** 2026-10-20  
+> **Current Phase:** Phase 9 (Global D1 Cross-Region USA/AR Sync `hunthub_production` + Server-Side Kick Live Chat Ingestor `web.kick.com/api/v1/chat/87054681/history` Deployed Live) COMPLETED  
+> **Last Updated:** 2026-10-21  
 > **Manager:** Antigravity Tech Lead  
 
 ---
@@ -781,10 +781,30 @@
     - Ran `node tools/build_dist.mjs` cleanly and deployed via `npx wrangler deploy` to production edge (`Version ID: 21752ed5-3c59-40f8-96ba-ff1d126da2c8`).
     - Restarted local Core daemon (`node --experimental-strip-types src/index.ts`) on port 3001 connected to Kick Centrifugo chatroom `86765775`.
 
+- **Stage 37 (Real-Time Kick Chat Ingestion Root Cause Fix: Pusher Cluster Key, Centrifugo CORS Decoupling & Node Dual Engine):** COMPLETED & DEPLOYED TO EDGE.
+  - **1. Fixed Invalid Pusher Cluster Key (`32cbd69e4b950bf97679` -> `34bf7a0ff419a2a775b9`):**
+    - Diagnosed the root cause why chat commands (`!sr`, `!battle`, `!tourney`, `!guess`) were not arriving at `diggitybets.vip/#control-panel` or OBS overlays.
+    - Kick's public Pusher cluster on `ws-us2.pusher.com` requires the key `34bf7a0ff419a2a775b9`. The previous key (`32cbd69e4b950bf97679`) returned error `4001: "App key 32cbd69e4b950bf97679 not in this cluster"`, terminating connections instantly.
+    - Updated all 5 client consumers: [`site/js/admin-hub.js`](file:///c:/Users/tomas/Desktop/streamerbot/site/js/admin-hub.js), [`wheel-csgo/overlay/main.js`](file:///c:/Users/tomas/Desktop/streamerbot/wheel-csgo/overlay/main.js), [`wheel-duo/main.js`](file:///c:/Users/tomas/Desktop/streamerbot/wheel-duo/main.js), [`overlay-slotrequests/main.js`](file:///c:/Users/tomas/Desktop/streamerbot/overlay-slotrequests/main.js), and [`overlay-bonushunt/main.js`](file:///c:/Users/tomas/Desktop/streamerbot/overlay-bonushunt/main.js).
+    - Added a 25-second keepalive ping (`pusher:ping`) and proper disconnection cleanup on all clients.
+  - **2. Decoupled Pusher & Centrifugo Connection Lifecycles in Web Browsers:**
+    - Kick Centrifugo (`realtime.us-west-2.platform.kick.com`) rejects non-kick.com origins from standard web browsers with WebSocket close code 1006.
+    - In `site/js/admin-hub.js`, Centrifugo's onclose loop was restarting the entire socket manager every 3.5s, killing the active Pusher connection repeatedly.
+    - Decoupled Centrifugo and Pusher into independent engines with distinct backoffs (Pusher 4s, Centrifugo 25-30s), ensuring Pusher remains uninterrupted as the primary zero-token browser ingestion engine.
+  - **3. Fixed Centrifugo Newline Concatenation in Node Core Service (`core/src/ingestor/kick-pusher.ts`):**
+    - Kick Centrifugo batches messages separated by newlines (`\n`). Calling `JSON.parse(raw)` directly threw `SyntaxError: Unexpected non-whitespace character after JSON at position 825`, dropping chat batches.
+    - Added newline splitting (`raw.split('\n')`) so each packet is parsed individually.
+    - Added parallel dual ingestion in Node (`Centrifugo + Pusher`) with 5-second message ID deduplication cache for 100% redundancy and zero downtime.
+  - **4. Added `!sr` / `!slot` Command Handlers in Node Engine (`core/src/index.ts`):**
+    - Added handler for `!sr` and `!slot` that resolves canonical slot metadata, broadcasts `slot_request` events to overlay clients, and updates the local hub.
+  - **5. Production Build & Cloudflare Edge Deployment:**
+    - Rebuilt `dist/` cleanly (1139 files, 33.03 MB) and deployed to Cloudflare Edge (`Version ID: 967c0a69-c3b0-4d69-9e05-a4f04f100742`).
+    - Verified live chat ingestion with `@bolenbaucheranna8` and `@adalcake8` chatting in `chatrooms.86765775.v2`.
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases through Stage 36 (8-Bracket Grand Champion Fix & DiggityBot Admin Unlock): 100% COMPLETED & DEPLOYED.**
+- **All Phases through Stage 37 (Real-Time Kick Chat Ingestion Root Cause Fix): 100% COMPLETED & DEPLOYED.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 

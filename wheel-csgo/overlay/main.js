@@ -965,36 +965,146 @@
       }
     } catch (_) {}
 
-    // Direct Kick Centrifugo WebSocket listener for real-time organic chatters
+    // Direct Kick Centrifugo v6 + Pusher v7 WebSocket listener for real-time organic chatters
+    let chatChannels = ['chatrooms.86765775.v2'];
+    function extractKickChatMsg(packet) {
+      if (!packet || typeof packet !== 'object') return null;
+      let pubData = packet?.push?.pub?.data ?? packet?.pub?.data ?? packet?.result?.data ?? (packet?.event ? packet : null);
+      if (typeof pubData === 'string') {
+        try { pubData = JSON.parse(pubData); } catch (_) { return null; }
+      }
+      if (!pubData || typeof pubData !== 'object') return null;
+      if (pubData.data) {
+        if (pubData.event && !String(pubData.event).includes('ChatMessageEvent') && pubData.event !== 'message') {
+          return null;
+        }
+        return typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+      }
+      if (typeof pubData.content === 'string' && pubData.sender) {
+        return pubData;
+      }
+      return null;
+    }
+
+    function handleKickChatter(d) {
+      if (!d || typeof d !== 'object') return;
+      const rawText = String(d?.content || '').trim();
+      const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+      const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+      if (!sender) return;
+      const stripped = rawText.replace(/\[emote:\d+:[^\]]+\]/g, ' ').replace(/:[a-zA-Z0-9_\-]+:/g, ' ').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
+      if (stripped.length >= 2) {
+        registerActiveChatter(sender, sender, avatar, Date.now());
+      }
+    }
+
+    async function connectKickCentrifugo() {
+      try {
+        let token = '';
+        let wsUrl = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+        try {
+          const res = await fetch('/api/kick/stream-status');
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.realtime?.token) token = data.realtime.token;
+            if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;
+            if (Array.isArray(data?.realtime?.channels) && data.realtime.channels.length > 0) {
+              chatChannels = data.realtime.channels;
+            }
+          }
+        } catch (_) {}
+
+        if (!token) {
+          setTimeout(connectKickCentrifugo, 6000);
+          return;
+        }
+
+        const cws = new WebSocket(wsUrl);
+        let lastAct = Date.now();
+        const watchdog = setInterval(() => {
+          if (Date.now() - lastAct > 45000) {
+            try { cws.close(); } catch (_) {}
+          }
+        }, 12000);
+
+        cws.onopen = () => {
+          lastAct = Date.now();
+          cws.send(JSON.stringify({ id: 1, connect: { token } }));
+          setStatus('● Connected to Kick Live Chat', '#00e676');
+          if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
+        };
+        cws.onmessage = (evt) => {
+          lastAct = Date.now();
+          try {
+            const lines = String(evt.data || '').split('\n');
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+              if (line === '{}') {
+                if (cws.readyState === WebSocket.OPEN) cws.send('{}');
+                continue;
+              }
+              const packet = JSON.parse(line);
+              if (packet.id === 1 && packet.connect) {
+                chatChannels.forEach((ch, idx) => {
+                  if (cws.readyState === WebSocket.OPEN) {
+                    cws.send(JSON.stringify({ id: idx + 2, subscribe: { channel: ch } }));
+                  }
+                });
+                continue;
+              }
+              const msg = extractKickChatMsg(packet);
+              if (msg) handleKickChatter(msg);
+            }
+          } catch (_) {}
+        };
+        cws.onclose = () => {
+          clearInterval(watchdog);
+          setTimeout(connectKickCentrifugo, 5000);
+        };
+      } catch (_) {
+        setTimeout(connectKickCentrifugo, 6000);
+      }
+    }
+
     function connectKickPusher() {
       try {
-        const kws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        const kws = new WebSocket('wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        let pingTimer = null;
         kws.onopen = () => {
-          kws.send(JSON.stringify({
-            event: 'pusher:subscribe',
-            data: { auth: '', channel: 'chatrooms.86765775.v2' }
-          }));
+          chatChannels.forEach((ch) => {
+            kws.send(JSON.stringify({
+              event: 'pusher:subscribe',
+              data: { auth: '', channel: ch }
+            }));
+          });
+          pingTimer = setInterval(() => {
+            if (kws.readyState === WebSocket.OPEN) {
+              kws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            }
+          }, 25000);
           setStatus('● Connected to Kick Live Chat', '#00e676');
           if (IN_OBS && !DEBUG) estadoEl.classList.add('oculto');
         };
         kws.onmessage = (evt) => {
           try {
-            const msg = JSON.parse(evt.data);
-            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
-            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-            const rawText = String(d?.content || '').trim();
-            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
-            const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
-            if (!sender) return;
-            const stripped = rawText.replace(/\[emote:\d+:[^\]]+\]/g, ' ').replace(/:[a-zA-Z0-9_\-]+:/g, ' ').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
-            if (stripped.length >= 2) {
-              registerActiveChatter(sender, sender, avatar, Date.now());
-            }
+            const packet = JSON.parse(evt.data);
+            const msg = extractKickChatMsg(packet);
+            if (msg) handleKickChatter(msg);
           } catch (_) {}
         };
-        kws.onclose = () => setTimeout(connectKickPusher, 6000);
-      } catch (_) {}
+        kws.onclose = () => {
+          if (pingTimer) clearInterval(pingTimer);
+          setTimeout(connectKickPusher, 4000);
+        };
+        kws.onerror = () => {
+          try { kws.close(); } catch (_) {}
+        };
+      } catch (_) {
+        setTimeout(connectKickPusher, 5000);
+      }
     }
+    connectKickCentrifugo();
     connectKickPusher();
 
     if (isLocalHost) {

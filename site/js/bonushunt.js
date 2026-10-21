@@ -137,6 +137,9 @@ class BonusHuntController {
     this.renderGuesses();
     this.renderGuessLockState();
     this.renderSlotRequests();
+    if (!this.isSpinning) {
+      this.drawSlotWheel(this.wheelAngle);
+    }
     if (window.diggityIntelSuite && typeof window.diggityIntelSuite.updateVaultSrQuotaUI === 'function') {
       window.diggityIntelSuite.updateVaultSrQuotaUI();
     }
@@ -156,11 +159,20 @@ class BonusHuntController {
     this.initSlotWheel();
     this.initProvablyFairVerifiers();
 
-    // Real-time sync with Control Panel and OBS Bonus Hunt broadcasts
+    // Real-time sync with Control Panel and OBS Bonus Hunt / Slot Requests broadcasts
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         this.bcHunt = new BroadcastChannel('hunthub_bonushunt');
         this.bcHunt.onmessage = () => this.reloadFromStorage();
+      } catch (_) {}
+      try {
+        this.bcSrListen = new BroadcastChannel('hunthub_sr_wheel');
+        this.bcSrListen.onmessage = (ev) => {
+          if (ev.data && Array.isArray(ev.data.queue)) {
+            try { localStorage.setItem('hunthub_slot_requests', JSON.stringify(ev.data.queue)); } catch (_) {}
+            this.reloadFromStorage();
+          }
+        };
       } catch (_) {}
     }
     window.addEventListener('storage', (e) => {
@@ -473,6 +485,17 @@ class BonusHuntController {
           this.bcHunt.postMessage({ type: 'GUESS_LOCK_CHANGED', guessesLocked: this.guessesLocked, ts: Date.now() });
         }
       } catch (_) {}
+      try {
+        fetch('/api/sync/state', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-user': localStorage.getItem('hunthub_kick_username') || 'diggitybets',
+            'x-admin-token': localStorage.getItem('hunthub_admin_token') || ''
+          },
+          body: JSON.stringify({ guessesLocked: this.guessesLocked })
+        }).catch(() => {});
+      } catch (_) {}
       window.dispatchEvent(new CustomEvent('hunthub:bonushunt-sync'));
     }
   }
@@ -560,17 +583,20 @@ class BonusHuntController {
       }
       return false;
     }
-    const clean = String(username || 'Viewer').trim().replace(/^@/, '');
+    const clean = String(username || 'Viewer').trim().replace(/^@+/, '');
+    const lowerClean = clean.toLowerCase();
     const formatted = `@${clean}`;
     const num = Number(guessVal);
     if (!num || isNaN(num) || num <= 0) return false;
 
     this.isActive = true;
     localStorage.setItem('hunthub_hunt_active', 'true');
-    const existingIdx = this.guesses.findIndex(g => String(g.user || '').toLowerCase() === formatted.toLowerCase());
+    const existingIdx = this.guesses.findIndex(g => String(g.user || g.username || '').toLowerCase().replace(/^@+/, '') === lowerClean);
     const entry = {
       user: formatted,
+      username: clean,
       guess: num,
+      amount: num,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     if (existingIdx >= 0) {
@@ -579,6 +605,9 @@ class BonusHuntController {
       this.guesses.push(entry);
     }
     this.save();
+    try {
+      localStorage.setItem('hunthub_bh_guesses', JSON.stringify(this.guesses));
+    } catch (_) {}
     this.renderGuesses();
     return true;
   }
@@ -650,23 +679,23 @@ class BonusHuntController {
     bindBtn('bh-btn-settle-gtb');
     bindBtn('cp-btn-settle-gtb');
 
-    // Restrict public settlement box visibility strictly to @diggitybets and @tarkansky
+    // Restrict public settlement box visibility strictly to @diggitybets, @tarkansky, and @diggitybot
     const container = document.getElementById('bh-streamer-settlement-container');
     if (container) {
-      const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky'];
+      const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'];
       const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
-      container.style.display = STREAMER_WHITELIST.includes(currentUsername) ? 'flex' : 'none';
+      container.style.display = (STREAMER_WHITELIST.includes(currentUsername) || localStorage.getItem('hunthub_is_admin') === 'true') ? 'flex' : 'none';
     }
   }
 
   settleGuessTheBalance() {
-    const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky'];
+    const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'];
     const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
-    if (!STREAMER_WHITELIST.includes(currentUsername)) {
+    if (!STREAMER_WHITELIST.includes(currentUsername) && localStorage.getItem('hunthub_is_admin') !== 'true') {
       if (window.sonner) {
         window.sonner.toast({
           title: 'Access Restricted 🔒',
-          message: 'GTB Settlement is strictly reserved for @diggitybets and @tarkansky in the Control Panel.',
+          message: 'GTB Settlement is strictly reserved for @diggitybets, @tarkansky, and @DiggityBot in the Control Panel.',
           type: 'red'
         });
       }
@@ -819,9 +848,8 @@ class BonusHuntController {
 
   getActiveSlotRequestCountForUser(username) {
     const clean = String(username || 'Viewer').trim().replace(/^@+/, '').toLowerCase() || 'viewer';
-    const handle = `@${clean}`;
     return this.slotRequests.filter(
-      (r) => String(r.user || r.caller || '').toLowerCase() === handle
+      (r) => String(r.user || r.caller || '').trim().replace(/^@+/, '').toLowerCase() === clean
     ).length;
   }
 
@@ -830,6 +858,7 @@ class BonusHuntController {
     if (!rawSlot) return null;
 
     const cleanUser = String(username || 'Viewer').trim().replace(/^@+/, '') || 'Viewer';
+    const lowerUser = cleanUser.toLowerCase();
     const handle = `@${cleanUser}`;
     const canon = window.SlotResolver
       ? window.SlotResolver.resolve(rawSlot)
@@ -848,7 +877,7 @@ class BonusHuntController {
 
     const maxAllowed = this.getMaxSlotRequestsForUser(cleanUser);
     const userRequests = this.slotRequests.filter(
-      (r) => String(r.user || r.caller || '').toLowerCase() === handle.toLowerCase()
+      (r) => String(r.user || r.caller || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser
     );
 
     // Prevent queuing the exact same slot twice by the same user
@@ -1274,8 +1303,11 @@ class BonusHuntController {
         }
 
         // Remove selected winner from active pool so next spin picks a fresh request & frees 1 slot for that viewer!
+        const winUserClean = String(winner.user || winner.caller || '').trim().replace(/^@+/, '').toLowerCase();
+        const winNameClean = String(winner.name || '').trim().toLowerCase();
         const removeIdx = this.slotRequests.findIndex(
-          (r) => r.name === winner.name && (r.user || r.caller) === (winner.user || winner.caller)
+          (r) => String(r.name || '').trim().toLowerCase() === winNameClean &&
+                 String(r.user || r.caller || '').trim().replace(/^@+/, '').toLowerCase() === winUserClean
         );
         if (removeIdx >= 0) {
           this.slotRequests.splice(removeIdx, 1);

@@ -199,16 +199,23 @@ class TourneyOverlayApp {
           id,
           round: m.round || (idx < 4 ? 1 : (idx < 6 ? 2 : 3)),
           matchNumber: m.matchNumber || (idx + 1),
-          player1: m.player1 || null,
-          player2: m.player2 || null,
-          score1: m.score1 ?? 0,
-          score2: m.score2 ?? 0,
+          player1: m.player1 || m.playerA || null,
+          player2: m.player2 || m.playerB || null,
+          score1: m.score1 ?? m.playerA?.mult ?? 0,
+          score2: m.score2 ?? m.playerB?.mult ?? 0,
           winner: m.winner || null,
           status: m.status || 'PENDING',
         };
       });
     } else if (Array.isArray(cloned.matches)) {
-      cloned.matches = cloned.matches.map((m) => ({ ...m }));
+      cloned.matches = cloned.matches.map((m, idx) => ({
+        ...m,
+        id: m.id || `m${idx + 1}`,
+        player1: m.player1 || m.playerA || null,
+        player2: m.player2 || m.playerB || null,
+        score1: m.score1 ?? m.playerA?.mult ?? 0,
+        score2: m.score2 ?? m.playerB?.mult ?? 0,
+      }));
     } else {
       cloned.matches = this.getEmptyTournamentState().matches;
     }
@@ -411,6 +418,7 @@ class TourneyOverlayApp {
         matches[i].status = 'IN_PROGRESS';
       }
     }
+    this._lastLocalTourneyMutationAt = Date.now();
     this.currentState.participants = qfPlayers;
     this.currentState.isDemo = false;
     this.currentState.status = qfPlayers.length >= 8 ? 'IN_PROGRESS' : 'LOBBY';
@@ -521,17 +529,23 @@ class TourneyOverlayApp {
             null;
 
           if (remoteState && remoteState.matches) {
+            const normRemote = this.normalizeState(remoteState);
+            const remoteHasPlayers = Array.isArray(normRemote.participants) && normRemote.participants.length > 0;
+            const localHasPlayers = Boolean(this.currentState && Array.isArray(this.currentState.participants) && this.currentState.participants.length > 0);
+            if (!remoteHasPlayers && localHasPlayers && this._lastLocalTourneyMutationAt && (Date.now() - this._lastLocalTourneyMutationAt) < 15000) {
+              return;
+            }
             const sig = JSON.stringify({
-              status: remoteState.status,
-              mode: remoteState.mode,
-              matches: remoteState.matches,
-              champion: remoteState.champion
+              status: normRemote.status,
+              mode: normRemote.mode,
+              matches: normRemote.matches,
+              champion: normRemote.champion
             });
             if (sig !== this._lastTourneySig) {
               const isFirstLoad = !this._lastTourneySig;
               this._lastTourneySig = sig;
-              try { localStorage.setItem('hunthub_tourney_state', JSON.stringify(remoteState)); } catch (_) {}
-              this.handleStateUpdate(remoteState, isFirstLoad);
+              try { localStorage.setItem('hunthub_tourney_state', JSON.stringify(normRemote)); } catch (_) {}
+              this.handleStateUpdate(normRemote, isFirstLoad);
             }
           }
         } catch (_) {}

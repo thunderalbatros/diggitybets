@@ -4,6 +4,8 @@
 *.pem
 *.key
 *.secret
+ADMIN_API_SECRET.txt
+.wrangler/
 
 # Build Output (Cloudflare builds this dynamically via 'node tools/build_dist.mjs')
 dist/

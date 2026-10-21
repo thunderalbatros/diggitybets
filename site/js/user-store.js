@@ -165,6 +165,24 @@ class UserStoreController {
     }
     this.lastUserInteractionTs = Date.now();
     this.lastVerifiedKickChatTs = Number(localStorage.getItem('hunthub_last_kick_chat_ts') || '0');
+    this.globalMonthlyLeaderboard = null;
+    this.globalViewerProfile = null;
+  }
+
+  getAuthHeaders(includeJson = true) {
+    const headers = {};
+    if (includeJson) headers['Content-Type'] = 'application/json';
+    const userToken = localStorage.getItem('hunthub_user_token') || '';
+    const adminToken = localStorage.getItem('hunthub_admin_token') || '';
+    const cleanUser = (this.username || localStorage.getItem('hunthub_kick_username') || '').trim().replace(/^@+/, '');
+    if (userToken) headers['x-user-token'] = userToken;
+    if (adminToken) headers['x-admin-token'] = adminToken;
+    if (cleanUser) headers['x-admin-user'] = cleanUser;
+    if (window.antiFraud && typeof window.antiFraud.getDeviceHash === 'function') {
+      const dh = window.antiFraud.getDeviceHash();
+      if (dh) headers['x-device-fingerprint'] = dh;
+    }
+    return headers;
   }
 
   init() {
@@ -179,6 +197,18 @@ class UserStoreController {
     if (!localStorage.getItem('hunthub_offline_points_purged_v1')) {
       localStorage.setItem('hunthub_balance', '0');
       localStorage.setItem('hunthub_offline_points_purged_v1', 'true');
+      if (window.houseGames) {
+        window.houseGames.balance = 0;
+        window.houseGames.renderBalance();
+      }
+    }
+    const cleanInitUser = (this.username || localStorage.getItem('hunthub_kick_username') || '').trim().toLowerCase().replace(/^@+/, '');
+    if (cleanInitUser === 'tarkansky' && !localStorage.getItem('hunthub_tarkansky_reset_v2')) {
+      localStorage.setItem('hunthub_balance', '0');
+      localStorage.setItem('hunthub_user_monthly_dig', '0');
+      localStorage.setItem('hunthub_user_career_dig', '0');
+      localStorage.removeItem('hunthub_historical_leaderboard');
+      localStorage.setItem('hunthub_tarkansky_reset_v2', 'true');
       if (window.houseGames) {
         window.houseGames.balance = 0;
         window.houseGames.renderBalance();
@@ -209,6 +239,113 @@ class UserStoreController {
     this.startTotpTimer();
     this.startWatchHeartbeat();
     this.syncStoreStockFromServer();
+    this.syncGlobalLeaderboardAndUser();
+    this.startGlobalLeaderboardSync();
+  }
+
+  startGlobalLeaderboardSync() {
+    if (this.globalLeaderboardSyncInterval) clearInterval(this.globalLeaderboardSyncInterval);
+    this.globalLeaderboardSyncInterval = setInterval(() => {
+      if (document.hidden) return;
+      this.syncGlobalLeaderboardAndUser();
+    }, 15_000);
+    window.addEventListener('hashchange', () => {
+      if (['#leaderboard', '#store', '#profile', '#house-games'].includes(window.location.hash)) {
+        this.syncGlobalLeaderboardAndUser();
+      }
+    });
+  }
+
+  async syncGlobalLeaderboardAndUser(extraPayload = {}) {
+    if (typeof fetch !== 'function') return null;
+    try {
+      const cleanUser = (this.username || localStorage.getItem('hunthub_kick_username') || '').trim().replace(/^@+/, '');
+      let res = null;
+
+      if (this.isLoggedIn && cleanUser && !cleanUser.toLowerCase().startsWith('kickuser_')) {
+        const localBal = window.houseGames
+          ? (Number(window.houseGames.balance) || 0)
+          : (parseInt(localStorage.getItem('hunthub_balance') || '0', 10) || 0);
+        const localMonthly = Math.max(
+          parseInt(localStorage.getItem('hunthub_user_monthly_dig') || '0', 10) || 0,
+          parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || 0,
+          localBal
+        );
+        const avatarToSend = (this.avatarType === 'img' && this.avatar && /^https?:\/\//i.test(this.avatar)) ? this.avatar : '';
+        res = await fetch('/api/leaderboard/sync-user', {
+          method: 'POST',
+          headers: this.getAuthHeaders(true),
+          body: JSON.stringify({
+            username: cleanUser,
+            avatar: avatarToSend,
+            isSub: Boolean(this.isSub),
+            localBalance: localBal,
+            localMonthlyDig: localMonthly,
+            ...extraPayload
+          })
+        });
+      } else {
+        const q = cleanUser ? `?username=${encodeURIComponent(cleanUser)}` : '';
+        res = await fetch(`/api/leaderboard/monthly${q}`, { cache: 'no-store' });
+      }
+
+      if (!res || !res.ok) return null;
+      const data = await res.json();
+
+      if (data.userToken) {
+        localStorage.setItem('hunthub_user_token', data.userToken);
+      }
+
+      if (data.viewerProfile) {
+        this.globalViewerProfile = data.viewerProfile;
+        if (typeof data.viewerProfile.pointsBalance === 'number' && Number.isFinite(data.viewerProfile.pointsBalance)) {
+          localStorage.setItem('hunthub_balance', String(data.viewerProfile.pointsBalance));
+          if (window.houseGames) {
+            const prevBal = window.houseGames.balance;
+            window.houseGames.balance = data.viewerProfile.pointsBalance;
+            window.houseGames.renderBalance(prevBal);
+          }
+        }
+        if (typeof data.viewerProfile.monthlyPoints === 'number' && Number.isFinite(data.viewerProfile.monthlyPoints)) {
+          localStorage.setItem('hunthub_user_monthly_dig', String(data.viewerProfile.monthlyPoints));
+          localStorage.setItem('hunthub_user_career_dig', String(data.viewerProfile.monthlyPoints));
+        }
+        if (data.viewerProfile.stakeVerified && !this.stakeVerified) {
+          this.stakeVerified = true;
+          localStorage.setItem('hunthub_stake_verified', 'true');
+          this.updateStoreCatalogUI();
+        }
+        if (data.viewerProfile.avatar && localStorage.getItem('hunthub_custom_uploaded_avatar') !== 'true') {
+          this.avatar = data.viewerProfile.avatar;
+          this.avatarType = 'img';
+          localStorage.setItem('hunthub_avatar', data.viewerProfile.avatar);
+          localStorage.setItem('hunthub_avatar_type', 'img');
+          this.updateAvatarUI();
+        }
+      }
+
+      if (Array.isArray(data.leaderboard)) {
+        this.globalMonthlyLeaderboard = data.leaderboard;
+        try {
+          localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(data.leaderboard));
+        } catch (_) {}
+        this.renderHistoricalLeaderboard();
+      }
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  syncAllPointDisplays() {
+    if (window.houseGames && typeof window.houseGames.renderBalance === 'function') {
+      window.houseGames.renderBalance();
+    }
+    this.renderHistoricalLeaderboard();
+  }
+
+  syncStateToBackend(extraPayload = {}) {
+    return this.syncGlobalLeaderboardAndUser(extraPayload);
   }
 
   getCurrentMonthKey(date = new Date()) {
@@ -259,13 +396,18 @@ class UserStoreController {
         localStorage.setItem('hunthub_last_kick_chat_ts', String(this.lastVerifiedKickChatTs));
       }
     }
-    // Real Kick chat activity awards points & dynamically tracks active chatters on the Monthly Top 20 Leaderboard!
-    this.awardChatterHistoricalPoints(cleanSender, 10);
+    // Real Kick chat activity awards points ONLY when the stream is LIVE!
+    if (window.hunthubStreamLive === true) {
+      this.awardChatterHistoricalPoints(cleanSender, 5);
+    }
   }
 
   awardChatterHistoricalPoints(username, pts = 10) {
     const numPts = Number(pts) || 0;
     if (!username || numPts <= 0) return; // Strictly monotonic cumulative monthly $DIG (spending in Store never subtracts)
+    const rawLower = String(username).trim().replace(/^@+/, '').toLowerCase();
+    const excludedUsers = new Set(['diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements']);
+    if (!rawLower || excludedUsers.has(rawLower)) return;
     this.ensureMonthlyLeaderboardCycle();
     const cleanUser = username.startsWith('@') ? username : `@${username}`;
     let list = this.getHistoricalLeaderboard();
@@ -422,7 +564,9 @@ class UserStoreController {
   async syncRaffleTicketsFromServer() {
     if (!this.username) return;
     try {
-      const res = await fetch(`/api/raffles/my-tickets?username=${encodeURIComponent(this.username)}`);
+      const res = await fetch(`/api/raffles/my-tickets?username=${encodeURIComponent(this.username)}`, {
+        headers: this.getAuthHeaders(false)
+      });
       if (res.ok) {
         const data = await res.json();
         if (typeof data.userTicketCount === 'number') {
@@ -454,6 +598,8 @@ class UserStoreController {
       cleanUser === 'diggitybets' ||
       cleanUser === 'diggity_bets' ||
       cleanUser === 'tarkansky' ||
+      cleanUser === 'diggitybot' ||
+      cleanUser === 'diggity_bot' ||
       localStorage.getItem('hunthub_is_admin') === 'true';
     const isSub = Boolean(this.isSub || localStorage.getItem('hunthub_is_sub') === 'true');
     const isVerified = Boolean(this.stakeVerified || localStorage.getItem('hunthub_stake_verified') === 'true');
@@ -768,7 +914,7 @@ class UserStoreController {
         try {
           await fetch('/api/profile/update', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getAuthHeaders(true),
             body: JSON.stringify({
               username: this.username || 'Viewer',
               avatar: this.avatar,
@@ -1276,67 +1422,42 @@ class UserStoreController {
   }
 
   /**
-   * Monthly Channel Activity Points Leaderboard ($DIG) — Resets 1st of Every Month, Top 20 Active Viewers
-   * Persisted in localStorage: hunthub_historical_leaderboard (keyed by hunthub_kick_leaderboard_month)
-   * Tracks cumulative monthly $DIG earned (spending points in the Store never reduces monthly leaderboard score).
+   * Monthly Channel Activity Points Leaderboard ($DIG) — Resets 1st of Every Month, Universal Top 20 Active Viewers
+   * Backed by Cloudflare D1 (/api/leaderboard/monthly & /api/leaderboard/sync-user) so every viewer worldwide sees the exact same Top 20 list.
    */
   getHistoricalLeaderboard() {
     this.ensureMonthlyLeaderboardCycle();
+    const excludedUsers = new Set(['diggitybets', 'diggity_bets', 'diggitybot', 'diggity_bot', 'hunthubbot', 'botrix', 'kickbot', 'nightbot', 'streamelements']);
+
+    if (Array.isArray(this.globalMonthlyLeaderboard)) {
+      const filteredGlobal = this.globalMonthlyLeaderboard.filter(u => {
+        const clean = String(u.kickUser || u.username || '').trim().replace(/^@+/, '').toLowerCase();
+        return clean && !excludedUsers.has(clean);
+      });
+      filteredGlobal.forEach((item, idx) => { item.rank = idx + 1; });
+      return filteredGlobal;
+    }
+
     let list = [];
     try {
       list = JSON.parse(localStorage.getItem('hunthub_historical_leaderboard') || '[]');
     } catch (_) {}
 
-    // Filter out any legacy mock/demo users
     if (Array.isArray(list)) {
       list = list.filter(u => {
-        const name = (u.kickUser || u.username || '').toLowerCase();
-        return !name.includes('diggityvip') && !name.includes('luckyroller') && !name.includes('stakehighroller') &&
-               !name.includes('gamerstake88') && !name.includes('nachogamer') && !name.includes('slotking21') &&
-               !name.includes('cryptochad') && !name.includes('spinsqueen') && !name.includes('stakehunter') &&
-               !name.includes('aguskick');
+        const clean = String(u.kickUser || u.username || '').trim().replace(/^@+/, '').toLowerCase();
+        if (!clean || excludedUsers.has(clean)) return false;
+        return !clean.includes('diggityvip') && !clean.includes('luckyroller') && !clean.includes('stakehighroller') &&
+               !clean.includes('gamerstake88') && !clean.includes('nachogamer') && !clean.includes('slotking21') &&
+               !clean.includes('cryptochad') && !clean.includes('spinsqueen') && !clean.includes('stakehunter') &&
+               !clean.includes('aguskick');
       });
     } else {
       list = [];
     }
 
-    // If current logged-in user exists and has accumulated monthly points, ensure they are tracked
-    // Note: totalDig is monotonic monthly accumulated $DIG (spending in the Store never reduces found.totalDig)
-    if (this.username) {
-      const cleanUser = this.username.startsWith('@') ? this.username : `@${this.username}`;
-      const found = list.find(u => (u.kickUser || '').toLowerCase() === cleanUser.toLowerCase());
-      const monthlyDig = Math.max(
-        parseInt(localStorage.getItem('hunthub_user_monthly_dig') || '0', 10) || 0,
-        parseInt(localStorage.getItem('hunthub_user_career_dig') || '0', 10) || 0,
-        window.houseGames ? (Number(window.houseGames.balance) || 0) : 0
-      );
-      if (!found && monthlyDig > 0) {
-        list.push({
-          rank: list.length + 1,
-          kickUser: cleanUser,
-          totalDig: monthlyDig,
-          monthlyDig,
-          tourneysWon: 0,
-          huntHits: 0,
-          tier: this.isSub ? 'GOLD' : 'SILVER',
-          status: 'ACTIVE'
-        });
-        list.sort((a, b) => b.totalDig - a.totalDig);
-        list.forEach((item, idx) => { item.rank = idx + 1; });
-        try {
-          localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
-        } catch (_) {}
-      } else if (found && monthlyDig > (Number(found.totalDig) || 0)) {
-        found.totalDig = monthlyDig;
-        found.monthlyDig = monthlyDig;
-        list.sort((a, b) => b.totalDig - a.totalDig);
-        list.forEach((item, idx) => { item.rank = idx + 1; });
-        try {
-          localStorage.setItem('hunthub_historical_leaderboard', JSON.stringify(list));
-        } catch (_) {}
-      }
-    }
-
+    list.sort((a, b) => (Number(b.totalDig) || 0) - (Number(a.totalDig) || 0));
+    list.forEach((item, idx) => { item.rank = idx + 1; });
     return list;
   }
 
@@ -1352,6 +1473,27 @@ class UserStoreController {
     const p2 = list[1];
     const p3 = list[2];
 
+    const renderPodiumAvatar = (elId, entry, rank) => {
+      const avEl = document.getElementById(elId);
+      if (!avEl) return;
+      const sz = rank === 1 ? 76 : 66;
+      const stroke = rank === 1 ? '#53fc18' : (rank === 2 ? '#00e676' : '#53fc18');
+      const fill = rank === 1 ? '#0a1a0f' : '#091812';
+      if (!entry) {
+        avEl.innerHTML = `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}" style="border-radius:50%;display:inline-block;vertical-align:middle;"><circle cx="32" cy="32" r="30" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="32" y="40" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="${stroke}" text-anchor="middle">#${rank}</text></svg>`;
+        return;
+      }
+      if (entry.avatar && (/^https?:\/\//i.test(entry.avatar) || /^data:image\//i.test(entry.avatar))) {
+        avEl.innerHTML = `<img src="${esc(entry.avatar)}" alt="${esc(entry.kickUser)}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;border-radius:50%;object-fit:cover;border:2.5px solid ${stroke};box-shadow:0 0 20px rgba(83,252,24,0.55);display:inline-block;vertical-align:middle;">`;
+      } else if (typeof window.getDeterministicAvatarSvg === 'function') {
+        avEl.innerHTML = window.getDeterministicAvatarSvg(entry.kickUser, sz);
+      }
+    };
+
+    renderPodiumAvatar('podium-1-avatar', p1, 1);
+    renderPodiumAvatar('podium-2-avatar', p2, 2);
+    renderPodiumAvatar('podium-3-avatar', p3, 3);
+
     const u1 = document.getElementById('podium-1-user');
     const pts1 = document.getElementById('podium-1-points');
     const prize1 = document.getElementById('podium-1-prize');
@@ -1361,7 +1503,7 @@ class UserStoreController {
       u1.style.color = '#53fc18';
     }
     if (pts1) {
-      pts1.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts1.textContent = p1 ? `${Number(p1.totalDig || 0).toLocaleString()} $DIG` : '0 $DIG';
       pts1.style.color = '#53fc18';
     }
     if (prize1) {
@@ -1383,7 +1525,7 @@ class UserStoreController {
       u2.style.color = '#ffffff';
     }
     if (pts2) {
-      pts2.textContent = p2 ? `${p2.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts2.textContent = p2 ? `${Number(p2.totalDig || 0).toLocaleString()} $DIG` : '0 $DIG';
       pts2.style.color = '#ffffff';
     }
     if (prize2) {
@@ -1405,7 +1547,7 @@ class UserStoreController {
       u3.style.color = '#ffffff';
     }
     if (pts3) {
-      pts3.textContent = p3 ? `${p3.totalDig.toLocaleString()} $DIG` : '0 $DIG';
+      pts3.textContent = p3 ? `${Number(p3.totalDig || 0).toLocaleString()} $DIG` : '0 $DIG';
       pts3.style.color = '#ffffff';
     }
     if (prize3) {
@@ -1422,7 +1564,7 @@ class UserStoreController {
     const statLeaderUser = document.getElementById('stat-leader-user');
     const statLeaderDesc = document.getElementById('stat-leader-desc');
     if (statLeaderUser) statLeaderUser.textContent = p1 ? p1.kickUser : '—';
-    if (statLeaderDesc) statLeaderDesc.textContent = p1 ? `${p1.totalDig.toLocaleString()} $DIG · Prize: $20 ($40 2X diggity)` : 'Prize: $20 USD ($40 w/ code diggity)';
+    if (statLeaderDesc) statLeaderDesc.textContent = p1 ? `${Number(p1.totalDig || 0).toLocaleString()} $DIG · Prize: $20 ($40 2X diggity)` : 'Prize: $20 USD ($40 w/ code diggity)';
 
     const statTourneyUser = document.getElementById('stat-tourney-user');
     const statTourneyDesc = document.getElementById('stat-tourney-desc');
@@ -1481,6 +1623,10 @@ class UserStoreController {
         activityPrizeHtml = `<span class="stake-table-prize-pill bronze">💎 VIP Badge Kick Role</span>`;
       }
 
+      const rowAvatarHtml = (item.avatar && (/^https?:\/\//i.test(item.avatar) || /^data:image\//i.test(item.avatar)))
+        ? `<img src="${esc(item.avatar)}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(83,252,24,0.45);flex-shrink:0;">`
+        : (typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.kickUser, 28) : `<span style="font-size: 18px;">👤</span>`);
+
       return `
         <tr class="leaderboard-row ${isTop3 ? `top-${rank}` : ''} ${isMe ? 'my-rank-row' : ''}" style="${isMe ? 'background: rgba(83, 252, 24, 0.08); border: 1px solid rgba(83, 252, 24, 0.4);' : ''}">
           <td style="font-family: var(--font-display); font-weight: 800; font-size: 14.5px; color: ${rankColor};">
@@ -1488,7 +1634,7 @@ class UserStoreController {
           </td>
           <td>
             <div style="display: flex; align-items: center; gap: 8px;">
-              ${typeof window.getDeterministicAvatarSvg === 'function' ? window.getDeterministicAvatarSvg(item.kickUser, 28) : `<span style="font-size: 18px;">👤</span>`}
+              ${rowAvatarHtml}
               <div>
                 <strong style="color: #ffffff; font-size: 13px;">${esc(item.kickUser)}</strong>
                 ${isMe ? '<span style="font-size: 10px; color: var(--kick-green); margin-left: 6px; font-weight: 800;">(YOU)</span>' : ''}
@@ -1496,7 +1642,7 @@ class UserStoreController {
             </div>
           </td>
           <td style="font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--gold);">
-            ${item.totalDig.toLocaleString()} $DIG
+            ${Number(item.totalDig || 0).toLocaleString()} $DIG
           </td>
           <td style="font-family: var(--font-display); font-weight: 700; color: #38bdf8;">
             🏆 ${item.tourneysWon || 0}
@@ -1721,33 +1867,34 @@ class UserStoreController {
   }
 
   /**
-   * Phase 6 Watch-to-Earn Heartbeat (Strict Anti-Abuse):
-   * +10 $DIG every 15 minutes (900_000 ms) ONLY when:
-   * 1) Stream https://kick.com/diggitybets is LIVE
-   * 2) User has active tab presence & interaction (not AFK/hidden)
-   * 3) User sent at least 1 real message in kick.com/diggitybets live chat within the last 15 minutes
+   * Phase 6 Watch-to-Earn Heartbeat (Calibrated Store Economy: 1 Week = $20 Bonus Buy Split Profit = 3,000 $DIG):
+   * Runs every 5 minutes (300_000 ms):
+   * - +15 $DIG per 5m (180 $DIG/hr) when kick.com/diggitybets is LIVE + active stream tab open
+   * - +20 $DIG per 5m (240 $DIG/hr) when also active in kick.com/diggitybets live chat
    */
   startWatchHeartbeat() {
     if (this.watchHeartbeatInterval) clearInterval(this.watchHeartbeatInterval);
-    this.watchHeartbeatInterval = setInterval(async () => {
+    if (this.watchHeartbeatInitialTimer) clearTimeout(this.watchHeartbeatInitialTimer);
+
+    const runHeartbeat = async () => {
       if (!this.isLoggedIn || !this.username) return;
       if (document.hidden) return;
       const now = Date.now();
-      if (now - (this.lastUserInteractionTs || 0) > 900_000) return;
-      if (window.hunthubStreamLive === false) return;
+      if (now - (this.lastUserInteractionTs || 0) > 1_800_000) return;
 
       const lastChatActivityMs = now - (this.lastVerifiedKickChatTs || 0);
       const verifiedChatActive = Boolean(this.lastVerifiedKickChatTs > 0 && lastChatActivityMs <= 900_000);
-      if (!verifiedChatActive) return;
 
       try {
         const res = await fetch('/api/watch/heartbeat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders(true),
           body: JSON.stringify({
             username: this.username,
+            activeTabPresent: !document.hidden,
             verifiedChatActive,
-            lastChatActivityMs
+            lastChatActivityMs: Number.isFinite(lastChatActivityMs) ? lastChatActivityMs : 999_999,
+            deviceHash: (window.antiFraud && window.antiFraud.getDeviceHash ? window.antiFraud.getDeviceHash() : '')
           })
         });
         if (res.ok) {
@@ -1755,19 +1902,35 @@ class UserStoreController {
           if (typeof data.isStreamLive === 'boolean') {
             window.hunthubStreamLive = data.isStreamLive;
           }
-          if (data.awarded && data.amount > 0 && data.isStreamLive && window.houseGames) {
-            window.houseGames.adjustBalance(data.amount);
+          if (data.awarded && data.amount > 0 && data.isStreamLive) {
+            if (window.houseGames) {
+              if (typeof data.pointsBalance === 'number') {
+                const prev = window.houseGames.balance;
+                window.houseGames.balance = data.pointsBalance;
+                window.houseGames.renderBalance(prev);
+              } else {
+                window.houseGames.adjustBalance(data.amount, { skipLeaderboard: true });
+              }
+            }
+            if (typeof data.monthlyPoints === 'number') {
+              localStorage.setItem('hunthub_user_monthly_dig', String(data.monthlyPoints));
+              localStorage.setItem('hunthub_user_career_dig', String(data.monthlyPoints));
+            }
+            this.syncGlobalLeaderboardAndUser();
             if (window.sonner) {
               window.sonner.toast({
-                title: '+100 $DIG Live Stream Reward! 📺',
-                message: 'Earned +100 $DIG for active participation in kick.com/diggitybets live stream.',
+                title: `+${data.amount} $DIG Live Stream Reward! 📺`,
+                message: `Earned +${data.amount} $DIG for active participation in kick.com/diggitybets live stream.`,
                 type: 'green'
               });
             }
           }
         }
       } catch (_) {}
-    }, 900_000);
+    };
+
+    this.watchHeartbeatInitialTimer = setTimeout(runHeartbeat, 45_000);
+    this.watchHeartbeatInterval = setInterval(runHeartbeat, 300_000);
   }
 
   bindStoreRedemptions() {
@@ -1869,7 +2032,7 @@ class UserStoreController {
           try {
             const res = await fetch('/api/store/redeem', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: this.getAuthHeaders(true),
               body: JSON.stringify({
                 username: this.username,
                 voucherTitle: itemName,

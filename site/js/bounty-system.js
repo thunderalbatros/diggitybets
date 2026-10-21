@@ -13,7 +13,7 @@
 
   var STORAGE_KEY_BOUNTIES = 'hunthub_bounties_v1';
   var STORAGE_KEY_CLAIMS = 'hunthub_bounty_claims_v1';
-  var PEPE_FLEX_EZ_URL = 'https://i.pinimg.com/1200x/07/a3/b5/07a3b592ab0b733e6eb87e0767b1feeb.jpg';
+  var PEPE_FLEX_EZ_URL = '/site/images/emotes/pepe-ez.jpg';
 
   var PARTNER_STUDIOS = [
     'Valkyrie',

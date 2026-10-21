@@ -2209,6 +2209,7 @@ class AdminHubController {
   }
 
   resetTourneyBracket(silent = false) {
+    if (this.enteredTourneyUsers) this.enteredTourneyUsers.clear();
     const emptyState = this.createEmptyTourneyState(this.tourneyMode);
     emptyState.predictionsClosed = false;
     try {
@@ -3575,8 +3576,10 @@ class AdminHubController {
         this.duoPool = [];
         if (this.duoMode === 'tourney') {
           this.tourneyQueue = [];
+          if (this.enteredTourneyUsers) this.enteredTourneyUsers.clear();
         } else {
           this.battleQueue = [];
+          if (this.enteredBattleUsers) this.enteredBattleUsers.clear();
         }
         this._lastLocalDuoMutationAt = Date.now();
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
@@ -3619,7 +3622,7 @@ class AdminHubController {
 
     // Phase 4: Periodic sync of Duo-Wheel queues with server live state
     this.syncDuoQueues(true);
-    setInterval(() => this.syncDuoQueues(false), 4000);
+    setInterval(() => this.syncDuoQueues(false), 2000);
   }
 
   pushDuoQueuesToEdge() {
@@ -3638,7 +3641,7 @@ class AdminHubController {
   }
 
   async syncDuoQueues(force = false) {
-    if (!force && this._lastLocalDuoMutationAt && (Date.now() - this._lastLocalDuoMutationAt) < 5000) {
+    if (!force && this._lastLocalDuoMutationAt && (Date.now() - this._lastLocalDuoMutationAt) < 4000) {
       return;
     }
     try {
@@ -3646,11 +3649,11 @@ class AdminHubController {
       let res = null;
       if (isLocal) {
         try {
-          res = await fetch('http://127.0.0.1:3001/api/wheel/duo/queues', { mode: 'cors' });
+          res = await fetch('http://127.0.0.1:3001/api/wheel/duo/queues', { mode: 'cors', cache: 'no-store' });
         } catch (_) {}
       }
       if (!res || !res.ok) {
-        res = await fetch('/api/wheel/duo/queues');
+        res = await fetch('/api/wheel/duo/queues', { cache: 'no-store' });
       }
       if (res && res.ok) {
         const data = await res.json();
@@ -3658,19 +3661,24 @@ class AdminHubController {
           const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
           return Boolean(clean) && !this.demoUsernames.has(clean);
         };
-        if (Array.isArray(data.tourneyQueue)) {
-          const filteredT = data.tourneyQueue.filter(e => isCleanUser(e?.username || e?.chatter));
-          if (filteredT.length > 0 || this.tourneyQueue.length === 0) {
-            this.tourneyQueue = filteredT;
+        const dedupFirstEntry = (arr) => {
+          const seen = new Set();
+          const out = [];
+          for (const e of arr) {
+            const u = String(e?.username || e?.chatter || '').trim().replace(/^@/, '').toLowerCase();
+            if (!isCleanUser(u) || seen.has(u)) continue;
+            seen.add(u);
+            out.push(e);
           }
+          return out;
+        };
+        if (Array.isArray(data.tourneyQueue)) {
+          this.tourneyQueue = dedupFirstEntry(data.tourneyQueue);
           const tCount = document.getElementById('cp-tourney-q-count');
           if (tCount) tCount.textContent = String(this.tourneyQueue.length);
         }
         if (Array.isArray(data.battleQueue)) {
-          const filteredB = data.battleQueue.filter(e => isCleanUser(e?.username || e?.chatter));
-          if (filteredB.length > 0 || this.battleQueue.length === 0) {
-            this.battleQueue = filteredB;
-          }
+          this.battleQueue = dedupFirstEntry(data.battleQueue);
           const bCount = document.getElementById('cp-battle-q-count');
           if (bCount) bCount.textContent = String(this.battleQueue.length);
         }
@@ -3680,14 +3688,37 @@ class AdminHubController {
             const meta = this.resolveSlotMeta(e.slotName || e.slot);
             return {
               chatter: String(e.username || e.chatter || '').replace(/^@/, ''),
-              slot: meta.name,
-              provider: e.slotProvider || meta.provider,
+              slot: meta.name || e.slotName || e.slot,
+              provider: (e.slotProvider && e.slotProvider !== 'Casino' && e.slotProvider !== 'Slot' && e.slotProvider !== 'Casino Slot') ? e.slotProvider : meta.provider,
               imageUrl: e.imageUrl || meta.image,
               icon: '🎰'
             };
           });
           try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
           this.renderDuoQueue();
+        }
+        if (Array.isArray(data.activeChatters) && data.activeChatters.length > 0) {
+          for (const c of data.activeChatters) {
+            const cname = String(c?.username || c?.user || '').trim().replace(/^@/, '');
+            if (cname && isCleanUser(cname)) {
+              this.recentChatters.set(cname, { user: cname, avatar: c.avatar || '', ts: Number(c.lastSeenAt || Date.now()) });
+            }
+          }
+          this.renderActiveChatters();
+        }
+        if (Array.isArray(data.recentChatMessages) && data.recentChatMessages.length > 0) {
+          if (!this._loggedEdgeMsgIds) this._loggedEdgeMsgIds = new Set();
+          for (const m of data.recentChatMessages) {
+            const mid = String(m?.id || '');
+            if (!mid || this._loggedEdgeMsgIds.has(mid)) continue;
+            this._loggedEdgeMsgIds.add(mid);
+            this.logLiveChatActivityToDOM(m.username, m.content, Boolean(m.isCommand));
+          }
+          const statusEl = document.getElementById('cp-kick-ws-status');
+          if (statusEl) {
+            statusEl.textContent = '🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Edge Sync)';
+            statusEl.style.color = '#53fc18';
+          }
         }
       }
     } catch (_) {}
@@ -4659,6 +4690,7 @@ class AdminHubController {
   }
 
   clearBothBattleCorners() {
+    if (this.enteredBattleUsers) this.enteredBattleUsers.clear();
     this.kothState.king = null;
     this.kothState.kingSlot = '';
     this.kothState.streak = 0;
@@ -4711,11 +4743,39 @@ class AdminHubController {
 
   addDuoEntry(username, slotName, mode = 'battle') {
     const cleanUser = String(username || '').trim().replace(/^@/, '');
+    const lowerUser = cleanUser.toLowerCase();
     const meta = this.resolveSlotMeta(slotName);
-    if (!cleanUser) return;
+    if (!cleanUser) return false;
+
+    if (!this.enteredBattleUsers) this.enteredBattleUsers = new Set();
+    if (!this.enteredTourneyUsers) this.enteredTourneyUsers = new Set();
+
+    // Strictly 1 call per spectator per event (!battle or !tourney): only the FIRST call is valid!
+    if (mode === 'tourney') {
+      const inTourneyQueue = this.tourneyQueue.some(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      const tState = this.getTourneyState();
+      const inTourneyBracket = ['m1', 'm2', 'm3', 'm4'].some(mId => {
+        const m = tState?.matches?.[mId];
+        const u1 = String(m?.player1?.username || '').toLowerCase().replace(/^@/, '');
+        const u2 = String(m?.player2?.username || '').toLowerCase().replace(/^@/, '');
+        return u1 === lowerUser || u2 === lowerUser;
+      });
+      if (inTourneyQueue || inTourneyBracket || this.enteredTourneyUsers.has(lowerUser)) {
+        return false;
+      }
+      this.enteredTourneyUsers.add(lowerUser);
+    } else {
+      const inBattleQueue = this.battleQueue.some(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      const cornerA = String(document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
+      const cornerB = String(document.getElementById('cp-battle-user-b')?.value || '').trim().toLowerCase().replace(/^@/, '');
+      const inBattleCorners = cornerA === lowerUser || cornerB === lowerUser;
+      if (inBattleQueue || inBattleCorners || this.enteredBattleUsers.has(lowerUser)) {
+        return false;
+      }
+      this.enteredBattleUsers.add(lowerUser);
+    }
 
     this._lastLocalDuoMutationAt = Date.now();
-    const isStreamerTest = this.isStreamerUser(cleanUser);
     const queueEntry = {
       username: cleanUser,
       chatter: cleanUser,
@@ -4727,22 +4787,11 @@ class AdminHubController {
       addedAt: Date.now()
     };
 
-    const matchDifferentFilter = (e) => {
-      const u = String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '');
-      const s = String(e.slotName || e.slot || '').toLowerCase();
-      if (isStreamerTest) {
-        return !(u === cleanUser.toLowerCase() && s === meta.name.toLowerCase());
-      }
-      return u !== cleanUser.toLowerCase();
-    };
-
     if (mode === 'tourney') {
-      this.tourneyQueue = this.tourneyQueue.filter(matchDifferentFilter);
       this.tourneyQueue.push(queueEntry);
       const tCount = document.getElementById('cp-tourney-q-count');
       if (tCount) tCount.textContent = String(this.tourneyQueue.length);
     } else {
-      this.battleQueue = this.battleQueue.filter(matchDifferentFilter);
       this.battleQueue.push(queueEntry);
       const bCount = document.getElementById('cp-battle-q-count');
       if (bCount) bCount.textContent = String(this.battleQueue.length);
@@ -4753,21 +4802,16 @@ class AdminHubController {
       this.setDuoMode(mode, true);
     }
 
-    this.duoPool = this.duoPool.filter(p => {
-      const u = String(p.chatter || '').toLowerCase().replace(/^@/, '');
-      const s = String(p.slot || '').toLowerCase();
-      if (isStreamerTest) {
-        return !(u === cleanUser.toLowerCase() && s === meta.name.toLowerCase());
-      }
-      return u !== cleanUser.toLowerCase();
-    });
-    this.duoPool.unshift({
-      chatter: cleanUser,
-      slot: meta.name,
-      provider: meta.provider,
-      imageUrl: meta.image,
-      icon: '🎰'
-    });
+    const existsInPool = this.duoPool.some(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+    if (!existsInPool) {
+      this.duoPool.unshift({
+        chatter: cleanUser,
+        slot: meta.name,
+        provider: meta.provider,
+        imageUrl: meta.image,
+        icon: '🎰'
+      });
+    }
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
     this.renderDuoQueue();
     if (this.channelDuo) {
@@ -4784,6 +4828,7 @@ class AdminHubController {
     }
 
     this.pushDuoQueuesToEdge();
+    return true;
   }
 
   handleDuoBroadcast(data) {
@@ -5114,8 +5159,10 @@ class AdminHubController {
         this.duoPool = [];
         if (this.duoMode === 'tourney') {
           this.tourneyQueue = [];
+          if (this.enteredTourneyUsers) this.enteredTourneyUsers.clear();
         } else {
           this.battleQueue = [];
+          if (this.enteredBattleUsers) this.enteredBattleUsers.clear();
         }
         this._lastLocalDuoMutationAt = Date.now();
         try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
@@ -5810,12 +5857,82 @@ class AdminHubController {
         } catch (_) {}
       }
 
-      // Engine A: Kick Realtime Centrifugo v6 (Primary — wss://realtime.us-west-2.platform.kick.com/connection/websocket)
-      if (!realtimeConfig || !realtimeConfig.token) {
-        await refreshStreamStatus();
-      }
-      if (realtimeConfig && realtimeConfig.token) {
+      // Engine A: Kick Public Pusher v7 (PRIMARY in Web Browsers — Zero Token, Whitelisted CORS)
+      const pusherUrl = 'wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0-rc2&flash=false';
+      let pusherReconnectTimer = null;
+      const connectPusher = () => {
         try {
+          if (this.kickPusherWs && (this.kickPusherWs.readyState === WebSocket.OPEN || this.kickPusherWs.readyState === WebSocket.CONNECTING)) {
+            try { this.kickPusherWs.close(); } catch (_) {}
+          }
+          const ws = new WebSocket(pusherUrl);
+          this.kickPusherWs = ws;
+
+          ws.onopen = () => {
+            chatChannels.forEach((ch) => {
+              ws.send(JSON.stringify({
+                event: 'pusher:subscribe',
+                data: { auth: '', channel: ch }
+              }));
+            });
+            const statusEl = document.getElementById('cp-kick-ws-status');
+            if (statusEl) {
+              statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
+              statusEl.style.color = '#53fc18';
+            }
+            if (this._kickPingInterval) clearInterval(this._kickPingInterval);
+            this._kickPingInterval = setInterval(() => {
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+              }
+            }, 25000);
+          };
+
+          ws.onmessage = (evt) => {
+            try {
+              if (!evt.data) return;
+              const packet = JSON.parse(typeof evt.data === 'string' ? evt.data : '');
+              const msgData = extractKickChatMsg(packet);
+              if (msgData) handleIncomingKickMessage(msgData);
+            } catch (_) {}
+          };
+
+          ws.onclose = () => {
+            if (this._kickPingInterval) {
+              clearInterval(this._kickPingInterval);
+              this._kickPingInterval = null;
+            }
+            if (!pusherReconnectTimer) {
+              pusherReconnectTimer = setTimeout(() => {
+                pusherReconnectTimer = null;
+                connectPusher();
+              }, 4000);
+            }
+          };
+          ws.onerror = () => {
+            try { ws.close(); } catch (_) {}
+          };
+        } catch (_) {
+          if (!pusherReconnectTimer) {
+            pusherReconnectTimer = setTimeout(() => {
+              pusherReconnectTimer = null;
+              connectPusher();
+            }, 5000);
+          }
+        }
+      };
+
+      // Engine B: Kick Realtime Centrifugo v6 (Secondary / Direct Node Bridge)
+      let centrifugoReconnectTimer = null;
+      const connectCentrifugo = async () => {
+        try {
+          if (!realtimeConfig || !realtimeConfig.token) {
+            await refreshStreamStatus();
+          }
+          if (!realtimeConfig || !realtimeConfig.token) {
+            centrifugoReconnectTimer = setTimeout(connectCentrifugo, 30000);
+            return;
+          }
           if (this.kickCentrifugoWs && (this.kickCentrifugoWs.readyState === WebSocket.OPEN || this.kickCentrifugoWs.readyState === WebSocket.CONNECTING)) {
             try { this.kickCentrifugoWs.close(); } catch (_) {}
           }
@@ -5843,7 +5960,6 @@ class AdminHubController {
               for (const rawLine of lines) {
                 const line = rawLine.trim();
                 if (!line) continue;
-                // Centrifugo server ping {} -> reply {} pong immediately (never send proactive {} on timer!)
                 if (line === '{}') {
                   if (cws.readyState === WebSocket.OPEN) cws.send('{}');
                   continue;
@@ -5863,6 +5979,7 @@ class AdminHubController {
             } catch (_) {}
           };
 
+          if (this._kickWatchdogInterval) clearInterval(this._kickWatchdogInterval);
           this._kickWatchdogInterval = setInterval(() => {
             if (Date.now() - lastCentrifugoActivity > 45000) {
               try { cws.close(); } catch (_) {}
@@ -5875,55 +5992,28 @@ class AdminHubController {
               this._kickWatchdogInterval = null;
             }
             realtimeConfig = null;
-            setTimeout(connectLiveSocket, 3500);
-          };
-        } catch (_) {}
-      }
-
-      // Engine B: Kick Public Pusher v7 (Secondary Parallel Listener — zero token needed)
-      const pusherUrl = 'wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false';
-      try {
-        if (this.kickPusherWs && (this.kickPusherWs.readyState === WebSocket.OPEN || this.kickPusherWs.readyState === WebSocket.CONNECTING)) {
-          try { this.kickPusherWs.close(); } catch (_) {}
-        }
-        const ws = new WebSocket(pusherUrl);
-        this.kickPusherWs = ws;
-
-        ws.onopen = () => {
-          chatChannels.forEach((ch) => {
-            ws.send(JSON.stringify({
-              event: 'pusher:subscribe',
-              data: { auth: '', channel: ch }
-            }));
-          });
-          const statusEl = document.getElementById('cp-kick-ws-status');
-          if (statusEl && !statusEl.textContent.includes('Centrifugo')) {
-            statusEl.textContent = `🟢 LIVE KICK CHAT CONNECTED (kick.com/diggitybets · Room #${chatroomId})`;
-            statusEl.style.color = '#53fc18';
-          }
-          this._kickPingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            if (!centrifugoReconnectTimer) {
+              centrifugoReconnectTimer = setTimeout(() => {
+                centrifugoReconnectTimer = null;
+                connectCentrifugo();
+              }, 25000);
             }
-          }, 25000);
-        };
-
-        ws.onmessage = (evt) => {
-          try {
-            if (!evt.data) return;
-            const packet = JSON.parse(typeof evt.data === 'string' ? evt.data : '');
-            const msgData = extractKickChatMsg(packet);
-            if (msgData) handleIncomingKickMessage(msgData);
-          } catch (_) {}
-        };
-
-        ws.onclose = () => {
-          if (this._kickPingInterval) {
-            clearInterval(this._kickPingInterval);
-            this._kickPingInterval = null;
+          };
+          cws.onerror = () => {
+            try { cws.close(); } catch (_) {}
+          };
+        } catch (_) {
+          if (!centrifugoReconnectTimer) {
+            centrifugoReconnectTimer = setTimeout(() => {
+              centrifugoReconnectTimer = null;
+              connectCentrifugo();
+            }, 30000);
           }
-        };
-      } catch (_) {}
+        }
+      };
+
+      connectPusher();
+      connectCentrifugo();
     };
 
     connectLiveSocket();
@@ -5977,13 +6067,21 @@ class AdminHubController {
 
     if (cmd === '!battle') {
       const slotName = arg || 'Wanted Dead or a Wild';
-      this.addDuoEntry(cleanUser, slotName, 'battle');
+      const added = this.addDuoEntry(cleanUser, slotName, 'battle');
       if (window.sonner) {
-        window.sonner.toast({
-          title: `⚔️ !battle Entry (@${cleanUser})`,
-          message: `Added @${cleanUser} with "${slotName}" to Duo Wheel Battle Queue.`,
-          type: 'cyan'
-        });
+        if (added) {
+          window.sonner.toast({
+            title: `⚔️ !battle Entry (@${cleanUser})`,
+            message: `Added @${cleanUser} with "${slotName}" to Duo Wheel Battle Queue.`,
+            type: 'cyan'
+          });
+        } else {
+          window.sonner.toast({
+            title: `⚠️ 1 Call Max (@${cleanUser})`,
+            message: `@${cleanUser} already has an active !battle call in this event (only first call is valid).`,
+            type: 'gold'
+          });
+        }
       }
       return;
     }
@@ -5997,29 +6095,36 @@ class AdminHubController {
           const meta = this.resolveSlotMeta(slotName);
           const list = JSON.parse(localStorage.getItem('hunthub_slot_requests') || '[]');
           const handle = `@${cleanUser}`;
-          const entry = {
-            user: handle,
-            caller: handle,
-            name: meta.name || slotName,
-            provider: meta.provider || 'Official Slot',
-            img: meta.image || '',
-            image: meta.image || '',
-            ts: Date.now()
-          };
-          const idx = list.findIndex((r) => String(r.user || r.caller || '').toLowerCase() === handle.toLowerCase());
-          if (idx >= 0) list[idx] = entry;
-          else list.push(entry);
-          localStorage.setItem('hunthub_slot_requests', JSON.stringify(list));
-          if (typeof BroadcastChannel !== 'undefined') {
-            const bc = new BroadcastChannel('hunthub_sr_wheel');
-            bc.postMessage({ type: 'SYNC_QUEUE', queue: list, ts: Date.now() });
+          const lowerUser = cleanUser.toLowerCase();
+          const slotTitle = meta.name || slotName;
+          const userActiveReqs = list.filter((r) => String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser);
+          const sameSlotIdx = list.findIndex((r) =>
+            String(r.user || r.caller || '').toLowerCase().replace(/^@+/, '') === lowerUser &&
+            String(r.name || '').toLowerCase().trim() === slotTitle.toLowerCase().trim()
+          );
+          if (sameSlotIdx === -1 && userActiveReqs.length < 3) {
+            const entry = {
+              user: handle,
+              caller: handle,
+              name: slotTitle,
+              provider: meta.provider || 'Official Slot',
+              img: meta.image || '',
+              image: meta.image || '',
+              ts: Date.now()
+            };
+            list.push(entry);
+            localStorage.setItem('hunthub_slot_requests', JSON.stringify(list));
+            if (typeof BroadcastChannel !== 'undefined') {
+              const bc = new BroadcastChannel('hunthub_sr_wheel');
+              bc.postMessage({ type: 'SYNC_QUEUE', queue: list, ts: Date.now() });
+            }
+            this.relayOverlaySyncEvent({
+              target: 'overlay-slotrequests',
+              type: 'SYNC_QUEUE',
+              queue: list,
+              ts: Date.now()
+            });
           }
-          this.relayOverlaySyncEvent({
-            target: 'overlay-slotrequests',
-            type: 'SYNC_QUEUE',
-            queue: list,
-            ts: Date.now()
-          });
         } catch (_) {}
       }
       return;
@@ -6027,13 +6132,21 @@ class AdminHubController {
 
     if (cmd === '!tourney' || cmd === '!tournament') {
       const slotName = arg || 'Gates of Olympus 1000';
-      this.addDuoEntry(cleanUser, slotName, 'tourney');
+      const added = this.addDuoEntry(cleanUser, slotName, 'tourney');
       if (window.sonner) {
-        window.sonner.toast({
-          title: `🏆 !tourney Entry (@${cleanUser})`,
-          message: `Added @${cleanUser} with "${slotName}" to 8-Bracket Tourney Queue.`,
-          type: 'gold'
-        });
+        if (added) {
+          window.sonner.toast({
+            title: `🏆 !tourney Entry (@${cleanUser})`,
+            message: `Added @${cleanUser} with "${slotName}" to 8-Bracket Tourney Queue.`,
+            type: 'gold'
+          });
+        } else {
+          window.sonner.toast({
+            title: `⚠️ 1 Call Max (@${cleanUser})`,
+            message: `@${cleanUser} already has an active !tourney call in this event (only first call is valid).`,
+            type: 'gold'
+          });
+        }
       }
       return;
     }
@@ -6052,22 +6165,34 @@ class AdminHubController {
       }
       const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
       if (!isNaN(numVal) && numVal > 0) {
+        let wasRenewal = false;
+        try {
+          const prevGuesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
+          wasRenewal = prevGuesses.some(g => String(g.user || g.username || '').toLowerCase().replace(/^@+/, '') === cleanUser.toLowerCase());
+        } catch (_) {}
         if (tracker && typeof tracker.submitChatGuess === 'function') {
           tracker.submitChatGuess(cleanUser, numVal);
         }
         try {
           const guesses = JSON.parse(localStorage.getItem('hunthub_hunt_guesses') || '[]');
-          const filtered = guesses.filter(g => String(g.user || g.username || '').toLowerCase().replace(/^@/, '') !== cleanUser.toLowerCase());
+          const filtered = guesses.filter(g => String(g.user || g.username || '').toLowerCase().replace(/^@+/, '') !== cleanUser.toLowerCase());
           filtered.unshift({ user: `@${cleanUser}`, username: cleanUser, amount: numVal, guess: numVal, ts: Date.now() });
           localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(filtered));
           localStorage.setItem('hunthub_bh_guesses', JSON.stringify(filtered));
           const gCountEl = document.getElementById('cp-bh-guess-count');
           if (gCountEl) gCountEl.textContent = String(filtered.length);
+          fetch('/api/sync/state', {
+            method: 'POST',
+            headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ guesses: filtered })
+          }).catch(() => {});
         } catch (_) {}
         if (window.sonner) {
           window.sonner.toast({
-            title: `💎 !guess Registered (@${cleanUser})`,
-            message: `@${cleanUser} guessed $${numVal.toFixed(2)} for the Bonus Hunt!`,
+            title: wasRenewal ? `🔄 !guess Updated (@${cleanUser})` : `💎 !guess Registered (@${cleanUser})`,
+            message: wasRenewal
+              ? `@${cleanUser} updated their guess to $${numVal.toFixed(2)} (1 active entry per viewer).`
+              : `@${cleanUser} guessed $${numVal.toFixed(2)} for the Bonus Hunt!`,
             type: 'green'
           });
         }

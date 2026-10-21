@@ -175,6 +175,50 @@ await test('N5: /api/store/redeem requires user session token and ignores client
   assert.equal(spoofedVip.json.stakeVerified, false);
 });
 
+await test('Overlay & Event Rules Pipeline: 1-call max (!battle/!tourney first call wins), !guess renewal & lock, !sr max 3 active + winner spot release', async () => {
+  const botSession = await issueUserToken({ username: 'DiggityBot', kickId: 12345 }, SECRET);
+  const sessRes = await callEndpoint('/api/auth/session', 'GET', { cookie: `hh_session=${encodeURIComponent(botSession)}` }, null, withSecret);
+  assert.equal(sessRes.status, 200);
+  assert.equal(sessRes.json.isAdmin, true, 'DiggityBot must be recognized as admin');
+  assert.ok(sessRes.json.adminToken, 'Session endpoint must issue adminToken for DiggityBot');
+
+  const tarkToken = await issueAdminToken({ username: 'tarkansky', kickId: 88254585 }, SECRET);
+
+  // 1. !battle & !tourney: strictly 1 call per spectator per event, only the FIRST call is valid
+  const q1 = await callEndpoint('/api/wheel/duo/queues', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerA', slotName: 'Sky Drop' }, withSecret);
+  assert.equal(q1.status, 200);
+  const q2 = await callEndpoint('/api/wheel/duo/queues', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerA', slotName: 'Le Bandit' }, withSecret);
+  assert.equal(q2.status, 200);
+  assert.equal(q2.json.battleQueue.length, 1, 'Only 1 entry per spectator allowed in !battle');
+  assert.equal(q2.json.battleQueue[0].slotName, 'Sky Drop', 'First call must remain valid and not be overwritten by second call');
+
+  // 2. !guess: 1 active entry per spectator (renews on correction), ignored once guessesLocked is true
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!guess 1200' }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!guess 1850' }, withSecret);
+  await callEndpoint('/api/sync/state', 'POST', { 'x-admin-token': tarkToken }, { guessesLocked: true }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!guess 9999' }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerB', content: '!guess 500' }, withSecret);
+  const syncAfterGuess = await callEndpoint('/api/sync/state', 'GET', {}, null, withSecret);
+  assert.equal(syncAfterGuess.json.guesses.length, 1, 'Locked guess contest must reject new spectators');
+  assert.equal(syncAfterGuess.json.guesses[0].guess, 1850, 'Renewal before lock must update to 1850, and post-lock 9999 must be ignored');
+
+  // 3. !sr: max 3 active entries per spectator; winning on roulette frees 1 spot
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!sr Sugar Rush' }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!sr Sweet Bonanza' }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!sr Gates of Olympus' }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!sr Wanted Dead or a Wild' }, withSecret);
+  let syncSr = await callEndpoint('/api/sync/state', 'GET', {}, null, withSecret);
+  assert.equal(syncSr.json.slotRequests.length, 3, 'Max 3 active !sr calls per spectator');
+
+  // Simulate Sugar Rush winning on Roulette (removed from queue -> 2/3 active -> frees 1 spot for 4th request)
+  const remainingQueue = syncSr.json.slotRequests.slice(1);
+  await callEndpoint('/api/sync/state', 'POST', { 'x-admin-token': tarkToken }, { slotRequests: remainingQueue }, withSecret);
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!sr Wanted Dead or a Wild' }, withSecret);
+  syncSr = await callEndpoint('/api/sync/state', 'GET', {}, null, withSecret);
+  assert.equal(syncSr.json.slotRequests.length, 3, 'After 1 slot wins and is removed, 1 spot is freed for a new !sr call');
+  assert.equal(syncSr.json.slotRequests[2].name, 'Wanted Dead or a Wild');
+});
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\nAdmin & Endpoint Auth tests: ${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

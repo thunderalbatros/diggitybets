@@ -203,9 +203,15 @@ class BonusHuntOverlayApp {
   }
 
   initBroadcastChannel() {
+    this.guessesLocked = localStorage.getItem('hunthub_bh_guesses_locked') === 'true';
     try {
       this.bc = new BroadcastChannel('hunthub_bonushunt');
       this.bc.onmessage = (event) => {
+        if (event.data && event.data.type === 'GUESS_LOCK_CHANGED') {
+          this.guessesLocked = Boolean(event.data.guessesLocked);
+          try { localStorage.setItem('hunthub_bh_guesses_locked', this.guessesLocked ? 'true' : 'false'); } catch {}
+          return;
+        }
         if (event.data && event.data.state) {
           this.handleStateUpdate(event.data.state);
         } else if (event.data && Array.isArray(event.data.slots)) {
@@ -215,7 +221,9 @@ class BonusHuntOverlayApp {
     } catch {}
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hunthub_bonushunt_state' && e.newValue) {
+      if (e.key === 'hunthub_bh_guesses_locked') {
+        this.guessesLocked = e.newValue === 'true';
+      } else if (e.key === 'hunthub_bonushunt_state' && e.newValue) {
         try {
           this.handleStateUpdate(JSON.parse(e.newValue));
         } catch {}
@@ -337,6 +345,11 @@ class BonusHuntOverlayApp {
           const res = await fetch(syncUrl, { cache: 'no-store' });
           if (!res.ok) return;
           const data = await res.json();
+          if (typeof data?.guessesLocked === 'boolean') {
+            this.guessesLocked = data.guessesLocked;
+          } else if (typeof data?.bonushuntState?.guessesLocked === 'boolean') {
+            this.guessesLocked = data.bonushuntState.guessesLocked;
+          }
           const bhEvt = data?.overlayEvents?.['overlay-bonushunt'] || data?.bonushuntState;
           if (bhEvt && Array.isArray(bhEvt.slots) && Number(bhEvt.ts || 0) > this._lastEdgeTs) {
             this._lastEdgeTs = Number(bhEvt.ts || Date.now());
@@ -445,43 +458,168 @@ class BonusHuntOverlayApp {
 
   initKickDirectGuesses() {
     this.liveGuesses = [];
-    const connectPusher = () => {
-      try {
-        const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
-        ws.onopen = () => {
-          ws.send(JSON.stringify({
-            event: 'pusher:subscribe',
-            data: { auth: '', channel: 'chatrooms.86765775.v2' }
-          }));
-        };
-        ws.onmessage = (evt) => {
-          try {
-            const msg = JSON.parse(evt.data);
-            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
-            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-            const rawText = String(d?.content || '').trim();
-            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
-            if (!sender || !rawText.startsWith('!')) return;
+    let chatChannels = ['chatrooms.86765775.v2'];
+    const seenMap = new Map();
 
-            const parts = rawText.split(/\s+/);
-            const cmd = parts[0].toLowerCase();
-            const arg = parts.slice(1).join(' ').trim();
-            if (cmd === '!guess' || cmd === '!gtb') {
-              const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
-              if (!isNaN(numVal) && numVal > 0) {
-                const idx = this.liveGuesses.findIndex(g => g.username.toLowerCase() === sender.toLowerCase());
-                if (idx >= 0) this.liveGuesses[idx].guess = numVal;
-                else this.liveGuesses.push({ username: sender, guess: numVal });
-                if (this.topGuessUserEl) {
-                  this.topGuessUserEl.textContent = `@${sender} guessed $${numVal.toFixed(2)} (${this.liveGuesses.length} total)`;
-                }
+    const extractKickChatMsg = (packet) => {
+      if (!packet || typeof packet !== 'object') return null;
+      let pubData = packet?.push?.pub?.data ?? packet?.pub?.data ?? packet?.result?.data ?? (packet?.event ? packet : null);
+      if (typeof pubData === 'string') {
+        try { pubData = JSON.parse(pubData); } catch (_) { return null; }
+      }
+      if (!pubData || typeof pubData !== 'object') return null;
+      if (pubData.data) {
+        if (pubData.event && !String(pubData.event).includes('ChatMessageEvent') && pubData.event !== 'message') {
+          return null;
+        }
+        return typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+      }
+      if (typeof pubData.content === 'string' && pubData.sender) {
+        return pubData;
+      }
+      return null;
+    };
+
+    const handleGuessMessage = (d) => {
+      if (!d || typeof d !== 'object') return;
+      const rawText = String(d?.content || '').trim();
+      const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+      if (!sender || !rawText.startsWith('!')) return;
+
+      const msgKey = d.id ? String(d.id) : `${sender.toLowerCase()}:${rawText.toLowerCase()}`;
+      const now = Date.now();
+      if (now - (seenMap.get(msgKey) || 0) < 2000) return;
+      seenMap.set(msgKey, now);
+
+      const parts = rawText.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const arg = parts.slice(1).join(' ').trim();
+      if (cmd === '!guess' || cmd === '!gtb') {
+        if (this.guessesLocked || localStorage.getItem('hunthub_bh_guesses_locked') === 'true') {
+          return;
+        }
+        const numVal = parseFloat(arg.replace(/[^0-9.]/g, ''));
+        if (!isNaN(numVal) && numVal > 0) {
+          const idx = this.liveGuesses.findIndex(g => g.username.toLowerCase() === sender.toLowerCase());
+          // 1 active guess per spectator: renews/corrects existing guess if already submitted
+          if (idx >= 0) this.liveGuesses[idx].guess = numVal;
+          else this.liveGuesses.push({ username: sender, guess: numVal });
+          try {
+            const stored = this.liveGuesses.map(g => ({ user: `@${g.username}`, username: g.username, guess: g.guess, amount: g.guess, ts: Date.now() }));
+            localStorage.setItem('hunthub_hunt_guesses', JSON.stringify(stored));
+            localStorage.setItem('hunthub_bh_guesses', JSON.stringify(stored));
+          } catch (_) {}
+          if (this.topGuessUserEl) {
+            this.topGuessUserEl.textContent = `@${sender} guessed $${numVal.toFixed(2)} (${this.liveGuesses.length} total)`;
+          }
+        }
+      }
+    };
+
+    const connectCentrifugo = async () => {
+      try {
+        let token = '';
+        let wsUrl = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+        try {
+          const res = await fetch('/api/kick/stream-status');
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.realtime?.token) token = data.realtime.token;
+            if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;
+            if (Array.isArray(data?.realtime?.channels) && data.realtime.channels.length > 0) {
+              chatChannels = data.realtime.channels;
+            }
+          }
+        } catch (_) {}
+
+        if (!token) {
+          setTimeout(connectCentrifugo, 6000);
+          return;
+        }
+
+        const cws = new WebSocket(wsUrl);
+        let lastAct = Date.now();
+        const watchdog = setInterval(() => {
+          if (Date.now() - lastAct > 45000) {
+            try { cws.close(); } catch (_) {}
+          }
+        }, 12000);
+
+        cws.onopen = () => {
+          lastAct = Date.now();
+          cws.send(JSON.stringify({ id: 1, connect: { token } }));
+        };
+        cws.onmessage = (evt) => {
+          lastAct = Date.now();
+          try {
+            const lines = String(evt.data || '').split('\n');
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+              if (line === '{}') {
+                if (cws.readyState === WebSocket.OPEN) cws.send('{}');
+                continue;
               }
+              const packet = JSON.parse(line);
+              if (packet.id === 1 && packet.connect) {
+                chatChannels.forEach((ch, idx) => {
+                  if (cws.readyState === WebSocket.OPEN) {
+                    cws.send(JSON.stringify({ id: idx + 2, subscribe: { channel: ch } }));
+                  }
+                });
+                continue;
+              }
+              const msg = extractKickChatMsg(packet);
+              if (msg) handleGuessMessage(msg);
             }
           } catch (_) {}
         };
-        ws.onclose = () => setTimeout(connectPusher, 6000);
-      } catch (_) {}
+        cws.onclose = () => {
+          clearInterval(watchdog);
+          setTimeout(connectCentrifugo, 5000);
+        };
+      } catch (_) {
+        setTimeout(connectCentrifugo, 6000);
+      }
     };
+
+    const connectPusher = () => {
+      try {
+        const ws = new WebSocket('wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        let pingTimer = null;
+        ws.onopen = () => {
+          chatChannels.forEach((ch) => {
+            ws.send(JSON.stringify({
+              event: 'pusher:subscribe',
+              data: { auth: '', channel: ch }
+            }));
+          });
+          pingTimer = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            }
+          }, 25000);
+        };
+        ws.onmessage = (evt) => {
+          try {
+            const packet = JSON.parse(evt.data);
+            const msg = extractKickChatMsg(packet);
+            if (msg) handleGuessMessage(msg);
+          } catch (_) {}
+        };
+        ws.onclose = () => {
+          if (pingTimer) clearInterval(pingTimer);
+          setTimeout(connectPusher, 4000);
+        };
+        ws.onerror = () => {
+          try { ws.close(); } catch (_) {}
+        };
+      } catch (_) {
+        setTimeout(connectPusher, 5000);
+      }
+    };
+
+    connectCentrifugo();
     connectPusher();
   }
 

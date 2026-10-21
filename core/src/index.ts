@@ -295,9 +295,25 @@ pusherClient.onCommand(({ command, args, sender, messageId }) => {
   }
 
   // --- Random Slot Wheel ---
-  if (command === 'random' || command === 'slot' || command === 'randomslot') {
+  if (command === 'random' || command === 'randomslot') {
     const cat = args[0] || 'all';
     executeSlotDraw(cat, false);
+  }
+
+  // --- Slot Request (!sr or !slot) ---
+  if (command === 'sr' || command === 'slot') {
+    const slotQuery = args.join(' ').trim() || 'Gates of Olympus 1000';
+    const canon = overlayServer.resolveCanonicalSlot(slotQuery);
+    overlayServer.broadcast({
+      type: 'slot_request',
+      caller: sender.username,
+      user: sender.username,
+      slot: canon.name,
+      provider: canon.provider,
+      image: canon.image,
+      timestamp: Date.now(),
+    });
+    chatClient.sendMessage(`🎰 @${sender.username} pidió "${canon.name}" (${canon.provider}) para la ruleta de Slot Requests!`);
   }
 
   // --- Check Points Balance ---

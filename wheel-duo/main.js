@@ -56,6 +56,9 @@ class DuoWheelApp {
       if (savedMode) this.mode = savedMode;
     } catch {}
 
+    this.battlePool = this.mode === 'battle' ? [...this.pool] : [];
+    this.tourneyPool = this.mode === 'tourney' ? [...this.pool] : [];
+
     this.initAudio();
     this.initChannels();
     this.initWebSocket();
@@ -243,14 +246,50 @@ class DuoWheelApp {
     }
   }
 
+  getSyncHeaders(extra = {}) {
+    let adminToken = '';
+    let userToken = '';
+    try {
+      adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
+      userToken = localStorage.getItem('hunthub_user_token') || adminToken;
+      if (!adminToken) {
+        const params = new URLSearchParams(window.location.search);
+        adminToken = params.get('admin_token') || '';
+      }
+    } catch {}
+    return {
+      'Content-Type': 'application/json',
+      'x-admin-token': adminToken,
+      'x-user-token': userToken,
+      ...extra,
+    };
+  }
+
+  isStreamerTestAccount(username) {
+    const clean = String(username || '').trim().toLowerCase().replace(/^@/, '');
+    return clean === 'diggitybets' || clean === 'diggity_bets' || clean === 'tarkansky' || clean === 'diggitybot' || clean === 'diggity_bot';
+  }
+
   addQueueEntry(entry, targetMode) {
-    if (!entry || !entry.username && !entry.chatter) return;
+    if (!entry || (!entry.username && !entry.chatter)) return false;
     const uname = String(entry.username || entry.chatter).trim().replace(/^@/, '');
+    const lowerUser = uname.toLowerCase();
     const sName = entry.slotName || entry.slot || 'Wanted Dead or a Wild';
     const resolved = this.resolveSlotDetails(sName);
-    if (targetMode && targetMode !== this.mode) return;
+    const effectiveMode = targetMode === 'tourney' ? 'tourney' : (targetMode === 'battle' ? 'battle' : this.mode);
 
-    const existingIdx = this.pool.findIndex(p => (p.chatter || '').toLowerCase() === uname.toLowerCase());
+    if (!this.enteredBattleUsers) this.enteredBattleUsers = new Set();
+    if (!this.enteredTourneyUsers) this.enteredTourneyUsers = new Set();
+
+    const targetList = effectiveMode === 'tourney' ? this.tourneyPool : this.battlePool;
+    const enteredSet = effectiveMode === 'tourney' ? this.enteredTourneyUsers : this.enteredBattleUsers;
+
+    // Strictly 1 call per spectator per event (!battle or !tourney): only the FIRST call is valid!
+    const existingIdx = targetList.findIndex(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+    if (existingIdx !== -1 || enteredSet.has(lowerUser)) {
+      return false;
+    }
+
     const newItem = {
       chatter: uname,
       avatar: entry.avatar || '',
@@ -258,17 +297,22 @@ class DuoWheelApp {
       provider: resolved.provider,
       icon: '🎰',
     };
-    if (existingIdx !== -1) {
-      this.pool[existingIdx] = newItem;
-    } else {
-      this.pool.push(newItem);
+
+    targetList.push(newItem);
+    enteredSet.add(lowerUser);
+
+    if (effectiveMode !== this.mode) {
+      this.setMode(effectiveMode, true);
     }
+
+    this.pool = [...targetList];
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     if (!this.isSpinning) {
       this.renderTrack();
     } else {
       this.updateQueueBadge();
     }
+    return true;
   }
 
   initChannels() {
@@ -316,6 +360,10 @@ class DuoWheelApp {
           }
         } else if ((e.data.action === 'set_pool' || e.data.type === 'sync_pool') && Array.isArray(e.data.pool || e.data.items)) {
           const incoming = e.data.pool || e.data.items;
+          if (incoming.length === 0) {
+            if (this.mode === 'tourney' && this.enteredTourneyUsers) this.enteredTourneyUsers.clear();
+            if (this.mode === 'battle' && this.enteredBattleUsers) this.enteredBattleUsers.clear();
+          }
           this.pool = incoming.map(p => ({
             user: p.user || p.chatter || 'Viewer',
             chatter: p.chatter || p.user || 'Viewer',
@@ -331,6 +379,7 @@ class DuoWheelApp {
       this.bcTourney.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'reset_tourney' && !this.isSpinning) {
+          if (this.enteredTourneyUsers) this.enteredTourneyUsers.clear();
           this.tourneyCount = 0;
           this.updateTargetPillUI();
         }
@@ -339,6 +388,7 @@ class DuoWheelApp {
       this.bcBattle.onmessage = (e) => {
         if (!e.data) return;
         if (e.data.action === 'reset' || e.data.action === 'reset_battle' || e.data.type === 'RESET_BATTLE' || e.data.action === 'cashout' || e.data.action === 'koth_retire') {
+          if (this.enteredBattleUsers) this.enteredBattleUsers.clear();
           if (!this.isSpinning) {
             this.battleTarget = 'A';
             this.updateTargetPillUI();
@@ -489,18 +539,34 @@ class DuoWheelApp {
           }
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
+            const mapItem = (item) => {
+              const rawSlot = item.slotName || item.slot || 'Wanted Dead or a Wild';
+              const resolved = (window.SlotResolver && typeof window.SlotResolver.resolve === 'function')
+                ? window.SlotResolver.resolve(rawSlot)
+                : null;
+              return {
+                chatter: String(item.username || item.chatter || '').trim().replace(/^@+/, ''),
+                avatar: item.avatar || '',
+                slot: resolved?.name || rawSlot,
+                provider: (item.slotProvider && item.slotProvider !== 'Casino' && item.slotProvider !== 'Slot' && item.slotProvider !== 'Casino Slot')
+                  ? item.slotProvider
+                  : (resolved?.provider || item.slotProvider || 'Casino Slot'),
+                imageUrl: item.imageUrl || resolved?.image || '',
+                icon: '🎰',
+              };
+            };
+            if (Array.isArray(duoQueues.battleQueue)) {
+              this.battlePool = duoQueues.battleQueue.map(mapItem);
+            }
+            if (Array.isArray(duoQueues.tourneyQueue)) {
+              this.tourneyPool = duoQueues.tourneyQueue.map(mapItem);
+            }
             if (duoQueues.mode && (duoQueues.mode === 'battle' || duoQueues.mode === 'tourney') && this.mode !== duoQueues.mode) {
               this.setMode(duoQueues.mode, true);
             }
             const q = this.mode === 'tourney' ? duoQueues.tourneyQueue : duoQueues.battleQueue;
             if (Array.isArray(q)) {
-              const mapped = q.map((item) => ({
-                chatter: item.username,
-                avatar: item.avatar || '',
-                slot: item.slotName,
-                provider: item.slotProvider,
-                icon: '🎰',
-              }));
+              const mapped = q.map(mapItem);
               const curJoined = this.pool.map((p) => p.chatter + ':' + p.slot).join('|');
               const newJoined = mapped.map((p) => p.chatter + ':' + p.slot).join('|');
               if (curJoined !== newJoined) {
@@ -523,60 +589,179 @@ class DuoWheelApp {
   }
 
   initKickDirectListener() {
-    let chatroomId = 86765775; // DiggityBets official Kick chatroom
-    const connectPusher = () => {
-      try {
-        const ws = new WebSocket('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false');
-        ws.onopen = () => {
-          ws.send(JSON.stringify({
-            event: 'pusher:subscribe',
-            data: { auth: '', channel: `chatrooms.${chatroomId}.v2` }
-          }));
-        };
-        ws.onmessage = (evt) => {
-          try {
-            const msg = JSON.parse(evt.data);
-            if (!msg.event || !msg.event.includes('ChatMessageEvent')) return;
-            const d = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-            const rawText = String(d?.content || '').trim();
-            const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
-            const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
-            if (!sender || !rawText.startsWith('!')) return;
+    let chatChannels = ['chatrooms.86765775.v2'];
+    const seenMap = new Map();
 
-            const parts = rawText.split(/\s+/);
-            const cmd = parts[0].toLowerCase();
-            const arg = parts.slice(1).join(' ').trim();
-            if (cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') {
-              const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
-              const slotQuery = arg || 'Wanted Dead or a Wild';
-              const resolved = this.resolveSlotDetails(slotQuery);
-              this.addQueueEntry({
-                username: sender,
-                chatter: sender,
-                avatar,
-                slotName: resolved.name || slotQuery,
-                slot: resolved.name || slotQuery,
-                provider: resolved.provider || 'Casino'
-              }, targetMode);
-              fetch('/api/wheel/duo/queues', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  mode: targetMode,
-                  username: sender,
-                  avatar,
-                  slotName: resolved.name || slotQuery,
-                  slotProvider: resolved.provider || 'Casino'
-                })
-              }).catch(() => {});
+    const extractKickChatMsg = (packet) => {
+      if (!packet || typeof packet !== 'object') return null;
+      let pubData = packet?.push?.pub?.data ?? packet?.pub?.data ?? packet?.result?.data ?? (packet?.event ? packet : null);
+      if (typeof pubData === 'string') {
+        try { pubData = JSON.parse(pubData); } catch (_) { return null; }
+      }
+      if (!pubData || typeof pubData !== 'object') return null;
+      if (pubData.data) {
+        if (pubData.event && !String(pubData.event).includes('ChatMessageEvent') && pubData.event !== 'message') {
+          return null;
+        }
+        return typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+      }
+      if (typeof pubData.content === 'string' && pubData.sender) {
+        return pubData;
+      }
+      return null;
+    };
+
+    const handleChatMsg = (d) => {
+      if (!d || typeof d !== 'object') return;
+      const rawText = String(d?.content || '').trim();
+      const sender = String(d?.sender?.username || d?.sender?.slug || '').trim().replace(/^@/, '');
+      const avatar = d?.sender?.profile_pic || d?.sender?.profilepic || '';
+      if (!sender || !rawText.startsWith('!')) return;
+
+      const msgKey = d.id ? String(d.id) : `${sender.toLowerCase()}:${rawText.toLowerCase()}`;
+      const now = Date.now();
+      if (now - (seenMap.get(msgKey) || 0) < 2000) return;
+      seenMap.set(msgKey, now);
+
+      const parts = rawText.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const arg = parts.slice(1).join(' ').trim();
+      if (cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') {
+        const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
+        const slotQuery = arg || (targetMode === 'tourney' ? 'Gates of Olympus 1000' : 'Wanted Dead or a Wild');
+        const resolved = this.resolveSlotDetails(slotQuery);
+        const added = this.addQueueEntry({
+          username: sender,
+          chatter: sender,
+          avatar,
+          slotName: resolved.name || slotQuery,
+          slot: resolved.name || slotQuery,
+          provider: resolved.provider || 'Casino'
+        }, targetMode);
+        if (added) {
+          fetch('/api/wheel/duo/queues', {
+            method: 'POST',
+            headers: this.getSyncHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              mode: targetMode,
+              username: sender,
+              avatar,
+              slotName: resolved.name || slotQuery,
+              slotProvider: resolved.provider || 'Casino'
+            })
+          }).catch(() => {});
+        }
+      }
+    };
+
+    const connectCentrifugo = async () => {
+      try {
+        let token = '';
+        let wsUrl = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+        try {
+          const res = await fetch('/api/kick/stream-status');
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
+              try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
+            }
+            if (data?.realtime?.token) token = data.realtime.token;
+            if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;
+            if (Array.isArray(data?.realtime?.channels) && data.realtime.channels.length > 0) {
+              chatChannels = data.realtime.channels;
+            }
+          }
+        } catch (_) {}
+
+        if (!token) {
+          setTimeout(connectCentrifugo, 6000);
+          return;
+        }
+
+        const cws = new WebSocket(wsUrl);
+        let lastAct = Date.now();
+        const watchdog = setInterval(() => {
+          if (Date.now() - lastAct > 45000) {
+            try { cws.close(); } catch (_) {}
+          }
+        }, 12000);
+
+        cws.onopen = () => {
+          lastAct = Date.now();
+          cws.send(JSON.stringify({ id: 1, connect: { token } }));
+        };
+        cws.onmessage = (evt) => {
+          lastAct = Date.now();
+          try {
+            const lines = String(evt.data || '').split('\n');
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+              if (line === '{}') {
+                if (cws.readyState === WebSocket.OPEN) cws.send('{}');
+                continue;
+              }
+              const packet = JSON.parse(line);
+              if (packet.id === 1 && packet.connect) {
+                chatChannels.forEach((ch, idx) => {
+                  if (cws.readyState === WebSocket.OPEN) {
+                    cws.send(JSON.stringify({ id: idx + 2, subscribe: { channel: ch } }));
+                  }
+                });
+                continue;
+              }
+              const msg = extractKickChatMsg(packet);
+              if (msg) handleChatMsg(msg);
             }
           } catch (_) {}
         };
-        ws.onclose = () => {
-          setTimeout(connectPusher, 6000);
+        cws.onclose = () => {
+          clearInterval(watchdog);
+          setTimeout(connectCentrifugo, 5000);
         };
-      } catch (_) {}
+      } catch (_) {
+        setTimeout(connectCentrifugo, 6000);
+      }
     };
+
+    const connectPusher = () => {
+      try {
+        const ws = new WebSocket('wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0-rc2&flash=false');
+        let pingTimer = null;
+        ws.onopen = () => {
+          chatChannels.forEach((ch) => {
+            ws.send(JSON.stringify({
+              event: 'pusher:subscribe',
+              data: { auth: '', channel: ch }
+            }));
+          });
+          pingTimer = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+            }
+          }, 25000);
+        };
+        ws.onmessage = (evt) => {
+          try {
+            const packet = JSON.parse(evt.data);
+            const msg = extractKickChatMsg(packet);
+            if (msg) handleChatMsg(msg);
+          } catch (_) {}
+        };
+        ws.onclose = () => {
+          if (pingTimer) clearInterval(pingTimer);
+          setTimeout(connectPusher, 4000);
+        };
+        ws.onerror = () => {
+          try { ws.close(); } catch (_) {}
+        };
+      } catch (_) {
+        setTimeout(connectPusher, 5000);
+      }
+    };
+
+    connectCentrifugo();
     connectPusher();
   }
 
@@ -778,6 +963,14 @@ class DuoWheelApp {
       tabTourney.classList.toggle('active', this.mode === 'tourney');
     }
 
+    if (changed) {
+      const targetList = this.mode === 'tourney' ? this.tourneyPool : this.battlePool;
+      if (Array.isArray(targetList) && targetList.length > 0) {
+        this.pool = [...targetList];
+        this.renderTrack();
+      }
+    }
+
     this.updateTargetPillUI();
     this.updateQueueBadge();
   }
@@ -968,17 +1161,32 @@ class DuoWheelApp {
     }
     this.toastEl.classList.add('active');
 
-    // Remove winner from pool so the same player cannot be selected twice
+    // Remove winner entry from pool so the selected entry cannot be picked twice
     const winnerNameLower = (winner.chatter || '').toLowerCase();
-    this.pool = this.pool.filter((item, idx) => idx !== winnerIdx && (item.chatter || '').toLowerCase() !== winnerNameLower);
+    const winnerSlotLower = (winner.slot || '').toLowerCase();
+    const isStreamer = this.isStreamerTestAccount(winner.chatter);
+    const keepFilter = (item, idx) => {
+      if (idx === winnerIdx) return false;
+      const u = (item.chatter || '').toLowerCase();
+      const s = (item.slot || '').toLowerCase();
+      if (isStreamer) return !(u === winnerNameLower && s === winnerSlotLower);
+      return u !== winnerNameLower;
+    };
+    this.pool = this.pool.filter(keepFilter);
+    if (this.mode === 'tourney') {
+      this.tourneyPool = (this.tourneyPool || []).filter(keepFilter);
+    } else {
+      this.battlePool = (this.battlePool || []).filter(keepFilter);
+    }
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     this.updateQueueBadge();
 
     // Notify backend queue removal if running
     fetch('/api/wheel/duo/remove', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: this.mode, username: winner.chatter }),
+      headers: this.getSyncHeaders(),
+      credentials: 'same-origin',
+      body: JSON.stringify({ mode: this.mode, username: winner.chatter, slotName: winner.slot }),
     }).catch(() => {});
 
     this._pendingPoolRemoval = () => {
@@ -1094,11 +1302,7 @@ class DuoWheelApp {
         battleState.playerB = null;
         battleState.status = 'LOBBY';
       } else if (slotKey === 'B') {
-        const cleanA = String(battleState.playerA?.username || '').trim().toLowerCase().replace(/^@/, '');
-        const cleanB = String(playerObj.username || '').trim().toLowerCase().replace(/^@/, '');
-        if (!cleanA || cleanA !== cleanB) {
-          battleState.playerB = playerObj;
-        }
+        battleState.playerB = playerObj;
       }
       if (battleState.playerA && battleState.playerB) {
         battleState.status = 'READY';
@@ -1115,8 +1319,14 @@ class DuoWheelApp {
     try {
       await fetch('/api/battle/join', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: playerObj, slot: { name: slotDetails.name, provider: slotDetails.provider } }),
+        headers: this.getSyncHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          user: item.chatter,
+          slot: slotDetails.name,
+          slotName: slotDetails.name,
+          targetCorner: slotKey
+        }),
       });
     } catch {}
   }
@@ -1180,8 +1390,13 @@ class DuoWheelApp {
     try {
       await fetch('/api/tourney/join', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: participantObj, slotName: slotDetails.name }),
+        headers: this.getSyncHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          user: item.chatter,
+          slotName: slotDetails.name,
+          seed
+        }),
       });
     } catch {}
   }
