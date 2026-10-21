@@ -1469,6 +1469,7 @@ class TournamentPredictionController {
 
     // King decision actions (visible when awaiting decision for the King or Streamer)
     const kingUser = (pAName || koth.king || '').replace(/^@/, '').toLowerCase();
+    const isStreamer = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'].includes(currentUser);
     const actionBox = document.getElementById('pub-koth-king-actions');
 
     if (actionBox) {

@@ -22,14 +22,13 @@ window.switchView = function(targetId) {
 
   // Admin & Control Panel Route Protection (#admin -> #admin-hub, #control-panel)
   if (targetId === '#admin' || targetId === '#admin-hub' || targetId === '#control-panel') {
-    const currentKickUser = (localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace('@', '');
+    const currentKickUser = (localStorage.getItem('hunthub_kick_username') || '').trim().toLowerCase().replace(/^@+/, '');
     const isAdmin =
       currentKickUser === 'diggitybets' ||
       currentKickUser === 'diggity_bets' ||
       currentKickUser === 'tarkansky' ||
       currentKickUser === 'diggitybot' ||
-      currentKickUser === 'diggity_bot' ||
-      localStorage.getItem('hunthub_is_admin') === 'true';
+      currentKickUser === 'diggity_bot';
     if (!isAdmin) {
       if (window.sonner) {
         window.sonner.toast({

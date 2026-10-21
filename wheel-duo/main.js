@@ -663,8 +663,8 @@ class DuoWheelApp {
           const res = await fetch('/api/kick/stream-status');
           if (res.ok) {
             const data = await res.json();
-            if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
-              try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
+            if (data?.overlaySyncToken) {
+              try { localStorage.setItem('hunthub_overlay_sync_token', data.overlaySyncToken); } catch (_) {}
             }
             if (data?.realtime?.token) token = data.realtime.token;
             if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;

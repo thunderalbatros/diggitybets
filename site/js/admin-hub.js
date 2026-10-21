@@ -261,10 +261,13 @@ class AdminHubController {
 
   checkAdminAccess() {
     const currentKickUser = localStorage.getItem('hunthub_kick_username') || '';
-    const isAdmin = this.isStreamerUser(currentKickUser) || localStorage.getItem('hunthub_is_admin') === 'true';
+    const isAdmin = this.isStreamerUser(currentKickUser);
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
     if (isAdmin) {
       localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+    } else {
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_admin_token');
     }
 
     const navTab = document.getElementById('nav-tab-admin');
@@ -315,12 +318,25 @@ class AdminHubController {
         });
       }
     } else {
-      if (adminSection) adminSection.style.display = 'none';
-      if (controlSection) controlSection.style.display = 'none';
+      if (adminSection) {
+        adminSection.classList.remove('active-view');
+        adminSection.style.setProperty('display', 'none', 'important');
+      }
+      if (controlSection) {
+        controlSection.classList.remove('active-view');
+        controlSection.style.setProperty('display', 'none', 'important');
+      }
+      if (window.location.hash === '#admin' || window.location.hash === '#admin-hub' || window.location.hash === '#control-panel') {
+        if (typeof window.switchView === 'function') {
+          window.switchView('#watch');
+        }
+      }
     }
   }
 
   unlockAdminMode() {
+    const currentKickUser = localStorage.getItem('hunthub_kick_username') || '';
+    if (!this.isStreamerUser(currentKickUser)) return;
     localStorage.setItem(this.storageKeyAdminUnlock, 'true');
     localStorage.setItem('hunthub_is_admin', 'true');
     this.checkAdminAccess();
@@ -5706,9 +5722,6 @@ class AdminHubController {
               chatChannels = [data.realtime.channel];
             }
           }
-          if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
-            try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
-          }
           window.hunthubStreamLive = Boolean(data?.isStreamLive);
           if (window.hunthubStreamLive) {
             this.purgeDemoUsersForLiveStream('api_stream_live');
@@ -6042,12 +6055,14 @@ class AdminHubController {
 
     this.logLiveChatActivityToDOM(cleanUser, text, true);
 
-    // Forward to backend /api/chat/command
-    fetch('/api/chat/command', {
-      method: 'POST',
-      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ username: cleanUser, content: text })
-    }).catch(() => {});
+    // Forward to backend /api/chat/command only when streamer is active
+    if (this.isStreamerUser(localStorage.getItem('hunthub_kick_username') || '')) {
+      fetch('/api/chat/command', {
+        method: 'POST',
+        headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ username: cleanUser, content: text })
+      }).catch(() => {});
+    }
 
     const parts = text.split(/\s+/);
     const cmd = parts[0].toLowerCase();

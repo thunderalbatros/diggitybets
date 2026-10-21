@@ -684,14 +684,14 @@ class BonusHuntController {
     if (container) {
       const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'];
       const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
-      container.style.display = (STREAMER_WHITELIST.includes(currentUsername) || localStorage.getItem('hunthub_is_admin') === 'true') ? 'flex' : 'none';
+      container.style.display = STREAMER_WHITELIST.includes(currentUsername) ? 'flex' : 'none';
     }
   }
 
   settleGuessTheBalance() {
     const STREAMER_WHITELIST = ['diggitybets', 'diggity_bets', 'tarkansky', 'diggitybot', 'diggity_bot'];
     const currentUsername = ((window.userStore && window.userStore.username) || localStorage.getItem('hunthub_kick_username') || '').toLowerCase().replace(/^@/, '');
-    if (!STREAMER_WHITELIST.includes(currentUsername) && localStorage.getItem('hunthub_is_admin') !== 'true') {
+    if (!STREAMER_WHITELIST.includes(currentUsername)) {
       if (window.sonner) {
         window.sonner.toast({
           title: 'Access Restricted 🔒',

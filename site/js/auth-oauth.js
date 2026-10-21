@@ -32,8 +32,16 @@ class OAuthEngine {
 
   async restoreAdminSessionFromEdge() {
     try {
+      const storedUser = (localStorage.getItem('hunthub_kick_username') || '').trim().toLowerCase().replace(/^@+/, '');
+      const isStreamer = this.isAuthorizedStreamer(storedUser);
+      if (!isStreamer) {
+        localStorage.removeItem('hunthub_admin_token');
+        localStorage.removeItem('hunthub_streamer_admin_unlocked');
+        localStorage.setItem('hunthub_is_admin', 'false');
+        this.updateAdminDeckUI(false);
+      }
       const existingUserToken = localStorage.getItem('hunthub_user_token') || '';
-      const existingAdminToken = localStorage.getItem('hunthub_admin_token') || '';
+      const existingAdminToken = isStreamer ? (localStorage.getItem('hunthub_admin_token') || '') : '';
       const headers = {};
       if (existingUserToken) headers['x-user-token'] = existingUserToken;
       if (existingAdminToken) headers['x-admin-token'] = existingAdminToken;
@@ -45,11 +53,17 @@ class OAuthEngine {
       const data = await res.json();
       if (data && data.authenticated) {
         if (data.userToken) localStorage.setItem('hunthub_user_token', data.userToken);
-        if (data.isAdmin && data.adminToken) {
+        const sessionUser = String(data.username || '').trim().toLowerCase().replace(/^@+/, '');
+        if (data.isAdmin && data.adminToken && this.isAuthorizedStreamer(sessionUser) && isStreamer) {
           localStorage.setItem('hunthub_admin_token', data.adminToken);
           localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
           localStorage.setItem('hunthub_is_admin', 'true');
           this.updateAdminDeckUI(true);
+        } else if (!isStreamer) {
+          localStorage.removeItem('hunthub_admin_token');
+          localStorage.removeItem('hunthub_streamer_admin_unlocked');
+          localStorage.setItem('hunthub_is_admin', 'false');
+          this.updateAdminDeckUI(false);
         }
       }
     } catch (_) {}
@@ -73,16 +87,20 @@ class OAuthEngine {
     const storedUser = localStorage.getItem('hunthub_kick_username') || '';
     if (storedUser.startsWith('@KickUser_') || storedUser.startsWith('KickUser_')) {
       localStorage.removeItem('hunthub_kick_username');
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_admin_token');
       localStorage.setItem('hunthub_is_admin', 'false');
       this.updateAdminDeckUI(false);
       return;
     }
-    const isStreamer = this.isAuthorizedStreamer(storedUser);
-    if (isStreamer) {
-      localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
-    }
-    const isAdmin = isStreamer || (localStorage.getItem('hunthub_streamer_admin_unlocked') === 'true' && localStorage.getItem('hunthub_is_admin') === 'true');
+    const isAdmin = this.isAuthorizedStreamer(storedUser);
     localStorage.setItem('hunthub_is_admin', isAdmin ? 'true' : 'false');
+    if (isAdmin) {
+      localStorage.setItem('hunthub_streamer_admin_unlocked', 'true');
+    } else {
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_admin_token');
+    }
     this.updateAdminDeckUI(isAdmin);
   }
 
@@ -436,9 +454,9 @@ class OAuthEngine {
     const cleanUsername = rawUsername.trim().toLowerCase().replace('@', '');
     const kickIdNum = Number(user.kick_id || user.id || 0);
 
-    // Streamer Admin Verification: username 'diggitybets' / 'tarkansky' / 'diggitybot' or kick_id 88254585
-    const isStreamer = this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585;
-    const isAdmin = Boolean(user.isAdmin || isStreamer || (isStreamer && user.verified));
+    // Streamer Admin Verification: strictly allow-listed streamer accounts only
+    const isStreamer = this.isAuthorizedStreamer(cleanUsername) || kickIdNum === 88254585 || kickIdNum === 127019532 || kickIdNum === 1000477168;
+    const isAdmin = Boolean(isStreamer);
 
     localStorage.setItem('hunthub_kick_username', formattedUsername);
     localStorage.setItem('hunthub_is_sub', user.isSub ? 'true' : 'false');

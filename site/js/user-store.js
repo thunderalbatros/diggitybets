@@ -173,8 +173,10 @@ class UserStoreController {
     const headers = {};
     if (includeJson) headers['Content-Type'] = 'application/json';
     const userToken = localStorage.getItem('hunthub_user_token') || '';
-    const adminToken = localStorage.getItem('hunthub_admin_token') || '';
     const cleanUser = (this.username || localStorage.getItem('hunthub_kick_username') || '').trim().replace(/^@+/, '');
+    const cleanLower = cleanUser.toLowerCase();
+    const isAdminUser = cleanLower === 'diggitybets' || cleanLower === 'diggity_bets' || cleanLower === 'tarkansky' || cleanLower === 'diggitybot' || cleanLower === 'diggity_bot';
+    const adminToken = isAdminUser ? (localStorage.getItem('hunthub_admin_token') || '') : '';
     if (userToken) headers['x-user-token'] = userToken;
     if (adminToken) headers['x-admin-token'] = adminToken;
     if (cleanUser) headers['x-admin-user'] = cleanUser;
@@ -604,6 +606,7 @@ class UserStoreController {
     if (!roleBadgeEl) return;
 
     if (!this.isLoggedIn) {
+      roleBadgeEl.textContent = '';
       roleBadgeEl.style.display = 'none';
       if (roleRowEl) roleRowEl.style.display = 'none';
       return;
@@ -618,10 +621,7 @@ class UserStoreController {
       cleanUser === 'diggity_bets' ||
       cleanUser === 'tarkansky' ||
       cleanUser === 'diggitybot' ||
-      cleanUser === 'diggity_bot' ||
-      localStorage.getItem('hunthub_is_admin') === 'true';
-    const isSub = Boolean(this.isSub || localStorage.getItem('hunthub_is_sub') === 'true');
-    const isVerified = Boolean(this.stakeVerified || localStorage.getItem('hunthub_stake_verified') === 'true');
+      cleanUser === 'diggity_bot';
 
     if (isAdmin) {
       roleBadgeEl.textContent = '👑 STREAMER';
@@ -631,31 +631,11 @@ class UserStoreController {
       roleBadgeEl.style.border = '1px solid #ffd700';
       roleBadgeEl.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.35)';
       if (roleRowEl) roleRowEl.style.display = 'flex';
-    } else if (isSub && isVerified) {
-      roleBadgeEl.textContent = '⭐ SUBSCRIBER / ✓ VERIFIED';
-      roleBadgeEl.style.display = 'inline-flex';
-      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.2)';
-      roleBadgeEl.style.color = 'var(--kick-green)';
-      roleBadgeEl.style.border = '1.5px solid var(--gold)';
-      roleBadgeEl.style.boxShadow = '0 0 10px rgba(83, 252, 24, 0.28)';
-      if (roleRowEl) roleRowEl.style.display = 'flex';
-    } else if (isSub) {
-      roleBadgeEl.textContent = '⭐ SUBSCRIBER';
-      roleBadgeEl.style.display = 'inline-flex';
-      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.18)';
-      roleBadgeEl.style.color = 'var(--kick-green)';
-      roleBadgeEl.style.border = '1px solid var(--kick-green)';
-      roleBadgeEl.style.boxShadow = '0 0 8px rgba(83, 252, 24, 0.25)';
-      if (roleRowEl) roleRowEl.style.display = 'flex';
-    } else if (isVerified) {
-      roleBadgeEl.textContent = '✓ VERIFIED';
-      roleBadgeEl.style.display = 'inline-flex';
-      roleBadgeEl.style.background = 'rgba(83, 252, 24, 0.2)';
-      roleBadgeEl.style.color = 'var(--kick-green)';
-      roleBadgeEl.style.border = '1px solid var(--kick-green)';
-      roleBadgeEl.style.boxShadow = '0 0 8px rgba(83, 252, 24, 0.25)';
-      if (roleRowEl) roleRowEl.style.display = 'flex';
     } else {
+      localStorage.setItem('hunthub_is_admin', 'false');
+      localStorage.removeItem('hunthub_streamer_admin_unlocked');
+      localStorage.removeItem('hunthub_admin_token');
+      roleBadgeEl.textContent = '';
       roleBadgeEl.style.display = 'none';
       if (roleRowEl) roleRowEl.style.display = 'none';
     }

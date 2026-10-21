@@ -814,10 +814,20 @@
     - Rebuilt `dist/` cleanly (1139 files, 33.03 MB) and deployed to Cloudflare Edge (`Version ID: 967c0a69-c3b0-4d69-9e05-a4f04f100742`).
     - Verified live chat ingestion with `@bolenbaucheranna8` and `@adalcake8` chatting in `chatrooms.86765775.v2`.
 
+- **Stage 38 (Compact 1-Click 7-Day `$DIG` Loyalty Streak in Topbar & Spectator Privilege Isolation Hotfix):** COMPLETED & DEPLOYED TO EDGE.
+  - **1. Compact 1-Click 7-Day `$DIG` Loyalty Streak in `.topbar-right` (`index.html`, `site/css/diggity-intel.css`, `site/js/diggity-intel-suite.js`, `site/js/user-store.js`, `worker/index.js`):**
+    - Removed the full-width 7-day loyalty streak card from `#store` and mounted a compact, 1-click pill (`Loyalty streak $DIG "Day 1" +50` through `"Day 7" +300`) inside `.topbar-right` directly below the username.
+    - Enforced a global Day 1 reset (`STREAK_RESET_EPOCH = '2026-10-21-v2'`) for all spectators and automatic Day 7 -> Day 1 rollover on the 8th day.
+    - Enabled `/api/leaderboard/sync-user` (`worker/index.js`) to auto-register first-time spectators on Day 1 claim (`+50 $DIG`) and persist `streak_day` + `last_streak_claim_date` in Cloudflare D1 (`users`).
+  - **2. Urgent Spectator Privilege Isolation & `👑 STREAMER` / Admin Panel Lock (`worker/index.js`, `site/js/auth-oauth.js`, `site/js/admin-hub.js`, `site/js/user-store.js`, `site/js/app.js`, `site/js/bonushunt.js`):**
+    - Fixed the privilege leak where `/api/kick/stream-status` returned an `overlaySyncToken` (`diggitybot`) that `site/js/admin-hub.js` stored into `localStorage.hunthub_admin_token`, causing `restoreAdminSessionFromEdge()` and `OR localStorage.getItem('hunthub_is_admin') === 'true'` checks to grant spectators (such as `@emers0n`) the `👑 STREAMER` badge and access to `Streamer Admin` and `Control Panel`.
+    - Upgraded `issueAdminToken` / `verifyAdminCandidateToken` in `worker/index.js` to require `v: 2` (invalidating all previously leaked v1 tokens at the Edge), scoped `overlaySyncToken` strictly to `role: 'overlay_sync'` on overlay referers (`hunthub_overlay_sync_token`), and blocked `overlay_sync` tokens from `/api/auth/session`.
+    - Enforced strict username allow-list checks (`diggitybets`, `diggity_bets`, `tarkansky`, `diggitybot`, `diggity_bot`) across `user-store.js`, `auth-oauth.js`, `admin-hub.js`, `app.js`, and `bonushunt.js`, automatically purging any stale `hunthub_is_admin`, `hunthub_streamer_admin_unlocked`, and `hunthub_admin_token` keys for spectators and keeping the space below spectator usernames completely empty (`#auth-role-under-row` hidden).
+
 ---
 
 ## 3. Active Squads & Next Stage
-- **All Phases through Stage 37 (Real-Time Kick Chat Ingestion Root Cause Fix): 100% COMPLETED & DEPLOYED.**
+- **All Phases through Stage 38 (Compact 1-Click 7-Day `$DIG` Loyalty Streak & Spectator Privilege Isolation Hotfix): 100% COMPLETED & DEPLOYED.**
 - Canonical Production URL: [https://diggitybets.vip/](https://diggitybets.vip/)
 - Official Kick Broadcast: `https://kick.com/diggitybets`
 

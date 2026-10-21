@@ -440,7 +440,7 @@
                 new BroadcastChannel(CHANNEL_NAME).postMessage({ type: 'SYNC_QUEUE', queue: requests, ts: Date.now() });
               }
             } catch (_) {}
-            const adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
+            const adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_overlay_sync_token') || localStorage.getItem('hunthub_user_token') || '';
             fetch('/api/overlay/celebration', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
@@ -642,8 +642,8 @@
           const res = await fetch('/api/kick/stream-status');
           if (res.ok) {
             const data = await res.json();
-            if (data?.overlaySyncToken && !localStorage.getItem('hunthub_admin_token')) {
-              try { localStorage.setItem('hunthub_admin_token', data.overlaySyncToken); } catch (_) {}
+            if (data?.overlaySyncToken) {
+              try { localStorage.setItem('hunthub_overlay_sync_token', data.overlaySyncToken); } catch (_) {}
             }
             if (data?.realtime?.token) token = data.realtime.token;
             if (data?.realtime?.wsUrl) wsUrl = data.realtime.wsUrl;

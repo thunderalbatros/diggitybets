@@ -309,6 +309,22 @@ await test('7-Day $DIG Loyalty Streak: 1-click claim works for new & existing us
   assert.equal(resetRes.json.viewerProfile.pointsBalance, expectedBal, 'Reset Day 1 must award +50 $DIG');
 });
 
+await test('Spectator Privilege Isolation: @emers0n never gets isAdmin:true, overlaySyncToken never unlocks /api/auth/session', async () => {
+  const emersonToken = await issueUserToken({ username: 'emers0n', kickId: 999888 }, SECRET);
+  const overlayToken = await issueAdminToken({ username: 'diggitybot', kickId: 1000477168, role: 'overlay_sync' }, SECRET);
+
+  // 1. overlaySyncToken alone must never authenticate /api/auth/session
+  const overlaySess = await callEndpoint('/api/auth/session', 'GET', { 'x-admin-token': overlayToken }, null, withSecret);
+  assert.equal(overlaySess.json.isAdmin, false, 'overlay_sync token must never unlock admin session');
+
+  // 2. Spectator (@emers0n) with user token (even if stale overlay token is sent) must get isAdmin: false
+  const emersonSess = await callEndpoint('/api/auth/session', 'GET', { 'x-user-token': emersonToken, 'x-admin-token': overlayToken }, null, withSecret);
+  assert.equal(emersonSess.json.authenticated, true);
+  assert.equal(emersonSess.json.username, 'emers0n');
+  assert.equal(emersonSess.json.isAdmin, false, 'Spectator @emers0n must never receive isAdmin: true');
+  assert.equal(emersonSess.json.adminToken, undefined, 'Spectator @emers0n must never receive adminToken');
+});
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\nAdmin & Endpoint Auth tests: ${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

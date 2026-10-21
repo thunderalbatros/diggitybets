@@ -385,10 +385,11 @@ function isAdminIdentity(username, kickId) {
   return ADMIN_USERNAMES.includes(name) || ADMIN_KICK_IDS.includes(Number(kickId));
 }
 
-export async function issueAdminToken({ username, kickId }, secret, ttlMs = ADMIN_TOKEN_TTL_MS) {
+export async function issueAdminToken({ username, kickId, role = 'admin' }, secret, ttlMs = ADMIN_TOKEN_TTL_MS) {
   if (!secret) return '';
   const payload = b64urlEncodeText(JSON.stringify({
-    role: 'admin',
+    v: 2,
+    role,
     u: String(username || '').trim().toLowerCase().replace(/^@/, ''),
     k: Number(kickId) || 0,
     exp: Date.now() + ttlMs
@@ -419,7 +420,7 @@ function parseCookieHeader(cookieHeader, keyName) {
   return '';
 }
 
-async function verifyAdminCandidateToken(rawToken, configuredSecret, sessionSecret = '') {
+async function verifyAdminCandidateToken(rawToken, configuredSecret, sessionSecret = '', allowOverlaySync = true) {
   const token = String(rawToken || '').trim();
   if (!token || !configuredSecret) return false;
 
@@ -439,13 +440,15 @@ async function verifyAdminCandidateToken(rawToken, configuredSecret, sessionSecr
     if (!sigValid) return false;
     const payload = JSON.parse(b64urlDecodeText(payloadB64));
     if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) return false;
+    if ((payload.role === 'admin' || payload.role === 'overlay_sync') && payload.v !== 2) return false;
+    if (payload.role === 'overlay_sync' && !allowOverlaySync) return false;
     return isAdminIdentity(payload.u, payload.k);
   } catch (_) {
     return false;
   }
 }
 
-async function isAuthorizedAdmin(request, env, explicitToken = '') {
+async function isAuthorizedAdmin(request, env, explicitToken = '', allowOverlaySync = true) {
   if (!isSameOrTrustedOrigin(request)) return false;
 
   const configuredSecret = env?.ADMIN_API_SECRET || '';
@@ -476,7 +479,7 @@ async function isAuthorizedAdmin(request, env, explicitToken = '') {
   ];
 
   for (const candidate of candidates) {
-    if (candidate && await verifyAdminCandidateToken(candidate, configuredSecret, sessionSecret)) {
+    if (candidate && await verifyAdminCandidateToken(candidate, configuredSecret, sessionSecret, allowOverlaySync)) {
       return true;
     }
   }
@@ -487,37 +490,38 @@ export async function verifyUserSession(request, env, expectedUsername = '') {
   if (!isSameOrTrustedOrigin(request)) return { ok: false, reason: 'FORBIDDEN_ORIGIN' };
 
   const cleanExpected = String(expectedUsername || '').trim().toLowerCase().replace(/^@+/, '');
-  if (await isAuthorizedAdmin(request, env)) {
-    return { ok: true, isAdmin: true, username: cleanExpected || 'diggitybets' };
-  }
-
   const secret = env?.USER_SESSION_SECRET || env?.ADMIN_API_SECRET || '';
-  if (!secret) return { ok: false, reason: 'NO_SECRET_CONFIGURED' };
 
   const authHeader = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
   const cookieToken = parseCookieHeader(request.headers.get('cookie'), 'hh_session');
   const token = (request.headers.get('x-user-token') || cookieToken || authHeader || '').trim();
-  if (!token) return { ok: false, reason: 'MISSING_USER_TOKEN' };
-
-  const parts = token.split('.');
-  if (parts.length !== 2) return { ok: false, reason: 'MALFORMED_TOKEN' };
-  const [payloadB64, sig] = parts;
-  try {
-    const expectedSig = await hmacSha256B64Url(secret, payloadB64);
-    if (!constantTimeEqual(sig, expectedSig)) return { ok: false, reason: 'INVALID_SIGNATURE' };
-    const payload = JSON.parse(b64urlDecodeText(payloadB64));
-    if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) {
-      return { ok: false, reason: 'TOKEN_EXPIRED' };
+  if (token && secret) {
+    const parts = token.split('.');
+    if (parts.length === 2) {
+      const [payloadB64, sig] = parts;
+      try {
+        const expectedSig = await hmacSha256B64Url(secret, payloadB64);
+        if (constantTimeEqual(sig, expectedSig)) {
+          const payload = JSON.parse(b64urlDecodeText(payloadB64));
+          if (payload && typeof payload.exp === 'number' && payload.exp >= Date.now() && payload.role !== 'overlay_sync') {
+            const tokenUser = String(payload.u || '').trim().toLowerCase().replace(/^@+/, '');
+            if (tokenUser && (!cleanExpected || tokenUser === cleanExpected)) {
+              const kickId = Number(payload.k) || 0;
+              return { ok: true, isAdmin: isAdminIdentity(tokenUser, kickId), username: tokenUser, kickId };
+            }
+          }
+        }
+      } catch (_) {}
     }
-    const tokenUser = String(payload.u || '').trim().toLowerCase().replace(/^@+/, '');
-    if (!tokenUser) return { ok: false, reason: 'EMPTY_USER' };
-    if (cleanExpected && tokenUser !== cleanExpected) {
-      return { ok: false, reason: 'USER_MISMATCH' };
-    }
-    return { ok: true, isAdmin: false, username: tokenUser, kickId: Number(payload.k) || 0 };
-  } catch (_) {
-    return { ok: false, reason: 'INVALID_PAYLOAD' };
   }
+
+  if (await isAuthorizedAdmin(request, env, '', false)) {
+    return { ok: true, isAdmin: true, username: cleanExpected || 'diggitybets' };
+  }
+
+  if (!secret) return { ok: false, reason: 'NO_SECRET_CONFIGURED' };
+  if (!token) return { ok: false, reason: 'MISSING_USER_TOKEN' };
+  return { ok: false, reason: 'INVALID_USER_TOKEN' };
 }
 
 
@@ -865,8 +869,13 @@ const hunthubWorker = {
         referer.includes('127.0.0.1') ||
         referer.includes('localhost')
       );
-      const overlaySyncToken = (isTrustedPage && env.ADMIN_API_SECRET)
-        ? await issueAdminToken({ username: 'diggitybot', kickId: 1000477168 }, env.ADMIN_API_SECRET)
+      const isOverlayReferer = isTrustedPage && (
+        referer.includes('/wheel-') ||
+        referer.includes('/overlay-') ||
+        referer.includes('obs=1')
+      );
+      const overlaySyncToken = (isOverlayReferer && env.ADMIN_API_SECRET)
+        ? await issueAdminToken({ username: 'diggitybot', kickId: 1000477168, role: 'overlay_sync' }, env.ADMIN_API_SECRET)
         : undefined;
 
       return new Response(JSON.stringify({
@@ -1158,12 +1167,13 @@ const hunthubWorker = {
     if (url.pathname === '/api/auth/session' && request.method === 'GET') {
       const noCacheHeaders = { ...corsHeaders, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const session = await verifyUserSession(request, env);
-      const isAdmin = await isAuthorizedAdmin(request, env);
-      if (!session.ok && !isAdmin) {
+      const hasAdminToken = await isAuthorizedAdmin(request, env, '', false);
+      if (!session.ok && !hasAdminToken) {
         return new Response(JSON.stringify({ authenticated: false, isAdmin: false }), { headers: noCacheHeaders });
       }
       const cleanUser = String(session.username || 'diggitybets').trim().toLowerCase().replace(/^@+/, '');
-      const kickId = Number(session.kickId) || (isAdmin ? 88254585 : 0);
+      const kickId = Number(session.kickId) || (hasAdminToken ? 88254585 : 0);
+      const isAdmin = Boolean((session.isAdmin || hasAdminToken) && isAdminIdentity(cleanUser, session.kickId || 0));
       const sessionSecret = env.USER_SESSION_SECRET || env.ADMIN_API_SECRET || '';
       const userToken = await issueUserToken({ username: cleanUser, kickId }, sessionSecret);
       const adminToken = isAdmin ? await issueAdminToken({ username: cleanUser, kickId }, env.ADMIN_API_SECRET) : '';
