@@ -51,6 +51,9 @@ class CelebrationOverlayApp {
     this.prizeTextEl = document.getElementById('winner-prize-text');
 
     this.lastEventTimestamp = Date.now() - 2500;
+    this.seenEventIds = new Set();
+    this.eventQueue = [];
+    this.isDisplayingBillboard = false;
 
     this.initCanvasResize();
     this.initSpriteCache();
@@ -413,11 +416,75 @@ class CelebrationOverlayApp {
     } catch (_) {}
   }
 
+  playWavFallback(isGrand = false) {
+    try {
+      const sampleRate = 22050;
+      const notes = isGrand ? [
+        { freq: 440.00, time: 0.00, dur: 0.11, vol: 0.35 },
+        { freq: 440.00, time: 0.13, dur: 0.11, vol: 0.35 },
+        { freq: 440.00, time: 0.26, dur: 0.11, vol: 0.38 },
+        { freq: 587.33, time: 0.39, dur: 0.34, vol: 0.42 },
+        { freq: 440.00, time: 0.78, dur: 0.12, vol: 0.35 },
+        { freq: 587.33, time: 0.92, dur: 0.17, vol: 0.40 },
+        { freq: 739.99, time: 1.12, dur: 0.22, vol: 0.44 },
+        { freq: 587.33, time: 1.38, dur: 1.25, vol: 0.34 },
+        { freq: 880.00, time: 1.38, dur: 1.25, vol: 0.38 }
+      ] : [
+        { freq: 440.00, time: 0.00, dur: 0.09, vol: 0.34 },
+        { freq: 587.33, time: 0.11, dur: 0.09, vol: 0.36 },
+        { freq: 739.99, time: 0.22, dur: 0.11, vol: 0.40 },
+        { freq: 880.00, time: 0.35, dur: 0.48, vol: 0.42 },
+        { freq: 587.33, time: 0.35, dur: 0.48, vol: 0.32 }
+      ];
+      let maxEnd = isGrand ? 2.7 : 0.95;
+      const numSamples = Math.ceil(maxEnd * sampleRate);
+      const buffer = new ArrayBuffer(44 + numSamples * 2);
+      const view = new DataView(buffer);
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + numSamples * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, numSamples * 2, true);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        let sample = 0;
+        for (const n of notes) {
+          if (t >= n.time && t <= n.time + n.dur) {
+            const localT = t - n.time;
+            const env = Math.min(1, localT / 0.015) * Math.max(0, 1 - (localT / n.dur) * 0.65);
+            sample += Math.sin(2 * Math.PI * n.freq * localT) * n.vol * env;
+          }
+        }
+        const clamped = Math.max(-1, Math.min(1, sample));
+        view.setInt16(44 + i * 2, clamped * 32767, true);
+      }
+      const blob = new Blob([buffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.volume = 0.88;
+      audio.play().catch(() => {}).finally(() => {
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      });
+    } catch (_) {}
+  }
+
   /**
    * Plays Trumpet Fanfare first, followed by Falling Coins audio
    */
   playCelebrationSequenceAudio(isGrand = false) {
     this.ensureAudioBus();
+    if (!this.audioCtx || this.audioCtx.state !== 'running') {
+      this.playWavFallback(isGrand);
+    }
     if (!this.audioCtx) return;
 
     const executeSequence = () => {
@@ -588,18 +655,42 @@ class CelebrationOverlayApp {
   /* =========================================================================
    * 6. DUAL-TIER WINNER CELEBRATION TRIGGER ('partial' vs 'grand')
    * ========================================================================= */
-  triggerCelebration(data) {
+  getEventKey(data) {
+    if (!data) return '';
+    if (data.eventId) return String(data.eventId);
+    const u = String(data.username || (data.winner && (data.winner.username || data.winner.displayName)) || '').trim().toLowerCase().replace(/^@/, '');
+    const t = String(data.type || data.category || '').trim().toUpperCase();
+    const ts = Number(data.serverTs || data.timestamp || data.ts || 0);
+    return `${u}|${t}|${ts}`;
+  }
+
+  triggerCelebration(data, fromQueue = false) {
     if (!data) return;
-    const evTs = Number(data.timestamp || data.ts || 0);
-    if (evTs && evTs <= this.lastEventTimestamp) {
-      return;
-    }
-    if (evTs) {
-      this.lastEventTimestamp = evTs;
-    } else {
-      this.lastEventTimestamp = Date.now();
+    const evKey = this.getEventKey(data);
+    const evTs = Number(data.serverTs || data.timestamp || data.ts || 0);
+
+    if (!fromQueue) {
+      if (evKey && this.seenEventIds.has(evKey)) {
+        return;
+      }
+      if (evKey) {
+        this.seenEventIds.add(evKey);
+      } else if (evTs && evTs <= this.lastEventTimestamp) {
+        return;
+      }
+      if (evTs > this.lastEventTimestamp) {
+        this.lastEventTimestamp = evTs;
+      } else if (!evTs) {
+        this.lastEventTimestamp = Date.now();
+      }
+      // If a celebration is currently active on screen, queue this one so neither gets dropped or cut short
+      if (this.isDisplayingBillboard) {
+        this.eventQueue.push(data);
+        return;
+      }
     }
 
+    this.isDisplayingBillboard = true;
     clearTimeout(this.billboardTimer);
     this.waveTimers.forEach(t => clearTimeout(t));
     this.waveTimers = [];
@@ -732,6 +823,11 @@ class CelebrationOverlayApp {
     this.billboardTimer = setTimeout(() => {
       if (this.billboard) {
         this.billboard.classList.remove('active');
+      }
+      this.isDisplayingBillboard = false;
+      if (this.eventQueue.length > 0) {
+        const nextEv = this.eventQueue.shift();
+        setTimeout(() => this.triggerCelebration(nextEv, true), 250);
       }
     }, displayDurationMs);
   }
@@ -911,14 +1007,18 @@ class CelebrationOverlayApp {
       }
     });
 
-    // Seed baseline timestamp from existing localStorage so old events don't replay on reload
+    // Seed baseline timestamp & event key from existing localStorage so old events don't replay on reload
     try {
       const existing = localStorage.getItem('hunthub_celebration_event');
       if (existing) {
         const parsed = JSON.parse(existing);
-        const ts = Number(parsed?.timestamp || parsed?.ts || 0);
+        const ts = Number(parsed?.serverTs || parsed?.timestamp || parsed?.ts || 0);
         if (ts > this.lastEventTimestamp) {
           this.lastEventTimestamp = ts;
+        }
+        const key = this.getEventKey(parsed);
+        if (key && Math.abs(Date.now() - ts) >= 4000) {
+          this.seenEventIds.add(key);
         }
       }
     } catch (_) {}
@@ -938,30 +1038,41 @@ class CelebrationOverlayApp {
         const res = await fetch('/api/overlay/celebration', { cache: 'no-store' });
         if (!res.ok) return;
         const payload = await res.json();
-        const ev = payload?.celebrationEvent;
-        if (!ev) {
+        const history = Array.isArray(payload?.celebrationHistory) && payload.celebrationHistory.length > 0
+          ? payload.celebrationHistory
+          : (payload?.celebrationEvent ? [payload.celebrationEvent] : []);
+        if (history.length === 0) {
           initializedBaseline = true;
           return;
         }
-        const evTs = Number(ev.timestamp || ev.ts || 0);
         if (!initializedBaseline) {
           initializedBaseline = true;
-          // Only trigger on first load if the event was fired within the last 3.5 seconds
-          if (evTs > this.lastEventTimestamp && (Date.now() - evTs) < 3500) {
-            this.triggerCelebration(ev);
-          } else if (evTs > this.lastEventTimestamp) {
-            this.lastEventTimestamp = evTs;
+          for (const item of history) {
+            if (!item) continue;
+            const key = this.getEventKey(item);
+            const evTs = Number(item.serverTs || item.timestamp || item.ts || 0);
+            if (evTs > this.lastEventTimestamp) this.lastEventTimestamp = evTs;
+            // Only trigger on first load if the event was fired within the last 4 seconds
+            if (evTs && Math.abs(Date.now() - evTs) < 4000) {
+              this.triggerCelebration(item);
+            } else if (key) {
+              this.seenEventIds.add(key);
+            }
           }
           return;
         }
-        if (evTs > this.lastEventTimestamp && (Date.now() - evTs) < 15000) {
-          this.triggerCelebration(ev);
+        for (const item of history) {
+          if (!item) continue;
+          const key = this.getEventKey(item);
+          if (key && !this.seenEventIds.has(key)) {
+            this.triggerCelebration(item);
+          }
         }
       } catch (_) {}
     };
 
     pollEdge();
-    setInterval(pollEdge, 900);
+    setInterval(pollEdge, 850);
   }
 
   initWebSocketSync() {

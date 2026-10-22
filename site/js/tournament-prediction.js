@@ -1863,8 +1863,16 @@ class TournamentPredictionController {
           const bHash = JSON.stringify(remoteBattle);
           if (bHash !== this._lastEdgeBattleHash) {
             this._lastEdgeBattleHash = bHash;
-            try { localStorage.setItem('hunthub_battle_state', bHash); } catch (_) {}
+            // Guard against stale Edge state overwriting a fresh local corner assignment
+            try {
+              const curLocal = JSON.parse(localStorage.getItem('hunthub_battle_state') || 'null');
+              if (curLocal && Number(curLocal.ts) > Number(remoteBattle.ts || 0) && (Date.now() - Number(curLocal.ts) < 12000)) return;
+              localStorage.setItem('hunthub_battle_state', bHash);
+            } catch (_) {}
             this.renderKoth(remoteBattle);
+            if (window.adminHub && typeof window.adminHub.syncCondensedControlPanelUI === 'function') {
+              window.adminHub.syncCondensedControlPanelUI();
+            }
           }
         }
       } catch (_) {}

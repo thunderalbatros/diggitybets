@@ -402,18 +402,26 @@ class BattleOverlayApp {
   initAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (AudioContextClass) {
-      this.audioCtx = new AudioContextClass();
+      try {
+        this.audioCtx = new AudioContextClass();
+        this.audioCtx.resume().catch(() => {});
+      } catch {}
     }
-    // Resume audio on first user gesture
-    window.addEventListener('click', () => {
+    const unlock = () => {
       if (this.audioCtx && this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume();
+        this.audioCtx.resume().catch(() => {});
       }
-    }, { once: true });
+    };
+    window.addEventListener('click', unlock);
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
   }
 
   playClashSound() {
     if (!this.audioCtx) return;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
     try {
       const now = this.audioCtx.currentTime;
       const osc = this.audioCtx.createOscillator();
@@ -435,7 +443,10 @@ class BattleOverlayApp {
   }
 
   playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    if (!this.audioCtx) return;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
     try {
       const t = startTime;
       const masterGain = this.audioCtx.createGain();
@@ -664,6 +675,11 @@ class BattleOverlayApp {
             if (remoteEmpty && localHasPlayers && this._lastLocalAssignAt && (Date.now() - this._lastLocalAssignAt) < 15000) {
               return;
             }
+            const localHasB = Boolean(this.currentState?.playerB && (this.currentState.playerB.username || this.currentState.playerB.displayName));
+            const remoteMissingB = !battleState.playerB || !(battleState.playerB.username || battleState.playerB.displayName);
+            if (localHasB && remoteMissingB && this._lastLocalAssignAt && (Date.now() - this._lastLocalAssignAt) < 10000) {
+              return;
+            }
             const sig = JSON.stringify({
               status: battleState.status,
               gameMode: battleState.gameMode,
@@ -681,7 +697,7 @@ class BattleOverlayApp {
         } catch {}
       };
       pollBattleEdge();
-      setInterval(pollBattleEdge, 1400);
+      setInterval(pollBattleEdge, 950);
     }
   }
 

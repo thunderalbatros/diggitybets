@@ -175,7 +175,7 @@ await test('N5: /api/store/redeem requires user session token and ignores client
   assert.equal(spoofedVip.json.stakeVerified, false);
 });
 
-await test('Overlay & Event Rules Pipeline: 1-call max (!battle/!tourney first call wins), !guess renewal & lock, !sr max 3 active + winner spot release', async () => {
+await test('Overlay & Event Rules Pipeline: !battle/!tourney slot replacement, individual removal, isolated battle+celebration state, !guess renewal & lock, !sr max 3 active', async () => {
   const botSession = await issueUserToken({ username: 'DiggityBot', kickId: 12345 }, SECRET);
   const sessRes = await callEndpoint('/api/auth/session', 'GET', { cookie: `hh_session=${encodeURIComponent(botSession)}` }, null, withSecret);
   assert.equal(sessRes.status, 200);
@@ -184,13 +184,47 @@ await test('Overlay & Event Rules Pipeline: 1-call max (!battle/!tourney first c
 
   const tarkToken = await issueAdminToken({ username: 'tarkansky', kickId: 88254585 }, SECRET);
 
-  // 1. !battle & !tourney: strictly 1 call per spectator per event, only the FIRST call is valid
+  // 1. !battle & !tourney: 1 active entry per spectator, subsequent !battle <newslot> updates the slot in-place
   const q1 = await callEndpoint('/api/wheel/duo/queues', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerA', slotName: 'Sky Drop' }, withSecret);
   assert.equal(q1.status, 200);
   const q2 = await callEndpoint('/api/wheel/duo/queues', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerA', slotName: 'Le Bandit' }, withSecret);
   assert.equal(q2.status, 200);
-  assert.equal(q2.json.battleQueue.length, 1, 'Only 1 entry per spectator allowed in !battle');
-  assert.equal(q2.json.battleQueue[0].slotName, 'Sky Drop', 'First call must remain valid and not be overwritten by second call');
+  assert.equal(q2.json.battleQueue.length, 1, 'Only 1 active entry per spectator in !battle');
+  assert.equal(q2.json.battleQueue[0].slotName, 'Le Bandit', 'Subsequent !battle <slot> call must replace the previous slot in-place');
+
+  // Instructional prompt copy-paste must be ignored
+  await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerPrompt', content: '!battle slotname in the chat to participate' }, withSecret);
+  const qAfterPrompt = await callEndpoint('/api/wheel/duo/queues', 'GET', {}, null, withSecret);
+  assert.equal(qAfterPrompt.json.battleQueue.length, 1, 'Instructional slotname prompt must be ignored');
+
+  // Individual spectator removal from Dual Wheel pool
+  await callEndpoint('/api/wheel/duo/queues', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerRemoveMe', slotName: 'Sugar Rush' }, withSecret);
+  const qAfterAdd = await callEndpoint('/api/wheel/duo/queues', 'GET', {}, null, withSecret);
+  assert.equal(qAfterAdd.json.battleQueue.length, 2);
+  const qAfterRemove = await callEndpoint('/api/wheel/duo/remove', 'POST', { 'x-admin-token': tarkToken }, { mode: 'battle', username: 'viewerRemoveMe' }, withSecret);
+  assert.equal(qAfterRemove.json.battleQueue.length, 1);
+  assert.equal(qAfterRemove.json.battleQueue[0].username, 'viewerA');
+
+  // Concurrent Player B assignment + Celebration trigger must NOT clobber each other
+  await callEndpoint('/api/battle/state', 'POST', { 'x-admin-token': tarkToken }, {
+    state: {
+      status: 'READY',
+      playerA: { username: 'kingPlayer', slotName: 'Wanted Dead or a Wild' },
+      playerB: { username: 'viewerA', slotName: 'Le Bandit' }
+    }
+  }, withSecret);
+  await callEndpoint('/api/overlay/celebration', 'POST', { 'x-admin-token': tarkToken }, {
+    tier: 'grand',
+    type: 'KOTH_CASHOUT',
+    username: '@kingPlayer',
+    announcementText: 'Congratulations @kingPlayer you won $15 prize',
+    prize: '$15 USD'
+  }, withSecret);
+  const syncCheck = await callEndpoint('/api/sync/state', 'GET', {}, null, withSecret);
+  assert.equal(syncCheck.json.battleState?.playerB?.username, 'viewerA', 'Player B must remain intact after celebration trigger');
+  assert.equal(syncCheck.json.battleState?.playerB?.slotName, 'Le Bandit', 'Player B slot must remain intact after celebration trigger');
+  assert.equal(syncCheck.json.celebrationEvent?.type, 'KOTH_CASHOUT', 'Cashout celebration must remain intact after battle state update');
+  assert.equal(syncCheck.json.celebrationEvent?.announcementText, 'Congratulations @kingPlayer you won $15 prize');
 
   // 2. !guess: 1 active entry per spectator (renews on correction), ignored once guessesLocked is true
   await callEndpoint('/api/chat/command', 'POST', { 'x-admin-token': tarkToken }, { username: 'viewerA', content: '!guess 1200' }, withSecret);

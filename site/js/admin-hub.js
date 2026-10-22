@@ -3611,6 +3611,7 @@ class AdminHubController {
 
     const retiredSlot = this.kothState.kingSlot || savedKoth?.kingSlot || (document.getElementById('cp-battle-slot-a')?.value || '').trim() || savedBattle?.playerA?.slotName || 'Wanted Dead or a Wild';
     const resolvedRetireSlot = this.resolveSlotMeta(retiredSlot);
+    const retiredAvatar = this.resolveSpectatorAvatar(retired);
     const rawStreak = Number(this.kothState?.streak || savedKoth?.streak || 1);
     const streak = Math.max(1, Math.min(4, rawStreak));
     const prizeAmount = Math.min(20, streak * 5);
@@ -3618,7 +3619,7 @@ class AdminHubController {
 
     this.awardKothGrandPrize(retired, prizeAmount, streak);
 
-    // Trigger Special Grand Celebration Overlay in OBS + Chat Announcement when !cashout is executed!
+    // Trigger Special Grand Celebration Overlay in OBS + Chat Announcement with spectator avatar when !cashout is executed!
     this.announceStreamWinner({
       eventType: 'koth_cashout',
       customMessage: announcement,
@@ -3628,6 +3629,7 @@ class AdminHubController {
       ribbon: `💰 $${prizeAmount} PRIZE CASHOUT LOCKED IN`,
       icon: '💰',
       username: retired,
+      avatarUrl: retiredAvatar,
       slotName: resolvedRetireSlot.name,
       slotImg: resolvedRetireSlot.image,
       statValue: `${streak}/4 WINS`,
@@ -3648,7 +3650,7 @@ class AdminHubController {
       target: 'overlay-battle',
       action: 'koth_retire',
       type: 'koth_cashout',
-      retiredKing: retired,
+      retiredKing: { username: retired, displayName: retired, avatar: retiredAvatar, slotName: resolvedRetireSlot.name },
       streak,
       prizeAmount,
       announcement,
@@ -3657,11 +3659,25 @@ class AdminHubController {
     try { localStorage.setItem('hunthub_koth_event', JSON.stringify(retireEvt)); } catch (_) {}
     if (this.channelBattle) this.channelBattle.postMessage(retireEvt);
     try { const chBus = new BroadcastChannel('hunthub_battle_bus'); chBus.postMessage(retireEvt); } catch (_) {}
-    this.relayOverlaySyncEvent(retireEvt);
     window.dispatchEvent(new CustomEvent('hunthub:battle-celebration', { detail: retireEvt }));
 
-    // Clear both corners and reset wheel target to Player A (Blue Corner)
-    this.clearBothBattleCorners();
+    // Clear both corners in Control Panel immediately, and reset battle overlay after cashout celebration finishes
+    if (this.enteredBattleUsers) this.enteredBattleUsers.clear();
+    this.kothState.king = null;
+    this.kothState.kingSlot = '';
+    this.kothState.streak = 0;
+    this.kothState.awaitingDecision = false;
+    try { localStorage.setItem('hunthub_koth_state', JSON.stringify(this.kothState)); } catch (_) {}
+    this.setCornerFighter('A', '', '');
+    this.setCornerFighter('B', '', '');
+    this.setWheelTargetCorner('A');
+    const multA = document.getElementById('cp-battle-mult-a');
+    const multB = document.getElementById('cp-battle-mult-b');
+    if (multA) multA.value = '';
+    if (multB) multB.value = '';
+    this.pushCornersToOverlay();
+    this.renderKothDeck();
+    this.syncCondensedControlPanelUI();
 
     if (window.sonner) {
       window.sonner.toast({
@@ -3816,24 +3832,23 @@ class AdminHubController {
           const clean = String(u || '').trim().replace(/^@/, '').toLowerCase();
           return Boolean(clean) && !this.demoUsernames.has(clean);
         };
-        const dedupFirstEntry = (arr) => {
-          const seen = new Set();
-          const out = [];
+        const dedupLatestEntry = (arr) => {
+          const map = new Map();
           for (const e of arr) {
             const u = String(e?.username || e?.chatter || '').trim().replace(/^@/, '').toLowerCase();
-            if (!isCleanUser(u) || seen.has(u)) continue;
-            seen.add(u);
-            out.push(e);
+            const s = String(e?.slotName || e?.slot || '').trim();
+            if (!isCleanUser(u) || this.isInstructionalSlotInput(s)) continue;
+            map.set(u, e);
           }
-          return out;
+          return Array.from(map.values());
         };
         if (Array.isArray(data.tourneyQueue)) {
-          this.tourneyQueue = dedupFirstEntry(data.tourneyQueue);
+          this.tourneyQueue = dedupLatestEntry(data.tourneyQueue);
           const tCount = document.getElementById('cp-tourney-q-count');
           if (tCount) tCount.textContent = String(this.tourneyQueue.length);
         }
         if (Array.isArray(data.battleQueue)) {
-          this.battleQueue = dedupFirstEntry(data.battleQueue);
+          this.battleQueue = dedupLatestEntry(data.battleQueue);
           const bCount = document.getElementById('cp-battle-q-count');
           if (bCount) bCount.textContent = String(this.battleQueue.length);
         }
@@ -3843,6 +3858,7 @@ class AdminHubController {
             const meta = this.resolveSlotMeta(e.slotName || e.slot);
             return {
               chatter: String(e.username || e.chatter || '').replace(/^@/, ''),
+              avatar: e.avatar || '',
               slot: meta.name || e.slotName || e.slot,
               provider: (e.slotProvider && e.slotProvider !== 'Casino' && e.slotProvider !== 'Slot' && e.slotProvider !== 'Casino Slot') ? e.slotProvider : meta.provider,
               imageUrl: e.imageUrl || meta.image,
@@ -3851,6 +3867,18 @@ class AdminHubController {
           });
           try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
           this.renderDuoQueue();
+        }
+        if (data.battleState && typeof data.battleState === 'object') {
+          const remoteP1 = String(data.battleState.playerA?.username || data.battleState.playerA?.displayName || '').trim().replace(/^@/, '');
+          const remoteP2 = String(data.battleState.playerB?.username || data.battleState.playerB?.displayName || '').trim().replace(/^@/, '');
+          const curA = (document.getElementById('cp-battle-user-a')?.value || '').trim().replace(/^@/, '');
+          const curB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
+          if (remoteP1 && !curA) {
+            this.setCornerFighter('A', remoteP1, data.battleState.playerA?.slotName || data.battleState.playerA?.slot || '');
+          }
+          if (remoteP2 && !curB) {
+            this.setCornerFighter('B', remoteP2, data.battleState.playerB?.slotName || data.battleState.playerB?.slot || '');
+          }
         }
         if (Array.isArray(data.slotRequests) && window.bonusHunt) {
           const remoteReqs = data.slotRequests.filter(r => isCleanUser(r?.caller || r?.user || ''));
@@ -3886,7 +3914,13 @@ class AdminHubController {
                 ts: m.ts || Date.now()
               });
             } else {
-              this.logLiveChatActivityToDOM(m.username, m.content, Boolean(m.isCommand));
+              const rawCmd = String(m.content || '').trim().toLowerCase();
+              const isRecentDecisionCmd = Boolean(m.isCommand) && (Date.now() - Number(m.ts || 0)) < 35000 && (rawCmd === '!cashout' || rawCmd === '!continue' || rawCmd.startsWith('!bounty') || rawCmd.startsWith('!bounties'));
+              if (isRecentDecisionCmd) {
+                this.processLiveChatCommand(m.username, m.content);
+              } else {
+                this.logLiveChatActivityToDOM(m.username, m.content, Boolean(m.isCommand));
+              }
             }
           }
           const statusEl = document.getElementById('cp-kick-ws-status');
@@ -3995,6 +4029,59 @@ class AdminHubController {
     }
   }
 
+  removeDuoEntry(username, mode = this.duoMode) {
+    const cleanUser = String(username || '').trim().replace(/^@+/, '');
+    const lowerUser = cleanUser.toLowerCase();
+    if (!lowerUser) return;
+
+    this._lastLocalDuoMutationAt = Date.now();
+    this.duoPool = this.duoPool.filter(p => String(p.chatter || p.user || '').trim().replace(/^@+/, '').toLowerCase() !== lowerUser);
+
+    if (mode === 'tourney') {
+      this.tourneyQueue = (this.tourneyQueue || []).filter(e => String(e.username || e.chatter || '').trim().replace(/^@+/, '').toLowerCase() !== lowerUser);
+      if (this.enteredTourneyUsers) this.enteredTourneyUsers.delete(lowerUser);
+      const tCount = document.getElementById('cp-tourney-q-count');
+      if (tCount) tCount.textContent = String(this.tourneyQueue.length);
+    } else {
+      this.battleQueue = (this.battleQueue || []).filter(e => String(e.username || e.chatter || '').trim().replace(/^@+/, '').toLowerCase() !== lowerUser);
+      if (this.enteredBattleUsers) this.enteredBattleUsers.delete(lowerUser);
+      const bCount = document.getElementById('cp-battle-q-count');
+      if (bCount) bCount.textContent = String(this.battleQueue.length);
+    }
+
+    try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
+    this.renderDuoQueue();
+    if (window.tournamentPrediction && typeof window.tournamentPrediction.renderPublicBattleQueue === 'function') {
+      window.tournamentPrediction.renderPublicBattleQueue();
+    }
+
+    if (this.channelDuo) {
+      this.channelDuo.postMessage({
+        action: 'set_pool',
+        pool: this.duoPool,
+        type: 'sync_pool',
+        items: this.duoPool,
+        mode: this.duoMode,
+        battleQueue: this.battleQueue,
+        tourneyQueue: this.tourneyQueue
+      });
+    }
+
+    fetch('/api/wheel/duo/remove', {
+      method: 'POST',
+      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ mode, username: cleanUser })
+    }).catch(() => {});
+
+    if (window.sonner) {
+      window.sonner.toast({
+        title: `🗑️ Removed @${cleanUser}`,
+        message: `@${cleanUser} removed from the Dual Wheel pool. They can re-enter anytime with !${mode === 'tourney' ? 'tourney' : 'battle'} <slot>.`,
+        type: 'default'
+      });
+    }
+  }
+
   renderDuoQueue() {
     const listEl = document.getElementById('admin-duo-list');
     const countEl = document.getElementById('admin-duo-count');
@@ -4004,12 +4091,25 @@ class AdminHubController {
       if (this.duoPool.length === 0) {
         listEl.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Queue empty. Add chatters above or via !battle &lt;slot&gt;.</div>`;
       } else {
-        listEl.innerHTML = this.duoPool.map((p) => `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
-            <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${this.escapeHTML(p.chatter)}</span>
-            <span style="font-size: 11px; color: var(--gold);">${this.escapeHTML(p.slot)}</span>
-          </div>
-        `).join('');
+        listEl.innerHTML = this.duoPool.map((p) => {
+          const safeUser = this.escapeHTML(p.chatter);
+          const safeSlot = this.escapeHTML(p.slot);
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05);">
+              <span style="font-weight: 700; color: #ffffff; font-size: 12px;">@${safeUser}</span>
+              <div style="display: inline-flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; color: var(--gold);">${safeSlot}</span>
+                <button type="button" class="btn-remove-duo-entry" data-user="${safeUser}" title="Remove @${safeUser} from Dual Wheel Pool" style="background: rgba(239, 68, 68, 0.16); border: 1px solid rgba(239, 68, 68, 0.45); color: #f87171; border-radius: 5px; padding: 1px 6px; font-size: 11px; font-weight: 800; cursor: pointer; line-height: 1.3;">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        listEl.querySelectorAll('.btn-remove-duo-entry').forEach((btn) => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            this.removeDuoEntry(btn.getAttribute('data-user'), this.duoMode);
+          };
+        });
       }
     }
 
@@ -4023,17 +4123,25 @@ class AdminHubController {
       } else {
         cpListEl.innerHTML = this.duoPool.map((p) => {
           const meta = this.resolveSlotMeta(p.slot);
+          const safeUser = this.escapeHTML(p.chatter);
           const fallbackUri = this.escapeHTML((window.SlotResolver && typeof window.SlotResolver.generateDataUriCard === 'function')
             ? window.SlotResolver.generateDataUriCard(meta.name, meta.provider)
             : '');
           return `
-            <div style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 8px; font-size: 11px;">
+            <div style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 8px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 8px; font-size: 11px;">
               <img src="${this.escapeHTML(meta.image)}" alt="" style="width: 24px; height: 32px; aspect-ratio: 180 / 236; border-radius: 4px; object-fit: contain; background: #070a12; flex-shrink: 0;" onerror="this.onerror=null; this.src='${fallbackUri}';" />
-              <strong style="color: #fff;">@${this.escapeHTML(p.chatter)}</strong>
+              <strong style="color: #fff;">@${safeUser}</strong>
               <span style="color: var(--gold);">${this.escapeHTML(meta.name)}</span>
+              <button type="button" class="btn-remove-duo-entry" data-user="${safeUser}" title="Remove @${safeUser} from Dual Wheel Pool" style="background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); color: #f87171; border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 900; cursor: pointer; line-height: 1.2; margin-left: 2px;">✕</button>
             </div>
           `;
         }).join('');
+        cpListEl.querySelectorAll('.btn-remove-duo-entry').forEach((btn) => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            this.removeDuoEntry(btn.getAttribute('data-user'), this.duoMode);
+          };
+        });
       }
     }
   }
@@ -4061,9 +4169,10 @@ class AdminHubController {
     let targetSeed = null;
 
     if (!isTourneyMode) {
-      // Determine target corner: if Corner A is empty, always select Corner A (Blue) first; otherwise select Corner B (Red)
+      // Determine target corner: if Corner A is empty, select Corner A (Blue); if Corner A is filled and Corner B is empty, always select Corner B (Red)
       const userAVal = (document.getElementById('cp-battle-user-a')?.value || '').trim();
-      targetCorner = (!userAVal || this.wheelTargetCorner === 'A') ? 'A' : 'B';
+      const userBVal = (document.getElementById('cp-battle-user-b')?.value || '').trim();
+      targetCorner = !userAVal ? 'A' : (!userBVal ? 'B' : (this.wheelTargetCorner === 'A' ? 'A' : 'B'));
       this.setWheelTargetCorner(targetCorner);
 
       // When spinning for Player A (Blue Corner), ensure Player B (Red Corner) is completely empty until Spin 2
@@ -4077,6 +4186,8 @@ class AdminHubController {
       this.updateWheelTargetUI();
     }
 
+    const lockedCorner = targetCorner;
+    const lockedSeed = targetSeed;
     const winnerIdx = Math.floor(Math.random() * this.duoPool.length);
     const winner = { ...this.duoPool[winnerIdx] };
     const resolvedMeta = this.resolveSlotMeta(winner.slot);
@@ -4085,6 +4196,7 @@ class AdminHubController {
     winner.provider = resolvedMeta.provider;
     winner.slotProvider = resolvedMeta.provider;
     winner.imageUrl = resolvedMeta.image;
+    winner.avatar = winner.avatar || this.resolveSpectatorAvatar(winner.chatter) || '';
     const spinId = 'spin_duo_' + Date.now();
     if (!this._locallyInitiatedDuoSpinIds) this._locallyInitiatedDuoSpinIds = new Set();
     this._locallyInitiatedDuoSpinIds.add(spinId);
@@ -4092,8 +4204,8 @@ class AdminHubController {
     const spinPayload = {
       action: 'spin',
       mode: this.duoMode,
-      targetCorner,
-      targetSeed,
+      targetCorner: lockedCorner,
+      targetSeed: lockedSeed,
       spinId,
       winner,
       ts: Date.now()
@@ -4107,18 +4219,12 @@ class AdminHubController {
       localStorage.setItem('hunthub_duo_spin_cmd', JSON.stringify(spinPayload));
     } catch (_) {}
 
-    // Dispatch spin to Cloudflare edge so remote OBS instances in USA spin in sync
+    // Dispatch spin to Cloudflare edge (atomically records lastSpin in duo_last_spin_v2 and removes winner from queue)
     fetch('/api/wheel/duo/spin', {
       method: 'POST',
       headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(spinPayload)
     }).catch(() => {});
-
-    this.relayOverlaySyncEvent({
-      target: 'wheel-duo',
-      type: 'spin',
-      ...spinPayload
-    });
 
     // Remove winner from local pool immediately so they cannot be picked twice!
     const cleanWinnerUser = String(winner.chatter || '').trim().toLowerCase().replace(/^@/, '');
@@ -4136,13 +4242,6 @@ class AdminHubController {
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
     this.renderDuoQueue();
 
-    // Remove winner from backend queue as well
-    fetch('/api/wheel/duo/remove', {
-      method: 'POST',
-      headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ mode: this.duoMode, username: cleanWinnerUser })
-    }).catch(() => {});
-
     setTimeout(() => {
       if (btn) {
         btn.disabled = false;
@@ -4153,50 +4252,52 @@ class AdminHubController {
       }
 
       if (!isTourneyMode) {
-        // Auto-assign winner to Player A (Blue Corner) first, then Player B (Red Corner)
-        this.assignWheelWinnerToCorner(targetCorner, winner.chatter, winner.slot, spinId);
+        // Auto-assign winner to locked target corner (Player A Blue Corner or Player B Red Corner)
+        this.assignWheelWinnerToCorner(lockedCorner, winner.chatter, winner.slot, spinId);
         this.updateWheelTargetUI();
         this.announceStreamWinner({
           eventType: 'sr_wheel_picked',
           tier: 'partial',
           type: 'WHEEL_PICKED',
-          category: `1V1 BATTLE · ${targetCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'} PICKED`,
-          ribbon: `🎡 ${targetCorner === 'A' ? 'PLAYER A (BLUE)' : 'PLAYER B (RED)'} SELECTED`,
+          category: `1V1 BATTLE · ${lockedCorner === 'A' ? 'BLUE CORNER' : 'RED CORNER'} PICKED`,
+          ribbon: `🎡 ${lockedCorner === 'A' ? 'PLAYER A (BLUE)' : 'PLAYER B (RED)'} SELECTED`,
           icon: '🎡',
           username: winner.chatter,
+          avatarUrl: winner.avatar,
           slotName: winner.slot,
           slotImg: winner.imageUrl,
-          statValue: `CORNER ${targetCorner}`,
+          statValue: `CORNER ${lockedCorner}`,
           customMessage: `@${String(winner.chatter || '').replace(/^@/, '')} has been picked on roulette with (${winner.slot})`,
           prize: `Picked on Dual Wheel (${winner.slot})!`
         });
         if (window.sonner) {
           window.sonner.toast({
-            title: `Winner ${targetCorner === 'A' ? 'A (Blue Corner)' : 'B (Red Corner)'} Selected! 🎰`,
+            title: `Winner ${lockedCorner === 'A' ? 'A (Blue Corner)' : 'B (Red Corner)'} Selected! 🎰`,
             message: `@${winner.chatter} has been picked on roulette with (${winner.slot})`,
-            type: targetCorner === 'A' ? 'cyan' : 'gold'
+            type: lockedCorner === 'A' ? 'cyan' : 'gold'
           });
         }
       } else {
         // Auto-assign winner to 8-Bracket Tournament Seed (1/8 .. 8/8) and wrap to 1/8 after 8/8
-        this.assignWheelWinnerToTourneySeed(winner.chatter, winner.slot, spinId, targetSeed);
+        this.assignWheelWinnerToTourneySeed(winner.chatter, winner.slot, spinId, lockedSeed);
         this.announceStreamWinner({
           eventType: 'sr_wheel_picked',
           tier: 'partial',
           type: 'WHEEL_PICKED',
-          category: `8-BRACKET TOURNEY · SEED ${targetSeed}/8 PICKED`,
-          ribbon: `🏆 SEED ${targetSeed}/8 SELECTED`,
+          category: `8-BRACKET TOURNEY · SEED ${lockedSeed}/8 PICKED`,
+          ribbon: `🏆 SEED ${lockedSeed}/8 SELECTED`,
           icon: '🏆',
           username: winner.chatter,
+          avatarUrl: winner.avatar,
           slotName: winner.slot,
           slotImg: winner.imageUrl,
-          statValue: `SEED #${targetSeed}`,
+          statValue: `SEED #${lockedSeed}`,
           customMessage: `@${String(winner.chatter || '').replace(/^@/, '')} has been picked on roulette with (${winner.slot})`,
           prize: `Picked for 8-Bracket Tourney (${winner.slot})!`
         });
         if (window.sonner) {
           window.sonner.toast({
-            title: `🏆 Seed ${targetSeed}/8 Filled! (${nextSeedInfo?.label || 'Bracket'})`,
+            title: `🏆 Seed ${lockedSeed}/8 Filled! (${nextSeedInfo?.label || 'Bracket'})`,
             message: `Congratulations @${winner.chatter} has been picked! (${winner.slot})`,
             type: 'gold'
           });
@@ -4634,6 +4735,30 @@ class AdminHubController {
     });
   }
 
+  isInstructionalSlotInput(rawArg) {
+    const s = String(rawArg || '').trim().toLowerCase();
+    if (!s) return true;
+    if (/^(slotname|slot\s+name|xslot|<slot>|\[slot\]|slot)$/i.test(s)) return true;
+    if (s.includes('to participate') || s.includes('if you win you can choose') || s.includes('!cashout') || s.includes('!continue')) return true;
+    return false;
+  }
+
+  resolveSpectatorAvatar(username) {
+    const clean = String(username || '').trim().replace(/^@+/, '').toLowerCase();
+    if (!clean) return '';
+    for (const [k, v] of this.recentChatters.entries()) {
+      if (String(k || '').trim().replace(/^@+/, '').toLowerCase() === clean && v?.avatar) {
+        return v.avatar;
+      }
+    }
+    for (const q of [this.battleQueue, this.tourneyQueue, this.duoPool]) {
+      if (!Array.isArray(q)) continue;
+      const found = q.find(e => String(e?.username || e?.user || e?.chatter || '').trim().replace(/^@+/, '').toLowerCase() === clean);
+      if (found?.avatar) return found.avatar;
+    }
+    return '';
+  }
+
   triggerStreamCelebrationOverlay(opts = {}) {
     const rawUser = String(opts.username || 'Winner').trim().replace(/^@/, '') || 'Winner';
     const rawSlot = String(opts.slotName || 'Wanted Dead or a Wild').trim();
@@ -4641,14 +4766,17 @@ class AdminHubController {
     const now = Date.now();
     const isGrandType = opts.tier === 'grand' || opts.type === 'TOURNEY_CHAMPION' || opts.type === 'KOTH_CHAMPION' || opts.type === 'KOTH_CASHOUT';
     const announcementText = opts.announcementText || this.formatWinnerAnnouncementText(opts.eventType || opts.type || 'picked', rawUser);
+    const eventId = opts.eventId || ('cel_' + now + '_' + rawUser.toLowerCase() + '_' + String(opts.type || 'win').toLowerCase());
+    const resolvedAvatar = opts.avatarUrl || this.resolveSpectatorAvatar(rawUser) || '';
     const payload = {
+      eventId,
       tier: opts.tier || (isGrandType ? 'grand' : 'partial'),
       type: opts.type || 'BATTLE_WIN',
       category: opts.category || (opts.type === 'TOURNEY_CHAMPION' ? '8-BRACKET TOURNAMENT CHAMPION' : '1V1 BATTLE WINNER'),
       ribbon: opts.ribbon || (isGrandType ? '👑 GRAND CHAMPION' : '⚔️ ROUND VICTORY'),
       icon: opts.icon || (isGrandType ? '👑' : '⚔️'),
       username: `@${rawUser}`,
-      avatarUrl: opts.avatarUrl || '',
+      avatarUrl: resolvedAvatar,
       slotName: meta.name,
       slotImg: opts.slotImg || meta.image,
       statValue: opts.statValue || 'VICTORY',
@@ -4676,13 +4804,6 @@ class AdminHubController {
         body: JSON.stringify({ celebration: payload })
       }).catch(() => {});
     } catch (_) {}
-
-    this.relayOverlaySyncEvent({
-      target: 'overlay-celebration',
-      type: 'CELEBRATION',
-      data: payload,
-      ts: payload.ts
-    });
   }
 
   relayOverlaySyncEvent(overlayEvent) {
@@ -4861,13 +4982,15 @@ class AdminHubController {
   }
 
   assignWheelWinnerToCorner(corner, username, slotName, spinId) {
-    if (spinId) {
-      if (this._processedDuoSpinIds.has(spinId)) return;
-      this._processedDuoSpinIds.add(spinId);
-    }
-
     const cleanUser = String(username || '').trim().replace(/^@/, '');
     if (!cleanUser) return;
+
+    const targetEl = document.getElementById(corner === 'B' ? 'cp-battle-user-b' : 'cp-battle-user-a');
+    const curTargetVal = String(targetEl?.value || '').trim().replace(/^@/, '').toLowerCase();
+    if (spinId) {
+      if (this._processedDuoSpinIds.has(spinId) && curTargetVal === cleanUser.toLowerCase()) return;
+      this._processedDuoSpinIds.add(spinId);
+    }
 
     if (corner === 'A') {
       this.setCornerFighter('A', cleanUser, slotName);
@@ -4878,6 +5001,9 @@ class AdminHubController {
       this.setCornerFighter('B', cleanUser, slotName);
     }
     this.pushCornersToOverlay();
+    if (window.tournamentPrediction && typeof window.tournamentPrediction.renderKoth === 'function') {
+      window.tournamentPrediction.renderKoth();
+    }
   }
 
   pushCornersToOverlay() {
@@ -4886,14 +5012,15 @@ class AdminHubController {
     let userB = (document.getElementById('cp-battle-user-b')?.value || '').trim().replace(/^@/, '');
     let slotB = (document.getElementById('cp-battle-slot-b')?.value || '').trim();
 
-    const metaA = (userA && slotA) ? this.resolveSlotMeta(slotA) : { name: '', provider: '', image: '' };
-    const metaB = (userB && slotB) ? this.resolveSlotMeta(slotB) : { name: '', provider: '', image: '' };
+    const metaA = userA ? this.resolveSlotMeta(slotA || 'Wanted Dead or a Wild') : { name: '', provider: '', image: '' };
+    const metaB = userB ? this.resolveSlotMeta(slotB || 'Gates of Olympus 1000') : { name: '', provider: '', image: '' };
 
     const playerAObj = userA ? {
       userId: `u_${userA}`,
       username: userA,
       displayName: userA,
       name: `@${userA}`,
+      avatar: this.resolveSpectatorAvatar(userA),
       slotName: metaA.name,
       slot: metaA.name,
       slotProvider: metaA.provider,
@@ -4909,6 +5036,7 @@ class AdminHubController {
       username: userB,
       displayName: userB,
       name: `@${userB}`,
+      avatar: this.resolveSpectatorAvatar(userB),
       slotName: metaB.name,
       slot: metaB.name,
       slotProvider: metaB.provider,
@@ -4949,15 +5077,7 @@ class AdminHubController {
     } catch (_) {}
     window.dispatchEvent(new CustomEvent('hunthub:battle-sync', { detail: statePayload }));
 
-    // Sync to Cloudflare Edge D1 so the streamer's OBS in the USA updates immediately
-    this.relayOverlaySyncEvent({
-      target: 'overlay-battle',
-      type: 'BATTLE_SYNC',
-      action: 'battle_update',
-      data: { state: statePayload },
-      state: statePayload,
-      ts: statePayload.ts
-    });
+    // Sync to Cloudflare Edge D1 ('battle_state_v2') so the streamer's OBS in the USA and website update immediately
     fetch('/api/battle/state', {
       method: 'POST',
       headers: this.getAdminHeaders({ 'Content-Type': 'application/json' }),
@@ -5020,15 +5140,15 @@ class AdminHubController {
   addDuoEntry(username, slotName, mode = 'battle') {
     const cleanUser = String(username || '').trim().replace(/^@/, '');
     const lowerUser = cleanUser.toLowerCase();
+    if (!cleanUser || this.isInstructionalSlotInput(slotName)) return false;
     const meta = this.resolveSlotMeta(slotName);
-    if (!cleanUser) return false;
 
     if (!this.enteredBattleUsers) this.enteredBattleUsers = new Set();
     if (!this.enteredTourneyUsers) this.enteredTourneyUsers = new Set();
 
-    // Strictly 1 call per spectator per event (!battle or !tourney): only the FIRST call is valid!
+    let isUpdatedSlot = false;
+
     if (mode === 'tourney') {
-      const inTourneyQueue = this.tourneyQueue.some(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
       const tState = this.getTourneyState();
       const inTourneyBracket = ['m1', 'm2', 'm3', 'm4'].some(mId => {
         const m = tState?.matches?.[mId];
@@ -5036,17 +5156,32 @@ class AdminHubController {
         const u2 = String(m?.player2?.username || '').toLowerCase().replace(/^@/, '');
         return u1 === lowerUser || u2 === lowerUser;
       });
-      if (inTourneyQueue || inTourneyBracket || this.enteredTourneyUsers.has(lowerUser)) {
+      if (inTourneyBracket) {
         return false;
+      }
+      const existingIdx = this.tourneyQueue.findIndex(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      if (existingIdx !== -1) {
+        const prevSlot = String(this.tourneyQueue[existingIdx].slotName || this.tourneyQueue[existingIdx].slot || '').trim().toLowerCase();
+        if (prevSlot === meta.name.toLowerCase()) {
+          return false;
+        }
+        isUpdatedSlot = true;
       }
       this.enteredTourneyUsers.add(lowerUser);
     } else {
-      const inBattleQueue = this.battleQueue.some(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
       const cornerA = String(document.getElementById('cp-battle-user-a')?.value || '').trim().toLowerCase().replace(/^@/, '');
       const cornerB = String(document.getElementById('cp-battle-user-b')?.value || '').trim().toLowerCase().replace(/^@/, '');
       const inBattleCorners = cornerA === lowerUser || cornerB === lowerUser;
-      if (inBattleQueue || inBattleCorners || this.enteredBattleUsers.has(lowerUser)) {
+      if (inBattleCorners) {
         return false;
+      }
+      const existingIdx = this.battleQueue.findIndex(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      if (existingIdx !== -1) {
+        const prevSlot = String(this.battleQueue[existingIdx].slotName || this.battleQueue[existingIdx].slot || '').trim().toLowerCase();
+        if (prevSlot === meta.name.toLowerCase()) {
+          return false;
+        }
+        isUpdatedSlot = true;
       }
       this.enteredBattleUsers.add(lowerUser);
     }
@@ -5055,6 +5190,7 @@ class AdminHubController {
     const queueEntry = {
       username: cleanUser,
       chatter: cleanUser,
+      avatar: this.resolveSpectatorAvatar(cleanUser),
       slotName: meta.name,
       slot: meta.name,
       slotProvider: meta.provider,
@@ -5064,11 +5200,21 @@ class AdminHubController {
     };
 
     if (mode === 'tourney') {
-      this.tourneyQueue.push(queueEntry);
+      const idx = this.tourneyQueue.findIndex(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      if (idx !== -1) {
+        this.tourneyQueue[idx] = { ...this.tourneyQueue[idx], ...queueEntry };
+      } else {
+        this.tourneyQueue.push(queueEntry);
+      }
       const tCount = document.getElementById('cp-tourney-q-count');
       if (tCount) tCount.textContent = String(this.tourneyQueue.length);
     } else {
-      this.battleQueue.push(queueEntry);
+      const idx = this.battleQueue.findIndex(e => String(e.username || e.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+      if (idx !== -1) {
+        this.battleQueue[idx] = { ...this.battleQueue[idx], ...queueEntry };
+      } else {
+        this.battleQueue.push(queueEntry);
+      }
       const bCount = document.getElementById('cp-battle-q-count');
       if (bCount) bCount.textContent = String(this.battleQueue.length);
     }
@@ -5078,15 +5224,19 @@ class AdminHubController {
       this.setDuoMode(mode, true);
     }
 
-    const existsInPool = this.duoPool.some(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
-    if (!existsInPool) {
-      this.duoPool.unshift({
-        chatter: cleanUser,
-        slot: meta.name,
-        provider: meta.provider,
-        imageUrl: meta.image,
-        icon: '🎰'
-      });
+    const poolIdx = this.duoPool.findIndex(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
+    const poolItem = {
+      chatter: cleanUser,
+      avatar: queueEntry.avatar,
+      slot: meta.name,
+      provider: meta.provider,
+      imageUrl: meta.image,
+      icon: '🎰'
+    };
+    if (poolIdx !== -1) {
+      this.duoPool[poolIdx] = poolItem;
+    } else {
+      this.duoPool.unshift(poolItem);
     }
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.duoPool)); } catch (_) {}
     this.renderDuoQueue();
@@ -5112,7 +5262,7 @@ class AdminHubController {
       username: cleanUser,
       slotName: meta.name
     });
-    return true;
+    return isUpdatedSlot ? 'updated' : 'added';
   }
 
   handleDuoBroadcast(data) {
@@ -5229,9 +5379,11 @@ class AdminHubController {
         if (pAName && !this.demoUsernames.has(pAName.toLowerCase()) && uAEl && !uAEl.value) {
           this.setCornerFighter('A', pAName, pASlot);
         }
-        if (pBName && !this.demoUsernames.has(pBName.toLowerCase()) && uBEl && !uBEl.value) {
-          this.setCornerFighter('B', pBName, pBSlot);
-        } else if (!pBName) {
+        if (pBName && !this.demoUsernames.has(pBName.toLowerCase())) {
+          if (uBEl && (!uBEl.value || uBEl.value.trim().toLowerCase() !== pBName.toLowerCase())) {
+            this.setCornerFighter('B', pBName, pBSlot);
+          }
+        } else if (!pBName && !(Date.now() - (this._lastLocalCornerAssignAt || 0) < 8000)) {
           this.setCornerFighter('B', '', '');
         }
         if (pAName && !pBName) {
@@ -5304,6 +5456,11 @@ class AdminHubController {
           this.kothState.king = null;
           this.kothState.streak = 0;
           this.syncCondensedControlPanelUI();
+        } else {
+          const uBVal = (document.getElementById('cp-battle-user-b')?.value || '').trim();
+          if (!uBVal) {
+            this.setWheelTargetCorner('B');
+          }
         }
         this.pushCornersToOverlay();
       };
@@ -6353,19 +6510,20 @@ class AdminHubController {
 
     if (cmd === '!battle') {
       const slotName = arg || 'Wanted Dead or a Wild';
+      if (this.isInstructionalSlotInput(slotName)) return;
       const added = this.addDuoEntry(cleanUser, slotName, 'battle');
-      if (window.sonner) {
-        if (added) {
+      if (window.sonner && added) {
+        if (added === 'updated') {
+          window.sonner.toast({
+            title: `🔄 !battle Slot Updated (@${cleanUser})`,
+            message: `@${cleanUser} changed their slot to "${slotName}" in Duo Wheel Battle Queue.`,
+            type: 'gold'
+          });
+        } else {
           window.sonner.toast({
             title: `⚔️ !battle Entry (@${cleanUser})`,
             message: `Added @${cleanUser} with "${slotName}" to Duo Wheel Battle Queue.`,
             type: 'cyan'
-          });
-        } else {
-          window.sonner.toast({
-            title: `⚠️ 1 Call Max (@${cleanUser})`,
-            message: `@${cleanUser} already has an active !battle call in this event (only first call is valid).`,
-            type: 'gold'
           });
         }
       }
@@ -6418,18 +6576,19 @@ class AdminHubController {
 
     if (cmd === '!tourney' || cmd === '!tournament') {
       const slotName = arg || 'Gates of Olympus 1000';
+      if (this.isInstructionalSlotInput(slotName)) return;
       const added = this.addDuoEntry(cleanUser, slotName, 'tourney');
-      if (window.sonner) {
-        if (added) {
+      if (window.sonner && added) {
+        if (added === 'updated') {
           window.sonner.toast({
-            title: `🏆 !tourney Entry (@${cleanUser})`,
-            message: `Added @${cleanUser} with "${slotName}" to 8-Bracket Tourney Queue.`,
+            title: `🔄 !tourney Slot Updated (@${cleanUser})`,
+            message: `@${cleanUser} changed their slot to "${slotName}" in 8-Bracket Tourney Queue.`,
             type: 'gold'
           });
         } else {
           window.sonner.toast({
-            title: `⚠️ 1 Call Max (@${cleanUser})`,
-            message: `@${cleanUser} already has an active !tourney call in this event (only first call is valid).`,
+            title: `🏆 !tourney Entry (@${cleanUser})`,
+            message: `Added @${cleanUser} with "${slotName}" to 8-Bracket Tourney Queue.`,
             type: 'gold'
           });
         }

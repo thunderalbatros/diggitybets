@@ -70,14 +70,78 @@ class DuoWheelApp {
 
   initAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) this.audioCtx = new AudioContextClass();
-    window.addEventListener('click', () => {
-      if (this.audioCtx && this.audioCtx.state === 'suspended') this.audioCtx.resume();
-    }, { once: true });
+    if (AudioContextClass) {
+      try {
+        this.audioCtx = new AudioContextClass();
+        this.audioCtx.resume().catch(() => {});
+      } catch {}
+    }
+    const unlock = () => {
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+    };
+    window.addEventListener('click', unlock);
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+  }
+
+  playWavFallback(notes) {
+    try {
+      const sampleRate = 22050;
+      let maxEnd = 0.2;
+      for (const n of notes) {
+        const end = (n.time || 0) + (n.dur || 0.1) + 0.05;
+        if (end > maxEnd) maxEnd = end;
+      }
+      const numSamples = Math.min(sampleRate * 4, Math.ceil(maxEnd * sampleRate));
+      const buffer = new ArrayBuffer(44 + numSamples * 2);
+      const view = new DataView(buffer);
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + numSamples * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, numSamples * 2, true);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        let sample = 0;
+        for (const n of notes) {
+          const start = n.time || 0;
+          const dur = n.dur || 0.1;
+          if (t >= start && t <= start + dur) {
+            const localT = t - start;
+            const env = Math.min(1, localT / 0.015) * Math.max(0, 1 - (localT / dur) * 0.7);
+            const f = n.freqEnd ? n.freq + (n.freqEnd - n.freq) * (localT / dur) : n.freq;
+            sample += Math.sin(2 * Math.PI * f * localT) * (n.vol || 0.25) * env;
+          }
+        }
+        const clamped = Math.max(-1, Math.min(1, sample));
+        view.setInt16(44 + i * 2, clamped * 32767, true);
+      }
+      const blob = new Blob([buffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.volume = 0.85;
+      audio.play().catch(() => {}).finally(() => {
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      });
+    } catch {}
   }
 
   playTick() {
     if (!this.audioCtx) return;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
     try {
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
@@ -99,7 +163,10 @@ class DuoWheelApp {
   }
 
   playBrassNote(freq, startTime, duration, volume = 0.35, isStaccato = false) {
-    if (!this.audioCtx || this.audioCtx.state === 'suspended') return;
+    if (!this.audioCtx) return;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
     try {
       const t = startTime;
       const masterGain = this.audioCtx.createGain();
@@ -182,20 +249,26 @@ class DuoWheelApp {
   }
 
   playWinFanfare() {
+    const motif = [
+      { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
+      { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
+      { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
+      { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
+      { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
+      { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
+      { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
+    ];
+    if (!this.audioCtx || this.audioCtx.state !== 'running') {
+      if (this.audioCtx) this.audioCtx.resume().catch(() => {});
+      this.playWavFallback([
+        ...motif,
+        { freq: 587.33, time: 1.42, dur: 1.1, vol: 0.35 },
+        { freq: 880.00, time: 1.42, dur: 1.1, vol: 0.35 }
+      ]);
+    }
     if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
-
-      // Royal Entrance Motif in D Major
-      const motif = [
-        { freq: 440.00, time: 0.00, dur: 0.11, staccato: true,  vol: 0.38 },
-        { freq: 440.00, time: 0.13, dur: 0.11, staccato: true,  vol: 0.38 },
-        { freq: 440.00, time: 0.26, dur: 0.11, staccato: true,  vol: 0.42 },
-        { freq: 587.33, time: 0.39, dur: 0.36, staccato: false, vol: 0.48 },
-        { freq: 440.00, time: 0.80, dur: 0.12, staccato: true,  vol: 0.38 },
-        { freq: 587.33, time: 0.94, dur: 0.18, staccato: false, vol: 0.44 },
-        { freq: 739.99, time: 1.15, dur: 0.22, staccato: false, vol: 0.50 },
-      ];
 
       motif.forEach(n => {
         this.playBrassNote(n.freq, now + n.time, n.dur, n.vol, n.staccato);
@@ -249,9 +322,11 @@ class DuoWheelApp {
   getSyncHeaders(extra = {}) {
     let adminToken = '';
     let userToken = '';
+    let syncToken = '';
     try {
       adminToken = localStorage.getItem('hunthub_admin_token') || localStorage.getItem('hunthub_user_token') || '';
       userToken = localStorage.getItem('hunthub_user_token') || adminToken;
+      syncToken = localStorage.getItem('hunthub_overlay_sync_token') || '';
       if (!adminToken) {
         const params = new URLSearchParams(window.location.search);
         adminToken = params.get('admin_token') || '';
@@ -261,6 +336,7 @@ class DuoWheelApp {
       'Content-Type': 'application/json',
       'x-admin-token': adminToken,
       'x-user-token': userToken,
+      ...(syncToken ? { 'x-overlay-sync-token': syncToken } : {}),
       ...extra,
     };
   }
@@ -274,7 +350,10 @@ class DuoWheelApp {
     if (!entry || (!entry.username && !entry.chatter)) return false;
     const uname = String(entry.username || entry.chatter).trim().replace(/^@/, '');
     const lowerUser = uname.toLowerCase();
-    const sName = entry.slotName || entry.slot || 'Wanted Dead or a Wild';
+    const sName = String(entry.slotName || entry.slot || 'Wanted Dead or a Wild').trim();
+    if (/^(slot\s*name|slotname|<slot>|\[slot\]|your\s*slot|xslot)\b/i.test(sName) || sName.toLowerCase().includes('in the chat to participate')) {
+      return false;
+    }
     const resolved = this.resolveSlotDetails(sName);
     const effectiveMode = targetMode === 'tourney' ? 'tourney' : (targetMode === 'battle' ? 'battle' : this.mode);
 
@@ -284,21 +363,20 @@ class DuoWheelApp {
     const targetList = effectiveMode === 'tourney' ? this.tourneyPool : this.battlePool;
     const enteredSet = effectiveMode === 'tourney' ? this.enteredTourneyUsers : this.enteredBattleUsers;
 
-    // Strictly 1 call per spectator per event (!battle or !tourney): only the FIRST call is valid!
     const existingIdx = targetList.findIndex(p => String(p.chatter || '').toLowerCase().replace(/^@/, '') === lowerUser);
-    if (existingIdx !== -1 || enteredSet.has(lowerUser)) {
-      return false;
-    }
-
     const newItem = {
       chatter: uname,
-      avatar: entry.avatar || '',
+      avatar: entry.avatar || (existingIdx !== -1 ? targetList[existingIdx].avatar : '') || '',
       slot: resolved.name,
       provider: resolved.provider,
       icon: '🎰',
     };
 
-    targetList.push(newItem);
+    if (existingIdx !== -1) {
+      targetList[existingIdx] = newItem;
+    } else {
+      targetList.push(newItem);
+    }
     enteredSet.add(lowerUser);
 
     if (effectiveMode !== this.mode) {
@@ -312,7 +390,7 @@ class DuoWheelApp {
     } else {
       this.updateQueueBadge();
     }
-    return true;
+    return existingIdx !== -1 ? 'updated' : true;
   }
 
   initChannels() {
@@ -504,6 +582,8 @@ class DuoWheelApp {
     if (!this._syncIntervalStarted) {
       this._syncIntervalStarted = true;
       this._lastEventTs = Date.now() - 2000;
+      this._seenSpinIds = new Set();
+      this._spinPollInitialized = false;
       setInterval(async () => {
         if (document.hidden) return;
         try {
@@ -523,6 +603,7 @@ class DuoWheelApp {
               if (cloudRes.ok) {
                 const cloudData = await cloudRes.json();
                 data = {
+                  battle: cloudData.battle || cloudData.battleState || null,
                   overlays: {
                     duoQueues: cloudData,
                     lastOverlayEvent: cloudData.lastSpin || null
@@ -537,6 +618,32 @@ class DuoWheelApp {
           if (data?.battle) {
             this.syncTargetFromBattleState(data.battle);
           }
+
+          // Check spin events FIRST (using spinId deduplication immune to cross-PC clock skew)
+          // so that if a spin was just triggered, this.isSpinning becomes true before duoQueues removes the winner from this.pool!
+          const evt = data?.overlays?.lastOverlayEvent;
+          if (evt && (evt.action === 'spin' || evt.type === 'spin') && (evt.targetOverlay === 'wheel-duo' || !evt.targetOverlay)) {
+            const evtKey = String(evt.spinId || evt.serverTs || evt.ts || '');
+            const evtTs = Number(evt.serverTs || evt.ts || 0);
+            if (!this._spinPollInitialized) {
+              this._spinPollInitialized = true;
+              if (evtKey && evtTs && Math.abs(Date.now() - evtTs) < 5000) {
+                this._seenSpinIds.add(evtKey);
+                this._lastEventTs = evtTs;
+                this.spin(evt.mode, evt.spinId, evt.winner, evt.targetCorner, evt.targetSeed);
+              } else if (evtKey) {
+                this._seenSpinIds.add(evtKey);
+                if (evtTs) this._lastEventTs = evtTs;
+              }
+            } else if (evtKey && !this._seenSpinIds.has(evtKey)) {
+              this._seenSpinIds.add(evtKey);
+              if (evtTs) this._lastEventTs = evtTs;
+              this.spin(evt.mode, evt.spinId, evt.winner, evt.targetCorner, evt.targetSeed);
+            }
+          } else if (!this._spinPollInitialized) {
+            this._spinPollInitialized = true;
+          }
+
           const duoQueues = data?.overlays?.duoQueues;
           if (duoQueues && !this.isSpinning) {
             const mapItem = (item) => {
@@ -576,15 +683,8 @@ class DuoWheelApp {
               }
             }
           }
-          const evt = data?.overlays?.lastOverlayEvent;
-          if (evt && evt.ts && evt.ts > this._lastEventTs && (Date.now() - evt.ts) < 15000) {
-            this._lastEventTs = evt.ts;
-            if ((evt.targetOverlay === 'wheel-duo' || !evt.targetOverlay) && (evt.action === 'spin' || evt.type === 'spin')) {
-              this.spin(evt.mode, evt.spinId, evt.winner, evt.targetCorner, evt.targetSeed);
-            }
-          }
         } catch {}
-      }, 1500);
+      }, 900);
     }
   }
 
@@ -1181,13 +1281,15 @@ class DuoWheelApp {
     try { localStorage.setItem('hunthub_duo_pool_v2', JSON.stringify(this.pool)); } catch {}
     this.updateQueueBadge();
 
-    // Notify backend queue removal if running
-    fetch('/api/wheel/duo/remove', {
-      method: 'POST',
-      headers: this.getSyncHeaders(),
-      credentials: 'same-origin',
-      body: JSON.stringify({ mode: this.mode, username: winner.chatter, slotName: winner.slot }),
-    }).catch(() => {});
+    // Notify backend queue removal only if this was a direct local spin (not already removed by /api/wheel/duo/spin)
+    if (!finishedSpinId || String(finishedSpinId).startsWith('spin_duo_')) {
+      fetch('/api/wheel/duo/remove', {
+        method: 'POST',
+        headers: this.getSyncHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ mode: this.mode, username: winner.chatter, slotName: winner.slot }),
+      }).catch(() => {});
+    }
 
     this._pendingPoolRemoval = () => {
       if (this.pool.length > 0 && !this.isSpinning) {
@@ -1315,20 +1417,24 @@ class DuoWheelApp {
       console.warn('[Duo Wheel] LocalStorage save error:', e);
     }
 
-    // 3. HTTP Server fallback if online
-    try {
-      await fetch('/api/battle/join', {
-        method: 'POST',
-        headers: this.getSyncHeaders(),
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          user: item.chatter,
-          slot: slotDetails.name,
-          slotName: slotDetails.name,
-          targetCorner: slotKey
-        }),
-      });
-    } catch {}
+    // 3. HTTP Server fallback if spun directly on the wheel overlay (Control Panel spins already push /api/battle/state)
+    if (!spinId || String(spinId).startsWith('spin_duo_')) {
+      try {
+        await fetch('/api/battle/join', {
+          method: 'POST',
+          headers: this.getSyncHeaders(),
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            user: item.chatter,
+            slot: slotDetails.name,
+            slotName: slotDetails.name,
+            slotProvider: slotDetails.provider || item.provider || 'Casino Slot',
+            slotImage: slotDetails.image || '',
+            targetCorner: slotKey
+          }),
+        });
+      } catch {}
+    }
   }
 
   async autoFillTourney(item, seed, spinId) {

@@ -1,8 +1,16 @@
 # HuntHub — Project Status & Roadmap
 
 > **Current Phase:** Phase 9 (Global D1 Cross-Region USA/AR Sync `hunthub_production` + Server-Side Kick Live Chat Ingestor `web.kick.com/api/v1/chat/87054681/history` Deployed Live) COMPLETED  
-> **Last Updated:** 2026-10-21  
+> **Last Updated:** 2026-10-22  
 > **Manager:** Antigravity Tech Lead  
+
+### 2026-10-22 — 1v1 Battle KOTH Post-Stream Feedback Fixes & Calendar-Week Streak Rollover
+- **Calendar-Week 7-Day `$DIG` Loyalty Streak:** Replaced UTC-midnight rollover with continuous calendar-day progression anchored to `America/Chicago` (Louisiana, USA, `UTC-5`) with a 6:00 AM rollover boundary so late-night stream sessions never split into two calendar days, and consecutive days count whether or not there is a stream.
+- **Control Panel Dual Wheel Entry Deletion (`✕`) & `!battle <slot>` Slot Replacement:** Added individual `✕` remove buttons (`.btn-remove-duo-entry` -> `removeDuoEntry()`) in both `#cp-duo-queue-list` and `#admin-duo-list`, allowed spectators to replace their slot in-place by typing `!battle <newslot>` / `!tourney <newslot>`, and filtered out instructional copy-paste strings (`!battle slotname ...`).
+- **Isolated D1 State Keys (`battle_state_v2`, `celebration_state_v2`, `duo_last_spin_v2`) & Winner B Persistence:** Eliminated the `t = 5200ms` read-modify-write race on `overlay_sync_state_v1` where `announceStreamWinner` and `assignWheelWinnerToCorner` overwrote each other, ensuring Winner B's username and slot card always persist in `overlay-battle`, `#battle`, and `#control-panel`, and partial/grand celebrations (`celebrationHistory` + `seenEventIds`) never get dropped or delayed across USA/AR clocks.
+- **`!cashout` Grand Celebration with Spectator Avatar & Message:** Updated `kothRetire()` and `/api/overlay/celebration` to resolve the spectator's Kick profile picture and trigger the Grand Celebration (`tier: 'grand'`, `type: 'KOTH_CASHOUT'`) displaying `"Congratulations @username you won $X prize"`.
+- **WebAudio Auto-Resume + Procedural WAV Fallback in Overlays:** Added immediate `AudioContext.resume()` unlock hooks and in-memory procedural WAV `<audio>` fallbacks in `wheel-duo` and `overlay-celebration`.
+- **Cross-PoP Atomic D1 Lock (`bot_lock:<semanticKey>`) for `DiggityBot`:** Replaced isolate-local cooldowns with an atomic D1 conditional `INSERT ... ON CONFLICT DO UPDATE WHERE updated_at < cutoff` in `dispatchKickBotChatMessage()` so US (`EWR`), AR (`EZE`), and Cron isolates never send duplicate or triplicate bot messages.
 
 ### 2026-10-21 — Compact 1-Click Topbar 7-Day $DIG Loyalty Streak & Global Day 1 Reset
 - **Compact Topbar Right Placement:** Removed the full-width 7-day loyalty streak bar from `#store` and mounted the compact, minimalist, 1-click capsule (`#dig-daily-streak-container` / `#btn-claim-daily-streak`) inside `.topbar-right` directly below the username and role badge, visible across all site views (`Day 1 +50`, `Day 2 +75`, `Day 3 +100`, `Day 4 +125`, `Day 5 +150`, `Day 6 +200`, `Day 7 +300`).

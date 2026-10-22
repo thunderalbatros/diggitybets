@@ -921,13 +921,30 @@ const hunthubWorker = {
 
     if (url.pathname.startsWith('/api/kick/user/') && request.method === 'GET') {
       const username = decodeURIComponent(url.pathname.replace('/api/kick/user/', '')).trim().replace(/^@/, '');
+      const lowerName = username.toLowerCase();
+      let cachedAvatar = '';
+      let cachedKickId = 0;
       try {
-        const kickRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(username.toLowerCase())}`, {
+        const memChatter = (globalThis.__HUNTHUB_OVERLAY_SYNC__?.activeChatters || []).find(
+          c => String(c?.username || c?.user || '').trim().replace(/^@+/, '').toLowerCase() === lowerName
+        );
+        if (memChatter?.avatar) cachedAvatar = memChatter.avatar;
+        if (env.DB) {
+          const uRow = await env.DB.prepare('SELECT username, kick_id, avatar FROM users WHERE LOWER(username) = LOWER(?1)').bind(lowerName).first();
+          if (uRow) {
+            if (uRow.avatar && !cachedAvatar) cachedAvatar = uRow.avatar;
+            if (uRow.kick_id) cachedKickId = Number(uRow.kick_id) || 0;
+          }
+        }
+      } catch (_) {}
+      try {
+        const slug = lowerName.replace(/_/g, '-');
+        const kickRes = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(slug)}`, {
           headers: { 'User-Agent': 'HuntHub-Proxy/1.0', 'Accept': 'application/json' }
         });
         if (kickRes.ok) {
           const kickData = await kickRes.json();
-          const kickId = Number(kickData?.user?.id || kickData?.id || 0);
+          const kickId = Number(kickData?.user?.id || kickData?.id || cachedKickId || 0);
           const roomId = Number(kickData?.chatroom?.id || 0);
           const cleanName = String(kickData?.user?.username || username).trim();
           const isAdmin = isAdminIdentity(cleanName, kickId);
@@ -937,13 +954,23 @@ const hunthubWorker = {
             username: cleanName,
             kick_id: kickId,
             chatroom_id: roomId,
-            avatarUrl: kickData?.user?.profile_pic || '',
+            avatarUrl: kickData?.user?.profile_pic || cachedAvatar || '',
             isAdmin,
             isStreamLive,
             verified: true
           }), { headers: corsHeaders });
         }
       } catch (e) {}
+      if (cachedAvatar || cachedKickId) {
+        return new Response(JSON.stringify({
+          success: true,
+          username,
+          kick_id: cachedKickId,
+          avatarUrl: cachedAvatar,
+          isAdmin: isAdminIdentity(username, cachedKickId),
+          verified: true
+        }), { headers: corsHeaders });
+      }
       return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: corsHeaders });
     }
 
@@ -2101,9 +2128,18 @@ const hunthubWorker = {
       } catch (_) {}
 
       // Cross-PoP global sync from D1 kv_store (ensures AR <-> USA real-time consistency)
+      // Isolated keys ('battle_state_v2', 'celebration_state_v2') prevent chat ingestion from clobbering live corners or celebrations.
       if (env.DB) {
         try {
-          const syncRow = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'live_stream_sync_v2'").first();
+          const rowsRes = await env.DB.prepare(
+            "SELECT key, value_json, updated_at FROM kv_store WHERE key IN ('live_stream_sync_v2', 'battle_state_v2', 'celebration_state_v2', 'bounties_state_v1')"
+          ).all();
+          const rowMap = new Map();
+          for (const r of (rowsRes?.results || [])) {
+            if (r && r.key) rowMap.set(r.key, r);
+          }
+
+          const syncRow = rowMap.get('live_stream_sync_v2');
           if (syncRow && syncRow.value_json) {
             const parsedSync = JSON.parse(syncRow.value_json);
             const d1Updated = Number(syncRow.updated_at || parsedSync.updatedAt || 0);
@@ -2115,22 +2151,48 @@ const hunthubWorker = {
                 bountyClaims: Array.isArray(parsedSync.bountyClaims) ? parsedSync.bountyClaims : mem.bountyClaims,
                 updatedAt: d1Updated
               };
-              globalThis.__HUNTHUB_OVERLAY_SYNC__ = mem;
             }
           }
-        } catch (_) {}
 
-        if (!Array.isArray(mem.bounties) && !Array.isArray(mem.bountyClaims)) {
-          try {
-            const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'bounties_state_v1'").first();
-            if (row && row.value_json) {
-              const parsed = JSON.parse(row.value_json);
-              if (Array.isArray(parsed.bounties)) mem.bounties = parsed.bounties;
-              if (Array.isArray(parsed.bountyClaims)) mem.bountyClaims = parsed.bountyClaims;
-              if (!mem.updatedAt) mem.updatedAt = Number(row.updated_at) || Date.now();
+          const battleRow = rowMap.get('battle_state_v2');
+          if (battleRow && battleRow.value_json) {
+            const parsedBattle = JSON.parse(battleRow.value_json);
+            const bTs = Number(battleRow.updated_at || parsedBattle.updatedAt || 0);
+            if (parsedBattle.battleState) {
+              mem.battleState = parsedBattle.battleState;
             }
-          } catch (_) {}
-        }
+            if (parsedBattle.overlayEvent) {
+              mem.overlayEvents = mem.overlayEvents || {};
+              mem.overlayEvents['overlay-battle'] = parsedBattle.overlayEvent;
+            }
+            if (bTs > Number(mem.updatedAt || 0)) mem.updatedAt = bTs;
+          }
+
+          const celebRow = rowMap.get('celebration_state_v2');
+          if (celebRow && celebRow.value_json) {
+            const parsedCeleb = JSON.parse(celebRow.value_json);
+            const cTs = Number(celebRow.updated_at || parsedCeleb.updatedAt || 0);
+            if (parsedCeleb.celebrationEvent) {
+              mem.celebrationEvent = parsedCeleb.celebrationEvent;
+              mem.overlayEvents = mem.overlayEvents || {};
+              mem.overlayEvents['overlay-celebration'] = parsedCeleb.celebrationEvent;
+            }
+            if (Array.isArray(parsedCeleb.celebrationHistory)) {
+              mem.celebrationHistory = parsedCeleb.celebrationHistory;
+            }
+            if (cTs > Number(mem.updatedAt || 0)) mem.updatedAt = cTs;
+          }
+
+          const bountiesRow = rowMap.get('bounties_state_v1');
+          if (bountiesRow && bountiesRow.value_json && !Array.isArray(mem.bounties) && !Array.isArray(mem.bountyClaims)) {
+            const parsed = JSON.parse(bountiesRow.value_json);
+            if (Array.isArray(parsed.bounties)) mem.bounties = parsed.bounties;
+            if (Array.isArray(parsed.bountyClaims)) mem.bountyClaims = parsed.bountyClaims;
+            if (!mem.updatedAt) mem.updatedAt = Number(bountiesRow.updated_at) || Date.now();
+          }
+
+          globalThis.__HUNTHUB_OVERLAY_SYNC__ = mem;
+        } catch (_) {}
       }
       if (Array.isArray(mem.chatAnnouncements)) {
         mem.chatAnnouncements = mem.chatAnnouncements.filter(a => a && a.message && !/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(String(a.message)));
@@ -2141,8 +2203,27 @@ const hunthubWorker = {
       return mem;
     };
 
-    const writeOverlaySyncState = async (nextState, persistBountiesD1 = false) => {
-      nextState.updatedAt = Date.now();
+    const writeOverlaySyncState = async (nextState, persistBountiesD1 = false, options = {}) => {
+      const nowServer = Date.now();
+      nextState.updatedAt = nowServer;
+      if (options.writeCelebration && nextState.celebrationEvent) {
+        const ev = nextState.celebrationEvent;
+        const eventId = ev.eventId || ev.id || ('celeb_' + nowServer + '_' + Math.random().toString(36).slice(2, 7));
+        nextState.celebrationEvent = {
+          ...ev,
+          eventId,
+          serverTs: nowServer,
+          timestamp: nowServer,
+          ts: nowServer
+        };
+        nextState.overlayEvents = nextState.overlayEvents || {};
+        nextState.overlayEvents['overlay-celebration'] = nextState.celebrationEvent;
+        const hist = Array.isArray(nextState.celebrationHistory) ? [...nextState.celebrationHistory] : [];
+        if (!hist.some(h => h && h.eventId === eventId)) {
+          hist.push(nextState.celebrationEvent);
+        }
+        nextState.celebrationHistory = hist.slice(-10);
+      }
       globalThis.__HUNTHUB_OVERLAY_SYNC__ = nextState;
       try {
         if (typeof caches !== 'undefined' && caches.default) {
@@ -2160,6 +2241,7 @@ const hunthubWorker = {
         try {
           const streamSyncJson = JSON.stringify({
             celebrationEvent: nextState.celebrationEvent || null,
+            celebrationHistory: Array.isArray(nextState.celebrationHistory) ? nextState.celebrationHistory.slice(-10) : [],
             overlayEvents: nextState.overlayEvents || {},
             battleState: nextState.battleState || null,
             tourneyState: nextState.tourneyState || null,
@@ -2183,6 +2265,42 @@ const hunthubWorker = {
             ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
           `).bind(streamSyncJson, nextState.updatedAt).run();
         } catch (_) {}
+
+        if (options.writeBattle && nextState.battleState) {
+          try {
+            const battleJson = JSON.stringify({
+              battleState: nextState.battleState,
+              overlayEvent: nextState.overlayEvents?.['overlay-battle'] || {
+                target: 'overlay-battle',
+                action: 'battle_update',
+                type: 'battle_update',
+                state: nextState.battleState,
+                ts: nowServer
+              },
+              updatedAt: nowServer
+            });
+            await env.DB.prepare(`
+              INSERT INTO kv_store (key, value_json, updated_at)
+              VALUES ('battle_state_v2', ?1, ?2)
+              ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+            `).bind(battleJson, nowServer).run();
+          } catch (_) {}
+        }
+
+        if (options.writeCelebration && nextState.celebrationEvent) {
+          try {
+            const celebJson = JSON.stringify({
+              celebrationEvent: nextState.celebrationEvent,
+              celebrationHistory: Array.isArray(nextState.celebrationHistory) ? nextState.celebrationHistory.slice(-10) : [nextState.celebrationEvent],
+              updatedAt: nowServer
+            });
+            await env.DB.prepare(`
+              INSERT INTO kv_store (key, value_json, updated_at)
+              VALUES ('celebration_state_v2', ?1, ?2)
+              ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+            `).bind(celebJson, nowServer).run();
+          } catch (_) {}
+        }
 
         if (persistBountiesD1) {
           try {
@@ -2219,22 +2337,44 @@ const hunthubWorker = {
 
       if (env.DB) {
         try {
-          const row = await env.DB.prepare("SELECT value_json, updated_at FROM kv_store WHERE key = 'duo_queues_v1'").first();
+          const rowsRes = await env.DB.prepare("SELECT key, value_json, updated_at FROM kv_store WHERE key IN ('duo_queues_v1', 'duo_last_spin_v2')").all();
+          const rowMap = new Map();
+          for (const r of (rowsRes?.results || [])) {
+            if (r && r.key) rowMap.set(r.key, r);
+          }
+          const row = rowMap.get('duo_queues_v1');
           if (row && row.value_json) {
             const parsed = JSON.parse(row.value_json);
             const d1Ts = Number(row.updated_at || parsed.updatedAt || 0);
             if (parsed && d1Ts >= Number(state.updatedAt || 0)) {
               state = { ...cachedDuoQueues, ...parsed, updatedAt: d1Ts };
-              cachedDuoQueues = state;
             }
           }
+          const spinRow = rowMap.get('duo_last_spin_v2');
+          if (spinRow && spinRow.value_json) {
+            const parsedSpin = JSON.parse(spinRow.value_json);
+            const curSpinTs = Number(state.lastSpin?.ts || 0);
+            const d1SpinTs = Number(parsedSpin?.ts || spinRow.updated_at || 0);
+            if (parsedSpin && d1SpinTs >= curSpinTs) {
+              state = { ...state, lastSpin: parsedSpin, updatedAt: Math.max(Number(state.updatedAt || 0), d1SpinTs) };
+            }
+          }
+          cachedDuoQueues = state;
         } catch (_) {}
       }
       return state;
     };
 
-    const writeDuoQueues = async (next) => {
-      next.updatedAt = Date.now();
+    const writeDuoQueues = async (next, options = {}) => {
+      const nowServer = Date.now();
+      next.updatedAt = nowServer;
+      if (options.writeSpin && next.lastSpin) {
+        next.lastSpin = {
+          ...next.lastSpin,
+          serverTs: nowServer,
+          ts: nowServer
+        };
+      }
       cachedDuoQueues = next;
       try {
         if (typeof caches !== 'undefined' && caches.default) {
@@ -2252,12 +2392,60 @@ const hunthubWorker = {
             ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
           `).bind(JSON.stringify(next), next.updatedAt).run();
         } catch (_) {}
+
+        if (options.writeSpin && next.lastSpin) {
+          try {
+            await env.DB.prepare(`
+              INSERT INTO kv_store (key, value_json, updated_at)
+              VALUES ('duo_last_spin_v2', ?1, ?2)
+              ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+            `).bind(JSON.stringify(next.lastSpin), nowServer).run();
+          } catch (_) {}
+        }
       }
+    };
+
+    const isInstructionalSlotInput = (rawArg) => {
+      const s = String(rawArg || '').trim().toLowerCase();
+      if (!s) return true;
+      if (/^(slotname|slot\s+name|xslot|<slot>|\[slot\]|slot)$/i.test(s)) return true;
+      if (s.includes('to participate') || s.includes('if you win you can choose') || s.includes('!cashout') || s.includes('!continue')) return true;
+      return false;
     };
 
     const formatSlotTitle = (rawInput) => {
       const cleaned = String(rawInput || '').trim().replace(/\s+/g, ' ').slice(0, 72);
       if (!cleaned) return { name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming' };
+      const lowClean = cleaned.toLowerCase();
+      const aliasMap = [
+        { match: /^(gates|gates of olympus|olympus|gates 1000|gates of olympus 1000)$/i, name: 'Gates of Olympus 1000', provider: 'Pragmatic Play' },
+        { match: /^(wanted|wanted dead|wanted dead or a wild|dead or a wild)$/i, name: 'Wanted Dead or a Wild', provider: 'Hacksaw Gaming' },
+        { match: /^(sugar|sugar rush|sugar rush 1000)$/i, name: 'Sugar Rush 1000', provider: 'Pragmatic Play' },
+        { match: /^(sweet|sweet bonanza|sweet bonanza 1000|bonanza)$/i, name: 'Sweet Bonanza 1000', provider: 'Pragmatic Play' },
+        { match: /^(starlight|starlight princess|starlight princess 1000)$/i, name: 'Starlight Princess 1000', provider: 'Pragmatic Play' },
+        { match: /^(zeus|zeus vs hades|hades)$/i, name: 'Zeus vs Hades - Gods of War', provider: 'Pragmatic Play' },
+        { match: /^(big bass|big bass splash|big bass bonanza)$/i, name: 'Big Bass Splash', provider: 'Pragmatic Play' },
+        { match: /^(dog house|the dog house|dog house megaways)$/i, name: 'The Dog House Megaways', provider: 'Pragmatic Play' },
+        { match: /^(fruit party|fruit party 2)$/i, name: 'Fruit Party', provider: 'Pragmatic Play' },
+        { match: /^(rip|rip city)$/i, name: 'RIP City', provider: 'Hacksaw Gaming' },
+        { match: /^(le bandit|bandit)$/i, name: 'Le Bandit', provider: 'Hacksaw Gaming' },
+        { match: /^(hand of anubis|anubis)$/i, name: 'Hand of Anubis', provider: 'Hacksaw Gaming' },
+        { match: /^(chaos crew|chaos crew 2)$/i, name: 'Chaos Crew 2', provider: 'Hacksaw Gaming' },
+        { match: /^(fist|fist of destruction)$/i, name: 'Fist of Destruction', provider: 'Hacksaw Gaming' },
+        { match: /^(slayers|slayers inc)$/i, name: 'Slayers Inc', provider: 'Hacksaw Gaming' },
+        { match: /^(dork|dork unit)$/i, name: 'Dork Unit', provider: 'Hacksaw Gaming' },
+        { match: /^(sixsixsix|666)$/i, name: 'SixSixSix', provider: 'Hacksaw Gaming' },
+        { match: /^(mental)$/i, name: 'Mental', provider: 'Nolimit City' },
+        { match: /^(san quentin|san quentin xways|san quentin 2)$/i, name: 'San Quentin xWays', provider: 'Nolimit City' },
+        { match: /^(fire in the hole|fire in the hole 2)$/i, name: 'Fire in the Hole 2', provider: 'Nolimit City' },
+        { match: /^(retro tapes|retro)$/i, name: 'Retro Tapes', provider: 'Push Gaming' },
+        { match: /^(big bamboo|bamboo)$/i, name: 'Big Bamboo', provider: 'Push Gaming' },
+        { match: /^(razor|razor returns|razor shark)$/i, name: 'Razor Returns', provider: 'Push Gaming' },
+        { match: /^(money train|money train 4|money train 3)$/i, name: 'Money Train 4', provider: 'Relax Gaming' }
+      ];
+      for (const a of aliasMap) {
+        if (a.match.test(lowClean)) return { name: a.name, provider: a.provider };
+      }
       const smallWords = new Set(['of', 'the', 'or', 'a', 'an', 'in', 'on', 'to', 'and', 'vs']);
       const title = cleaned.split(' ').map((w, idx) => {
         const lower = w.toLowerCase();
@@ -2403,24 +2591,35 @@ const hunthubWorker = {
             const cmd = parts[0].toLowerCase();
             const arg = parts.slice(1).join(' ').trim();
 
-            if ((cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') && arg.length >= 1) {
+            if ((cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') && arg.length >= 1 && !isInstructionalSlotInput(arg)) {
               const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
               const meta = formatSlotTitle(arg);
               const list = targetMode === 'tourney' ? duoNext.tourneyQueue : duoNext.battleQueue;
               const enteredList = targetMode === 'tourney' ? duoNext.enteredTourneyUsers : duoNext.enteredBattleUsers;
               const existingIdx = list.findIndex(item => String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase() === lowerUser);
-              const alreadyEntered = enteredList.includes(lowerUser);
-              if (existingIdx === -1 && !alreadyEntered) {
-                list.push({
+              const prevSlotNorm = existingIdx >= 0 ? String(list[existingIdx].slotName || list[existingIdx].slot || '').trim().toLowerCase() : '';
+              const isSlotChanged = existingIdx >= 0 && prevSlotNorm !== meta.name.toLowerCase();
+              const isNewEntry = existingIdx === -1;
+
+              if (isNewEntry || isSlotChanged) {
+                const entryRecord = {
                   username: cleanUser,
                   user: cleanUser,
-                  avatar: m?.sender?.profile_pic || '',
+                  avatar: m?.sender?.profile_pic || (existingIdx >= 0 ? list[existingIdx].avatar : '') || '',
                   slotName: meta.name,
                   slot: meta.name,
                   slotProvider: meta.provider,
-                  addedAt: msgTs
-                });
-                enteredList.push(lowerUser);
+                  addedAt: existingIdx >= 0 ? (list[existingIdx].addedAt || msgTs) : msgTs,
+                  updatedAt: msgTs
+                };
+                if (existingIdx >= 0) {
+                  list[existingIdx] = entryRecord;
+                } else {
+                  list.push(entryRecord);
+                }
+                if (!enteredList.includes(lowerUser)) {
+                  enteredList.push(lowerUser);
+                }
                 duoMutated = true;
                 if (!isFirstBackfill && (now - msgTs) < 120000) {
                   const botMsg = targetMode === 'tourney'
@@ -2428,7 +2627,10 @@ const hunthubWorker = {
                     : `@${cleanUser} has entered with ${meta.name} to battle`;
                   syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
                   const alreadyAnnounced = syncCurrent.chatAnnouncements.some(a =>
-                    a && String(a.message || '').trim().toLowerCase() === botMsg.toLowerCase() && (now - Number(a.ts || 0)) < 25000
+                    a && (now - Number(a.ts || 0)) < 15000 && (
+                      String(a.message || '').trim().toLowerCase() === botMsg.toLowerCase() ||
+                      (String(a.username || '').toLowerCase() === `@${lowerUser}` && String(a.eventType || '').includes('entry') && String(a.slotName || '').toLowerCase() === meta.name.toLowerCase())
+                    )
                   );
                   if (!alreadyAnnounced) {
                     recentMsgs.push({
@@ -2449,12 +2651,12 @@ const hunthubWorker = {
                       ts: now
                     });
                     if (typeof dispatchKickBotChatMessage === 'function') {
-                      ctx.waitUntil(dispatchKickBotChatMessage(botMsg).catch(() => null));
+                      ctx.waitUntil(dispatchKickBotChatMessage(botMsg, `entry_duo:${lowerUser}:${meta.name.toLowerCase()}`).catch(() => null));
                     }
                   }
                 }
               }
-            } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+            } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2 && !isInstructionalSlotInput(arg)) {
               const meta = formatSlotTitle(arg);
               const reqList = Array.isArray(syncCurrent.slotRequests) ? [...syncCurrent.slotRequests] : [];
               const handle = `@${cleanUser}`;
@@ -2486,7 +2688,10 @@ const hunthubWorker = {
                   const botSrMsg = `@${cleanUser} has entered the roulette queue with ${meta.name}`;
                   syncCurrent.chatAnnouncements = Array.isArray(syncCurrent.chatAnnouncements) ? syncCurrent.chatAnnouncements : [];
                   const alreadySrAnnounced = syncCurrent.chatAnnouncements.some(a =>
-                    a && String(a.message || '').trim().toLowerCase() === botSrMsg.toLowerCase() && (now - Number(a.ts || 0)) < 25000
+                    a && (now - Number(a.ts || 0)) < 15000 && (
+                      String(a.message || '').trim().toLowerCase() === botSrMsg.toLowerCase() ||
+                      (String(a.username || '').toLowerCase() === `@${lowerUser}` && String(a.eventType || '') === 'sr_entry')
+                    )
                   );
                   if (!alreadySrAnnounced) {
                     recentMsgs.push({
@@ -2507,7 +2712,7 @@ const hunthubWorker = {
                       ts: now
                     });
                     if (typeof dispatchKickBotChatMessage === 'function') {
-                      ctx.waitUntil(dispatchKickBotChatMessage(botSrMsg).catch(() => null));
+                      ctx.waitUntil(dispatchKickBotChatMessage(botSrMsg, `entry_sr:${lowerUser}`).catch(() => null));
                     }
                   }
                 }
@@ -2541,6 +2746,10 @@ const hunthubWorker = {
         }
 
         if (duoMutated) {
+          const freshDuo = await readDuoQueues();
+          if (freshDuo && freshDuo.lastSpin) {
+            duoNext.lastSpin = freshDuo.lastSpin;
+          }
           duoNext.counts = {
             battle: duoNext.battleQueue.length,
             tourney: duoNext.tourneyQueue.length
@@ -2549,6 +2758,18 @@ const hunthubWorker = {
         }
 
         if (syncMutated) {
+          const freshSync = await readOverlaySyncState();
+          if (freshSync.battleState) syncCurrent.battleState = freshSync.battleState;
+          if (freshSync.celebrationEvent) syncCurrent.celebrationEvent = freshSync.celebrationEvent;
+          if (Array.isArray(freshSync.celebrationHistory)) syncCurrent.celebrationHistory = freshSync.celebrationHistory;
+          if (freshSync.overlayEvents) {
+            syncCurrent.overlayEvents = {
+              ...freshSync.overlayEvents,
+              ...(syncCurrent.overlayEvents || {}),
+              ...(freshSync.overlayEvents['overlay-battle'] ? { 'overlay-battle': freshSync.overlayEvents['overlay-battle'] } : {}),
+              ...(freshSync.overlayEvents['overlay-celebration'] ? { 'overlay-celebration': freshSync.overlayEvents['overlay-celebration'] } : {})
+            };
+          }
           syncCurrent.lastChatBackfillV3 = true;
           syncCurrent.processedChatMsgIds = processedIds.slice(-350);
           syncCurrent.recentChatMessages = recentMsgs.slice(-50);
@@ -2950,10 +3171,26 @@ const hunthubWorker = {
       return `Congratulations ${cleanUser} has been picked!`;
     };
 
-    const dispatchKickBotChatMessage = async (messageText) => {
+    const deriveBotSemanticLockKey = (rawMessage, explicitLockKey = '') => {
+      if (explicitLockKey) return String(explicitLockKey).toLowerCase().trim();
+      const s = String(rawMessage || '').trim();
+      const mDuo = s.match(/^@([a-z0-9_]+)\s+(?:has\s+)?entered\s+with\s+(.+?)\s+(?:to\s+battle|for\s+tourney)/i);
+      if (mDuo) return `entry_duo:${mDuo[1].toLowerCase()}:${mDuo[2].trim().toLowerCase()}`;
+      const mSr = s.match(/^@([a-z0-9_]+)\s+has\s+entered\s+the\s+roulette\s+queue/i);
+      if (mSr) return `entry_sr:${mSr[1].toLowerCase()}`;
+      const mPick = s.match(/^@([a-z0-9_]+)\s+has\s+been\s+picked\s+on\s+roulette/i);
+      if (mPick) return `picked:${mPick[1].toLowerCase()}`;
+      const mWin = s.match(/^@([a-z0-9_]+)\s+(?:has\s+won\s+the\s+battle|is\s+the\s+king\s+of\s+the\s+hill)/i);
+      if (mWin) return `battle_win:${mWin[1].toLowerCase()}`;
+      const mCash = s.match(/^congratulations\s+@([a-z0-9_]+)\s+you\s+won\s+\$/i);
+      if (mCash) return `cashout:${mCash[1].toLowerCase()}`;
+      return `msg:${s.toLowerCase().replace(/\s+/g, ' ').slice(0, 96)}`;
+    };
+
+    const dispatchKickBotChatMessage = async (messageText, explicitLockKey = '') => {
       const cleanText = String(messageText || '').trim();
       if (!cleanText) return { sent: false, reason: 'empty_message' };
-      if (/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(cleanText)) {
+      if (/@(winner|playera|playerb|challenger|viewer|none|tbd|slotname)\b/i.test(cleanText)) {
         return { sent: false, reason: 'placeholder_blocked' };
       }
       const nowMs = Date.now();
@@ -2961,11 +3198,29 @@ const hunthubWorker = {
         if ((nowMs - ts) > 15000) recentBotChatDispatches.delete(k);
       }
       const msgKey = cleanText.toLowerCase();
-      const prevTs = recentBotChatDispatches.get(msgKey);
-      if (prevTs && (nowMs - prevTs) < 8000) {
-        return { sent: false, deduplicated: true, reason: 'duplicate_within_8s' };
+      const semanticKey = deriveBotSemanticLockKey(cleanText, explicitLockKey);
+      const prevTs = Math.max(recentBotChatDispatches.get(msgKey) || 0, recentBotChatDispatches.get(semanticKey) || 0);
+      if (prevTs && (nowMs - prevTs) < 10000) {
+        return { sent: false, deduplicated: true, reason: 'duplicate_within_10s' };
       }
       recentBotChatDispatches.set(msgKey, nowMs);
+      recentBotChatDispatches.set(semanticKey, nowMs);
+
+      // Global cross-PoP atomic D1 lock so US (EWR) and AR (EZE) isolates never send duplicate/triplicate bot messages
+      if (env?.DB) {
+        try {
+          const d1LockKey = `bot_lock:${semanticKey}`;
+          const lockRes = await env.DB.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES (?1, ?2, ?3)
+            ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at
+            WHERE kv_store.updated_at < (?3 - 10000)
+          `).bind(d1LockKey, cleanText, nowMs).run();
+          if (lockRes?.meta && typeof lockRes.meta.changes === 'number' && lockRes.meta.changes === 0) {
+            return { sent: false, deduplicated: true, reason: 'd1_atomic_lock_within_10s' };
+          }
+        } catch (_) {}
+      }
 
       let accessToken = env?.KICK_BOT_TOKEN || env?.KICK_ACCESS_TOKEN || '';
       let refreshToken = '';
@@ -3086,25 +3341,29 @@ const hunthubWorker = {
           }
         }
         const rawUserToken = String(body.username || body.winner || '').trim().split(/[\s(]/)[0].replace(/^@+/, '');
-        const blockedPlaceholders = new Set(['', 'winner', 'playera', 'playerb', 'player', 'viewer', 'challenger', 'king', 'none', 'tbd', 'waiting']);
+        const blockedPlaceholders = new Set(['', 'winner', 'playera', 'playerb', 'player', 'viewer', 'challenger', 'king', 'none', 'tbd', 'waiting', 'slotname']);
         if (blockedPlaceholders.has(rawUserToken.toLowerCase()) && rawUserToken.toLowerCase() !== 'diggitybot') {
           return new Response(JSON.stringify({ ok: false, skipped: true, reason: 'placeholder_username' }), { headers: noCacheHeaders });
         }
         const cleanUser = '@' + rawUserToken;
         const slotName = String(body.slotName || '').trim().slice(0, 120);
+        if (isEntryEvent && isInstructionalSlotInput(slotName)) {
+          return new Response(JSON.stringify({ ok: false, skipped: true, reason: 'instructional_slot_input' }), { headers: noCacheHeaders });
+        }
         const prizeText = String(body.prize || '').trim().slice(0, 80);
         const message = formatWinnerAnnouncementText(cleanUser, eventType, body.customMessage || body.message, slotName, prizeText);
-        if (/@(winner|playera|playerb|challenger|viewer|none|tbd)\b/i.test(message)) {
+        if (/@(winner|playera|playerb|challenger|viewer|none|tbd|slotname)\b/i.test(message)) {
           return new Response(JSON.stringify({ ok: false, skipped: true, reason: 'placeholder_in_message' }), { headers: noCacheHeaders });
         }
-        const nowTs = Number(body.timestamp || body.ts || Date.now());
+        const nowTs = Date.now();
 
         const current = await readOverlaySyncState();
         current.chatAnnouncements = Array.isArray(current.chatAnnouncements) ? current.chatAnnouncements : [];
         const duplicateExisting = current.chatAnnouncements.find(a =>
-          a && (nowTs - Number(a.ts || 0)) < 8000 && (
+          a && Math.abs(nowTs - Number(a.ts || 0)) < 10000 && (
             String(a.message || '').trim().toLowerCase() === message.trim().toLowerCase() ||
-            (String(a.eventType || '').toLowerCase() === eventType && String(a.username || '').toLowerCase() === cleanUser.toLowerCase())
+            (!isEntryEvent && String(a.eventType || '').toLowerCase() === eventType && String(a.username || '').toLowerCase() === cleanUser.toLowerCase()) ||
+            (isEntryEvent && String(a.eventType || '').toLowerCase() === eventType && String(a.username || '').toLowerCase() === cleanUser.toLowerCase() && String(a.slotName || '').toLowerCase() === slotName.toLowerCase())
           )
         );
         if (duplicateExisting) {
@@ -3145,17 +3404,20 @@ const hunthubWorker = {
           current.recentChatMessages = current.recentChatMessages.slice(-50);
         }
 
+        let hasCelebration = false;
         if (body.celebration && typeof body.celebration === 'object') {
+          hasCelebration = true;
           current.celebrationEvent = {
             ...body.celebration,
             announcementText: message,
-            timestamp: body.celebration.timestamp || body.celebration.ts || nowTs
+            timestamp: nowTs,
+            ts: nowTs
           };
           current.overlayEvents = current.overlayEvents || {};
           current.overlayEvents['overlay-celebration'] = current.celebrationEvent;
         }
 
-        await writeOverlaySyncState(current);
+        await writeOverlaySyncState(current, false, { writeCelebration: hasCelebration });
         const kickDispatch = await dispatchKickBotChatMessage(message);
 
         return new Response(JSON.stringify({
@@ -3177,6 +3439,7 @@ const hunthubWorker = {
         return new Response(JSON.stringify({
           success: true,
           celebrationEvent: syncState.celebrationEvent || null,
+          celebrationHistory: Array.isArray(syncState.celebrationHistory) ? syncState.celebrationHistory : [],
           overlayEvents: syncState.overlayEvents || {},
           chatAnnouncements: Array.isArray(syncState.chatAnnouncements) ? syncState.chatAnnouncements : [],
           updatedAt: syncState.updatedAt || 0
@@ -3191,7 +3454,7 @@ const hunthubWorker = {
           const current = await readOverlaySyncState();
           current.overlayEvents = current.overlayEvents || {};
           if (body.targetOverlay === 'overlay-slotrequests' || (body.type === 'SYNC_QUEUE' && Array.isArray(body.queue))) {
-            current.overlayEvents['overlay-slotrequests'] = { ...body, ts: body.ts || Date.now() };
+            current.overlayEvents['overlay-slotrequests'] = { ...body, ts: Date.now() };
             if (Array.isArray(body.queue)) {
               current.slotRequests = body.queue.slice(0, 100);
             }
@@ -3199,10 +3462,36 @@ const hunthubWorker = {
             return new Response(JSON.stringify({ success: true, overlayEvents: current.overlayEvents }), { headers: noCacheHeaders });
           }
           const eventPayload = body.celebration || body.data || body;
-          current.celebrationEvent = { ...eventPayload, timestamp: eventPayload.timestamp || eventPayload.ts || Date.now() };
+          const nowServer = Date.now();
+          let resolvedAvatar = eventPayload.avatarUrl || '';
+          if (!resolvedAvatar && eventPayload.username) {
+            const targetU = String(eventPayload.username).trim().replace(/^@+/, '').toLowerCase();
+            const matchedChatter = (current.activeChatters || []).find(
+              c => String(c?.username || c?.user || '').trim().replace(/^@+/, '').toLowerCase() === targetU
+            );
+            if (matchedChatter?.avatar) resolvedAvatar = matchedChatter.avatar;
+            if (!resolvedAvatar && env.DB) {
+              try {
+                const uRow = await env.DB.prepare('SELECT avatar FROM users WHERE LOWER(username) = LOWER(?1)').bind(targetU).first();
+                if (uRow?.avatar) resolvedAvatar = uRow.avatar;
+              } catch (_) {}
+            }
+          }
+          current.celebrationEvent = {
+            ...eventPayload,
+            avatarUrl: resolvedAvatar || eventPayload.avatarUrl || '',
+            eventId: eventPayload.eventId || eventPayload.id || ('celeb_' + nowServer + '_' + Math.random().toString(36).slice(2, 7)),
+            serverTs: nowServer,
+            timestamp: nowServer,
+            ts: nowServer
+          };
           current.overlayEvents['overlay-celebration'] = current.celebrationEvent;
-          await writeOverlaySyncState(current);
-          return new Response(JSON.stringify({ success: true, celebrationEvent: current.celebrationEvent }), { headers: noCacheHeaders });
+          await writeOverlaySyncState(current, false, { writeCelebration: true });
+          return new Response(JSON.stringify({
+            success: true,
+            celebrationEvent: current.celebrationEvent,
+            celebrationHistory: current.celebrationHistory || [current.celebrationEvent]
+          }), { headers: noCacheHeaders });
         } catch (err) {
           return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: noCacheHeaders });
         }
@@ -3505,6 +3794,7 @@ const hunthubWorker = {
           raffle_tickets: [],
           alt_clusters: [],
           celebrationEvent: syncState.celebrationEvent || null,
+          celebrationHistory: Array.isArray(syncState.celebrationHistory) ? syncState.celebrationHistory : [],
           overlayEvents: syncState.overlayEvents || {},
           battle: syncState.battleState || null,
           battleState: syncState.battleState || null,
@@ -3553,6 +3843,8 @@ const hunthubWorker = {
         const body = await request.json().catch(() => ({}));
         const current = await readOverlaySyncState();
         let mutated = false;
+        let writeBattle = false;
+        let writeCelebration = false;
 
         if (body.overlayEvent || body.celebrationEvent) {
           current.overlayEvents = current.overlayEvents || {};
@@ -3561,16 +3853,21 @@ const hunthubWorker = {
             current.overlayEvents[targetKey] = body.overlayEvent;
             if (body.overlayEvent.target === 'overlay-celebration' || body.overlayEvent.type === 'CELEBRATION') {
               const evData = body.overlayEvent.data || body.overlayEvent;
-              current.celebrationEvent = { ...evData, timestamp: evData.timestamp || evData.ts || Date.now() };
+              current.celebrationEvent = { ...evData, timestamp: Date.now(), ts: Date.now() };
+              writeCelebration = true;
             }
-            if (body.overlayEvent.target === 'overlay-battle' && body.overlayEvent.data?.state) {
-              current.battleState = body.overlayEvent.data.state;
+            const incomingBattleState = body.overlayEvent.state || body.overlayEvent.data?.state;
+            if (body.overlayEvent.target === 'overlay-battle' && incomingBattleState) {
+              current.battleState = incomingBattleState;
+              writeBattle = true;
             }
-            if (body.overlayEvent.target === 'overlay-tourney' && body.overlayEvent.data?.state) {
-              current.tourneyState = body.overlayEvent.data.state;
+            const incomingTourneyState = body.overlayEvent.state || body.overlayEvent.data?.state;
+            if (body.overlayEvent.target === 'overlay-tourney' && incomingTourneyState) {
+              current.tourneyState = incomingTourneyState;
             }
-            if (body.overlayEvent.target === 'overlay-bonushunt' && body.overlayEvent.data?.state) {
-              current.bonushuntState = body.overlayEvent.data.state;
+            const incomingBhState = body.overlayEvent.state || body.overlayEvent.data?.state;
+            if (body.overlayEvent.target === 'overlay-bonushunt' && incomingBhState) {
+              current.bonushuntState = incomingBhState;
             }
             if (body.overlayEvent.target === 'overlay-slotrequests') {
               const srQueue = body.overlayEvent.queue || body.overlayEvent.data?.queue || body.overlayEvent.data?.requests;
@@ -3580,13 +3877,23 @@ const hunthubWorker = {
             }
           }
           if (body.celebrationEvent) {
-            current.celebrationEvent = { ...body.celebrationEvent, timestamp: body.celebrationEvent.timestamp || body.celebrationEvent.ts || Date.now() };
+            current.celebrationEvent = { ...body.celebrationEvent, timestamp: Date.now(), ts: Date.now() };
+            writeCelebration = true;
           }
           mutated = true;
         }
 
         if (body.battleState || body.battle) {
           current.battleState = body.battleState || body.battle;
+          current.overlayEvents = current.overlayEvents || {};
+          current.overlayEvents['overlay-battle'] = {
+            target: 'overlay-battle',
+            action: 'battle_update',
+            type: 'battle_update',
+            state: current.battleState,
+            ts: Date.now()
+          };
+          writeBattle = true;
           mutated = true;
         }
         if (body.tourneyState || body.tourney) {
@@ -3645,7 +3952,7 @@ const hunthubWorker = {
         }
 
         if (mutated) {
-          await writeOverlaySyncState(current);
+          await writeOverlaySyncState(current, false, { writeBattle, writeCelebration });
         }
 
         if (env.DB && Array.isArray(body.users) && adminAuthed) {
@@ -3715,73 +4022,104 @@ const hunthubWorker = {
           awaitingKingDecision: false
         };
 
-        if (url.pathname === '/api/battle/reset') {
+        if (url.pathname === '/api/battle/reset' || (url.pathname === '/api/battle/koth/decision' && body.decision === 'retire')) {
           current.battleState = {
             ...baseBattle,
             status: 'LOBBY',
             playerA: null,
             playerB: null,
+            reigningKing: null,
+            currentStreak: 0,
             winnerSlot: null,
             winner: null,
             awaitingKingDecision: false
           };
-          try {
-            const duo = await readDuoQueues();
-            duo.enteredBattleUsers = [];
-            await writeDuoQueues(duo);
-          } catch (_) {}
+          if (url.pathname === '/api/battle/reset') {
+            try {
+              const duo = await readDuoQueues();
+              duo.enteredBattleUsers = [];
+              await writeDuoQueues(duo);
+            } catch (_) {}
+          }
+        } else if (url.pathname === '/api/battle/koth/decision' && body.decision === 'continue') {
+          current.battleState = {
+            ...baseBattle,
+            status: 'LOBBY',
+            playerB: null,
+            winnerSlot: null,
+            winner: null,
+            awaitingKingDecision: false
+          };
         } else if (url.pathname === '/api/battle/join' || (body.user && (body.slot || body.slotName))) {
           const cleanUser = String(body.user || body.username || '').trim().replace(/^@+/, '');
-          const cleanSlot = String(body.slot || body.slotName || 'Wildcard Slot').trim();
+          const rawSlot = String(body.slot || body.slotName || 'Wildcard Slot').trim();
+          const meta = formatSlotTitle(rawSlot);
+          const cleanSlot = body.slotProvider ? rawSlot : meta.name;
           const corner = String(body.targetCorner || '').trim().toUpperCase();
           const entry = {
             username: cleanUser,
+            displayName: cleanUser,
             slot: cleanSlot,
             slotName: cleanSlot,
+            slotProvider: body.slotProvider || meta.provider || 'Casino Slot',
+            slotImage: body.slotImage || '',
             avatar: body.avatar || '',
             bet: Number(body.bet) || Number(baseBattle.betAmount) || 10,
             pay: Number(body.pay) || 0,
             mult: Number(body.mult) || 0,
             score: Number(body.score) || 0
           };
-          const nextBattle = { ...baseBattle };
-          if (corner === 'A') {
-            nextBattle.playerA = entry;
-          } else if (corner === 'B') {
+          const nextBattle = { ...baseBattle, ts: Date.now() };
+          const hasA = Boolean(nextBattle.playerA && (nextBattle.playerA.username || nextBattle.playerA.displayName));
+          const hasB = Boolean(nextBattle.playerB && (nextBattle.playerB.username || nextBattle.playerB.displayName));
+          const sameAsA = hasA && String(nextBattle.playerA.username || nextBattle.playerA.displayName || '').toLowerCase() === cleanUser.toLowerCase();
+          if (corner === 'B' || (hasA && !hasB && !sameAsA)) {
             nextBattle.playerB = entry;
-          } else if (!nextBattle.playerA || !nextBattle.playerA.username) {
+          } else if (corner === 'A' || !hasA) {
             nextBattle.playerA = entry;
           } else {
             nextBattle.playerB = entry;
           }
           nextBattle.status = (nextBattle.playerA && nextBattle.playerB) ? 'READY' : 'LOBBY';
           nextBattle.winnerSlot = null;
+          nextBattle.winner = null;
           current.battleState = nextBattle;
-        } else if (url.pathname === '/api/battle/resolve' || url.pathname === '/api/battle/resolve-koth') {
+        } else if (url.pathname === '/api/battle/resolve' || url.pathname === '/api/battle/resolve-koth' || url.pathname === '/api/battle/resolve-spins') {
           const nextBattle = { ...baseBattle };
           if (nextBattle.playerA) {
             const betA = Number(body.betA ?? nextBattle.playerA.bet) || 10;
             const payA = Number(body.payA ?? nextBattle.playerA.pay) || 0;
-            const multA = Number(body.scoreA ?? (betA > 0 ? payA / betA : 0)) || 0;
-            nextBattle.playerA = { ...nextBattle.playerA, bet: betA, pay: payA, mult: multA, score: multA };
+            const multA = Number(body.scoreA ?? (betA > 0 ? payA / betA : 0)) || Number(nextBattle.playerA.multiplier || 0);
+            nextBattle.playerA = { ...nextBattle.playerA, bet: betA, pay: payA, mult: multA, score: multA, multiplier: multA };
           }
           if (nextBattle.playerB) {
             const betB = Number(body.betB ?? nextBattle.playerB.bet) || 10;
             const payB = Number(body.payB ?? nextBattle.playerB.pay) || 0;
-            const multB = Number(body.scoreB ?? (betB > 0 ? payB / betB : 0)) || 0;
-            nextBattle.playerB = { ...nextBattle.playerB, bet: betB, pay: payB, mult: multB, score: multB };
+            const multB = Number(body.scoreB ?? (betB > 0 ? payB / betB : 0)) || Number(nextBattle.playerB.multiplier || 0);
+            nextBattle.playerB = { ...nextBattle.playerB, bet: betB, pay: payB, mult: multB, score: multB, multiplier: multB };
           }
-          const mA = Number(nextBattle.playerA?.mult || 0);
-          const mB = Number(nextBattle.playerB?.mult || 0);
-          nextBattle.winnerSlot = body.winnerSlot || (mA >= mB ? 'A' : 'B');
-          nextBattle.status = 'COMPLETED';
+          const mA = Number(nextBattle.playerA?.mult || nextBattle.playerA?.multiplier || 0);
+          const mB = Number(nextBattle.playerB?.mult || nextBattle.playerB?.multiplier || 0);
+          const winSide = body.winner || body.winnerSlot || (mA >= mB ? 'A' : 'B');
+          nextBattle.winnerSlot = winSide;
+          nextBattle.winner = winSide;
+          nextBattle.status = 'RESOLVED';
+          if (typeof body.kothStreak === 'number') nextBattle.currentStreak = body.kothStreak;
           current.battleState = nextBattle;
         } else if (body.state) {
           current.battleState = body.state;
         } else if (body.playerA !== undefined || body.playerB !== undefined || body.status !== undefined) {
           current.battleState = { ...baseBattle, ...body };
         }
-        await writeOverlaySyncState(current);
+        current.overlayEvents = current.overlayEvents || {};
+        current.overlayEvents['overlay-battle'] = {
+          target: 'overlay-battle',
+          action: 'battle_update',
+          type: 'battle_update',
+          state: current.battleState,
+          ts: Date.now()
+        };
+        await writeOverlaySyncState(current, false, { writeBattle: true });
         return new Response(JSON.stringify({ status: 'ok', success: true, state: current.battleState }), { headers: noCacheHeaders });
       } catch (_) {
         return new Response(JSON.stringify({ status: 'ok', success: true }), { headers: noCacheHeaders });
@@ -3962,17 +4300,16 @@ const hunthubWorker = {
         try {
           const body = await request.json();
           const current = await readDuoQueues();
-          const dedupFirstCall = (arr) => {
+          const dedupLatestCall = (arr) => {
             if (!Array.isArray(arr)) return [];
-            const seen = new Set();
-            const out = [];
+            const map = new Map();
             for (const item of arr) {
               const u = String(item?.username || item?.user || item?.chatter || '').trim().replace(/^@+/, '').toLowerCase();
-              if (!u || seen.has(u)) continue;
-              seen.add(u);
-              out.push(item);
+              const s = String(item?.slotName || item?.slot || '').trim();
+              if (!u || isInstructionalSlotInput(s)) continue;
+              map.set(u, item);
             }
-            return out;
+            return Array.from(map.values());
           };
           const next = {
             ...current,
@@ -3982,41 +4319,49 @@ const hunthubWorker = {
             enteredTourneyUsers: Array.isArray(current.enteredTourneyUsers) ? [...current.enteredTourneyUsers] : []
           };
           if (Array.isArray(body.battleQueue)) {
-            next.battleQueue = dedupFirstCall(body.battleQueue);
+            next.battleQueue = dedupLatestCall(body.battleQueue);
             if (body.battleQueue.length === 0) next.enteredBattleUsers = [];
           }
           if (Array.isArray(body.tourneyQueue)) {
-            next.tourneyQueue = dedupFirstCall(body.tourneyQueue);
+            next.tourneyQueue = dedupLatestCall(body.tourneyQueue);
             if (body.tourneyQueue.length === 0) next.enteredTourneyUsers = [];
           }
           if (body.mode && (Array.isArray(body.battleQueue) || Array.isArray(body.tourneyQueue))) {
             next.mode = body.mode;
           }
-          // Support single entry addition from wheel-duo or chat command parser (Strictly 1 entry per spectator per event; only FIRST call is valid)
+          // Support single entry addition or slot replacement (!battle <newslot> updates spectator's existing slot in-place)
           if (body.username && (body.slotName || body.slot)) {
             const targetMode = (body.mode === 'tourney') ? 'tourney' : 'battle';
             const cleanUser = String(body.username).trim().replace(/^@+/, '');
             const lowerUser = cleanUser.toLowerCase();
-            const cleanSlot = String(body.slotName || body.slot).trim();
-            const entryObj = {
-              username: cleanUser,
-              user: cleanUser,
-              avatar: body.avatar || '',
-              slotName: cleanSlot,
-              slot: cleanSlot,
-              slotProvider: body.slotProvider || 'Slot',
-              addedAt: Date.now()
-            };
-            const list = targetMode === 'tourney' ? next.tourneyQueue : next.battleQueue;
-            const enteredList = targetMode === 'tourney' ? next.enteredTourneyUsers : next.enteredBattleUsers;
-            const existingIdx = list.findIndex(item => {
-              const itemUser = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
-              return itemUser === lowerUser;
-            });
-            const alreadyEntered = enteredList.includes(lowerUser);
-            if (existingIdx === -1 && !alreadyEntered) {
-              list.push(entryObj);
-              enteredList.push(lowerUser);
+            const rawSlot = String(body.slotName || body.slot).trim();
+            if (!isInstructionalSlotInput(rawSlot)) {
+              const meta = formatSlotTitle(rawSlot);
+              const cleanSlot = body.slotProvider ? rawSlot : meta.name;
+              const list = targetMode === 'tourney' ? next.tourneyQueue : next.battleQueue;
+              const enteredList = targetMode === 'tourney' ? next.enteredTourneyUsers : next.enteredBattleUsers;
+              const existingIdx = list.findIndex(item => {
+                const itemUser = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
+                return itemUser === lowerUser;
+              });
+              const entryObj = {
+                username: cleanUser,
+                user: cleanUser,
+                avatar: body.avatar || (existingIdx >= 0 ? list[existingIdx].avatar : '') || '',
+                slotName: cleanSlot,
+                slot: cleanSlot,
+                slotProvider: body.slotProvider || meta.provider || 'Slot',
+                addedAt: existingIdx >= 0 ? (list[existingIdx].addedAt || Date.now()) : Date.now(),
+                updatedAt: Date.now()
+              };
+              if (existingIdx >= 0) {
+                list[existingIdx] = entryObj;
+              } else {
+                list.push(entryObj);
+              }
+              if (!enteredList.includes(lowerUser)) {
+                enteredList.push(lowerUser);
+              }
             }
           }
           next.counts = {
@@ -4034,6 +4379,8 @@ const hunthubWorker = {
       const syncState = await readOverlaySyncState();
       return new Response(JSON.stringify({
         ...data,
+        battle: syncState.battleState || null,
+        battleState: syncState.battleState || null,
         slotRequests: Array.isArray(syncState.slotRequests) ? syncState.slotRequests : [],
         recentChatMessages: Array.isArray(syncState.recentChatMessages) ? syncState.recentChatMessages : [],
         activeChatters: Array.isArray(syncState.activeChatters) ? syncState.activeChatters : []
@@ -4105,7 +4452,7 @@ const hunthubWorker = {
         const cleanUser = String(body.user || body.username || '').trim().replace(/^@+/, '').toLowerCase();
         const cleanSlot = String(body.slotName || body.slot || '').trim().toLowerCase();
         const filterFn = (item) => {
-          const u = String(item.username || item.user || '').trim().replace(/^@+/, '').toLowerCase();
+          const u = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
           const s = String(item.slotName || item.slot || '').trim().toLowerCase();
           if (cleanUser && cleanSlot) return !(u === cleanUser && s === cleanSlot);
           if (cleanUser) return u !== cleanUser;
@@ -4113,8 +4460,14 @@ const hunthubWorker = {
         };
         if (targetMode === 'tourney') {
           current.tourneyQueue = (current.tourneyQueue || []).filter(filterFn);
+          if (cleanUser && Array.isArray(current.enteredTourneyUsers)) {
+            current.enteredTourneyUsers = current.enteredTourneyUsers.filter(u => String(u || '').toLowerCase() !== cleanUser);
+          }
         } else {
           current.battleQueue = (current.battleQueue || []).filter(filterFn);
+          if (cleanUser && Array.isArray(current.enteredBattleUsers)) {
+            current.enteredBattleUsers = current.enteredBattleUsers.filter(u => String(u || '').toLowerCase() !== cleanUser);
+          }
         }
         current.counts = {
           battle: (current.battleQueue || []).length,
@@ -4142,9 +4495,11 @@ const hunthubWorker = {
           const cmd = parts[0].toLowerCase();
           const arg = parts.slice(1).join(' ').trim();
 
-          if (cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') {
+          if ((cmd === '!battle' || cmd === '!1v1' || cmd === '!duel' || cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') && !isInstructionalSlotInput(arg)) {
             const targetMode = (cmd === '!tourney' || cmd === '!tournament' || cmd === '!bracket') ? 'tourney' : 'battle';
-            const cleanSlot = arg || (targetMode === 'tourney' ? 'Gates of Olympus 1000' : 'Wanted Dead or a Wild');
+            const rawSlot = arg || (targetMode === 'tourney' ? 'Gates of Olympus 1000' : 'Wanted Dead or a Wild');
+            const meta = formatSlotTitle(rawSlot);
+            const cleanSlot = body.slotProvider ? rawSlot : meta.name;
             const duoCurrent = await readDuoQueues();
             const duoNext = {
               ...duoCurrent,
@@ -4154,33 +4509,36 @@ const hunthubWorker = {
               enteredBattleUsers: Array.isArray(duoCurrent.enteredBattleUsers) ? [...duoCurrent.enteredBattleUsers] : [],
               enteredTourneyUsers: Array.isArray(duoCurrent.enteredTourneyUsers) ? [...duoCurrent.enteredTourneyUsers] : []
             };
-            const entryObj = {
-              username: cleanUser,
-              user: cleanUser,
-              avatar: body.avatar || '',
-              slotName: cleanSlot,
-              slot: cleanSlot,
-              slotProvider: body.slotProvider || 'Casino',
-              addedAt: Date.now()
-            };
             const list = targetMode === 'tourney' ? duoNext.tourneyQueue : duoNext.battleQueue;
             const enteredList = targetMode === 'tourney' ? duoNext.enteredTourneyUsers : duoNext.enteredBattleUsers;
             const existingIdx = list.findIndex(item => {
               const itemUser = String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase();
               return itemUser === lowerUser;
             });
-            const alreadyEntered = enteredList.includes(lowerUser);
-            // Strictly 1 call per spectator per event: only the FIRST call is valid!
-            if (existingIdx === -1 && !alreadyEntered) {
+            const entryObj = {
+              username: cleanUser,
+              user: cleanUser,
+              avatar: body.avatar || (existingIdx >= 0 ? list[existingIdx].avatar : '') || '',
+              slotName: cleanSlot,
+              slot: cleanSlot,
+              slotProvider: body.slotProvider || meta.provider || 'Casino',
+              addedAt: existingIdx >= 0 ? (list[existingIdx].addedAt || Date.now()) : Date.now(),
+              updatedAt: Date.now()
+            };
+            if (existingIdx >= 0) {
+              list[existingIdx] = entryObj;
+            } else {
               list.push(entryObj);
-              enteredList.push(lowerUser);
-              duoNext.counts = {
-                battle: duoNext.battleQueue.length,
-                tourney: duoNext.tourneyQueue.length
-              };
-              await writeDuoQueues(duoNext);
             }
-          } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2) {
+            if (!enteredList.includes(lowerUser)) {
+              enteredList.push(lowerUser);
+            }
+            duoNext.counts = {
+              battle: duoNext.battleQueue.length,
+              tourney: duoNext.tourneyQueue.length
+            };
+            await writeDuoQueues(duoNext);
+          } else if ((cmd === '!sr' || cmd === '!slot') && arg.length >= 2 && !isInstructionalSlotInput(arg)) {
             const syncCurrent = await readOverlaySyncState();
             const reqList = Array.isArray(syncCurrent.slotRequests) ? [...syncCurrent.slotRequests] : [];
             const handle = `@${cleanUser}`;
@@ -4269,20 +4627,38 @@ const hunthubWorker = {
       }
       const body = await request.json().catch(() => ({}));
       const current = await readDuoQueues();
+      const nowServer = Date.now();
+      const spinMode = body.mode || current.mode || 'battle';
       current.lastSpin = {
         action: 'spin',
         targetOverlay: 'wheel-duo',
-        mode: body.mode || current.mode || 'battle',
-        spinId: body.spinId || ('edge_spin_' + Date.now()),
+        mode: spinMode,
+        spinId: body.spinId || ('edge_spin_' + nowServer),
         winner: body.winner || null,
         targetCorner: body.targetCorner || 'A',
         targetSeed: body.targetSeed || null,
-        ts: Date.now()
+        serverTs: nowServer,
+        ts: nowServer
       };
-      await writeDuoQueues(current);
+      // Atomically remove the picked winner from the queue so no second /remove POST is needed or races with lastSpin
+      const winUser = String(body.winner?.chatter || body.winner?.user || body.winner?.username || '').trim().replace(/^@+/, '').toLowerCase();
+      if (winUser && body.removeWinner !== false) {
+        const filterWinner = (item) => String(item.username || item.user || item.chatter || '').trim().replace(/^@+/, '').toLowerCase() !== winUser;
+        if (spinMode === 'tourney') {
+          current.tourneyQueue = (current.tourneyQueue || []).filter(filterWinner);
+        } else {
+          current.battleQueue = (current.battleQueue || []).filter(filterWinner);
+        }
+        current.counts = {
+          battle: (current.battleQueue || []).length,
+          tourney: (current.tourneyQueue || []).length
+        };
+      }
+      await writeDuoQueues(current, { writeSpin: true });
       return new Response(JSON.stringify({
         success: true,
-        ...current.lastSpin
+        ...current.lastSpin,
+        counts: current.counts
       }), { headers: noCacheHeaders });
     }
 
