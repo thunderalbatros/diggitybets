@@ -277,7 +277,8 @@ await test('7-Day $DIG Loyalty Streak: 1-click claim works for new & existing us
   };
 
   const envWithDb = { ...withSecret, DB: mockDb };
-  const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const STREAK_TZ_OFFSET_MS = 7 * 3600 * 1000;
+  const yesterdayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS - 86_400_000).toISOString().slice(0, 10);
 
   // Day 1 claim by a brand new spectator (even without OAuth token yet)
   const d1Res = await callEndpoint('/api/leaderboard/sync-user', 'POST', { origin: 'https://diggitybets.vip' }, { username: 'streakviewer', streakBonusDelta: 50, claimStreak: true }, envWithDb);

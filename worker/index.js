@@ -251,6 +251,27 @@ async function initD1(db) {
             ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
           `).bind(JSON.stringify({ epoch: '2026-10-21-v2', resetAt: Date.now() }), Date.now()).run();
         }
+        const streakTzFixRow = await db.prepare("SELECT value_json FROM kv_store WHERE key = 'loyalty_streak_tz_reconcile_v3'").first();
+        if (!streakTzFixRow) {
+          await db.prepare(`
+            UPDATE users
+            SET points_balance = MAX(0, points_balance - 75),
+                monthly_points = MAX(0, monthly_points - 75),
+                streak_day = 1,
+                last_streak_claim_date = '2026-10-21'
+            WHERE streak_day = 2 AND last_streak_claim_date = '2026-10-22'
+          `).run();
+          await db.prepare(`
+            UPDATE users
+            SET last_streak_claim_date = '2026-10-21'
+            WHERE streak_day = 1 AND last_streak_claim_date = '2026-10-22'
+          `).run();
+          await db.prepare(`
+            INSERT INTO kv_store (key, value_json, updated_at)
+            VALUES ('loyalty_streak_tz_reconcile_v3', ?1, ?2)
+            ON CONFLICT(key) DO UPDATE SET value_json = ?1, updated_at = ?2
+          `).bind(JSON.stringify({ epoch: '2026-10-21-v3-americas-day', reconciledAt: Date.now() }), Date.now()).run();
+        }
       } catch (_) {}
       d1Initialized = true;
     }
@@ -2750,9 +2771,12 @@ const hunthubWorker = {
         const tourneysWon = Math.max(Number(existingUser?.tourneys_won || 0), Math.min(100, Math.floor(Number(body.tourneysWon) || 0)));
         const huntHits = Math.max(Number(existingUser?.hunt_hits || 0), Math.min(500, Math.floor(Number(body.huntHits) || 0)));
 
+        // 7-day calendar week streak (e.g. Wednesday to Wednesday), counting consecutive Americas calendar days
+        // (UTC-7 rollover: 04:00 AM ART / 03:00 AM ET / 00:00 AM PT) regardless of stream live status.
         const STREAK_REWARDS = [50, 75, 100, 125, 150, 200, 300];
-        const todayKey = new Date().toISOString().slice(0, 10);
-        const yesterdayKey = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        const STREAK_TZ_OFFSET_MS = 7 * 3600 * 1000;
+        const todayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS).toISOString().slice(0, 10);
+        const yesterdayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS - 86_400_000).toISOString().slice(0, 10);
 
         if (env.DB) {
           if (!existingUser) {
@@ -2800,9 +2824,18 @@ const hunthubWorker = {
             let nextBal = curDbBal;
             let nextMonthly = curDbMonthly;
 
-            // Daily 7-day loyalty streak claim (once per UTC day). Automatically resets to Day 1 after Day 7 or if a day is missed.
+            // Daily 7-day loyalty streak claim (once per Americas calendar day, consecutive days regardless of stream status).
             let nextStreakDate = String(existingUser.last_streak_claim_date || '');
             let nextStreakDay = Math.max(0, Math.min(7, Number(existingUser.streak_day || 0)));
+            // Sanitize any premature UTC-midnight date recorded while Americas calendar day was still 2026-10-21
+            if (nextStreakDate > todayKey) {
+              if (nextStreakDay === 2 && todayKey === '2026-10-21') {
+                nextBal = Math.max(0, nextBal - 75);
+                nextMonthly = Math.max(0, nextMonthly - 75);
+                nextStreakDay = 1;
+              }
+              nextStreakDate = todayKey;
+            }
             // One-time reconciliation for Day 1 double-claim bug (100 -> 50 $DIG)
             if (nextStreakDay === 1 && nextStreakDate === todayKey && nextBal === 100 && nextMonthly <= 100) {
               nextBal = 50;

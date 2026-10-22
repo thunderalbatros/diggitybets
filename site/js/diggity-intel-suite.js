@@ -3397,9 +3397,12 @@
       if (!container) return;
 
       const STREAK_RESET_EPOCH = '2026-10-21-v2';
+      // Americas calendar day (UTC-7 rollover: 04:00 AM ART / 03:00 AM ET / 00:00 AM PT)
+      // so evening streams never roll over to the next day at 9:00 PM ART (00:00 UTC).
+      const STREAK_TZ_OFFSET_MS = 7 * 3600 * 1000;
       const rewards = [50, 75, 100, 125, 150, 200, 300];
-      const todayKey = new Date().toISOString().slice(0, 10);
-      const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const todayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS).toISOString().slice(0, 10);
+      const yesterdayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS - 86400000).toISOString().slice(0, 10);
 
       // Always purge guest streak keys so unauthenticated sessions can never claim or migrate points
       try {
@@ -3484,13 +3487,34 @@
         saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
       } catch (_) {}
 
+      // Repair any premature UTC-midnight date (e.g. 2026-10-22 recorded during Wednesday 2026-10-21)
+      if (saved && saved.lastClaimDate && String(saved.lastClaimDate) > todayKey) {
+        saved = {
+          epoch: STREAK_RESET_EPOCH,
+          streakDay: todayKey === '2026-10-21' ? 1 : Math.max(1, Math.min(7, Number(saved.streakDay || 1) - 1)),
+          lastClaimDate: todayKey
+        };
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(saved));
+        } catch (_) {}
+      }
+
       // Reconcile with backend D1 profile if server has a same-day or yesterday streak record
       const vp = window.userStore && window.userStore.globalViewerProfile;
       if (vp && rawUser && String(vp.username || '').toLowerCase() === rawUser) {
         const srvDate = String(vp.lastStreakClaimDate || '');
         const srvDay = Math.max(0, Math.min(7, Number(vp.streakDay || 0)));
         const locDate = String(saved?.lastClaimDate || '');
-        if ((srvDate === todayKey || srvDate === yesterdayKey) && srvDay >= 1 && srvDate > locDate) {
+        if (srvDate === todayKey && srvDay >= 1) {
+          saved = {
+            epoch: STREAK_RESET_EPOCH,
+            streakDay: srvDay,
+            lastClaimDate: srvDate
+          };
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(saved));
+          } catch (_) {}
+        } else if (srvDate === yesterdayKey && srvDay >= 1 && locDate !== todayKey && srvDate > locDate) {
           saved = {
             epoch: STREAK_RESET_EPOCH,
             streakDay: srvDay,

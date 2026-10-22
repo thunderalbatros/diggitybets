@@ -301,10 +301,17 @@ class UserStoreController {
 
       if (data.viewerProfile) {
         this.globalViewerProfile = data.viewerProfile;
-        const todayKey = new Date().toISOString().slice(0, 10);
+        const STREAK_TZ_OFFSET_MS = 7 * 3600 * 1000;
+        const todayKey = new Date(Date.now() - STREAK_TZ_OFFSET_MS).toISOString().slice(0, 10);
         let localClaimedToday = false;
         try {
-          const streakSaved = JSON.parse(localStorage.getItem(`hunthub_daily_streak_v2_${cleanUser.toLowerCase()}`) || 'null');
+          const streakKey = `hunthub_daily_streak_v2_${cleanUser.toLowerCase()}`;
+          const streakSaved = JSON.parse(localStorage.getItem(streakKey) || 'null');
+          if (streakSaved && streakSaved.lastClaimDate && String(streakSaved.lastClaimDate) > todayKey) {
+            streakSaved.lastClaimDate = todayKey;
+            if (todayKey === '2026-10-21') streakSaved.streakDay = 1;
+            localStorage.setItem(streakKey, JSON.stringify(streakSaved));
+          }
           localClaimedToday = Boolean(streakSaved && streakSaved.lastClaimDate === todayKey);
         } catch (_) {}
         const serverClaimedToday = String(data.viewerProfile.lastStreakClaimDate || '') === todayKey;
